@@ -53,10 +53,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .midi { flex: 0 1 180px; min-width: 100px; display: block; line-height: 24px; }
 .midi.live::before { content: "● "; }
 .last { flex: 1 1 auto; min-width: 0; }
-.chsel { display: flex; align-items: center; gap: 4px; }
-.chsel > .dim { margin-right: 2px; letter-spacing: .1em; }
-.chsel .btn { min-width: 30px; padding: 3px 5px; }
-.chsel .btn.all { padding: 3px 8px; }
+.zones { flex: 0 1 auto; min-width: 0; }
 .last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .last.hit { background: var(--ink); color: var(--panel); text-shadow: none; }
 .last.hit .dim { color: var(--panel); opacity: .7; }
@@ -64,7 +61,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .kitrand > .dim { margin-right: 2px; letter-spacing: .1em; }
 
 /* ---- the seven sounds ---- */
-.sounds { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.sounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .snd { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; font-size: 22px; padding: 2px 8px; }
 .snd .ch { font-size: 16px; opacity: .7; }
 .snd i { position: absolute; left: 7px; top: 50%; width: 9px; height: 9px; margin-top: -5px; border: 2px solid currentColor; border-radius: 1px; }
@@ -93,8 +90,9 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .side .card.grow { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .keymap { flex: 1; display: flex; flex-direction: column; min-height: 90px; }
 .keymap canvas { display: block; width: 100%; flex: 1; min-height: 0; }
-.keylabels { display: flex; justify-content: space-between; font-size: 16px; color: var(--muted); margin-top: 2px; }
-.keylabels span:nth-child(3) { color: var(--ink); }
+.keylabels { position: relative; height: 1.1em; font-size: 16px; color: var(--muted); margin-top: 2px; }
+.keylabels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.keylabels .base { color: var(--ink); }
 
 .randrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .randrow .btn { flex: 1 1 auto; padding: 3px 6px; }
@@ -158,8 +156,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
   .logo { font-size: 34px; }
   .btn { font-size: 17px; padding: 3px 9px; }
   .kitrand > .dim { display: none; }
-  .chsel .btn { min-width: 26px; padding: 3px 3px; }
-  .last > .dim, .chsel > .dim { display: none; }
+  .last > .dim { display: none; }
   .top { gap: 10px; }
   .logo { font-size: 30px; letter-spacing: .08em; }
   .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }

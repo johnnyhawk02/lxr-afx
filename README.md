@@ -1,21 +1,22 @@
 # LXR-AFX
 
-A 7-voice MIDI drum instrument in the browser where every key plays a morphed variant of its sound, AFX style.
+An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key a morphed variant of its sound.
 **Play it: https://johnnyhawk02.github.io/lxr-afx/** (Chrome or Edge, for Web MIDI)
 
 ![LXR-AFX at 1440 × 900](docs/screenshot.png)
 
-- **Seven sounds on seven MIDI channels**: Drum 1, Drum 2, Drum 3, Snare, Cymbal, Closed hat and Open hat on channels 1 to 7.
-  The CH setter at the top (ALL, 1-7) can send every note, on any channel, to one sound for testing.
-  Keys C1 to C5 (C3 = MIDI 60), velocity used.
-- **Key morph**: C3 plays the sound as you made it. Every other key plays a variant, changing pitch and timbre, more the
-  further it is from C3. Each key's variant is fixed by the sound's seed; **re-roll** for a new set. Depth, pitch and
-  timbre sliders for all sounds and per sound; depth 0 plays the base sound on every key.
+- **Three zones on MIDI channel 1** (C3 = MIDI 60), one for each of the engine's three voice types, all three able to
+  sound at once: **drum** on C0-B1 (base key C1), **snare** on C2-B4 (base C3), **metal** on C5-B7 (base C6). Velocity is used.
+- **Key morph**: a zone's base key plays its sound as you made it. Every other key plays a variant, changing pitch and
+  timbre, more the further it is from the base (each end of a zone is the full amount). Each key's variant is fixed by
+  the sound's seed; **re-roll** for a new set. Depth, pitch and timbre sliders for all sounds and per sound; depth 0 plays
+  the base sound on every key.
 - **Editor**: every parameter of each sound (tone, shape, filter, mod, mix). By default an edit changes only the last key
   pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and
   every key's morph follows. **CLEAR KEY** / **CLEAR ALL KEYS** take a sound's key edits away.
-- **Randomisers**: per sound (amount, wild, per-control locks, from a built-in kit, alter) and kit-wide (random kit,
-  alter all), with undo.
+- **Randomisers**: **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
+  varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
+  **ALTER ALL** do all three sounds, with undo.
 
 ## Code
 

@@ -15,10 +15,10 @@
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
-    <div class="chsel" id="chsel" role="radiogroup" aria-label="MIDI channel: ALL routes channels 1-7 to the seven sounds; a number plays that sound from any channel" title="ALL: channels 1-7 play the seven sounds. 1-7: every note, on any channel, plays that sound"><span class="dim">CH</span></div>
+    <div class="lcdbox zones" title="MIDI channel 1: three zones, all three can sound at once">CH 1 · DRUM C0-B1 · SNARE C2-B4 · METAL C5-B7</div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="kitrand" role="group" aria-label="Kit randomiser">
-      <button class="btn" id="kit-rand" title="Every sound from a random built-in kit">RANDOM KIT</button>
+      <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
       <button class="btn" id="kit-alter" title="Nudge every sound a little (10%)">ALTER ALL</button>
       <button class="btn" id="kit-init" title="Back to the firmware's init kit">INIT</button>
       <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
@@ -42,7 +42,7 @@
         </div>
         <div class="keymap">
           <canvas id="keymap" aria-label="Key map: each key's pitch and timbre morph, C1 to C5"></canvas>
-          <div class="keylabels"><span>C1</span><span>C2</span><span>C3 BASE</span><span>C4</span><span>C5</span></div>
+          <div class="keylabels" id="keylabels"></div>
         </div>
       </section>
       <section class="card">
@@ -50,8 +50,8 @@
         <div class="bars" id="rand-bars"></div>
         <div class="randrow">
           <label class="chk"><input type="checkbox" id="wild"><i></i>WILD</label>
-          <button class="btn" id="rand" title="Randomise this sound around its home, within the amount (unlocked controls only)">RANDOMISE</button>
-          <button class="btn" id="from-kit" title="This sound from a random built-in kit">FROM KIT</button>
+          <button class="btn" id="rand" title="A variant of this sound from the built-in kits: a matching voice from a random kit, varied by the amount (locked controls stay)">RANDOMISE</button>
+          <button class="btn" id="vary" title="Vary this sound around its home by the amount (unlocked controls only)">VARY</button>
           <button class="btn" id="alter" title="Nudge this sound a little (10%)">ALTER</button>
         </div>
         <div class="randrow small"><span class="dim" id="lock-count">0 LOCKED</span>
@@ -71,13 +71,13 @@
       </div>
       <div class="faders" id="faders"></div>
       <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS edits the base, and every key follows.</span>
-        <span class="dim">C3 = MIDI 60 · CH 1-7 · C1-C5</span></footer>
+        <span class="dim">CH 1 · C3 = MIDI 60</span></footer>
     </section>
   </div>
 
   <div class="start" id="start">
     <button class="btn big" id="start-btn">START AUDIO + MIDI</button>
-    <p>Play the seven sounds on MIDI channels 1 to 7, keys C1 to C5. C3 is each sound as you made it; the other keys are variants of it.</p>
+    <p>MIDI channel 1: drum on C0-B1, snare on C2-B4, metal on C5-B7, all three at once. Each zone's base key (C1, C3, C6) plays its sound as you made it; the other keys are variants of it.</p>
   </div>
 </main>
 <script type="module" src="app/main.js"></script>

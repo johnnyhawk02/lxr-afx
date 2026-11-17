@@ -22,16 +22,17 @@ import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
 
-// engineVoice: which of the engine's six voices makes it (the two hats share one); trigger: the note-on index
+// AFX mode: three sounds, one per engine type, each on its own zone of the keyboard (MIDI channel 1), all three able to
+// sound at once. engineVoice: which of the engine's six voice instances makes it; trigger: the note-on index;
+// sources: the kit voices of the same engine type that the randomiser draws from; zone: its keys (C3 = MIDI 60) and the
+// key that plays its base sound
 export const SOUNDS = [
-  { id: 'drum1', name: 'DRUM 1', engineVoice: 0, trigger: 0 },
-  { id: 'drum2', name: 'DRUM 2', engineVoice: 1, trigger: 1 },
-  { id: 'drum3', name: 'DRUM 3', engineVoice: 2, trigger: 2 },
-  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3 },
-  { id: 'cymbal', name: 'CYMBAL', engineVoice: 4, trigger: 4 },
-  { id: 'clhat', name: 'CL HAT', engineVoice: 5, trigger: 5 },
-  { id: 'ophat', name: 'OP HAT', engineVoice: 5, trigger: 6 },
+  { id: 'drum', name: 'DRUM', engineVoice: 0, trigger: 0, sources: [0, 1, 2], zone: { lo: 24, hi: 47, base: 36 } }, // C0-B1, base C1
+  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], zone: { lo: 48, hi: 83, base: 60 } }, // C2-B4, base C3
+  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], zone: { lo: 84, hi: 119, base: 96 } }, // C5-B7, base C6
 ];
+// the sound whose zone holds a note, or -1
+export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo && note <= s.zone.hi);
 
 // the firmware's init kit as parameter values
 export const INIT_VALUES = new Uint8Array(NUM_PARAMS);
@@ -187,4 +188,31 @@ export function parseSnd(bytes) {
     if (kit[tw] >= 14) kit[tw] %= 14;
   }
   return { name, kit };
+}
+
+// one voice's sound taken from a kit voice of the same engine type (another drum, or the hi-hat for the metal): its
+// values mapped control by control (by front-panel name, in order), and its modulation targets moved to the same
+// controls of the new voice. Returns [[parameter, value], ...] for dst; controls the source doesn't have are left out
+const ALIAS = { DECAY_OPEN: 'DECAY' }; // the open hat's decay is the cymbal's decay; the closed one has no match
+export function mapVoice(kit, src, dst) {
+  const key = (sc) => { const seen = {}; return sc.map((e) => { const t = ALIAS[e.text] || e.text; seen[t] = (seen[t] || 0) + 1; return t + '#' + seen[t]; }); };
+  const S = VOICE_SCHEMAS[src], D = VOICE_SCHEMAS[dst], ks = key(S), kd = key(D);
+  const parMap = new Map(); // source parameter -> destination parameter
+  S.forEach((e, i) => { const j = kd.indexOf(ks[i]); if (j >= 0 && !(e.text === 'DECAY_CLOSED')) parMap.set(e.par, D[j].par); });
+  const target = (i) => { // a modulation target index from the source voice's to the destination's
+    if (!i) return 0;
+    const p = MOD_TARGETS[i] && MOD_TARGETS[i][1], q = parMap.get(p);
+    if (voiceOfTarget(i) !== src) return i; // aimed at another voice: as it is
+    if (q === undefined) return 0;
+    const [a, b] = MOD_TARGET_VOICE_RANGES[dst];
+    for (let k = a; k <= b; k++) if (MOD_TARGETS[k][1] === q) return k;
+    return 0;
+  };
+  const out = [];
+  for (const [p, q] of parMap) {
+    const e = S.find((x) => x.par === p);
+    out.push([q, e.display.type === 'target' ? target(kit[p]) : kit[p]]);
+  }
+  out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(kit[PAR.TARGET_LFO1 + src]) === src ? dst + 1 : kit[PAR.VOICE_LFO1 + src]]);
+  return out;
 }

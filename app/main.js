@@ -1,8 +1,8 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd } from '../sound/schema.js';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE, LOW_NOTE, HIGH_NOTE } from '../sound/morph.js';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice } from '../sound/schema.js';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance } from '../sound/morph.js';
 import { KIT_FILES } from '../sound/kits.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,7 +14,7 @@ const hex = (s) => (s >>> 0).toString(16).toUpperCase().padStart(8, '0');
 // ---------------------------------------------------------------------------------------------------------------
 // state, kept in this browser
 // ---------------------------------------------------------------------------------------------------------------
-const STORE = 'lxr-afx-v1';
+const STORE = 'lxr-afx-v2'; // v2: AFX mode (three zones on channel 1)
 const defaultLocks = () => { const s = new Set(); for (const sc of VOICE_SCHEMAS) for (const e of sc) if (e.rand === 'lock') s.add(e.par); return s; };
 const S = {
   values: INIT_VALUES.slice(), // the kit: every sound's base
@@ -27,14 +27,13 @@ const S = {
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
   editAll: false, // the editor edits the last key pressed (false) or the base of every key (true)
-  midiCh: 0, // 0: channels 1-7 play the seven sounds; 1-7: every note, on any channel, plays that sound
 };
 try {
   const d = JSON.parse(localStorage.getItem(STORE));
   if (d && d.values && d.values.length === NUM_PARAMS) {
     S.values = Uint8Array.from(d.values); S.defaults = Uint8Array.from(d.defaults || d.values);
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
-    S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0; S.midiCh = d.midiCh | 0;
+    S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll;
   }
 } catch (e) { /* first visit, or storage blocked */ }
@@ -44,7 +43,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, midiCh: S.midiCh, keyEdits: S.keyEdits, editAll: S.editAll }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
@@ -73,7 +72,7 @@ async function startAudio() {
 function keyPatch(sound, note) {
   const def = SOUNDS[sound], v = def.engineVoice, st = S.sounds[sound];
   const amount = combinedAmount(pct(S.global), pct(st));
-  const m = morphKey({ schema: VOICE_SCHEMAS[v], base: S.values, note, seed: st.seed, amount, voice: v });
+  const m = morphKey({ schema: VOICE_SCHEMAS[v], base: S.values, note, seed: st.seed, amount, voice: v, zone: SOUNDS[sound].zone });
   const vals = new Map(voiceOwned(v).map((p) => [p, S.values[p]]));
   for (const [p, x] of m.params) vals.set(p, x);
   const ed = S.keyEdits[sound][note];
@@ -82,7 +81,7 @@ function keyPatch(sound, note) {
 }
 // a sound on a key, and that key becomes the one the editor edits
 const lastMorph = SOUNDS.map(() => null);
-const editKey = SOUNDS.map(() => BASE_NOTE);
+const editKey = SOUNDS.map((s) => s.zone.base);
 function play(sound, note, vel) {
   const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
@@ -129,10 +128,10 @@ function onMidi(e) {
   noteOn(ch, note, vel);
 }
 function noteOn(ch, note, vel) {
-  if (S.midiCh) ch = S.midiCh; // the channel setter: any channel plays the chosen sound
-  if (ch < 1 || ch > 7) { showLastText(`CH ${ch} · ${noteName(note)} · not a sound channel (1-7)`); return; }
-  if (note < LOW_NOTE || note > HIGH_NOTE) { showLastText(`CH ${ch} · ${noteName(note)} · outside C1-C5`); return; }
-  play(ch - 1, note, vel);
+  if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
+  const sound = soundOfNote(note);
+  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (C0-B7)`); return; }
+  play(sound, note, vel);
 }
 async function startMidi() {
   if (!navigator.requestMIDIAccess) { midiStatus('MIDI: not in this browser (use Chrome or Edge)'); return; }
@@ -146,21 +145,6 @@ async function startMidi() {
     midi.onstatechange = hook; hook();
   } catch (err) { midiStatus('MIDI: permission refused'); }
 }
-// the channel setter at the top: ALL, or one sound for every incoming note (choosing one also opens it in the editor)
-const chBtns = [0, 1, 2, 3, 4, 5, 6, 7].map((c) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (c ? '' : ' all');
-  b.textContent = c ? String(c) : 'ALL'; b.setAttribute('role', 'radio');
-  b.title = c ? `Every note, on any MIDI channel, plays ${SOUNDS[c - 1].name}` : 'MIDI channels 1-7 play the seven sounds';
-  b.addEventListener('click', () => setMidiCh(c));
-  $('chsel').append(b);
-  return b;
-});
-function setMidiCh(c) {
-  S.midiCh = c; save();
-  chBtns.forEach((b, i) => b.setAttribute('aria-pressed', i === c));
-  if (c) select(c - 1);
-  detail(c ? `MIDI: every channel plays <em>${SOUNDS[c - 1].name}</em>` : 'MIDI: channels 1-7 play the seven sounds');
-}
 // for testing without a controller: afx.noteOn(channel, note, velocity) from the console
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel) };
 
@@ -173,8 +157,8 @@ function showLastText(t) {
   const box = $('last'); box.classList.add('hit'); clearTimeout(lastT); lastT = setTimeout(() => box.classList.remove('hit'), 90);
 }
 function showLast(sound, note, vel, st) {
-  const p = note === BASE_NOTE ? 'BASE' : (st >= 0 ? '+' : '−') + Math.abs(st).toFixed(1) + 'ST';
-  showLastText(`CH${sound + 1} ${SOUNDS[sound].name} · ${noteName(note)} · V${vel} · ${p}`);
+  const p = note === SOUNDS[sound].zone.base ? 'BASE' : (st >= 0 ? '+' : '−') + Math.abs(st).toFixed(1) + 'ST';
+  showLastText(`${SOUNDS[sound].name} · ${noteName(note)} · V${vel} · ${p}`);
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
@@ -259,28 +243,29 @@ function drawKeymap() {
   if (!cw0 || !ch0) return;
   if (cv.width !== Math.round(cw0 * dpr) || cv.height !== Math.round(ch0 * dpr)) { cv.width = Math.round(cw0 * dpr); cv.height = Math.round(ch0 * dpr); }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const W = cw0, H = ch0, ink = '#17200e', ghost = 'rgba(23,32,14,.11)';
+  g.clearRect(0, 0, cw0, ch0); g.translate(3, 0); // room for the edit key's box at either end
+  const W = cw0 - 6, H = ch0, ink = '#17200e', ghost = 'rgba(23,32,14,.11)';
   g.clearRect(0, 0, W, H);
-  const n = HIGH_NOTE - LOW_NOTE + 1, cw = W / n;
+  const zone = SOUNDS[S.sel].zone, n = zone.hi - zone.lo + 1, cw = W / n;
   // rows: pitch (up and down from the middle line), then timbre, then the keyboard strip
   const SEG = 5, STEP = 7, keysH = 8, timbreH = 3 * STEP, top = 4;
   const half = Math.floor((H - top - keysH - timbreH - 12) / 2 / STEP) * STEP, mid = top + half;
   const st = S.sounds[S.sel], amount = combinedAmount(pct(S.global), pct(st)), last = lastMorph[S.sel];
   const segsMax = half / STEP;
   for (let k = 0; k < n; k++) {
-    const note = LOW_NOTE + k, x = Math.round(k * cw) + 1, w = Math.max(2, Math.round(cw) - 2);
+    const note = zone.lo + k, x = Math.round(k * cw) + 1, w = Math.max(2, Math.round(cw) - 2);
     g.fillStyle = ghost;
     for (let s = 0; s < segsMax; s++) { g.fillRect(x, mid - STEP - s * STEP + 1, w, SEG); g.fillRect(x, mid + 1 + s * STEP, w, SEG); }
     // pitch: a segment per twelfth of the full 12 semitones' height, from the middle line
-    const semis = pitchOffset(note, st.seed, amount.pitch), segs = Math.round(Math.abs(semis) / 12 * segsMax);
+    const semis = pitchOffset(note, st.seed, amount.pitch, zone), segs = Math.round(Math.abs(semis) / 12 * segsMax);
     g.fillStyle = ink;
     for (let s = 0; s < segs; s++) g.fillRect(x, semis > 0 ? mid - STEP - s * STEP + 1 : mid + 1 + s * STEP, w, SEG);
     // timbre: up to three segments
-    const ty = mid + half + 6, t = Math.round(amount.timbre * keyDistance(note).dist * 3);
+    const ty = mid + half + 6, t = Math.round(amount.timbre * keyDistance(note, zone).dist * 3);
     for (let s = 0; s < 3; s++) { g.fillStyle = s < t ? ink : ghost; g.fillRect(x, ty + (2 - s) * STEP, w, SEG); }
     // the keyboard strip: white keys full, black keys short; C3 solid
     const ky = ty + timbreH + 3, black = [1, 3, 6, 8, 10].includes(note % 12);
-    g.fillStyle = note === BASE_NOTE ? ink : black ? 'rgba(23,32,14,.35)' : 'rgba(23,32,14,.7)';
+    g.fillStyle = note === zone.base ? ink : black ? 'rgba(23,32,14,.35)' : 'rgba(23,32,14,.7)';
     g.fillRect(x, ky, w, black ? keysH / 2 : keysH);
     if (editKey[S.sel] === note) { g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(x - 2, top - 3, w + 4, ky + keysH - top + 6); }
     // a key with its own edits: a solid block on the middle line
@@ -291,8 +276,8 @@ function drawKeymap() {
 window.addEventListener('resize', drawKeymap);
 // a click on the key map picks the key to edit (it doesn't play: notes come from MIDI)
 $('keymap').addEventListener('click', (e) => {
-  const r = $('keymap').getBoundingClientRect(), n = HIGH_NOTE - LOW_NOTE + 1;
-  editKey[S.sel] = LOW_NOTE + clamp(Math.floor((e.clientX - r.left) / r.width * n), 0, n - 1);
+  const zone = SOUNDS[S.sel].zone, r = $('keymap').getBoundingClientRect(), n = zone.hi - zone.lo + 1;
+  editKey[S.sel] = zone.lo + clamp(Math.floor((e.clientX - r.left - 3) / (r.width - 6) * n), 0, n - 1);
   if (S.editAll) setEditAll(false);
   drawKeymap(); drawFaders(); drawEditKey();
 });
@@ -303,8 +288,8 @@ $('keymap').addEventListener('click', (e) => {
 const soundBtns = SOUNDS.map((s, i) => {
   const b = document.createElement('button');
   b.className = 'btn snd'; b.type = 'button'; b.setAttribute('role', 'tab');
-  b.innerHTML = `<i></i><span>${s.name}</span><span class="ch">CH${i + 1}</span>`;
-  b.title = `${s.name}: MIDI channel ${i + 1} (key ${i + 1})`;
+  b.innerHTML = `<i></i><span>${s.name}</span><span class="ch">${noteName(s.zone.lo)}-${noteName(s.zone.hi)}</span>`;
+  b.title = `${s.name}: keys ${noteName(s.zone.lo)} to ${noteName(s.zone.hi)} on MIDI channel 1, base ${noteName(s.zone.base)} (key ${i + 1})`;
   b.addEventListener('click', () => select(i));
   $('sounds').append(b);
   return b;
@@ -314,10 +299,21 @@ function select(i) {
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === i));
   buildFaders(); drawSide(); drawEditKey();
 }
+function drawKeyLabels() {
+  // a label under each C in the zone, and under the base
+  const z = SOUNDS[S.sel].zone, n = z.hi - z.lo + 1, box = $('keylabels'); box.innerHTML = '';
+  for (let note = z.lo; note <= z.hi; note++) {
+    if (note % 12 && note !== z.base) continue;
+    const sp = document.createElement('span'); sp.textContent = noteName(note) + (note === z.base ? ' BASE' : '');
+    sp.style.left = ((note - z.lo + 0.5) / n * 100) + '%'; if (note === z.base) sp.className = 'base';
+    box.append(sp);
+  }
+}
 function drawSide() {
   const s = SOUNDS[S.sel];
-  $('side-name').textContent = s.name; $('side-ch').textContent = 'CH ' + (S.sel + 1);
-  $('rand-name').textContent = s.name + (s.engineVoice === 5 ? ' (HATS SHARE)' : '');
+  $('side-name').textContent = s.name; $('side-ch').textContent = `${noteName(s.zone.lo)}-${noteName(s.zone.hi)} · BASE ${noteName(s.zone.base)}`;
+  $('rand-name').textContent = s.name;
+  drawKeyLabels();
   $('seed').textContent = hex(S.sounds[S.sel].seed);
   soundDraws.forEach((d) => d()); globalDraws.forEach((d) => d()); randDraws.forEach((d) => d());
   drawLocks(); drawKeymap();
@@ -459,12 +455,16 @@ function randomiseVoice(voice, depth, wild) {
     setValue(e.par, clamp(v, 0, e.max), { quiet: true });
   }
 }
-// voice v from a random built-in kit (its level and pan stay)
-function pickVoice(v) {
-  const k = kits[Math.floor(rnd() * kits.length)].kit;
+// a sound from a random built-in kit: one of the kit's voices of the same engine type (any of its three drums; its cymbal
+// or its hi-hat), mapped onto this sound. Its level and pan and any locked control stay. Then, if vary, randomised
+// around that by the amount
+function pickVoice(sound, vary) {
+  const def = SOUNDS[sound], v = def.engineVoice;
+  const k = kits[Math.floor(rnd() * kits.length)].kit, src = def.sources[Math.floor(rnd() * def.sources.length)];
   const keep = new Set([PAR.VOL1 + v, PAR.PAN1 + v]);
-  for (const par of voiceOwned(v)) if (!keep.has(par)) { setValue(par, k[par], { quiet: true }); S.defaults[par] = k[par]; }
+  for (const [par, x] of mapVoice(k, src, v)) if (!keep.has(par) && !S.locks.has(par)) { setValue(par, x, { quiet: true }); S.defaults[par] = x; }
   delete homes[v];
+  if (vary) { randomiseVoice(v, vary, S.rand.wild); delete homes[v]; }
 }
 const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, 0.1, false); delete homes[v]; };
 async function randChange(fn, what) {
@@ -476,12 +476,13 @@ async function randChange(fn, what) {
   detail(what);
 }
 const selVoice = () => SOUNDS[S.sel].engineVoice;
-$('rand').addEventListener('click', () => randChange(() => randomiseVoice(selVoice(), S.rand.amount / 100, S.rand.wild),
-  `${SOUNDS[S.sel].name} randomised <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
-$('from-kit').addEventListener('click', () => randChange(() => pickVoice(selVoice()), `${SOUNDS[S.sel].name} from a random built-in kit`));
+$('rand').addEventListener('click', () => randChange(() => pickVoice(S.sel, S.rand.amount / 100),
+  `${SOUNDS[S.sel].name}: a variant from the kits <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
+$('vary').addEventListener('click', () => randChange(() => randomiseVoice(selVoice(), S.rand.amount / 100, S.rand.wild),
+  `${SOUNDS[S.sel].name} varied <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
 $('alter').addEventListener('click', () => randChange(() => alterVoice(selVoice()), `${SOUNDS[S.sel].name} altered <em>10%</em>`));
-$('kit-rand').addEventListener('click', () => randChange(() => { for (let v = 0; v < 6; v++) pickVoice(v); }, 'every sound from a random built-in kit'));
-$('kit-alter').addEventListener('click', () => randChange(() => { for (let v = 0; v < 6; v++) alterVoice(v); }, 'every sound altered <em>10%</em>'));
+$('kit-rand').addEventListener('click', () => randChange(() => { for (let i = 0; i < SOUNDS.length; i++) pickVoice(i, S.rand.amount / 100); }, 'all three sounds: variants from the kits'));
+$('kit-alter').addEventListener('click', () => randChange(() => { for (const s of SOUNDS) alterVoice(s.engineVoice); }, 'every sound altered <em>10%</em>'));
 $('kit-init').addEventListener('click', () => randChange(() => {
   for (let p = 0; p < NUM_PARAMS; p++) setValue(p, INIT_VALUES[p], { quiet: true });
   S.defaults = INIT_VALUES.slice(); for (const k in homes) delete homes[k];
@@ -509,7 +510,7 @@ $('lock-none').addEventListener('click', () => { for (const e of VOICE_SCHEMAS[s
 // ---------------------------------------------------------------------------------------------------------------
 document.addEventListener('keydown', (e) => {
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.key >= '1' && e.key <= '7') select(Number(e.key) - 1);
+  if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === '[' || e.key === ']') { S.page = (S.page + (e.key === ']' ? 1 : PAGES.length - 1)) % PAGES.length; save(); buildFaders(); }
   else if (e.key === 'r' || e.key === 'R') reroll();
 });
@@ -522,6 +523,5 @@ $('start-btn').addEventListener('click', async () => {
   await startAudio();
   startMidi();
 });
-select(clamp(S.sel, 0, 6));
-chBtns.forEach((b, i) => b.setAttribute('aria-pressed', i === S.midiCh));
+select(clamp(S.sel, 0, SOUNDS.length - 1));
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots

@@ -12,9 +12,7 @@
 //   returns the note the engine is triggered with and the [parameter, value] pairs to send before the trigger
 import { pitchPars } from './schema.js';
 
-export const BASE_NOTE = 60; // C3 (Novation / Ableton naming: C3 = MIDI 60)
-export const LOW_NOTE = 36; // C1
-export const HIGH_NOTE = 84; // C5
+export const BASE_NOTE = 60; // the note the engine plays a sound at its own pitch (C3 in Novation / Ableton naming)
 export const MAX_PITCH = 12; // semitones either way at the far ends of the keyboard, at full depth
 
 // a 32-bit hash of three integers (murmur3's finaliser over a mix of them)
@@ -29,25 +27,25 @@ export function hash3(a, b, c) {
 export const unit = (seed, note, salt) => hash3(seed, note, salt) / 2147483648 - 1;
 const SALT_PITCH = 1000, SALT_FINE = 1001;
 
-// how far a key is from C3, 0..1 (C1 and C5 are 1), and which side (-1 below, 1 above, 0 on C3)
-export function keyDistance(note) {
-  const d = (note - BASE_NOTE) / (HIGH_NOTE - BASE_NOTE);
-  return { dist: Math.min(1, Math.abs(d)), side: Math.sign(d) };
+// how far a key is from its zone's base, 0..1 (each end of the zone is 1), and which side (-1 below, 1 above, 0 on it)
+export function keyDistance(note, zone) {
+  const d = note - zone.base, span = d > 0 ? zone.hi - zone.base : zone.base - zone.lo;
+  return { dist: span > 0 ? Math.min(1, Math.abs(d) / span) : 0, side: Math.sign(d) };
 }
 
 // the pitch offset of a key, in semitones: half the way it leans with the keyboard (higher keys tend higher), half its
 // own random amount either way, scaled by its distance and the depth
-export function pitchOffset(note, seed, pitch) {
-  const { dist, side } = keyDistance(note);
+export function pitchOffset(note, seed, pitch, zone) {
+  const { dist, side } = keyDistance(note, zone);
   if (!dist || !pitch) return 0;
   return MAX_PITCH * pitch * dist * (0.5 * side + 0.5 * unit(seed, note, SALT_PITCH));
 }
 
-export function morphKey({ schema, base, note, seed, amount, voice }) {
-  const { dist } = keyDistance(note);
+export function morphKey({ schema, base, note, seed, amount, voice, zone }) {
+  const { dist } = keyDistance(note, zone);
   const params = [];
   // pitch: whole semitones go on the note, the rest on fine tune (127 steps span a semitone)
-  const st = pitchOffset(note, seed, amount.pitch);
+  const st = pitchOffset(note, seed, amount.pitch, zone);
   const whole = Math.round(st), frac = st - whole;
   const { fine } = pitchPars(voice);
   if (fine !== undefined) params.push([fine, clamp(Math.round(base[fine] + frac * 127), 0, 127)]);
