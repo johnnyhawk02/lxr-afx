@@ -19,7 +19,7 @@
 //            not of the sound, so ALTER never moves them)
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
-import { OSC_WAVE_NAMES, FILTER_TYPE_NAMES, LFO_SYNC_NAMES } from '../engine/lxr.js';
+import { OSC_WAVE_NAMES, FILTER_TYPE_NAMES, LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults } from '../engine/lxr.js';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -65,9 +65,14 @@ export const seqOnPar = (voice) => SEQ_ON_BASE + voice, seqPatPar = (voice) => S
 export const TRIM_BASE = NUM_PARAMS + 36, TRIM_ZERO = 64, TRIM_STEP_DB = 0.25;
 export const trimPar = (voice) => TRIM_BASE + voice;
 export const trimDb = (v) => (v - TRIM_ZERO) * TRIM_STEP_DB;
-export const ALL_PARAMS = NUM_PARAMS + 42;
+// then each voice's extras (engine/lxr.js EXTRAS, setExtra): the merged voice's controls that its firmware voice has no
+// parameter for, and its kind. A voice uses only the ones its firmware voice lacks (extraLive)
+export const EXTRA_BASE = NUM_PARAMS + 42, NUM_EXTRAS = EXTRAS.length;
+export const extraPar = (voice, k) => EXTRA_BASE + voice * NUM_EXTRAS + k;
+export const ALL_PARAMS = EXTRA_BASE + 6 * NUM_EXTRAS;
 export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
 for (let i = 8; i < NUM_PARAMS; i++) INIT_VALUES[i - 8] = INIT_KIT[i];
+for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
 for (let v = 0; v < 6; v++) INIT_VALUES[trimPar(v)] = TRIM_ZERO;
 
@@ -157,7 +162,7 @@ function entry(text, key, voice, page, section) {
   };
 }
 
-function buildSchema(voice) {
+function firmwareSchema(voice) {
   const out = [];
   const fmWaves = [];
   for (const g of VOICE_PAGES[voice].groups) {
@@ -184,6 +189,78 @@ function buildSchema(voice) {
   // two waves on the cymbal's and hi-hat's fm: one for each mod oscillator
   if (fmWaves.length === 2) { fmWaves[0].label = 'mod1 wave'; fmWaves[1].label = 'mod2 wave'; }
   for (const e of out) if (e.display.type === 'target' && !e.display.anyVoice) e.display.voices = [voice];
+  return out;
+}
+
+// ---- the merged voice: every engine voice has the same controls, in the same order and sections. Each control is
+// its firmware voice's parameter where it has one, else one of its extras. ukey: the control's name in the merged
+// voice; firmware: which firmware controls (section:TEXT, the nth of that name) it is; extra: its extra
+const WAVES = OSC_WAVE_NAMES.map((n) => n.toLowerCase()), ONOFF = ['off', 'on'];
+export const MERGED = [
+  // [ukey, page, section, label, firmware names, extra, display of the extra]
+  ['coarse', 'tone', 'osc', 'coarse', ['osc:COARSE']],
+  ['fine', 'tone', 'osc', 'fine', ['osc:FINE']],
+  ['wave', 'tone', 'osc', 'wave', ['osc:WAVEFORM']],
+  ['pwm', 'tone', 'osc', 'pwm', ['osc:PWM']],
+  ['afreq', 'tone', 'mod a', 'a freq', ['fm:FM_FREQ', 'fm:MOD_OSC1_FREQ'], 'A_FREQ', { type: 'pm', centre: 60 }],
+  ['again', 'tone', 'mod a', 'a gain', ['fm:FM_AMOUNT', 'fm:MOD_OSC1_GAIN'], 'A_GAIN'],
+  ['awave', 'tone', 'mod a', 'a wave', ['fm:WAVEFORM'], 'A_WAVE', { type: 'menu', names: WAVES }],
+  ['amode', 'tone', 'mod a', 'a mode', ['fm:MODE'], 'A_MODE', { type: 'menu', names: ['fm', 'mix'] }],
+  ['fmenv', 'tone', 'mod a', 'fm env', [], 'FM_ENV'],
+  ['bfreq', 'tone', 'mod b', 'b freq', ['fm:MOD_OSC2_FREQ'], 'B_FREQ', { type: 'pm', centre: 60 }],
+  ['bgain', 'tone', 'mod b', 'b gain', ['fm:MOD_OSC2_GAIN'], 'B_GAIN'],
+  ['bwave', 'tone', 'mod b', 'b wave', ['fm:WAVEFORM#2'], 'B_WAVE', { type: 'menu', names: WAVES }],
+  ['ncolour', 'tone', 'noise', 'colour', ['osc:NOISE'], 'NOISE_COLOUR'],
+  ['nmix', 'tone', 'noise', 'noise', ['osc:MIX'], 'NOISE_MIX'],
+  ['attack', 'shape', 'amp', 'attack', ['amp:ATTACK']],
+  ['decay', 'shape', 'amp', 'decay', ['amp:DECAY', 'amp:DECAY_CLOSED']],
+  ['repeat', 'shape', 'amp', 'repeat', ['amp:REPEAT'], 'REPEAT'],
+  ['aslope', 'shape', 'amp', 'eg slope', ['amp:EG_SLOPE']],
+  ['pdecay', 'shape', 'pitch', 'pitch dec', ['pitch:PITCH_DECAY'], 'PITCH_DECAY'],
+  ['pslope', 'shape', 'pitch', 'pitch slope', ['pitch:EG_SLOPE'], 'PITCH_SLOPE'],
+  ['pamt', 'shape', 'pitch', 'pitch amt', ['pitch:MOD_AMOUNT'], 'PITCH_AMOUNT'],
+  ['click', 'shape', 'click', 'click', ['click:TRANSIENT_WAVE']],
+  ['clickvol', 'shape', 'click', 'click vol', ['click:TRANSIENT_VOLUME']],
+  ['clickfreq', 'shape', 'click', 'click freq', ['click:TRANSIENT_FREQ']],
+  ['rtone', 'filter', 'filter in', 'tone in', [], 'ROUTE_TONE', { type: 'menu', names: ONOFF }],
+  ['rnoise', 'filter', 'filter in', 'noise in', [], 'ROUTE_NOISE', { type: 'menu', names: ONOFF }],
+  ['rclick', 'filter', 'filter in', 'click in', [], 'ROUTE_CLICK', { type: 'menu', names: ONOFF }],
+  ['cutoff', 'filter', 'filter', 'cutoff', ['filter:FILTER_F']],
+  ['reso', 'filter', 'filter', 'reso', ['filter:FILTER_RESO']],
+  ['ftype', 'filter', 'filter', 'type', ['filter:FILTER_TYPE']],
+  ['fdrive', 'filter', 'filter', 'flt drive', ['filter:FILTER_DRIVE']],
+  ['veldest', 'mod', 'velocity', 'vel dest', ['velocity:VEL_DEST']],
+  ['velamt', 'mod', 'velocity', 'vel amt', ['velocity:VEL_AMT']],
+  ['velvol', 'mod', 'velocity', 'vel vol', ['velocity:VEL_MOD_VOL']],
+  ['lfofreq', 'mod', 'lfo', 'lfo freq', ['lfo:FREQ_LFO']],
+  ['lfosync', 'mod', 'lfo', 'lfo sync', ['lfo:SYNC_LFO']],
+  ['lfoamt', 'mod', 'lfo', 'lfo amt', ['lfo:MOD_LFO']],
+  ['lfowave', 'mod', 'lfo', 'lfo wave', ['lfo:WAVE_LFO']],
+  ['lforetrig', 'mod', 'lfo', 'retrigger', ['lfo:RETRIGGER_LFO']],
+  ['lfooffset', 'mod', 'lfo', 'lfo offset', ['lfo:OFFSET_LFO']],
+  ['lfodest', 'mod', 'lfo', 'lfo dest', ['lfo:TARGET_LFO']],
+  ['level', 'mix', 'mix', 'level', ['mix:VOLUME']],
+  ['pan', 'mix', 'mix', 'pan', ['mix:PAN']],
+  ['rate', 'mix', 'mix', 'sample rate', ['mix:SAMPLE_RATE']],
+  ['drive', 'mix', 'mix', 'drive', ['mix:DRIVE']],
+  ['kind', 'mix', 'kind', 'kind', [], 'KIND', { type: 'menu', names: KINDS }], // (not shown: what the sound's firmware voice was)
+];
+// the extras a voice uses: the merged controls its firmware voice has no parameter for
+const fwName = (e, n) => `${e.section}:${e.text}${n > 1 ? '#' + n : ''}`;
+function buildSchema(voice) {
+  const fw = firmwareSchema(voice), byName = new Map(), seen = {};
+  for (const e of fw) { const k = e.section + ':' + e.text; seen[k] = (seen[k] || 0) + 1; byName.set(fwName(e, seen[k]), e); }
+  const out = [];
+  for (const [ukey, page, section, label, names, extra, disp] of MERGED) {
+    const f = names.map((n) => byName.get(n)).find(Boolean);
+    if (f) { out.push({ ...f, ukey, page, section, label }); continue; }
+    const k = EX[extra], par = extraPar(voice, k), menu = disp && disp.type === 'menu';
+    out.push({ key: extra + (voice + 1), par, ukey, label, text: extra, page, section, min: 0, max: menu ? disp.names.length - 1 : 127,
+      def: INIT_VALUES[par], display: disp || { type: 'num' }, morph: null, weight: 0, rand: 'still', extra: k, ...(ukey === 'kind' ? { hidden: true } : {}) });
+  }
+  // a firmware control with no place in the merged voice (the hi-hat's open decay) stays, unseen, so a key keeps it
+  const used = new Set(out.map((e) => e.par));
+  for (const e of fw) if (!used.has(e.par)) out.push({ ...e, ukey: e.text.toLowerCase(), hidden: true });
   SEND_FX.forEach((name, k) => out.push({ key: 'SEND_' + name.toUpperCase() + (voice + 1), par: sendPar(voice, k), label: name, text: 'SEND_' + name.toUpperCase(),
     page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'mix' }));
   // the sequencer (the editor draws it as a strip of steps; the randomisers leave it to NEW SOUND and its RANDOM)
@@ -199,6 +276,10 @@ function buildSchema(voice) {
 
 // the schema of each engine voice (index 0..5); a sound's schema is its engine voice's
 export const VOICE_SCHEMAS = [0, 1, 2, 3, 4, 5].map(buildSchema);
+// the extras a voice uses (the instrument passes only these to the engine: the others shadow a firmware parameter)
+export const EXTRA_LIVE = new Set(VOICE_SCHEMAS.flat().filter((e) => e.extra !== undefined).map((e) => e.par));
+// a voice's control by its merged name
+export const ukeyPar = (voice, ukey) => VOICE_SCHEMAS[voice].find((e) => e.ukey === ukey)?.par;
 export const schemaOf = (sound) => VOICE_SCHEMAS[SOUNDS[sound].engineVoice];
 // the parameters an engine voice owns (including the mixer's routing and LFO voice, which the editor doesn't show)
 export function voiceOwned(voice) {
@@ -239,20 +320,25 @@ export function parseSnd(bytes) {
   return { name, kit };
 }
 
-// one voice's sound taken from a kit voice of the same engine type (another drum, or the hi-hat for the metal): its
-// values mapped control by control (by front-panel name, in order), and its modulation targets moved to the same
-// controls of the new voice. Returns [[parameter, value], ...] for dst; controls the source doesn't have are left out
-const ALIAS = { DECAY_OPEN: 'DECAY' }; // the open hat's decay is the cymbal's decay; the closed one has no match
+// one voice's sound taken from a kit voice (any voice: the merged voice has every control): its values mapped control by
+// control (by merged name), its modulation targets moved to the same controls of the new voice, and its kind. kit: a
+// kit's values (a .SND kit has no extras: a control its voice lacks takes the voice's own setting as it comes, a part
+// switched off). Returns [[parameter, value], ...] for dst; the sends, the sequencer and the trim are left out
 export function mapVoice(kit, src, dst) {
-  const key = (sc) => { const seen = {}; return sc.map((e) => { const t = ALIAS[e.text] || e.text; seen[t] = (seen[t] || 0) + 1; return t + '#' + seen[t]; }); };
-  const S = VOICE_SCHEMAS[src], D = VOICE_SCHEMAS[dst], ks = key(S), kd = key(D);
+  const S = VOICE_SCHEMAS[src], D = VOICE_SCHEMAS[dst];
+  const val = (p) => (p < kit.length ? kit[p] : INIT_VALUES[p]);
   const parMap = new Map(); // source parameter -> destination parameter
-  S.forEach((e, i) => { const j = kd.indexOf(ks[i]); if (j >= 0 && !(e.text === 'DECAY_CLOSED')) parMap.set(e.par, D[j].par); });
+  for (const e of S) {
+    if (e.hidden && e.ukey !== 'kind') continue;
+    if (e.par >= NUM_PARAMS && e.extra === undefined) continue; // (sends, sequencer, trim)
+    const d = D.find((x) => x.ukey === e.ukey);
+    if (d) parMap.set(e.par, d.par);
+  }
   const target = (i) => { // a modulation target index from the source voice's to the destination's
     if (!i) return 0;
     const p = MOD_TARGETS[i] && MOD_TARGETS[i][1], q = parMap.get(p);
-    if (voiceOfTarget(i) !== src) return i; // aimed at another voice: as it is
-    if (q === undefined) return 0;
+    if (voiceOfTarget(i) !== src || src === dst) return i; // aimed at another voice, or onto its own voice: as it is
+    if (q === undefined || q >= NUM_PARAMS) return 0; // (an extra can't be modulated yet)
     const [a, b] = MOD_TARGET_VOICE_RANGES[dst];
     for (let k = a; k <= b; k++) if (MOD_TARGETS[k][1] === q) return k;
     return 0;
@@ -260,9 +346,10 @@ export function mapVoice(kit, src, dst) {
   const out = [];
   for (const [p, q] of parMap) {
     const e = S.find((x) => x.par === p);
-    if (kit[p] === undefined) continue; // a kit file has no sends
-    out.push([q, e.display.type === 'target' ? target(kit[p]) : kit[p]]);
+    // the hi-hat's decay: its open one (as the cymbal's decay; the closed one is a different sound)
+    const v = src === 5 && dst !== 5 && e.ukey === 'decay' ? val(PAR.VELOD6_OPEN) : val(p);
+    out.push([q, e.display.type === 'target' ? target(v) : v]);
   }
-  out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(kit[PAR.TARGET_LFO1 + src]) === src ? dst + 1 : kit[PAR.VOICE_LFO1 + src]]);
+  out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(val(PAR.TARGET_LFO1 + src)) === src ? dst + 1 : val(PAR.VOICE_LFO1 + src)]);
   return out;
 }

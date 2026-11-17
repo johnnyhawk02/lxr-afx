@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwlb2f6e">
+<link rel="stylesheet" href="css/lcd.css?v=mwlccuu3">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -124,7 +124,7 @@
     </div>
   </section>
 
-  <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span></nav>
+  <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span><button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button></nav>
 
 
     <section class="editor">
@@ -133,11 +133,11 @@
       <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
         <span class="dim" id="zones"></span></footer>
     </section>
-  </div>
-    <aside class="fxside" aria-label="Effects">
+    <aside class="fxside" id="fxside" aria-label="Effects" hidden>
       <h2>SEND FX <span class="dim">EACH KEY'S ECHO + REVERB</span></h2>
       <div id="fxglobal"></div>
     </aside>
+  </div>
   </div>
 
   <!-- the phone view (a phone held upright, or ?phone): a pad for each of the 25 keys, and the few controls a hand needs -->
@@ -182,6 +182,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwlb2f6e"></script>
+<script type="module" src="app/main.js?v=mwlccuu3"></script>
 </body>
 </html>

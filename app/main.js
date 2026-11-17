@@ -1,14 +1,14 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlb2f6e';
-import { presetName } from './names.js?v=mwlb2f6e';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlb2f6e';
-import { breed, isDud } from '../sound/breed.js?v=mwlb2f6e';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlb2f6e';
-import { KIT_FILES } from '../sound/kits.js?v=mwlb2f6e';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlb2f6e';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlb2f6e';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlccuu3';
+import { presetName } from './names.js?v=mwlccuu3';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlccuu3';
+import { breed, isDud } from '../sound/breed.js?v=mwlccuu3';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlccuu3';
+import { KIT_FILES } from '../sound/kits.js?v=mwlccuu3';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlccuu3';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlccuu3';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -82,7 +82,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlb2f6e', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlccuu3', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -270,14 +270,17 @@ async function startMidi() {
 // a target: { t: 'par', label: [labels to try, in order] } | { t: 'global', k } | { t: 'sound', k } | { t: 'zlevel', s }
 const CC_DEFAULT = {
   16: { t: 'par', label: ['cutoff'], name: 'filter freq' }, 82: { t: 'par', label: ['reso'], name: 'resonance' },
-  114: { t: 'par', label: ['drive'], name: 'overdrive' }, 85: { t: 'par', label: ['pitch amt', 'mod2 gain'], name: 'mod env depth' },
+  114: { t: 'par', label: ['drive'], name: 'overdrive' }, 85: { t: 'par', label: ['pitch amt'], name: 'mod env depth' },
   90: { t: 'par', label: ['attack'], name: 'amp attack' }, 91: { t: 'par', label: ['decay'], name: 'amp decay' },
-  103: { t: 'par', label: ['pitch dec', 'mod1 freq'], name: 'mod env decay' }, 94: { t: 'par', label: ['fm amt', 'mod1 gain'], name: 'distortion' },
+  103: { t: 'par', label: ['pitch dec'], name: 'mod env decay' }, 94: { t: 'par', label: ['a gain'], name: 'distortion' },
   27: { t: 'par', label: ['coarse'], name: 'osc 1 coarse' }, 26: { t: 'par', label: ['fine'], name: 'osc 1 fine' },
   18: { t: 'par', label: ['echo'], name: 'lfo 1 speed' }, 5: { t: 'par', label: ['reverb'], name: 'portamento' },
   20: { t: 'zlevel', s: 0, name: 'osc 1 level' }, 21: { t: 'zlevel', s: 1, name: 'osc 2 level' }, 22: { t: 'zlevel', s: 2, name: 'sub osc level' },
 };
 const ccMap = () => S.ccMap || CC_DEFAULT;
+// the controls' names before the merged voice, for knobs LEARN mapped then
+const OLD_LABELS = { 'fm amt': 'a gain', 'fm freq': 'a freq', 'fm wave': 'a wave', 'fm mode': 'a mode', 'mod1 freq': 'a freq', 'mod2 freq': 'b freq',
+  'mod1 gain': 'a gain', 'mod2 gain': 'b gain', 'mod1 wave': 'a wave', 'mod2 wave': 'b wave', 'noise mix': 'noise' };
 function ccTargetName(t) {
   if (t.t === 'par') return t.label[0];
   if (t.t === 'global') return 'morph ' + t.k + ' (all)';
@@ -308,7 +311,7 @@ function onCC(cc, val) {
   else if (t.t === 'zlevel') { setValue(PAR.VOL1 + SOUNDS[t.s].engineVoice, val); text = `${ccTargetName(t)} ${val}`; }
   else {
     const sc = VOICE_SCHEMAS[SOUNDS[S.sel].engineVoice];
-    const e = t.label.map((l) => sc.find((x) => x.label === l)).find(Boolean);
+    const e = t.label.map((l) => sc.find((x) => x.label === (OLD_LABELS[l] || l))).find(Boolean);
     if (!e) { showLastText(`CC${cc} · ${SOUNDS[S.sel].name} has no ${t.label[0]}`); return; }
     const v = Math.round(val / 127 * e.max);
     editValue(e.par, v);
@@ -460,9 +463,16 @@ const soundBtns = SOUNDS.map((s, i) => {
 
 function select(i, view) {
   S.sel = i; if (view) S.view = view; save();
-  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === i));
-  buildFaders(); drawSide(); drawEditKey();
+  buildFaders(); drawSide(); drawEditKey(); drawView();
 }
+// the tab showing: the engine's knobs ('synth') or FX + MASTER ('fx', F)
+function drawView() {
+  const fx = S.view === 'fx';
+  $('fxside').hidden = !fx; document.querySelector('.editor').hidden = fx;
+  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', !fx && k === S.sel));
+  $('fx-tab').setAttribute('aria-selected', fx);
+}
+$('fx-tab').addEventListener('click', () => { S.view = S.view === 'fx' ? 'synth' : 'fx'; save(); drawView(); });
 function drawSide() {
   const s = SOUNDS[S.sel];
   $('rand-name').textContent = s.name;
@@ -500,15 +510,17 @@ showDice(5);
 for (const d of dice) d.addEventListener('animationend', () => d.classList.remove('roll'));
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
-const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo']]; // (no SEQ: Johnny, 2026-11-17)
-const GRID_COLS = 11;
+// the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
+const ROWS = [['osc', 'mod a', 'mod b', 'noise'], ['amp', 'pitch', 'click'], ['filter in', 'filter', 'velocity'], ['lfo', 'mix']];
+const GRID_COLS = 14;
+// a part that's silent now (its level at zero): its section is greyed, its knobs still turn
+const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
 function buildFaders() {
-  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === S.sel));
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
   const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
-  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl));
+  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl && !e.hidden));
   // one grid for the whole panel: four rows, and columns of equal cells, one knob to a cell (a menu takes two), so
   // every knob lines up with the knobs above and below it. Each row's sections follow on from cell 1; a row that
   // doesn't fill the width ends in an empty filler (so the row rules run the whole way). The last two columns are
@@ -525,6 +537,8 @@ function buildFaders() {
       el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
       const row = el.querySelector('.row');
       for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
+      const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
+      if (lv) faderDraws.push(() => el.classList.toggle('off', !valueNow(lv.par)));
     }
     if (col <= GRID_COLS) sect(GRID_COLS + 1 - col, ' fill');
   });
@@ -646,11 +660,16 @@ const FX_PAGE = [
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
 ];
 function buildFx() {
-  const box = $('fxglobal'); box.innerHTML = '';
+  // the FX + MASTER tab: three columns, the send effects, the master's distortion, then its compressor and output
+  const top = $('fxglobal'); top.innerHTML = '';
+  const cols = [0, 1, 2].map(() => { const c = document.createElement('div'); c.className = 'fxcol'; top.append(c); return c; });
+  let box = cols[0];
+  box.innerHTML = '<h2>SEND FX <span class="dim">EACH KEY\'S ECHO + REVERB</span></h2>';
   for (const item of FX_PAGE) {
     if (item === 'DIRT') { box.append(...buildDirt()); continue; }
-    if (typeof item === 'string') { const h = document.createElement('h2'); h.innerHTML = `${item} <span class="dim">EVERYTHING GOES THROUGH</span>`; box.append(h); continue; }
+    if (typeof item === 'string') { box = cols[1]; const h = document.createElement('h2'); h.innerHTML = `${item} <span class="dim">EVERYTHING GOES THROUGH</span>`; box.append(h); continue; }
     const [id, name, knobs] = item;
+    if (name === 'COMPRESSOR') { box = cols[2]; const h = document.createElement('h2'); h.innerHTML = '&nbsp;'; box.append(h); }
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
     for (const [k, max, show, label, set, name] of knobs)
@@ -1322,6 +1341,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'k' || e.key === 'K') randKey();
   else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
+  else if (e.key === 'f' || e.key === 'F') $('fx-tab').click();
 });
 
 // ---------------------------------------------------------------------------------------------------------------

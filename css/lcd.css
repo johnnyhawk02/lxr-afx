@@ -571,3 +571,26 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .menupanel.settings .lowkey #ret { grid-column: 2 / 5; font-size: 19px; }
 .menupanel.settings .note { margin: 4px 0 6px; font-size: 14px; letter-spacing: 1px; line-height: 1.15; }
 .menupanel.settings .randrow .note { grid-column: 1 / -1; margin: 0; }
+
+/* ---- the merged voice: one engine's knobs fill the width; FX + MASTER is a tab of its own (Johnny, 2026-11-17) ---- */
+.main { grid-template-columns: 1fr; }
+.left { grid-template-rows: auto auto 1fr; }
+.left > .fxside { grid-row: 3; border-left: 0; padding: 8px 12px; border: var(--rule); min-height: 0; overflow: hidden; }
+.left > .fxside[hidden] { display: none; }
+.left > .editor[hidden] { display: none; }
+.sounds .fxtab { position: absolute; top: 0; right: 0; height: 38px; min-height: 0; padding: 2px 10px; gap: 6px; font-size: 20px; }
+.sounds .fxtab[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+@media (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
+.sounds .fxtab kbd { margin-left: 6px; }
+/* the effects on the tab: send FX in the first column, the master's distortion in the second, compressor and output in
+   the third, each section on the knob grid */
+#fxglobal { display: grid; grid-template-columns: repeat(3, auto); column-gap: 0; align-items: start; justify-content: start; }
+.fxcol { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; }
+.fxcol + .fxcol { border-left: var(--rule); }
+.fxcol:first-child { padding-left: 4px; }
+.fxside > h2 { display: none; }
+.left > .fxside { --kw: 72px; --ks: 50px; }
+.left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
+@media (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
+.faders .sect.off > .row { opacity: .42; }
+.faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */

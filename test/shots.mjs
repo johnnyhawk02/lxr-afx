@@ -150,7 +150,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.click('#undo'); await p.waitForTimeout(400);
     if (JSON.stringify((await ke())[1]['58']) !== JSON.stringify(before)) { errors++; console.log('paste: undo did not restore'); }
   }
-  // FX: the right column holds this key's sends and the three effects
+  // FX: the key's sends sit with its knobs; the effects and the master on the FX + MASTER tab (F)
+  await p.click('#fx-tab'); await p.waitForTimeout(150);
   { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
     const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3')?.textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
     if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
@@ -163,17 +164,20 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.waitForTimeout(600);
     { const d = await dirt(), off = await p.$$eval('.sect.dirt.off', (v) => v.length);
       if (!d || d.on !== 1 || d.clip !== 1 || d.target !== 2 || off !== 1) { errors++; console.log('distortion switches:', d, off); } }
-    if (w === 1440 && h === 790) await p.screenshot({ path: `${out}/dirt-on-${w}x${h}.png`, clip: { x: 1090, y: 290, width: 340, height: 300 } });
+    if (w === 1440 && h === 790) await p.screenshot({ path: `${out}/dirt-on-${w}x${h}.png` });
+    if (h === 790 || h === 700) await p.screenshot({ path: `${out}/fx-tab-${w}x${h}.png` });
     await p.click('.sect.dirt h3 .hdb'); await p.click('.sect.dirt .vsw .swb >> nth=2'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1');
     await p.waitForTimeout(600);
   }
-  // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 11 columns, and every
-  // control in the right column on its 6
+  // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 14 columns, and the FX +
+  // MASTER tab's controls on its three columns of 5, 6 and 6
+  const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
+  { const right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
+    if (right > 17) { errors++; console.log(`${w}x${h}: the FX tab on ${right} columns (17 allowed)`); } }
   for (const i of [0, 1, 2]) {
     await p.click(`#sounds .snd >> nth=${i}`); await p.waitForTimeout(100);
-    const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
-    const left = await cols('#faders .sect:not(.sends) .vf .knob'), right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
-    if (left > 11 || right > 6) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (11 allowed), right column on ${right} (6 allowed)`); }
+    const left = await cols('#faders .sect:not(.sends) .vf .knob');
+    if (left > 14) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (14 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
   // legato, last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 goes back
@@ -374,6 +378,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
     for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob', '#faders select']) {
+      if (sel === '.fxside .knob') await p.click('#fx-tab'); else if (await p.evaluate(() => !document.getElementById('fxside').hidden)) await p.click('#fx-tab');
       const el = await p.$(sel); if (!el) { errors++; console.log('wheel: no', sel); continue; }
       const box = await el.boundingBox(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       for (const dy of [-240, 360]) { await p.mouse.wheel(0, dy); await p.waitForTimeout(30); if (await read() !== before) n++; }

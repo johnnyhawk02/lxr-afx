@@ -632,17 +632,39 @@ export const MODULATABLE = new Set([
 //
 // kind keeps what each firmware voice does differently in its last steps, so a kit sound
 // plays sample for sample as it did: 'drum' (amp envelope interpolated over the block, then
-// velocity, smoothed drive and mixer level), 'metal' (one gain per block, then the drive) or
-// 'snare' (noise filtered alone and crossfaded with the tone in float, then one gain). It
-// also keeps the firmware's small trigger differences (drum: filter reset, sine start).
+// velocity, smoothed drive and mixer level), 'cym' and 'hat' (one gain per block, then the
+// drive; the hat's tone at half level) or 'snare' (noise filtered alone and crossfaded with
+// the tone in float, then one gain). It also keeps the firmware's small trigger differences
+// (drum: filter reset, sine start). A part is there if the kind has it or its level is up.
+//
+// Each voice's controls are the firmware's parameters it has, plus EXTRAS for the parts its
+// firmware voice lacks (setExtra): every voice can make every part.
 // ---------------------------------------------------------------------------------------
-export const VOICE_KINDS = ['drum', 'drum', 'drum', 'snare', 'metal', 'metal'];
+export const KINDS = ['drum', 'snare', 'cym', 'hat'];
+export const VOICE_KINDS = ['drum', 'drum', 'drum', 'snare', 'cym', 'hat'];
+export const EXTRAS = ['KIND', 'PITCH_DECAY', 'PITCH_SLOPE', 'PITCH_AMOUNT', 'A_FREQ', 'A_GAIN', 'A_WAVE', 'A_MODE', 'B_FREQ', 'B_GAIN',
+  'B_WAVE', 'NOISE_COLOUR', 'NOISE_MIX', 'FM_ENV', 'ROUTE_TONE', 'ROUTE_NOISE', 'ROUTE_CLICK', 'REPEAT'];
+export const EX = Object.fromEntries(EXTRAS.map((n, i) => [n, i]));
+// what a voice of each kind has (its firmware voice's parts) and its extras' settings as it comes
+const HAS = { drum: { A: 1, B: 0, N: 0, P: 1 }, snare: { A: 0, B: 0, N: 1, P: 1 }, cym: { A: 1, B: 1, N: 0, P: 0 }, hat: { A: 1, B: 1, N: 0, P: 0 } };
+export function extraDefaults(kind) {
+  const d = new Uint8Array(EXTRAS.length);
+  d[EX.KIND] = KINDS.indexOf(kind);
+  d[EX.PITCH_DECAY] = 20; d[EX.PITCH_SLOPE] = 0; d[EX.PITCH_AMOUNT] = 0;
+  d[EX.A_FREQ] = 60; d[EX.A_GAIN] = 0; d[EX.A_WAVE] = 0; d[EX.A_MODE] = 0;
+  d[EX.B_FREQ] = 60; d[EX.B_GAIN] = 0; d[EX.B_WAVE] = 0;
+  d[EX.NOISE_COLOUR] = 127; d[EX.NOISE_MIX] = 0;
+  d[EX.FM_ENV] = kind === 'drum' || kind === 'snare' ? 127 : 0;
+  d[EX.ROUTE_TONE] = kind === 'snare' ? 0 : 1; d[EX.ROUTE_NOISE] = 1; d[EX.ROUTE_CLICK] = kind === 'drum' ? 1 : 0;
+  d[EX.REPEAT] = 0;
+  return d;
+}
 
 function makeVoice(kind, i) {
   const v = {
     kind, osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), noiseOsc: makeOsc(),
-    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, routeT: 1, routeN: 1, routeC: 1,
-    fmModAmount: f(0.5), fmModAmount2: f(0.5), mixOscs: 0, mix: 0, carrierGain: 1,
+    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, extra: extraDefaults(kind), routeT: 1, routeN: 1, routeC: 1,
+    fmModAmount: 0, fmModAmount2: 0, mixOscs: 0, mix: 0, carrierGain: 1,
     vol: f(0.8), velo: 0, pan: 0, triggeredPanL: 0, triggeredPanR: 0,
     oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
     transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
@@ -655,27 +677,37 @@ function makeVoice(kind, i) {
   for (const o of [v.modOsc, v.modOsc2, v.noiseOsc]) Object.assign(o, { freq: 440, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
   v.noiseOsc.waveform = NOISE;
   if (kind === 'drum') { // initDrumVoice()
-    Object.assign(v, { srcA: 1, pitchEg: 1, fmEnv: 1, mixOscs: 1, filterType: 1 });
+    Object.assign(v, { srcA: 1, pitchEg: 1, fmEnv: 1, mixOscs: 1, filterType: 1, fmModAmount: f(0.5) });
     v.faderFilter.r = 0.01;
     v.mixerVolFilter.r = 0.01;
     v.distortion.driveFilter.r = 0.01;
     Object.assign(v.modOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, modNodeValue: 1, waveform: TRI + i, fmMod: 0, midiFreq: 70 << 8 | 64 });
   } else if (kind === 'snare') { // Snare_init()
-    Object.assign(v, { srcN: 1, pitchEg: 1, routeT: 0, routeC: 0 });
+    Object.assign(v, { srcN: 1, pitchEg: 1, fmEnv: 1, routeT: 0, routeC: 0 });
     v.faderFilter.r = 0.1;
     Object.assign(v.noiseOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, modNodeValue: 1 });
   } else { // Cymbal_init(), HiHat_init(): an FM oscillator driven by two mod oscillators
-    Object.assign(v, { srcA: 1, srcB: 1, routeC: 0, carrierGain: i === 5 ? f(0.5) : 1, hatDecays: i === 5 ? 1 : 0 });
+    Object.assign(v, { srcA: 1, srcB: 1, routeC: 0, carrierGain: kind === 'hat' ? f(0.5) : 1, egPitchModAmount: 0,
+      fmModAmount: f(0.5), fmModAmount2: f(0.5) });
     v.faderFilter.r = 0.1;
     Object.assign(v.modOsc, { freq: 440, waveform: SINE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.modOsc2, { freq: 440, waveform: NOISE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 1, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
   }
+  v.hatDecays = i === 5 ? 1 : 0; // the hi-hat's voice: its decay is the closed or the open one, by trigger
   slopeEg2_init(v.oscVolEg);
   SVF_init(v.filter);
   return v;
+}
+// which parts a voice makes now: the ones its kind has, and any other whose level is up
+function voiceParts(v) {
+  const h = HAS[v.kind];
+  v.srcA = h.A || v.fmModAmount > 0 ? 1 : 0;
+  v.srcB = h.B || v.fmModAmount2 > 0 ? 1 : 0;
+  v.srcN = h.N || v.mix > 0 ? 1 : 0;
+  v.pitchEg = h.P || v.egPitchModAmount > 0 ? 1 : 0;
 }
 function updatePan(v) {
   v.triggeredPanL = f(Math.sqrt(f((127 - v.pan) / 127)));
@@ -1265,6 +1297,36 @@ export class LxrEngine {
     }
   }
 
+  /**
+   * An extra of a voice (not in the firmware): one of EXTRAS, value 0..127. The parts its firmware voice lacks (a
+   * pitch envelope on the metal, FM on the snare, noise on the drum, ...), its filter routing, and its kind.
+   */
+  setExtra(n, k, value) {
+    const v = this.voices[n], flt = f(value / 127);
+    v.extra[k] = value;
+    switch (k) {
+      case EX.KIND: v.kind = KINDS[value] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1; break;
+      case EX.PITCH_DECAY: v.oscPitchEg.decay = decayEg_calcTime(value); break;
+      case EX.PITCH_SLOPE: decayEg_setSlope(v.oscPitchEg, value); break;
+      case EX.PITCH_AMOUNT: v.egPitchModAmount = f(f(flt * flt) * 32); break;
+      case EX.A_FREQ: setCoarse(v.modOsc, value); break;
+      case EX.A_GAIN: v.fmModAmount = flt; break;
+      case EX.A_WAVE: v.modOsc.waveform = value; break;
+      case EX.A_MODE: v.mixOscs = value ? 1 : 0; break;
+      case EX.B_FREQ: setCoarse(v.modOsc2, value); break;
+      case EX.B_GAIN: v.fmModAmount2 = flt; break;
+      case EX.B_WAVE: v.modOsc2.waveform = value; break;
+      case EX.NOISE_COLOUR: v.noiseOsc.freq = f(flt * 22000); break;
+      case EX.NOISE_MIX: v.mix = flt; break;
+      case EX.FM_ENV: v.fmEnv = flt; break;
+      case EX.ROUTE_TONE: v.routeT = value ? 1 : 0; break;
+      case EX.ROUTE_NOISE: v.routeN = value ? 1 : 0; break;
+      case EX.ROUTE_CLICK: v.routeC = value ? 1 : 0; break;
+      case EX.REPEAT: v.oscVolEg.repeat = value; break;
+      default: break;
+    }
+  }
+
   /** a parameter edit (front panel knob or MIDI CC): parameter number and value 0..127 */
   setParam(par, value) {
     this.activeParameters[par] = value;
@@ -1347,13 +1409,17 @@ export class LxrEngine {
 
   // ----- per-block control rate (calc*Async) -----
   _async(v) {
+    voiceParts(v);
     let egPitch = 0;
     if (v.pitchEg) { egPitch = decayEg_calc(v.oscPitchEg); v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount)); }
     if (v.transGen.waveform === 0) {
       const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
       v.osc.pitchMod = f((v.pitchEg ? v.osc.pitchMod : 1) + f(snap * v.transGen.volume));
     }
-    if (v.fmEnv) v.osc.fmMod = f(v.fmModAmount * egPitch);
+    // the FM depth: full (fmEnv 0, the metal's), following mod A's gain and the pitch envelope (1, the drum's), or between
+    if (v.fmEnv === 1) v.osc.fmMod = f(v.fmModAmount * egPitch);
+    else if (v.fmEnv > 0) v.osc.fmMod = f(f(1 - v.fmEnv) + f(v.fmEnv * f(v.fmModAmount * egPitch)));
+    else if (v.srcA || v.srcB) v.osc.fmMod = 1;
     if (v.kind === 'drum') {
       const eg = v.oscVolEg;
       if (eg.attack === 1 && (eg.state === EG_A || eg.state === EG_REPEAT)) {
@@ -1381,7 +1447,7 @@ export class LxrEngine {
       if (v.srcA) for (let i = 0; i < size; i++) A[i] = qadd16(A[i], B[i]);
       else A.set(B);
     }
-    const snare = v.kind === 'snare';
+    const snare = v.kind === 'snare' && !v.routeT && v.routeN && !v.routeC && v.srcN;
     if (v.srcN) calcNoiseBlock(v.noiseOsc, N, size, snare ? f(0.9) : f(f(0.9) * v.mix), rng);
     const mixA = v.mixOscs && v.srcA;
     let g = mixA ? f(1 - v.fmModAmount) : v.carrierGain;
@@ -1392,7 +1458,7 @@ export class LxrEngine {
     } else if (v.srcA || v.srcB) calcNextOscSampleFmBlock(v.osc, A, buf, size, g, v.pwm, rng);
     else calcNextOscSampleBlock(v.osc, buf, size, g, v.pwm, rng);
     transient_calcBlock(v.transGen, C, size);
-    if (snare) { this._snareFinish(n, v, buf); return; }
+    if (snare) { this._snareFinish(n, v, buf); return; } // (only while it's routed like the firmware's snare)
     // the filter, on the parts routed to it; the others are added after it
     const T = this._bT, toFilter = v.routeT || v.routeC || (v.srcN && v.routeN);
     if (!v.routeT) { T.set(buf); buf.fill(0); }

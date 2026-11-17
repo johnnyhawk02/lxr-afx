@@ -5,7 +5,7 @@
 import { LxrEngine, BLOCK } from '../engine/lxr.js';
 import { LxrEngine as RefEngine } from './ref/lxr-ref.js';
 import { PAR } from '../engine/lxr-tables.js';
-import { parseSnd } from '../sound/schema.js';
+import { parseSnd, mapVoice, INIT_VALUES, EXTRA_BASE, EXTRA_LIVE, NUM_EXTRAS, SOUNDS, voiceOwned, NUM_PARAMS } from '../sound/schema.js';
 import { KIT_FILES } from '../sound/kits.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
@@ -57,5 +57,24 @@ for (let r = 0; r < R; r++) {
   if (!d) rsame++;
 }
 console.log(`random kits: ${rsame} of ${R} renders identical`);
+// a kit sound dealt onto its own voice through the merged controls (mapVoice: firmware parameters and the voice's
+// extras) plays exactly as the kit's voice itself
+let dsame = 0, dn = 0;
+const apply = (e, par, v) => { if (par >= EXTRA_BASE) { if (EXTRA_LIVE.has(par)) e.setExtra(Math.floor((par - EXTRA_BASE) / NUM_EXTRAS), (par - EXTRA_BASE) % NUM_EXTRAS, v); } else e.setParam(par, v); };
+for (const { file, kit } of kits.slice(0, 60)) for (const def of SOUNDS) {
+  const v = def.engineVoice, a = new LxrEngine({ seed: 3 }), b = new LxrEngine({ seed: 3 });
+  a.loadKit(kit); b.loadKit(kit); // (the other voices as the kit has them: their LFOs may reach this one)
+  // a: the voice's own parameters sent again, as the page sends a key's sound (a kit load can leave one as a stray NRPN
+  // put it, the firmware's way); b: the same sound through the merged controls
+  for (const p of voiceOwned(v)) if (p < NUM_PARAMS) a.setParam(p, kit[p]);
+  for (let p = EXTRA_BASE; p < INIT_VALUES.length; p++) apply(b, p, INIT_VALUES[p]);
+  for (const [p, x] of mapVoice(kit, v, v)) apply(b, p, x);
+  a.trigger(v, 100, 60); b.trigger(v, 100, 60);
+  let same = true;
+  for (let k = 0; k < 300 && same; k++) { const oa = a.renderBlock(v)[v], ob = b.renderBlock(v)[v]; for (let i = 0; i < BLOCK; i++) if (oa[i] !== ob[i]) { same = false; break; } }
+  dn++; if (same) dsame++;
+  ok(same, `${file} ${def.name}: dealt through the merged controls, it plays differently`);
+}
+console.log(`kit sounds dealt onto their own voice: ${dsame} of ${dn} identical`);
 console.log(fails ? `${fails} of ${checks} checks FAILED` : `all ${checks} checks passed`);
 process.exit(fails ? 1 : 0);

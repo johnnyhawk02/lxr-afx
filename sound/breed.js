@@ -1,6 +1,6 @@
 // BREED: a new sound made from two kit sounds of the same engine, the way a breeding synth crosses two parents.
-// The child takes each section whole from one parent or the other (oscillator with its pitch envelope, FM, amp
-// envelope, click, filter, LFO with velocity, and the mix settings), so what makes each part work stays together,
+// The child takes each section whole from one parent or the other (oscillator with its pitch envelope and noise,
+// FM, amp envelope, click, filter, LFO with velocity, and the mix settings), so what makes each part work stays together,
 // and it always takes at least one section from each parent. Then every continuous control is nudged a little
 // inside its drum-safe range. Pure: no DOM, no audio, no Math.random (the chance comes in as rnd).
 //
@@ -11,9 +11,11 @@
 //     nudge   how far a continuous control may move, as a fraction of its drum-safe range (0.06 as it comes)
 //   returns the child's values, [[parameter, value], ...], and from: each section's parent ('a' or 'b')
 
-// the sections a child takes whole, by the schema's section names. A parameter the schema doesn't show (the LFO's
+// the sections a child takes whole, by the schema's section names. A parameter the schema doesn't list (the LFO's
 // voice) goes with the LFO
-export const GENES = [['osc', 'pitch'], ['fm'], ['amp'], ['click'], ['filter'], ['lfo', 'velocity'], ['mix']];
+// (the merged voice's sections: mod A and mod B are one gene, the FM; the noise goes with the tone; the filter with
+// what goes into it; the kind with the amp, whose last steps it sets)
+export const GENES = [['osc', 'pitch', 'noise'], ['mod a', 'mod b'], ['amp', 'kind'], ['click'], ['filter', 'filter in'], ['lfo', 'velocity'], ['mix']];
 export const BREED_NUDGE = 0.06;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -21,7 +23,7 @@ const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 export function breed({ schema, a, b, rnd, nudge = BREED_NUDGE }) {
   const sectionOf = new Map(schema.map((e) => [e.par, e.section]));
   const geneOf = (par) => { const s = sectionOf.get(par) || 'lfo'; const i = GENES.findIndex((g) => g.includes(s)); return i < 0 ? GENES.length - 1 : i; };
-  // the genes this engine has (the snare has no FM, the metal no pitch envelope)
+  // the genes the parents have
   const have = [...new Set([...a, ...b].map(([p]) => geneOf(p)))].sort((x, y) => x - y);
   // each gene from a or b at even odds, but never all from one parent
   let pick;
