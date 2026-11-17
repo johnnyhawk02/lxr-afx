@@ -426,7 +426,7 @@ function setKnobGeo() {
   knobGeo.computeBoundingBox();
 }
 function build() {
-  scene = new THREE.Scene(); scene.background = new THREE.Color('#141516');
+  scene = new THREE.Scene(); scene.background = new THREE.Color('#000000'); // (Johnny: no desk, just blackness)
   camera = new THREE.PerspectiveCamera(24, 1, 100, 20000);
   const pm = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
   env = pm.fromScene(room, 0.04).texture; scene.environment = env; scene.environmentIntensity = 0.5; pm.dispose();
@@ -453,7 +453,7 @@ function buildPanel() {
   const W = dim.w, H = dim.h;
   body = new THREE.Mesh(slab(W + 2 * MARGIN, H + 2 * MARGIN, THICK, 20, BEVEL, 0), bodyMat); body.castShadow = body.receiveShadow = true; scene.add(body);
   const q = quad(0, 0, W, H); face = new THREE.Mesh(q.g, faceMat); face.position.set(0, 0.06, 0); face.receiveShadow = true; scene.add(face);
-  desk = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000).rotateX(-Math.PI / 2), deskMat); desk.position.y = -THICK; desk.receiveShadow = true; scene.add(desk);
+  desk = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000).rotateX(-Math.PI / 2), deskMat); desk.position.y = -THICK; desk.receiveShadow = true; // (kept, not shown: Johnny wants blackness round the panel)
   const R = Math.max(W, H);
   keyL.position.set(-R * 0.45, R * 1.3, R * 0.35); fillL.position.set(R * 0.7, R * 0.9, R * 0.55); rimL.position.set(R * 0.1, R * 0.6, -R * 1.1);
   const small = phone || Math.min(screen.width, screen.height) <= 700;
@@ -618,12 +618,13 @@ function fit() {
   if (d !== dim || !face) { dim = d; hs.setProperty('--bpw', d.w + 'px'); hs.setProperty('--bph', d.h + 'px'); freezeMedia(); opts.onLayout?.(); buildPanel(); makeWear(); for (const o of objs.values()) drop(o); objs.clear(); }
   hs.setProperty('--bpk', Math.min(1, vw / dim.w, vh / dim.h));
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(vw, vh, false);
-  const tilt = (phone ? 12 : 19) * Math.PI / 180, hw = dim.w / 2 + MARGIN, hd = dim.h / 2 + MARGIN, mx = phone ? 0.035 : 0.03, my = phone ? 0.03 : 0.035;
+  const tilt = 0, // (Johnny: the camera looks straight on)
+    hw = dim.w / 2 + MARGIN, hd = dim.h / 2 + MARGIN, mx = phone ? 0.035 : 0.03, my = phone ? 0.03 : 0.035;
   camera.fov = phone ? 26 : 22; camera.aspect = vw / vh;
   const pts = [[-hw, 0, -hd], [hw, 0, -hd], [-hw, 0, hd], [hw, 0, hd], [-hw, -THICK, hd], [hw, -THICK, hd], [-hw, 24, -hd], [hw, 24, -hd]];
   let D = 4000, tz = 0;
   for (let i = 0; i < 16; i++) {
-    camera.position.set(0, D * Math.cos(tilt), tz + D * Math.sin(tilt)); camera.lookAt(0, 0, tz); camera.near = D * 0.3; camera.far = D * 4; camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
+    camera.up.set(0, 0, -1); camera.position.set(0, D * Math.cos(tilt), tz + D * Math.sin(tilt)); camera.lookAt(0, 0, tz); camera.near = D * 0.3; camera.far = D * 4; camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
     let x0 = 9, x1 = -9, y0 = 9, y1 = -9;
     for (const p of pts) { tmp.set(p[0], p[1], p[2]).project(camera); x0 = Math.min(x0, tmp.x); x1 = Math.max(x1, tmp.x); y0 = Math.min(y0, tmp.y); y1 = Math.max(y1, tmp.y); }
     D *= Math.max((x1 - x0) / (2 - 2 * mx), (y1 - y0) / (2 - 2 * my));

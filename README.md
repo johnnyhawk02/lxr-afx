@@ -5,7 +5,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 
 ![LXR-AFX at 1440 × 900](docs/screenshot-3d.png)
 
-- **It opens as a 3D panel**, a piece of hardware on a desk drawn with three.js (WebGL): a bevelled metal panel with
+- **It opens as a 3D panel**, a piece of hardware seen straight on against black, drawn with three.js (WebGL): a bevelled metal panel with
   everything printed on it, real knobs with pointer marks, buttons that go down when pressed and light up when on,
   faders, displays and LEDs that glow, soft shadows. Every control works as on the flat screen: drag a knob up or down,
   slide a fader, press a button, double-click to reset; by mouse or touch, several fingers at once on a phone. It draws
