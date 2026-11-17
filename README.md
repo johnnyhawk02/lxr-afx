@@ -18,13 +18,14 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
-  delay as an echo, and its reverb), then the **master**: everything, dry and FX returns, through a
+  delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through a
   distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
 - **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
   it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
-  velocity, mix / lfo, fx sends, repeat), with the key's big **LEVEL** knob at the bottom right. Pasting a key onto
+  velocity, mix / lfo, repeat), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
+  right. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key

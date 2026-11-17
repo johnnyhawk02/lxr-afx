@@ -370,3 +370,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 @media (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } }
 @media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
 .faders .srow .vf .lab { font-size: 13px; letter-spacing: 0; padding: 0 3px; }
+.faders .levelcol { gap: 14px; }
+.faders .levelcol .sect.sends { width: 100%; border-bottom: var(--rule); padding-bottom: 10px; }
+.faders .levelcol .sect.sends .vf .lab { font-size: 13px; }

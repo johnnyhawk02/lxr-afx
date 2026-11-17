@@ -10,11 +10,11 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, FX_DISTORTION } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwknn6yd';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwknuq7r';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
-// to the dry mix at the effect's return level. settings: see FX_DEFAULTS
+// to the dry mix at unity. settings: see FX_DEFAULTS
 export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
@@ -76,9 +76,9 @@ export class LxrInstrument {
       this.echo.delay.type = echo.pingpong ? 1 : 0;
       [0.5, 0.5, echo.tone / 127, echo.feedback / 127].forEach((v, i) => this.echo.setParameter(i, v));
       this.echo.setDelaySync(echoMs(echo.time) / 1000 * REAL_FS);
-      this.ret[0] = echo.level / 100;
+      this.ret[0] = 1; // returns fixed at unity
     }
-    if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = reverb.level / 100; }
+    if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; }
     const { master, tempo } = fx;
     if (tempo) this.setBpm(tempo.bpm);
     if (master) {

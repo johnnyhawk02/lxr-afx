@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwknn6yd';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwknn6yd';
-import { KIT_FILES } from '../sound/kits.js?v=mwknn6yd';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwknn6yd';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwknuq7r';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwknuq7r';
+import { KIT_FILES } from '../sound/kits.js?v=mwknuq7r';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwknuq7r';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,7 +67,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwknn6yd', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwknuq7r', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
   node.connect(ctx.destination);
@@ -406,7 +406,7 @@ function buildFaders() {
   const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl));
   // four rows of sections, each row stretched across the panel (a section as wide as its knobs need), and the big LEVEL
   // in a column of its own on the right, at the bottom
-  const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'fx sends', 'note repeat']];
+  const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'note repeat']];
   const grid = document.createElement('div'); grid.className = 'rows'; box.append(grid);
   for (const secs of ROWS) {
     const r = document.createElement('div'); r.className = 'srow';
@@ -423,6 +423,14 @@ function buildFaders() {
     grid.append(r);
   }
   const side = document.createElement('div'); side.className = 'levelcol';
+  // the key's FX sends sit directly above its LEVEL
+  const sends = entries.filter((e) => e.section === 'fx sends');
+  if (sends.length) {
+    const el = document.createElement('div'); el.className = 'sect sends'; el.style.setProperty('--n', sends.length);
+    el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
+    for (const e of sends) el.querySelector('.row').append(vfader(e));
+    side.append(el);
+  }
   const big = vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)); big.classList.add('big');
   side.append(big); box.append(side);
   // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
@@ -454,8 +462,8 @@ const sendFx = () => { send({ type: 'fx', fx: S.fx }); save(); };
 // the right-hand column: the send effects (each key feeds them at its ECHO and REVERB knobs), then the master that
 // everything (dry and the effects' returns) goes through: distortion, compressor, level. A string is a heading
 const FX_PAGE = [
-  ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode'], ['level', 100, (v) => v + '%', 'return']]],
-  ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127], ['level', 100, (v) => v + '%', 'return']]],
+  ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode']]],
+  ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
   ['master', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['tone', 127], ['mix', 100, (v) => (v ? v + '%' : 'off')]]],
   ['master', 'COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + 'dB' : 'off')], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
