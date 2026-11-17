@@ -7,7 +7,7 @@ const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
 let errors = 0;
-for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
+for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440, 790]]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   // a click on a control, opening the RANDOM menu first if it lives there
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
@@ -101,13 +101,13 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   // FX: the right column holds this key's sends and the three effects
   { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => x.textContent));
     const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3').textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
-    if (secs.join() !== 'ECHO,REVERB,DISTORTION,MASTER · DIST + LEVEL,MASTER · COMPRESSOR' || sends !== 3) { errors++; console.log('fx column:', secs, sends); }
+    if (secs.join() !== 'ECHO,REVERB,DISTORTION,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
     const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
       return [...document.querySelectorAll('.fxside .vf')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
     if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
   }
   // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
-  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'note repeat'));
+  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'repeat'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
   await p.close();

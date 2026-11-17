@@ -48,7 +48,8 @@ export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo &
 // the firmware's init kit as parameter values
 // after the firmware's parameters, three of LXR-AFX's own per voice: its sends to the echo, the reverb and the distortion
 // (not engine parameters: the instrument keeps them, see instrument.js). A key keeps them like any other parameter
-export const SEND_BASE = NUM_PARAMS, SEND_FX = ['echo', 'reverb', 'dist'];
+// (three slots per voice; the third, a distortion send, was dropped: its slot stays so saved kits still line up)
+export const SEND_BASE = NUM_PARAMS, SEND_FX = ['echo', 'reverb'];
 export const sendPar = (voice, k) => SEND_BASE + voice * 3 + k;
 // and after the sends, one more per voice: its note repeat (off, 1/64, 1/32, 1/16, 1/8 of a bar while the key is held)
 export const REPEAT_BASE = NUM_PARAMS + 18, REPEAT_NAMES = ['off', '1/64', '1/32', '1/16', '1/8'];

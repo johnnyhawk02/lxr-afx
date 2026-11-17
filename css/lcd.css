@@ -337,3 +337,36 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 @media (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
 
 .lowkey b.bpm { min-width: 3.2em; cursor: ns-resize; }
+
+/* ---- tidy-up: bigger knobs that fill the panel, clearer section headings, the key's big LEVEL bottom right ---- */
+.faders { --kw: 78px; --ks: 54px; position: relative; row-gap: 18px; padding: 10px 8px; align-content: flex-start; }
+.faders .sect h3 { color: var(--ink); margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid rgba(23, 32, 14, .25); }
+.vf .lab { font-size: 15px; }
+.faders .vf.big { position: absolute; right: 18px; bottom: 14px; width: 132px; gap: 4px; }
+.faders .vf.big .knob { width: 104px; height: 104px; }
+.faders .vf.big output { font-size: 30px; height: auto; }
+.faders .vf.big .lab { font-size: 24px; letter-spacing: .16em; background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 10px; }
+.faders .vf.big .lock { font-size: 15px; }
+.fxside h2 { margin-top: 6px; }
+.fxside .mout .row { display: flex; align-items: center; gap: 14px; }
+.grm { grid-template-columns: 1fr; gap: 4px; margin: 0; flex: 1; }
+.grm output { text-align: left; }
+@media (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
+/* the synth panel: four rows filling its height, each row's sections sharing its width by knob count; LEVEL on the right */
+.faders { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 8px 8px 8px 6px; --ks: 50px; }
+.faders .rows { display: grid; grid-template-rows: repeat(4, 1fr); min-height: 0; min-width: 0; }
+.faders .srow { display: flex; min-width: 0; min-height: 0; padding: 4px 0; }
+.faders .srow + .srow { border-top: var(--rule); }
+.faders .srow .sect { flex: var(--n) 1 0; min-width: 0; padding: 0 8px; }
+.faders .srow .sect + .sect { border-left: var(--rule); }
+.faders .sect .row { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.faders .sect h3 { border-bottom: 0; margin-bottom: 2px; }
+.faders .levelcol { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-left: var(--rule); padding: 0 6px 6px 14px; }
+.faders .vf.big { position: static; }
+@media (max-width: 1340px) { .faders { --ks: 44px; } }
+@media (max-height: 820px) { .faders { --ks: 46px; } }
+.faders .sect h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.faders .srow { padding: 2px 0; }
+@media (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } }
+@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
+.faders .srow .vf .lab { font-size: 13px; letter-spacing: 0; padding: 0 3px; }

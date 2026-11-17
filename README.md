@@ -17,13 +17,15 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
-- **FX and master** (the right-hand column, full height): the three send effects from Elixir Desktop (the firmware's
-  delay as an echo, its reverb, its distortion), then the **master**: everything, dry and FX returns, through a
+- **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
+  delay as an echo, and its reverb), then the **master**: everything, dry and FX returns, through a
   distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
-  gain-reduction meter, then the level. Each key's ECHO / REVERB / DIST sends are FX SENDS knobs with its synth knobs.
+  gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
 - **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
   it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
-- **Left column**: the key, its engine, and the synth knobs; an engine's level is the LEVEL knob in MIX.
+- **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
+  velocity, mix / lfo, fx sends, repeat), with the key's big **LEVEL** knob at the bottom right. Pasting a key onto
+  another engine labels it, e.g. "Brownie snare (as metal)".
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
   pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
@@ -31,7 +33,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
-  LFO 1 speed / portamento / LFO 2 speed → the key's echo / reverb / dist sends, osc 1 / osc 2 / sub levels → the
+  LFO 1 speed / portamento → the key's echo / reverb sends, LFO 2 speed → its note repeat rate, osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.

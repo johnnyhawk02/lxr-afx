@@ -10,15 +10,14 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, FX_DISTORTION } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwkn1dyn';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwknn6yd';
 
-// The three send effects (as in Elixir Desktop): the firmware's delay as an echo, its reverb (written for the firmware but
-// never switched on there) and its distortion, each a bus of its own, all wet, fed by every voice at its send and added
+// The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
+// but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
 // to the dry mix at the effect's return level. settings: see FX_DEFAULTS
 export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
-  dist: { type: 0, drive: 70, color: 64, tone: 80, volume: 90, level: 100 },
   // the master: the whole mix (dry and FX returns) through a distortion, then a compressor, then the level
   tempo: { bpm: 120 }, // for the note repeat
   master: { type: 0, drive: 40, tone: 90, mix: 0, thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
@@ -50,10 +49,9 @@ export class LxrInstrument {
     this.B = [new Float32Array(BLOCK), new Float32Array(BLOCK)];
     this.idx = 0; this.frac = 0;
     this.peak = new Float32Array(6); // each engine voice's peak since the last read
-    this.sends = [0, 1, 2].map(() => new Float32Array(6)); // [effect][voice], 0..1
+    this.sends = [0, 1].map(() => new Float32Array(6)); // [effect][voice], 0..1
     this.echo = new FxBus(); this.echo.fxType = FX_DELAY; this.echo.forceWet = true;
     this.verb = new ReverbBus();
-    this.dist = new FxBus(); this.dist.fxType = FX_DISTORTION; this.dist.forceWet = true;
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
@@ -68,12 +66,12 @@ export class LxrInstrument {
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
     if (par >= REPEAT_BASE) { this.rate[par - REPEAT_BASE] = value; return; }
-    if (par >= SEND_BASE) { const i = par - SEND_BASE; this.sends[i % 3][Math.floor(i / 3)] = value / 127; return; }
+    if (par >= SEND_BASE) { const i = par - SEND_BASE; if (i % 3 < 2) this.sends[i % 3][Math.floor(i / 3)] = value / 127; return; }
     if (this.e.activeParameters[par] !== value) this.e.setParam(par, value);
   }
-  /** the effects' settings: { echo, reverb, dist }, each as FX_DEFAULTS (0..127 values) */
+  /** the effects' settings: { echo, reverb, master, tempo }, each as FX_DEFAULTS (0..127 values) */
   setFx(fx) {
-    const { echo, reverb, dist } = fx;
+    const { echo, reverb } = fx;
     if (echo) {
       this.echo.delay.type = echo.pingpong ? 1 : 0;
       [0.5, 0.5, echo.tone / 127, echo.feedback / 127].forEach((v, i) => this.echo.setParameter(i, v));
@@ -87,11 +85,6 @@ export class LxrInstrument {
       Object.assign(this.m, master);
       this.mDist.distortion.type = master.type;
       [master.drive, 64, master.tone, 90].forEach((v, i) => this.mDist.setParameter(i, v / 127));
-    }
-    if (dist) {
-      this.dist.distortion.type = dist.type;
-      [dist.drive, dist.color, dist.tone, dist.volume].forEach((v, i) => this.dist.setParameter(i, v / 127));
-      this.ret[2] = dist.level / 100;
     }
   }
   play(sound, note, velocity, params) {
@@ -127,8 +120,8 @@ export class LxrInstrument {
       this.peak[n] = pk;
     }
     // the sends: each effect's bus gets every voice panned in at its send, saturated to int16, and comes back all wet
-    const buses = [this.echo, this.verb, this.dist];
-    for (let k = 0; k < 3; k++) {
+    const buses = [this.echo, this.verb];
+    for (let k = 0; k < buses.length; k++) {
       const sends = this.sends[k], bus = buses[k], bi = this.busIn; bi.fill(0);
       for (let n = 0; n < 6; n++) {
         const g = sends[n]; if (!g) continue;

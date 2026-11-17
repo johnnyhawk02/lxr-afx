@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkn1dyn';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkn1dyn';
-import { KIT_FILES } from '../sound/kits.js?v=mwkn1dyn';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkn1dyn';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwknn6yd';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwknn6yd';
+import { KIT_FILES } from '../sound/kits.js?v=mwknn6yd';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwknn6yd';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,7 +67,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkn1dyn', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwknn6yd', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
   node.connect(ctx.destination);
@@ -207,7 +207,7 @@ const CC_DEFAULT = {
   90: { t: 'par', label: ['attack'], name: 'amp attack' }, 91: { t: 'par', label: ['decay'], name: 'amp decay' },
   103: { t: 'par', label: ['pitch dec', 'mod1 freq'], name: 'mod env decay' }, 94: { t: 'par', label: ['fm amt', 'mod1 gain'], name: 'distortion' },
   27: { t: 'par', label: ['coarse'], name: 'osc 1 coarse' }, 26: { t: 'par', label: ['fine'], name: 'osc 1 fine' },
-  18: { t: 'par', label: ['echo'], name: 'lfo 1 speed' }, 5: { t: 'par', label: ['reverb'], name: 'portamento' }, 19: { t: 'par', label: ['dist'], name: 'lfo 2 speed' },
+  18: { t: 'par', label: ['echo'], name: 'lfo 1 speed' }, 5: { t: 'par', label: ['reverb'], name: 'portamento' }, 19: { t: 'par', label: ['rate'], name: 'lfo 2 speed' },
   20: { t: 'zlevel', s: 0, name: 'osc 1 level' }, 21: { t: 'zlevel', s: 1, name: 'osc 2 level' }, 22: { t: 'zlevel', s: 2, name: 'sub osc level' },
 };
 const ccMap = () => S.ccMap || CC_DEFAULT;
@@ -402,19 +402,29 @@ function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
-  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
-  // short sections share a row: velocity sits beside the mix, the LFO gets a row of its own
-  const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo', 'fx sends', 'note repeat'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
-  const sections = [...new Set(entries.map((e) => e.section))].sort((a, b) => rank(a) - rank(b));
-  for (const sec of sections) {
-    const list = entries.filter((e) => e.section === sec);
-    const n = list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0);
-    const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', n);
-    el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
-    const row = el.querySelector('.row');
-    for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
-    box.append(el);
+  const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
+  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl));
+  // four rows of sections, each row stretched across the panel (a section as wide as its knobs need), and the big LEVEL
+  // in a column of its own on the right, at the bottom
+  const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'fx sends', 'note repeat']];
+  const grid = document.createElement('div'); grid.className = 'rows'; box.append(grid);
+  for (const secs of ROWS) {
+    const r = document.createElement('div'); r.className = 'srow';
+    for (const sec of secs) {
+      const list = entries.filter((e) => e.section === sec);
+      if (!list.length) continue;
+      const n = list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0);
+      const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', n);
+      el.innerHTML = `<h3>${sec === 'note repeat' ? 'repeat' : sec}</h3><div class="row"></div>`;
+      const row = el.querySelector('.row');
+      for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
+      r.append(el);
+    }
+    grid.append(r);
   }
+  const side = document.createElement('div'); side.className = 'levelcol';
+  const big = vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)); big.classList.add('big');
+  side.append(big); box.append(side);
   // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
   drawFaders();
@@ -441,28 +451,32 @@ function gknob(label, o) {
   return el;
 }
 const sendFx = () => { send({ type: 'fx', fx: S.fx }); save(); };
+// the right-hand column: the send effects (each key feeds them at its ECHO and REVERB knobs), then the master that
+// everything (dry and the effects' returns) goes through: distortion, compressor, level. A string is a heading
 const FX_PAGE = [
-  ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'ping-pong' : 'normal'), 'mode'], ['level', 100, (v) => v + '%', 'return']]],
+  ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode'], ['level', 100, (v) => v + '%', 'return']]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127], ['level', 100, (v) => v + '%', 'return']]],
-  ['dist', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['color', 127], ['tone', 127], ['volume', 127], ['level', 100, (v) => v + '%', 'return']]],
-  // the master: everything (dry and the FX returns) through a distortion, then the compressor, then the level
-  ['master', 'MASTER · DIST + LEVEL', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['tone', 127], ['mix', 100, (v) => (v ? v + '%' : 'off')], ['level', 100, (v) => v + '%']]],
-  ['master', 'MASTER · COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + ' dB' : 'off'), 'threshold'], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
-    ['attack', 100, (v) => Math.max(1, v) + ' ms'], ['release', 1000, (v) => Math.max(10, v) + ' ms'], ['knee', 24, (v) => v + ' dB'], ['makeup', 24, (v) => '+' + v + ' dB']]],
+  'MASTER',
+  ['master', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['tone', 127], ['mix', 100, (v) => (v ? v + '%' : 'off')]]],
+  ['master', 'COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + 'dB' : 'off')], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
+    ['attack', 100, (v) => Math.max(1, v) + 'ms'], ['release', 1000, (v) => Math.max(10, v) + 'ms'], ['knee', 24, (v) => v + 'dB'], ['makeup', 24, (v) => '+' + v + 'dB']]],
+  ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
 ];
 function buildFx() {
   const box = $('fxglobal'); box.innerHTML = '';
-  for (const [id, name, knobs] of FX_PAGE) {
+  for (const item of FX_PAGE) {
+    if (typeof item === 'string') { const h = document.createElement('h2'); h.innerHTML = `${item} <span class="dim">EVERYTHING GOES THROUGH</span>`; box.append(h); continue; }
+    const [id, name, knobs] = item;
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
     for (const [k, max, show, label] of knobs)
       el.querySelector('.row').append(gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
-  // under the compressor: its gain reduction
+  // beside the output level: the compressor's gain reduction
   const gm = document.createElement('div'); gm.className = 'grm';
-  gm.innerHTML = `<span class="dim">GR</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
-  box.lastChild.append(gm);
+  gm.innerHTML = `<span class="dim">GAIN REDUCTION</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
+  box.lastChild.querySelector('.row').append(gm); box.lastChild.classList.add('mout');
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine
@@ -592,7 +606,7 @@ function pasteKey() {
   let pairs = clip.vals;
   if (clip.voice !== v) { const arr = S.values.slice(); for (const [p, x] of clip.vals) arr[p] = x; pairs = mapVoice(arr, clip.voice, v); }
   const level = PAR.VOL1 + v, now = keyPatch(sound, note).vals;
-  const ed = { _kit: clip.label, _st: clip.st };
+  const ed = { _kit: clip.voice !== v && !/\(as \w+\)$/.test(clip.label) ? `${clip.label} (as ${SOUNDS[sound].name.toLowerCase()})` : clip.label, _st: clip.st };
   for (const [p, x] of now) if (p !== level) ed[p] = x;
   for (const [p, x] of pairs) if (p !== level && now.has(p)) ed[p] = x;
   randChange(() => { S.keyEdits[sound][note] = ed; if (S.editAll) setEditAll(false); },
