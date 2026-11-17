@@ -18,9 +18,16 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
-  delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through a
-  distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
+  delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
+  **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
+- **Master distortion** (`sound/dirt.js`, our own design after a dual-path bass distortion pedal's signal flow), before
+  the compressor, off until its **ON** is pressed. A dirty path, PREGAIN, then a filter (FILTER: high-pass, or LP),
+  GAIN into two anti-aliased clip stages (CLIP: diode, hard and early, or LED, louder and more open), then TONE (bass,
+  scooped mids at noon, treble) with BASS shelving its bass end, at the DIRTY volume; beside it a clean path at the
+  CLEAN volume. XOVER sends the half of the signal the filter takes away to the clean path (distorted highs with clean
+  lows, or the other way round). The **SIDECHAIN** listens to the mix or one engine (SOURCE), through a filter (LP, BP,
+  HP at FREQ) into an envelope (SENS, DECAY, shown on the ENV meter) that turns PREGAIN, CUTOFF or TONE up or down.
 - **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
   it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,

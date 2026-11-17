@@ -1,10 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkpai33';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkpai33';
-import { KIT_FILES } from '../sound/kits.js?v=mwkpai33';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkpai33';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkpuvnx';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkpuvnx';
+import { KIT_FILES } from '../sound/kits.js?v=mwkpuvnx';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkpuvnx';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkpuvnx';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,9 +68,9 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkpai33', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkpuvnx', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -295,6 +296,13 @@ function showGr(db) {
   document.querySelectorAll('.grm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
   const o = document.querySelector('.grm output'); if (o) o.textContent = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
 }
+// the distortion's sidechain envelope: how far it's turning its target, a segment per twelfth
+let scShown = 0;
+function showSc(v) {
+  scShown = Math.max(v, scShown * 0.8);
+  const n = Math.round(Math.min(1, scShown) * 12);
+  document.querySelectorAll('.envm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
+}
 function showPeaks(peaks) {
   // the level lights follow the engine voices (both hats light with the hat voice)
   SOUNDS.forEach((s, i) => { if (peaks[s.engineVoice] > 0.02) { const led = soundBtns[i].querySelector('i'); led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 80); } });
@@ -465,7 +473,7 @@ const FX_PAGE = [
   ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode']]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
-  ['master', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['tone', 127], ['mix', 100, (v) => (v ? v + '%' : 'off')]]],
+  'DIRT', // the distortion and its sidechain: buildDirt
   ['master', 'COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + 'dB' : 'off')], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
     ['attack', 100, (v) => Math.max(1, v) + 'ms'], ['release', 1000, (v) => Math.max(10, v) + 'ms'], ['knee', 24, (v) => v + 'dB'], ['makeup', 24, (v) => '+' + v + 'dB']]],
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
@@ -473,6 +481,7 @@ const FX_PAGE = [
 function buildFx() {
   const box = $('fxglobal'); box.innerHTML = '';
   for (const item of FX_PAGE) {
+    if (item === 'DIRT') { box.append(...buildDirt()); continue; }
     if (typeof item === 'string') { const h = document.createElement('h2'); h.innerHTML = `${item} <span class="dim">EVERYTHING GOES THROUGH</span>`; box.append(h); continue; }
     const [id, name, knobs] = item;
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
@@ -485,6 +494,63 @@ function buildFx() {
   const gm = document.createElement('div'); gm.className = 'grm';
   gm.innerHTML = `<span class="dim">GAIN REDUCTION</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
   box.lastChild.querySelector('.row').append(gm); box.lastChild.classList.add('mout');
+}
+// ---- the master distortion (sound/dirt.js): a dual-path bass drive. Its input stage, clip stages, tone and the two
+// path volumes on two rows; the sidechain under it, its header reading as a sentence (SIDECHAIN ON TURNS CUTOFF UP).
+// A section that's switched off is greyed, but its knobs still turn ----
+const hz = (f) => (f < 1000 ? Math.round(f) + 'Hz' : (f / 1000).toFixed(f < 9950 ? 1 : 0) + 'k');
+const sdb = (d) => (d > 0 ? '+' : '') + Math.round(d) + 'dB';
+let dirtSects = [];
+function drawDirt() { dirtSects.forEach(([el, k]) => el.classList.toggle('off', !S.fx.dirt[k])); }
+function buildDirt() {
+  const D = S.fx.dirt, say = (what) => detail(`MASTER DISTORTION ${what}`);
+  const knob = (k, label, max, show) => gknob(label, { max, show, get: () => D[k], dflt: DIRT_DEFAULTS[k],
+    set: (v) => { D[k] = v; sendFx(); say(`${label.toUpperCase()} <em>${show ? show(v) : v}</em>`); } });
+  // a switch: a button that steps through its settings, named on the button
+  // (lit when it's away from its first setting, like the pedal's switch lights; a choice in the header isn't lit)
+  const cycle = (b, k, names, label, lit = true) => {
+    const draw = () => { b.textContent = names[D[k]] ?? names[0]; if (lit) b.setAttribute('aria-pressed', D[k] > 0); };
+    b.addEventListener('click', () => { D[k] = (D[k] + 1) % names.length; sendFx(); draw(); drawDirt(); say(`${label ? label + ' ' : ''}<em>${names[D[k]]}</em>`); });
+    faderDraws.push(draw); return b;
+  };
+  const sw = (k, label, names, title) => {
+    const el = document.createElement('div'); el.className = 'vf vsw';
+    el.innerHTML = '<output></output><button class="swb" type="button"></button><span class="lab"></span>';
+    el.querySelector('.lab').textContent = label; el.querySelector('.swb').title = title;
+    cycle(el.querySelector('.swb'), k, names, label.toUpperCase());
+    return el;
+  };
+  const hbtn = (k, names, label, title) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb'; b.title = title; return cycle(b, k, names, label, names[0] === 'OFF'); };
+  const sect = (n, rows) => {
+    const el = document.createElement('div'); el.className = 'sect dirt'; el.style.setProperty('--n', n);
+    el.innerHTML = '<h3></h3>';
+    for (const items of rows) { const r = document.createElement('div'); r.className = 'row'; r.append(...items); el.append(r); }
+    return el;
+  };
+  const dist = sect(6, [
+    [knob('pregain', 'pregain', 48, (v) => sdb(pregainDb(v))), knob('cutoff', 'cutoff', 127, (v) => hz(dirtHz(v))),
+      sw('swap', 'filter', ['HP', 'LP'], 'The filter before the distortion: high-pass (the lows stay out of it) or low-pass'),
+      sw('xover', 'xover', ['OFF', 'ON'], 'Crossover: the half the filter takes away goes to the clean path (HP: distorted highs, clean lows; LP: the other way round)'),
+      knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open')],
+    [knob('bass', 'bass', 24, (v) => sdb(bassDb(v))), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64))),
+      knob('dirty', 'dirty', 127, (v) => (v ? sdb(volDb(v)) : 'off')), knob('clean', 'clean', 127, (v) => (v ? sdb(volDb(v)) : 'off'))],
+  ]);
+  dist.querySelector('h3').append(Object.assign(document.createElement('span'), { className: 't', textContent: 'DISTORTION' }),
+    hbtn('on', ['OFF', 'ON'], '', 'Switch the master distortion in or out'));
+  const env = document.createElement('div'); env.className = 'envm';
+  env.innerHTML = `<output></output><div class="segs">${'<i></i>'.repeat(12)}</div><span class="lab">env</span>`;
+  const side = sect(6, [[sw('src', 'source', ['MIX', 'DRUM', 'SNARE', 'METAL'], 'What the sidechain listens to: the whole mix, or one engine on its own'),
+    sw('scfilt', 'filter', ['LP', 'BP', 'HP'], "The sidechain's filter: low-pass, band-pass or high-pass at FREQ"),
+    knob('freq', 'freq', 127, (v) => hz(scHz(v))), knob('sens', 'sens', 127), knob('decay', 'decay', 127, (v) => { const ms = decayMs(v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }), env]]);
+  const h = side.querySelector('h3');
+  h.append(Object.assign(document.createElement('span'), { className: 't', textContent: 'SIDECHAIN' }),
+    hbtn('sc', ['OFF', 'ON'], 'SIDECHAIN', 'Let the sidechain turn a knob of the distortion'),
+    Object.assign(document.createElement('span'), { className: 'dim', textContent: 'TURNS' }),
+    hbtn('target', ['PREGAIN', 'CUTOFF', 'TONE'], 'SIDECHAIN TURNS', 'The knob the sidechain turns'),
+    hbtn('dir', ['UP', 'DOWN'], 'SIDECHAIN DIRECTION', 'Which way it turns it: up to the top of its range, or down to the bottom'));
+  dirtSects = [[dist, 'on'], [side, 'sc']];
+  faderDraws.push(drawDirt);
+  return [dist, side];
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine

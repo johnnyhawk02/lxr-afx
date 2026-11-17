@@ -9,8 +9,9 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, FX_DISTORTION } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwkpai33';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwkpuvnx';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkpuvnx';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -18,9 +19,11 @@ import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './sch
 export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
-  // the master: the whole mix (dry and FX returns) through a distortion, then a compressor, then the level
   tempo: { bpm: 120 }, // for the note repeat
-  master: { type: 0, drive: 40, tone: 90, mix: 0, thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
+  // the master: the whole mix (dry and FX returns) through the distortion (sound/dirt.js), then a compressor, then
+  // the level
+  dirt: { ...DIRT_DEFAULTS },
+  master: { thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
 };
 // the master compressor's knobs in real units: threshold 0..-40 dB, ratio 1:1..20:1 (tenths), attack 1..100 ms,
 // release 10..1000 ms, knee 0..24 dB, makeup 0..24 dB
@@ -58,8 +61,8 @@ export class LxrInstrument {
     // note repeat: per voice its rate (0 off, 1..4: 1/64, 1/32, 1/16, 1/8 of a bar), and per sound the held note
     // that repeats: { note, vel, left } (left: engine samples to the next hit, fractional so it never drifts)
     this.rate = new Uint8Array(6); this.held = SOUNDS.map(() => null); this.bpm = 120;
-    this.mDist = new FxBus(); this.mDist.fxType = FX_DISTORTION; this.mDist.forceWet = true;
-    this.m = { ...FX_DEFAULTS.master }; this.mMixAt = 0; this.env = 0; this.gr = 0;
+    this.dirt = new Dirt(REAL_FS); this.key = new Float32Array(BLOCK);
+    this.m = { ...FX_DEFAULTS.master }; this.env = 0; this.gr = 0;
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -79,13 +82,10 @@ export class LxrInstrument {
       this.ret[0] = 1; // returns fixed at unity
     }
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; }
-    const { master, tempo } = fx;
+    const { master, tempo, dirt } = fx;
     if (tempo) this.setBpm(tempo.bpm);
-    if (master) {
-      Object.assign(this.m, master);
-      this.mDist.distortion.type = master.type;
-      [master.drive, 64, master.tone, 90].forEach((v, i) => this.mDist.setParameter(i, v / 127));
-    }
+    if (dirt) this.dirt.set(dirt);
+    if (master) Object.assign(this.m, master);
   }
   play(sound, note, velocity, params) {
     if (params) for (const [par, v] of params) this.setParam(par, v);
@@ -134,21 +134,19 @@ export class LxrInstrument {
       const g = this.gain * this.ret[k] / 32768;
       if (g) for (let i = 0; i < BLOCK; i++) { L[i] += bo[2 * i] * g; R[i] += bo[2 * i + 1] * g; }
     }
-    this._master(L, R);
+    this._master(L, R, out);
     // a soft limit, so seven voices at once don't clip hard
     for (let i = 0; i < BLOCK; i++) { L[i] = soft(L[i]); R[i] = soft(R[i]); }
   }
-  // the master: distortion blended in at its mix (ramped across the block), then a soft-knee compressor (a peak detector
-  // in dB, gain reduction smoothed by attack and release), the makeup gain and the level
-  _master(L, R) {
-    const M = this.m, m1 = M.mix / 100, m0 = this.mMixAt;
-    if (m1 || m0) {
-      const bi = this.mDist.input, bo = this.busOut;
-      for (let i = 0; i < BLOCK; i++) { bi[2 * i] = Math.max(-32768, Math.min(32767, Math.round(L[i] * 32768))); bi[2 * i + 1] = Math.max(-32768, Math.min(32767, Math.round(R[i] * 32768))); }
-      bo.fill(0); this.mDist.process(bo, BLOCK, this.fxRng);
-      for (let i = 0; i < BLOCK; i++) { const m = m0 + (m1 - m0) * (i + 1) / BLOCK; L[i] += (bo[2 * i] / 32768 - L[i]) * m; R[i] += (bo[2 * i + 1] / 32768 - R[i]) * m; }
-      this.mMixAt = m1;
-    }
+  // the master: the distortion (its sidechain hears the mix, or one engine's own output), then a soft-knee compressor
+  // (a peak detector in dB, gain reduction smoothed by attack and release), the makeup gain and the level
+  _master(L, R, voices) {
+    const M = this.m, D = this.dirt;
+    if (D.active) {
+      const src = D.p.sc ? D.p.src | 0 : 0;
+      if (src >= 1 && src <= 3) { const o = voices[SOUNDS[src - 1].engineVoice], k = this.key, g = this.gain / 32768; for (let i = 0; i < BLOCK; i++) k[i] = o[i] * g; }
+      D.process(L, R, src >= 1 && src <= 3 ? this.key : null);
+    } else D.readEnv();
     const T = -M.thresh, ratio = Math.max(1, M.ratio / 10), W = M.knee, slope = 1 / ratio - 1;
     const ca = Math.exp(-1000 / (Math.max(1, M.attack) * REAL_FS)), cr = Math.exp(-1000 / (Math.max(10, M.release) * REAL_FS));
     const out = Math.pow(10, M.makeup / 20) * M.level / 100;
@@ -164,6 +162,8 @@ export class LxrInstrument {
     }
     this.env = env; this.gr = gr;
   }
+  /** the distortion's sidechain envelope (0..1) at its highest since the last call */
+  readSc() { return this.dirt.readEnv(); }
   /** the most gain reduction (dB) since the last call */
   readGr() { const g = this.gr; this.gr = 0; return g; }
   /** fill left and right (Float32Arrays of the same length) at the output rate */

@@ -99,12 +99,21 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (JSON.stringify((await ke())[1]['58']) !== JSON.stringify(before)) { errors++; console.log('paste: undo did not restore'); }
   }
   // FX: the right column holds this key's sends and the three effects
-  { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => x.textContent));
+  { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
     const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3').textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
-    if (secs.join() !== 'ECHO,REVERB,DISTORTION,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
+    if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
     const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
-      return [...document.querySelectorAll('.fxside .vf')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
+      return [...document.querySelectorAll('.fxside .vf, .fxside .envm, .fxside .hdb')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
     if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
+    // the master distortion: its ON switch, a switch in a knob's place, the sidechain's sentence; all saved
+    const dirt = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).fx.dirt);
+    await p.click('.sect.dirt h3 .hdb'); await p.click('.sect.dirt .vsw .swb >> nth=2'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1');
+    await p.waitForTimeout(600);
+    { const d = await dirt(), off = await p.$$eval('.sect.dirt.off', (v) => v.length);
+      if (!d || d.on !== 1 || d.clip !== 1 || d.target !== 2 || off !== 1) { errors++; console.log('distortion switches:', d, off); } }
+    if (w === 1440 && h === 790) await p.screenshot({ path: `${out}/dirt-on-${w}x${h}.png`, clip: { x: 1090, y: 290, width: 340, height: 300 } });
+    await p.click('.sect.dirt h3 .hdb'); await p.click('.sect.dirt .vsw .swb >> nth=2'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1');
+    await p.waitForTimeout(600);
   }
   // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'repeat'));

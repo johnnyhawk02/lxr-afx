@@ -373,3 +373,22 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .levelcol { gap: 14px; }
 .faders .levelcol .sect.sends { width: 100%; border-bottom: var(--rule); padding-bottom: 10px; }
 .faders .levelcol .sect.sends .vf .lab { font-size: 13px; }
+/* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
+   as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
+.fxside .sect.dirt .row + .row { margin-top: 2px; }
+.fxside .sect.dirt h3 { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+.fxside .sect.dirt h3 .dim { font-size: 15px; letter-spacing: 1px; }
+.fxside .hdb { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; }
+.fxside .hdb:first-of-type { margin-left: 2px; }
+.vsw .swb { width: calc(var(--kw) - 8px); height: var(--ks); display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--ink); border-radius: 3px; background: transparent; color: var(--ink); font: inherit; font-size: 15px;
+  letter-spacing: 0; padding: 0; cursor: pointer; }
+.vsw .swb:hover { background: var(--tint); }
+.vsw .swb[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.vsw .swb:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.fxside .sect.dirt.off > .row { opacity: .42; }
+.envm { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.envm .segs { height: var(--ks); width: 14px; display: flex; flex-direction: column-reverse; gap: 2px; }
+.envm .segs i { flex: 1; background: var(--ghost); }
+.envm .segs i.on { background: var(--ink); }
+.envm .lab { font-size: 15px; }
