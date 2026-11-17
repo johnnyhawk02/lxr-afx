@@ -127,14 +127,27 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // legato, last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 goes back
   // to D2 (the key shown), letting go of the snare changes nothing in the drum zone; RETURN steps through its settings
   { const key = () => p.textContent('#kh-note');
-    await p.evaluate(() => { afx.noteOn(1, 50, 100); afx.noteOn(1, 52, 100); });
+    await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 50, 100); afx.noteOn(1, 52, 100); });
     const a = await key();
     await p.evaluate(() => { afx.noteOn(1, 57, 100); afx.noteOff(57); afx.noteOff(52); }); const b = await key();
     await p.evaluate(() => afx.noteOff(50));
     await p.click('#ret'); const r1 = await p.textContent('#ret'); await p.click('#ret', { modifiers: ['Shift'] }); const r0 = await p.textContent('#ret');
     if (a !== 'E2' || b !== 'D2' || r1 !== '1/8' || r0 !== '1/16') { errors++; console.log('legato:', a, b, r1, r0); } }
-  // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
-  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'repeat'));
+  // the sequencer: a step, ACTIVE and RANDOM change this key's own pattern; NEW SOUND switches a random pattern on
+  // about half the time (and off the rest)
+  if (w === 1440 && h === 900) {
+    await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 50, 100); afx.noteOff(50); }); await p.waitForTimeout(50);
+    const [on, pat] = await p.evaluate(() => afx.seqPars(0)), ed = () => p.evaluate(() => afx.keyEdits()[0][50] || {});
+    const val = async (par) => { const e = await ed(); return e[par] ?? (await p.evaluate((x) => afx.base(x), par)); };
+    const a0 = await val(on); await p.click('.sect.seq .hdb >> nth=0'); const a1 = await val(on);
+    const p0 = await val(pat); await p.click('.sect.seq .st >> nth=2'); const p1 = await val(pat);
+    await p.click('.sect.seq .hdb >> nth=1'); const r = await ed();
+    if (a1 !== 1 - a0 || p1 !== (p0 ^ 4) || r[on] !== 1 || !(r[pat] & 1)) { errors++; console.log('seq edits:', a0, a1, p0, p1, r[on], r[pat]); }
+    let ons = 0;
+    for (let i = 0; i < 24; i++) { await p.click('#rand-key'); await p.waitForTimeout(30); if ((await ed())[on] === 1) ons++; }
+    if (ons < 3 || ons > 21) { errors++; console.log('NEW SOUND turned the sequence on', ons, 'of 24 times'); }
+  }
+  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
   await p.close();

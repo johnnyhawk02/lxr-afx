@@ -1,12 +1,12 @@
 // node test/legato.test.mjs: each zone mono with last-note priority (the page keeps the held keys; the instrument
 // brings an earlier key back on the next RETURN step of the BPM grid). Offline, timing every trigger in beats.
 import { LxrInstrument } from '../sound/instrument.js';
-import { REPEAT_BASE } from '../sound/schema.js';
+import { SEQ_ON_BASE, SEQ_PAT_BASE } from '../sound/schema.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
-function rig(ret, rate = 0) {
+function rig(ret, pat = 0) {
   const inst = new LxrInstrument(48000), log = [], L = new Float32Array(480), R = new Float32Array(480);
-  inst.setFx({ tempo: { bpm: 120, ret } }); inst.setParam(REPEAT_BASE + 0, rate);
+  inst.setFx({ tempo: { bpm: 120, ret } }); inst.setParam(SEQ_ON_BASE + 0, pat ? 1 : 0); inst.setParam(SEQ_PAT_BASE + 0, pat);
   const trig = inst.e.trigger.bind(inst.e); inst.e.trigger = (v, vel, note) => { log.push({ beat: inst.beat, note }); trig(v, vel, note); };
   const until = (beat) => { while (inst.beat < beat) inst.render(L, R); };
   return { inst, log, until };
@@ -37,19 +37,31 @@ const near = (a, b) => Math.abs(a - b) < 0.02; // a block is 0.003 beats at 120 
 { const { inst, log, until } = rig(2);
   until(0.3); inst.back(0, 60, 100, null); until(0.4); inst.play(0, 64, 100, null); until(1.0);
   ok(log.length === 1 && log[0].note === 64, 'a new key cancels the return: ' + JSON.stringify(log)); }
-// with a repeat rate (1/16): the newest key repeats, then the earlier key comes back on the grid and repeats on it
-{ const { inst, log, until } = rig(2, 3);
-  until(0.1); inst.play(0, 60, 100, null); until(0.6); inst.play(0, 62, 100, null); until(0.9); inst.back(0, 60, 100, null); until(1.6); inst.release(0); until(2.5);
-  const after = log.filter((t) => t.beat > 0.9);
-  ok(log.filter((t) => t.note === 62).length >= 2, 'the newest key did not repeat');
-  ok(after.length >= 3 && after.every((t) => t.note === 60) && near(after[0].beat, 1.0) && near(after[1].beat, 1.25) && near(after[2].beat, 1.5), 'repeat after the return: ' + JSON.stringify(after));
-  ok(!log.some((t) => t.beat > 1.7), 'repeat did not stop on release'); }
+// the sequencer (steps 1 and 3 of 8, in 1/16s): pressed at beat 0.1, it starts on the next 1/16 (0.25) and loops every
+// 2 beats; nothing on the press itself
+{ const { inst, log, until } = rig(2, 0b101);
+  until(0.1); inst.play(0, 60, 100, null); until(4.1); inst.release(0); until(5);
+  const beats = log.map((t) => +t.beat.toFixed(2));
+  ok(log.length === 4 && [0.25, 0.75, 2.25, 2.75].every((b, i) => near(log[i].beat, b)), 'sequence steps: ' + beats);
+  ok(!log.some((t) => t.beat > 4.1), 'the sequence did not stop on release'); }
+// legato with sequences: the newest key's pattern plays, then the earlier key comes back on the grid and starts its
+// pattern over from step 1 at that step
+{ const { inst, log, until } = rig(2, 0b11111111);
+  until(0.1); inst.play(0, 60, 100, null); until(0.6); inst.play(0, 62, 100, null); until(1.1); inst.back(0, 60, 100, null); until(1.8); inst.release(0); until(3);
+  const after = log.filter((t) => t.beat > 1.1);
+  ok(log.filter((t) => t.note === 62).length >= 2, 'the newest key did not play its steps');
+  ok(after.length >= 3 && after.every((t) => t.note === 60) && near(after[0].beat, 1.25) && near(after[1].beat, 1.5), 'steps after the return: ' + JSON.stringify(after)); }
+// the pattern edited while the key is held is heard at once; ACTIVE switched off silences the steps
+{ const { inst, log, until } = rig(2, 0b1);
+  until(0.1); inst.play(0, 60, 100, null); until(0.4); inst.setParam(SEQ_PAT_BASE, 0b11111111); until(1.05); const n = log.length;
+  inst.setParam(SEQ_ON_BASE, 0); until(2);
+  ok(n === 4 && log.length === n, `live edit: ${n} steps, then ${log.length - n} after ACTIVE off`); }
 // the other zones don't care
 { const { inst, log, until } = rig(2);
   until(0.1); inst.back(0, 60, 100, null); inst.play(1, 61, 100, null); until(0.6);
   ok(log.length === 2 && log.some((t) => t.note === 60 && near(t.beat, 0.25)), 'zones not independent: ' + JSON.stringify(log)); }
-// a key auditioned (not held) plays once even with a repeat rate
-{ const { inst, log, until } = rig(2, 4);
+// a key auditioned (not held) plays once even with its sequence ACTIVE
+{ const { inst, log, until } = rig(2, 0b11111111);
   until(0.1); inst.play(0, 60, 100, null, false); until(2);
   ok(log.length === 1, 'an auditioned key repeated: ' + log.length); }
 console.log(fails ? `${fails} of ${checks} checks failed` : `ok: ${checks} checks`); process.exit(fails ? 1 : 0);

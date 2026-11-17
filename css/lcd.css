@@ -395,3 +395,19 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
 .fxside .mout .grm { grid-column: 2 / 7; align-self: center; padding-left: 8px; }
 .fxside .sect h3 { padding-left: 0; }
+/* the key's sequencer (row 4, the cells after the LFO): ACTIVE and RANDOM in its heading, eight steps across its
+   cells (1 and 5 marked as the beats), the step playing now outlined, and a LOCK on the knobs' LOCK line */
+.faders .sect.seq { padding-right: 8px; }
+.faders .sect.seq h3 { display: flex; align-items: center; gap: 6px; overflow: visible; }
+.faders .sect.seq h3 .hdb { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; }
+.faders .sect.seq h3.keyed .t { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
+.faders .sect.seq .steps { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; padding: 18px 0 0 8px; }
+.faders .sect.seq .st { height: var(--ks); min-width: 0; border: 2px solid var(--ink); border-radius: 2px; background: transparent;
+  color: var(--ink); font: inherit; font-size: 14px; padding: 0; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; }
+.faders .sect.seq .st.beat { border-width: 3px; }
+.faders .sect.seq .st:hover { background: var(--tint); }
+.faders .sect.seq .st[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.faders .sect.seq .st.now { outline: 2px solid var(--ink); outline-offset: 2px; }
+.faders .sect.seq .st:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.faders .sect.seq.off .steps { opacity: .42; }
+.faders .sect.seq > .lock { align-self: center; margin: 19px 0 0 8px; }

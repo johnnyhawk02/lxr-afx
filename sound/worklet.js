@@ -2,11 +2,11 @@
 //   { type: 'kit', values }                     load a whole kit
 //   { type: 'param', par, value }               one parameter edit (the base sound)
 //   { type: 'play', sound, note, vel, params, hold }  play a sound (params: [[par, value], ...] set first; hold: a
-//                                               key held down, so its repeat rate repeats it until 'release')
+//                                               key held down, so its sequence plays until 'release')
 //   { type: 'back', sound, note, vel, params }  the zone back to an earlier held key, on the next RETURN step
 //   { type: 'release', sound }                  every key of the zone let go
 // It posts { type: 'peaks', peaks } about 30 times a second for the level lights.
-import { LxrInstrument } from './instrument.js?v=mwkqts5l';
+import { LxrInstrument } from './instrument.js?v=mwkreyv1';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {
@@ -26,7 +26,7 @@ registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   process(_, outputs) {
     const o = outputs[0];
     this.inst.render(o[0], o[1] || o[0]);
-    if ((this.n += o[0].length) >= sampleRate / 30) { this.n = 0; this.port.postMessage({ type: 'peaks', peaks: this.inst.readPeaks(), gr: this.inst.readGr(), sc: this.inst.readSc() }); }
+    if ((this.n += o[0].length) >= sampleRate / 30) { this.n = 0; this.port.postMessage({ type: 'peaks', peaks: this.inst.readPeaks(), gr: this.inst.readGr(), sc: this.inst.readSc(), steps: this.inst.readSteps() }); }
     return true;
   }
 });

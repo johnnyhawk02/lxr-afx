@@ -29,14 +29,17 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   lows, or the other way round). The **SIDECHAIN** listens to the mix or one engine (SOURCE), through a filter (LP, BP,
   HP at FREQ) into an envelope (SENS, DECAY, shown on the ENV meter) that turns PREGAIN, CUTOFF or TONE up or down.
 - **Mono, last-note priority, per zone**: each zone (drum, snare, metal) plays one key at a time, the newest. Hold a
-  key, press another in the same zone and it takes over (with its own sound and repeat rate); let go of it while the
+  key, press another in the same zone and it takes over (with its own sound and sequence); let go of it while the
   first is still held and the first comes back on the next step of the BPM grid (**RETURN** in the top bar: NOW,
   1/32, **1/16** by default, 1/8, 1/4). The three zones don't affect each other. MIDI all-notes-off lets go of every
   zone.
-- **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
-  it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
+- **Sequencer** (SEQ, each key its own): eight steps, **ACTIVE** and **RANDOM**. While the key is held and ACTIVE is
+  on it plays its lit steps in 1/16s on the BPM grid, starting on the next 1/16 after the press, round and round; with
+  ACTIVE off the key plays once as usual. RANDOM deals a new pattern (and switches it on); editing steps while the key
+  is held is heard at once. **NEW SOUND** gives the key a random pattern, switched on, half the time (and switches it
+  off the other half); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
-  velocity, mix / lfo, repeat), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
+  velocity, mix / lfo, seq), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
@@ -47,7 +50,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
-  LFO 1 speed / portamento → the key's echo / reverb sends, LFO 2 speed → its note repeat rate, osc 1 / osc 2 / sub levels → the
+  LFO 1 speed / portamento → the key's echo / reverb sends, osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.

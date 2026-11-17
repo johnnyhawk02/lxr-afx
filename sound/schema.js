@@ -51,12 +51,16 @@ export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo &
 // (three slots per voice; the third, a distortion send, was dropped: its slot stays so saved kits still line up)
 export const SEND_BASE = NUM_PARAMS, SEND_FX = ['echo', 'reverb'];
 export const sendPar = (voice, k) => SEND_BASE + voice * 3 + k;
-// and after the sends, one more per voice: its note repeat (off, 1/64, 1/32, 1/16, 1/8 of a bar while the key is held)
-export const REPEAT_BASE = NUM_PARAMS + 18, REPEAT_NAMES = ['off', '1/64', '1/32', '1/16', '1/8'];
-export const repeatPar = (voice) => REPEAT_BASE + voice;
-export const ALL_PARAMS = NUM_PARAMS + 24;
+// after the sends, six slots that held the dropped note repeat (kept empty so saved kits still line up), then each
+// voice's 8-step sequencer: ACTIVE (0, 1) and its pattern (a bit a step, bit 0 = step 1), played in 1/16s while the key
+// is held
+export const REPEAT_BASE = NUM_PARAMS + 18;
+export const SEQ_ON_BASE = NUM_PARAMS + 24, SEQ_PAT_BASE = NUM_PARAMS + 30;
+export const seqOnPar = (voice) => SEQ_ON_BASE + voice, seqPatPar = (voice) => SEQ_PAT_BASE + voice;
+export const ALL_PARAMS = NUM_PARAMS + 36;
 export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
 for (let i = 8; i < NUM_PARAMS; i++) INIT_VALUES[i - 8] = INIT_KIT[i];
+for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
   'tom', 'snap 2', ...EXTRA_CLICK_NAMES];
@@ -168,8 +172,11 @@ function buildSchema(voice) {
   for (const e of out) if (e.display.type === 'target' && !e.display.anyVoice) e.display.voices = [voice];
   SEND_FX.forEach((name, k) => out.push({ key: 'SEND_' + name.toUpperCase() + (voice + 1), par: sendPar(voice, k), label: name, text: 'SEND_' + name.toUpperCase(),
     page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'lock' }));
-  out.push({ key: 'REPEAT' + (voice + 1), par: repeatPar(voice), label: 'rate', text: 'NOTE_REPEAT', page: 'mix', section: 'note repeat', min: 0,
-    max: REPEAT_NAMES.length - 1, def: 0, display: { type: 'menu', names: REPEAT_NAMES }, morph: null, weight: 0, rand: 'lock' });
+  // the sequencer (the editor draws it as a strip of steps; the randomisers leave it to NEW SOUND and its RANDOM)
+  out.push({ key: 'SEQ_ON' + (voice + 1), par: seqOnPar(voice), label: 'active', text: 'SEQ_ON', page: 'mix', section: 'seq', min: 0, max: 1,
+    def: 0, display: { type: 'menu', names: ['off', 'on'] }, morph: null, weight: 0, rand: 'seq', seq: true });
+  out.push({ key: 'SEQ_PAT' + (voice + 1), par: seqPatPar(voice), label: 'steps', text: 'SEQ_PAT', page: 'mix', section: 'seq', min: 0, max: 255,
+    def: 0b00010001, display: { type: 'num' }, morph: null, weight: 0, rand: 'seq', seq: true });
   return out;
 }
 

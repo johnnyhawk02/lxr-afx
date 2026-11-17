@@ -10,8 +10,8 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwkqts5l';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkqts5l';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwkreyv1';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkreyv1';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -19,7 +19,7 @@ import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkqts5l';
 export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
-  tempo: { bpm: 120, ret: 2 }, // for the note repeat, and RETURN: a zone back to an earlier held key now (0) or on the
+  tempo: { bpm: 120, ret: 2 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
   // next 1/32, 1/16, 1/8 or 1/4 (1..4)
   // the master: the whole mix (dry and FX returns) through the distortion (sound/dirt.js), then a compressor, then
   // the level
@@ -59,9 +59,9 @@ export class LxrInstrument {
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
-    // note repeat: per voice its rate (0 off, 1..4: 1/64, 1/32, 1/16, 1/8 of a bar), and per sound the held note
-    // that repeats: { note, vel, left } (left: engine samples to the next hit, fractional so it never drifts)
-    this.rate = new Uint8Array(6); this.held = SOUNDS.map(() => null); this.bpm = 120;
+    // the sequencer: per voice ACTIVE and its pattern, and per sound the held key it's playing: { note, vel, at, step,
+    // cur } (at: the beat of its next step; step: the next step, 0..7; cur: the step played last, -1 before the first)
+    this.seqOn = new Uint8Array(6); this.seqPat = new Uint8Array(6).fill(0b00010001); this.held = SOUNDS.map(() => null); this.bpm = 120;
     // the grid: beats since the start (it follows the BPM), and per sound a key coming back on a step: { at, note, vel, params }
     this.beat = 0; this.retQ = 2; this.backs = SOUNDS.map(() => null);
     this.dirt = new Dirt(REAL_FS); this.key = new Float32Array(BLOCK);
@@ -71,7 +71,9 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
-    if (par >= REPEAT_BASE) { this.rate[par - REPEAT_BASE] = value; return; }
+    if (par >= SEQ_PAT_BASE) { this.seqPat[par - SEQ_PAT_BASE] = value; return; }
+    if (par >= SEQ_ON_BASE) { this.seqOn[par - SEQ_ON_BASE] = value ? 1 : 0; return; }
+    if (par >= REPEAT_BASE) return; // the dropped note repeat's slots
     if (par >= SEND_BASE) { const i = par - SEND_BASE; if (i % 3 < 2) this.sends[i % 3][Math.floor(i / 3)] = value / 127; return; }
     if (this.e.activeParameters[par] !== value) this.e.setParam(par, value);
   }
@@ -90,42 +92,45 @@ export class LxrInstrument {
     if (dirt) this.dirt.set(dirt);
     if (master) Object.assign(this.m, master);
   }
-  /** hold: the key is held down, so a repeat rate repeats it until release() (false: it plays once) */
+  /** hold: the key is held down, so with its sequencer ACTIVE it plays its pattern until release(), from the next
+   * 1/16 of the grid; otherwise (or not held: a key auditioned) it plays once, now */
   play(sound, note, velocity, params, hold = true) {
     if (params) for (const [par, v] of params) this.setParam(par, v);
-    const vel = Math.max(1, Math.min(127, velocity | 0));
-    this.e.trigger(SOUNDS[sound].trigger, vel, note);
-    // a held key with a repeat rate retriggers until it's released (the same note and velocity)
-    const r = this.rate[SOUNDS[sound].engineVoice];
-    this.held[sound] = r && hold ? { note, vel, left: this.repeatLen(r) } : null;
+    const vel = Math.max(1, Math.min(127, velocity | 0)), v = SOUNDS[sound].engineVoice;
     this.backs[sound] = null;
+    if (hold && this.seqOn[v]) { this.held[sound] = { note, vel, at: Math.ceil(this.beat * 4 - 1e-6) / 4, step: 0, cur: -1 }; return; }
+    this.held[sound] = null;
+    this.e.trigger(SOUNDS[sound].trigger, vel, note);
   }
-  /** the zone's newest key let go while an earlier one is held: the newest's repeat stops, and the earlier key plays
-   * again (held, so its own repeat rate carries on) at once or on the next RETURN step of the grid */
+  /** the zone's newest key let go while an earlier one is held: the newest's sequence stops, and the earlier key plays
+   * again (held, so its own sequence starts over) at once or on the next RETURN step of the grid */
   back(sound, note, vel, params) {
     this.held[sound] = null;
     const div = [0, 8, 4, 2, 1][this.retQ] || 0; // steps per beat
     if (!div) { this.play(sound, note, vel, params); return; }
     this.backs[sound] = { at: Math.ceil(this.beat * div - 1e-6) / div, note, vel, params };
   }
-  /** every key of a sound let go: its repeat stops, and a key waiting to come back doesn't */
+  /** every key of a sound let go: its sequence stops, and a key waiting to come back doesn't */
   release(sound) { this.held[sound] = null; this.backs[sound] = null; }
-  repeatLen(r) { return 240 / this.bpm / (2 ** (7 - r)) * REAL_FS; } // r 1..4: 1/64 .. 1/8 of a 4/4 bar
+  /** the step each sound's sequence played last (0..7), -1 for none */
+  readSteps() { return this.held.map((h) => (h ? h.cur : -1)); }
   setBpm(bpm) { this.bpm = Math.max(20, Math.min(300, bpm)); }
   // one 64-sample block at the engine's rate: each voice panned as it was triggered
   _block(dst) {
     // keys coming back on a step of the grid that falls in this block (1.45 ms), then the grid moves on
     const step = BLOCK * this.bpm / 60 / REAL_FS;
     for (let s = 0; s < this.backs.length; s++) { const b = this.backs[s]; if (b && b.at < this.beat + step) this.play(s, b.note, b.vel, b.params); }
-    this.beat += step;
-    // repeats due in this block (the engine triggers on its 64-sample blocks, 1.45 ms; the timing carries the remainder)
+    // the sequences' steps due in this block, a 1/16 (a quarter of a beat) apart; the pattern and ACTIVE are read as
+    // they are now, so editing them while the key is held is heard at once
     for (let s = 0; s < this.held.length; s++) {
       const h = this.held[s]; if (!h) continue;
-      const r = this.rate[SOUNDS[s].engineVoice];
-      if (!r) { this.held[s] = null; continue; }
-      h.left -= BLOCK;
-      if (h.left <= 0) { this.e.trigger(SOUNDS[s].trigger, h.vel, h.note); h.left += this.repeatLen(r); if (h.left <= 0) h.left = this.repeatLen(r); }
+      const v = SOUNDS[s].engineVoice;
+      while (h.at < this.beat + step) {
+        if (this.seqOn[v] && (this.seqPat[v] >> h.step) & 1) this.e.trigger(SOUNDS[s].trigger, h.vel, h.note);
+        h.cur = h.step; h.step = (h.step + 1) & 7; h.at += 0.25;
+      }
     }
+    this.beat += step;
     const out = this.e.renderBlock(), e = this.e;
     const pans = [e.drums[0], e.drums[1], e.drums[2], e.snare, e.cymbal, e.hat];
     const [L, R] = dst;
