@@ -7,6 +7,8 @@ import { sendPar, VOICE_SCHEMAS } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
+// these checks are of the 2D screen (the 3D view has its own, test/view3d.mjs): every page here opens in 2D
+for (const k of ['newPage', 'newContext']) { const f = b[k].bind(b); b[k] = async (o) => { const x = await f(o); await x.addInitScript(() => { try { localStorage.setItem('lxr-afx-view', '2d'); } catch (e) { /* */ } }); return x; }; }
 let errors = 0;
 for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440, 790]]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
@@ -494,7 +496,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
       covers: [document.querySelectorAll('.pad')[12], document.querySelectorAll('.pad')[24], document.getElementById('pv-init'), document.getElementById('pv-undo'), document.querySelector('#pv-echo .track')].every((e) => m.contains(mid(e))),
       msgSeen: mid(msg) === msg || msg.contains(mid(msg)), onGrid: xs.includes(Math.round(r(document.getElementById('pv-menu-btn')).left)), btnH: Math.round(r(document.getElementById('pv-menu-btn')).height) }; });
   if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-menu.png` });
-  if (m0.run !== 13 || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || ml.first !== 'REMOVE ALL RHYTHMS' || ml.n !== 5 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40 || m1.off
+  if (m0.run !== 13 || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || ml.first !== 'REMOVE ALL RHYTHMS' || ml.n !== 6 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40 || m1.off
     || m1.cap !== '13 OF 25 KEYS RUN A RHYTHM WHILE HELD') bad('the menu', m0.run, m0.open, m0.btn, m1.open, m1.btn, ml, m1.off, m1.cap);
   await p.tap('#pv-norhythm'); await p.waitForTimeout(350); const m2 = await menu();
   await p.tap('#pv-random'); await p.waitForTimeout(500); const m3 = await menu(); // (new sounds, and still no rhythm)

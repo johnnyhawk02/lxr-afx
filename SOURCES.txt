@@ -1,0 +1,15 @@
+Third-party code and assets in LXR-AFX
+
+three.js r170 (vendor/three.module.min.js, vendor/RoomEnvironment.js)
+  https://github.com/mrdoob/three.js  -  MIT licence, see vendor/three-LICENSE. Unchanged except that
+  RoomEnvironment.js imports from ./three.module.min.js.
+
+VT323 font (loaded from Google Fonts)  -  SIL Open Font License 1.1, by Peter Hull.
+
+Textures: none downloaded. The 3D panel's wear (rubbed print, fine scratches, smudges), its satin/brushed
+grain and the wooden desk are drawn by app/view3d.js at load time from a fixed random seed, so there is no
+image file to credit. If CC0 texture files are added later (e.g. from ambientCG or Poly Haven), list each one
+here with its URL.
+
+Knob model: the knobs are turned on a lathe in app/view3d.js. An STL of your own can be loaded in LOOK
+(kept in that browser), or put in the repo and named in KNOB_STL at the top of app/view3d.js.

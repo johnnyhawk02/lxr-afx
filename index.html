@@ -8,13 +8,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwl1wqod">
+<link rel="stylesheet" href="css/lcd.css?v=mwl8ki9h">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
 (function () {
   var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
+  // the page opens as the 3D panel (unless 2D was chosen): the flat screen stays out of sight until the panel is up
+  var v = null; try { v = localStorage.getItem('lxr-afx-view'); } catch (e) {}
+  if (/[?&]2d\b/.test(q)) v = '2d'; else if (/[?&]3d\b/.test(q)) v = '3d';
+  if (v !== '2d') document.documentElement.classList.add('v3dw');
 })();
 </script>
 </head>
@@ -113,6 +117,7 @@
         <span id="edit-info" class="info"></span>
         <button class="btn sm" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
         <button class="btn sm" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
+        <button class="btn sm" id="view-btn" aria-pressed="false" title="The screen as a 3D panel">3D VIEW</button>
       </div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
@@ -135,6 +140,7 @@
       <button class="btn" id="pv-rand-eng">RANDOM: DRUM KEYS</button><span class="cap" id="pv-rand-eng-cap"></span>
       <button class="btn" id="pv-alter-eng">ALTER: DRUM KEYS</button><span class="cap" id="pv-alter-eng-cap"></span>
       <button class="btn" id="pv-alter-all">ALTER ALL</button><span class="cap">NUDGE THE SOUNDS OF ALL 25 KEYS</span>
+      <button class="btn" id="pv-view">3D VIEW</button><span class="cap" id="pv-view-cap">THE SCREEN AS A 3D PANEL</span>
     </div>
     <div class="pv-pads" id="pv-pads" role="group" aria-label="The 25 keys"></div>
     <div class="pv-key"><b id="pv-key"></b><span id="pv-what"></span></div>
@@ -165,11 +171,12 @@
   addEventListener('error', function (e) { err = err || (e.message || 'a file failed to load'); }, true);
   setTimeout(function () {
     if (window.afxReady) return;
+    document.documentElement.classList.remove('v3dw');
     var t = document.getElementById('start-text');
     if (t) t.textContent = 'The page didn\'t finish loading (' + (err || 'timed out') + '). Reload it with Cmd+Shift+R (Ctrl+Shift+R on a PC).';
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwl1wqod"></script>
+<script type="module" src="app/main.js?v=mwl8ki9h"></script>
 </body>
 </html>

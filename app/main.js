@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl1wqod';
-import { presetName } from './names.js?v=mwl1wqod';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl1wqod';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl1wqod';
-import { KIT_FILES } from '../sound/kits.js?v=mwl1wqod';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl1wqod';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl1wqod';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl8ki9h';
+import { presetName } from './names.js?v=mwl8ki9h';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl8ki9h';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl8ki9h';
+import { KIT_FILES } from '../sound/kits.js?v=mwl8ki9h';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl8ki9h';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl8ki9h';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -80,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl1wqod', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl8ki9h', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -360,7 +360,8 @@ function showGr(db) {
   grShown = Math.max(db, grShown * 0.8);
   const n = Math.round(Math.min(24, grShown));
   document.querySelectorAll('.grm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
-  const o = document.querySelector('.grm output'); if (o) o.textContent = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
+  const o = document.querySelector('.grm output'), t = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
+  if (o && o.textContent !== t) o.textContent = t; // (written only when it changes: the 3D view redraws on a change)
 }
 // the distortion's sidechain envelope: how far it's turning its target, a segment per twelfth
 let scShown = 0;
@@ -385,7 +386,8 @@ function dragger(track, axis, o) {
   let d = null;
   track.addEventListener('pointerdown', (e) => {
     if (e.button) return;
-    track.setPointerCapture(e.pointerId); track.focus({ preventScroll: true }); e.preventDefault();
+    try { track.setPointerCapture(e.pointerId); } catch (err) { /* (a press handed on by the 3D view: it holds the pointer itself) */ }
+    track.focus({ preventScroll: true }); e.preventDefault();
     const r = track.getBoundingClientRect(), len = o.len || (axis === 'x' ? r.width : r.height);
     // a press off the bar's end jumps there (not on a knob: it turns from where it is)
     const at = axis === 'x' ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
@@ -893,7 +895,7 @@ function buildStrip() {
       k.title = `${s.name} ${noteName(note)} #${note}`;
       k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
       // held down, it plays like a key on the keyboard (an ACTIVE sequence plays until it's let go)
-      k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => keyDown(i, note, 100)); });
+      k.addEventListener('pointerdown', (e) => { try { k.setPointerCapture(e.pointerId); } catch (err) { /* (handed on by the 3D view) */ } startAudio().then(() => keyDown(i, note, 100)); });
       const up = () => noteOff(note); k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
       g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
     }
@@ -921,8 +923,9 @@ document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.clo
 function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) openPresets(false); }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 document.addEventListener('pointerdown', (e) => {
-  if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
-  if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
+  // (the panels are named too: the 3D view lifts an open one out of its place, over the panel)
+  if (!$('menu-panel').hidden && !e.target.closest('#menu, #menu-panel')) openMenu(false);
+  if (!$('preset-panel').hidden && !e.target.closest('#pmenu, #preset-panel')) openPresets(false);
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); } });
 
@@ -1571,7 +1574,7 @@ function phoneMenu(open) {
 }
 $('pv-menu-btn').addEventListener('click', () => phoneMenu($('pv-menu').hidden));
 for (const [id, fn] of [['pv-norhythm', () => setRhythms(0, 'REMOVE ALL RHYTHMS')], ['pv-rhythm', () => setRhythms(50, 'RHYTHMS ON HALF THE KEYS')],
-  ['pv-rand-eng', () => $('scatter').click()], ['pv-alter-eng', () => $('alter').click()], ['pv-alter-all', () => $('kit-alter').click()]])
+  ['pv-rand-eng', () => $('scatter').click()], ['pv-alter-eng', () => $('alter').click()], ['pv-alter-all', () => $('kit-alter').click()], ['pv-view', () => viewPress()]])
   $(id).addEventListener('click', () => { phoneMenu(false); fn(); });
 // what the big screen says and shows, said and shown here too: the message line, UNDO there to press, INIT PATCH asking
 const mirror = (el, opts, fn) => { new MutationObserver(fn).observe(el, opts); fn(); };
@@ -1612,6 +1615,7 @@ function setPhone() {
 // bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
 // ---------------------------------------------------------------------------------------------------------------
 const FIT_W = 1264, FIT_H = 850;
+let v3d = null, is3d = false; // (the 3D view, below: it lays the screen out at one size itself)
 // the engine buttons sit right under their key groups in the strip above, FX under the key's buttons
 function alignEngines() {
   const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;
@@ -1623,7 +1627,7 @@ function alignEngines() {
 function fitScreen() {
   const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
   setPhone();
-  if (phoneOn) { sc.removeAttribute('style'); drawKeymap(); return; } // (the phone view lays itself out)
+  if (phoneOn || is3d) { sc.removeAttribute('style'); drawKeymap(); if (!phoneOn) alignEngines(); return; } // (the phone view and the 3D view lay themselves out)
   if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
   else sc.removeAttribute('style');
   drawKeymap(); alignEngines();
@@ -1631,4 +1635,41 @@ function fitScreen() {
 window.addEventListener('resize', fitScreen);
 fitScreen();
 document.fonts?.ready.then(alignEngines);
+
+// ---------------------------------------------------------------------------------------------------------------
+// the view: the screen as a 3D panel on a desk (app/view3d.js, three.js), which is how the page opens. The 2D screen
+// above is all still here: the panel is built from it and its controls are the ones a press on the panel reaches, so
+// the two can't drift apart. 2D VIEW (in LOOK, the button beside BS2 MAP) shows the flat screen and 3D VIEW the panel
+// again; the choice is kept in this browser. ?2d and ?3d in the address choose for one visit. Where WebGL can't
+// start, it's the flat screen
+// ---------------------------------------------------------------------------------------------------------------
+const VIEW_STORE = 'lxr-afx-view';
+function drawView() {
+  const b = $('view-btn');
+  b.textContent = is3d ? 'LOOK' : '3D VIEW'; $('pv-view').textContent = b.textContent;
+  b.title = is3d ? 'How the panel looks: its colour and finish, the knobs, the lights, wear, three slots to keep looks in; and the way back to the 2D screen' : 'The screen as a 3D panel';
+  $('pv-view-cap').textContent = is3d ? 'PANEL COLOUR, KNOBS, LIGHTS, AND THE WAY BACK TO 2D' : 'THE SCREEN AS A 3D PANEL';
+}
+async function setView(on, keep) {
+  if (on && !is3d) {
+    try {
+      v3d = v3d || await import('./view3d.js?v=mwl8ki9h');
+      const ok = v3d.start({ root: $('screen'), say: detail, on2d: () => setView(false, true), onLook: (open) => $('view-btn').setAttribute('aria-pressed', open),
+        onLayout: () => { drawKeymap(); if (!phoneOn) alignEngines(); } });
+      if (!ok) throw new Error('WebGL is not available');
+      is3d = true;
+    } catch (e) { detail(`the 3D view can't start here (${e.message}): this is the 2D screen`); }
+  } else if (!on && is3d) { v3d.stop(); is3d = false; $('view-btn').setAttribute('aria-pressed', false); }
+  if (keep) { try { localStorage.setItem(VIEW_STORE, is3d ? '3d' : '2d'); } catch (e) { /* not kept */ } }
+  document.documentElement.classList.remove('v3dw');
+  drawView(); fitScreen();
+}
+function viewPress() { if (is3d) v3d.toggleLook(); else setView(true, true); }
+$('view-btn').addEventListener('click', viewPress);
+window.afx.view = () => (is3d ? '3d' : '2d'); window.afx.setView = setView;
+{
+  let want = null; try { want = localStorage.getItem(VIEW_STORE); } catch (e) { /* as it comes */ }
+  if (asked.has('2d')) want = '2d'; else if (asked.has('3d')) want = '3d';
+  if (want !== '2d') setView(true); else drawView();
+}
 window.afxReady = true; // index.html's load check
