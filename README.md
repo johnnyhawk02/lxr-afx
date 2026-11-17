@@ -1,6 +1,6 @@
 # LXR-AFX
 
-An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key a morphed variant of its sound.
+An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key its own sound.
 **Play it: https://johnnyhawk02.github.io/lxr-afx/** (Chrome or Edge, for Web MIDI)
 
 ![LXR-AFX at 1440 × 900](docs/screenshot.png)
@@ -22,8 +22,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   copied and pasted like its other settings; ALL KEYS sets an engine's sends for every key.
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
-  pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and
-  every key's morph follows. **CLEAR KEY** / **CLEAR ALL KEYS** take a sound's key edits away.
+  pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
+  stay). **CLEAR** puts a key back to the engine's base sound.
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
@@ -32,7 +32,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
-  randomisers, morph, re-roll, base edits, clear) changes it until you unlock it. Locked keys show a padlock on the key map. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
+  randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
   **ALTER ALL** do all three sounds, with undo.
 
@@ -42,7 +42,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 |---|---|
 | `engine/` | the LXR-02 firmware's drum engine in JavaScript, copied unchanged from [elixir-desktop](https://github.com/johnnyhawk02/elixir-desktop) |
 | `sound/schema.js` | the seven sounds and each one's parameter schema (range, default, display, morph and randomiser rules) |
-| `sound/morph.js` | the key morph: pure, deterministic functions of the seed, the key and the base sound |
+| `sound/morph.js` | the old key morph (no longer used by the page; kept with its tests) |
 | `sound/instrument.js` | the engine as an instrument: `voices[i].play(note, velocity, params)` and `render(left, right)`, no UI |
 | `sound/worklet.js` | the instrument in an AudioWorklet |
 | `app/main.js`, `css/lcd.css` | the page |
