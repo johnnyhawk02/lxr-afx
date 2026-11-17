@@ -81,10 +81,9 @@ async function startAudio() {
 // made on one key never stays on for the next
 function keyPatch(sound, note) {
   const def = SOUNDS[sound], v = def.engineVoice, st = S.sounds[sound];
-  const amount = combinedAmount(pct(S.global), pct(st));
-  const m = morphKey({ schema: VOICE_SCHEMAS[v], base: S.values, note, seed: st.seed, amount, voice: v, zone: SOUNDS[sound].zone });
+  // no morph (dropped): a key with no sound of its own plays the engine's base sound
+  const m = { note: BASE_NOTE, semitones: 0, params: [] };
   const vals = new Map(voiceOwned(v).map((p) => [p, S.values[p]]));
-  for (const [p, x] of m.params) vals.set(p, x);
   const ed = S.keyEdits[sound][note];
   // a locked key plays the snapshot taken when it was locked, whole (only the sound's level still follows the mix)
   if (ed && ed._lock) {
@@ -127,7 +126,12 @@ function setValue(par, v, { quiet = false } = {}) {
 const editing = () => !S.editAll;
 function valueNow(par) { return editing() ? keyPatch(S.sel, editKey[S.sel]).vals.get(par) : S.values[par]; }
 function editValue(par, v) {
-  if (!editing()) { setValue(par, v); return; }
+  if (!editing()) { // ALL KEYS: the engine's base and every key of the zone that has its own sound (locked keys stay)
+    setValue(par, v);
+    const k = S.keyEdits[S.sel];
+    for (const n in k) if (!k[n]._lock) k[n][par] = v;
+    send({ type: 'param', par, value: v }); save(); drawKeymap(); return;
+  }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
   if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
   (k[note] ||= {})[par] = v;
@@ -195,7 +199,7 @@ const CC_DEFAULT = {
   90: { t: 'par', label: ['attack'], name: 'amp attack' }, 91: { t: 'par', label: ['decay'], name: 'amp decay' },
   103: { t: 'par', label: ['pitch dec', 'mod1 freq'], name: 'mod env decay' }, 94: { t: 'par', label: ['fm amt', 'mod1 gain'], name: 'distortion' },
   27: { t: 'par', label: ['coarse'], name: 'osc 1 coarse' }, 26: { t: 'par', label: ['fine'], name: 'osc 1 fine' },
-  18: { t: 'global', k: 'depth', name: 'lfo 1 speed' }, 5: { t: 'global', k: 'pitch', name: 'portamento' }, 19: { t: 'global', k: 'timbre', name: 'lfo 2 speed' },
+  18: { t: 'par', label: ['echo'], name: 'lfo 1 speed' }, 5: { t: 'par', label: ['reverb'], name: 'portamento' }, 19: { t: 'par', label: ['dist'], name: 'lfo 2 speed' },
   20: { t: 'zlevel', s: 0, name: 'osc 1 level' }, 21: { t: 'zlevel', s: 1, name: 'osc 2 level' }, 22: { t: 'zlevel', s: 2, name: 'sub osc level' },
 };
 const ccMap = () => S.ccMap || CC_DEFAULT;
@@ -220,9 +224,8 @@ function onCC(cc, val) {
   const t = ccMap()[cc];
   if (!t) { showLastText(`CC${cc} ${val} · not mapped (LEARN maps it)`); return; }
   let text;
-  if (t.t === 'global') { S.global[t.k] = Math.round(val / 127 * 100); text = `${ccTargetName(t)} ${S.global[t.k]}%`; }
-  else if (t.t === 'sound') { S.sounds[S.sel][t.k] = Math.round(val / 127 * 100); text = `${SOUNDS[S.sel].name} ${ccTargetName(t)} ${S.sounds[S.sel][t.k]}%`; }
-  else if (t.t === 'randkey') { // a button: acts once as it goes past half way up
+  if (t.t === 'global' || t.t === 'sound') { showLastText(`CC${cc} · was the morph (gone): BS2 MAP or LEARN maps it`); return; }
+  if (t.t === 'randkey') { // a button: acts once as it goes past half way up
     const up = val >= 64, was = ccHeld[cc]; ccHeld[cc] = up;
     if (up && !was) randKey(); return;
   }
@@ -333,12 +336,6 @@ function hbar(box, label, o) {
 
 // ---- the morph bars ----
 const P = (v) => v + '%';
-const globalDraws = ['depth', 'pitch', 'timbre'].map((k) => hbar($('global-bars'), k.toUpperCase(), {
-  min: 0, max: 100, get: () => S.global[k], set: (v) => { S.global[k] = v; save(); drawKeymap(); }, show: P, dflt: 100, learn: { t: 'global', k } }));
-const soundDraws = ['depth', 'pitch', 'timbre'].map((k) => hbar($('sound-bars'), k.toUpperCase(), {
-  min: 0, max: 100, get: () => S.sounds[S.sel][k], set: (v) => { S.sounds[S.sel][k] = v; save(); drawKeymap(); }, show: P, dflt: 50, learn: { t: 'sound', k } }));
-$('reroll').addEventListener('click', () => reroll());
-function reroll() { S.sounds[S.sel].seed = newSeed(); lastMorph[S.sel] = null; save(); drawSide(); drawFaders(); detail(`${SOUNDS[S.sel].name}: new seed <em>${hex(S.sounds[S.sel].seed)}</em>`); }
 
 // ---- level and the randomiser's amount ----
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
@@ -350,58 +347,24 @@ $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
 
 // ---------------------------------------------------------------------------------------------------------------
-// the key map: each key's pitch offset (a bar up or down from the middle line) and timbre amount (the dots under it)
+// the zone's keys, one row each: its note, the sound it plays, and whether it's locked or edited. A click picks the key
+// and plays it (drawKeymap keeps its old name: everything that changes a key calls it)
 // ---------------------------------------------------------------------------------------------------------------
 function drawKeymap() {
-  const cv = $('keymap'), dpr = window.devicePixelRatio || 1;
-  const cw0 = cv.clientWidth, ch0 = cv.clientHeight;
-  if (!cw0 || !ch0) return;
-  if (cv.width !== Math.round(cw0 * dpr) || cv.height !== Math.round(ch0 * dpr)) { cv.width = Math.round(cw0 * dpr); cv.height = Math.round(ch0 * dpr); }
-  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.clearRect(0, 0, cw0, ch0); g.translate(3, 0); // room for the edit key's box at either end
-  const W = cw0 - 6, H = ch0, ink = '#17200e', ghost = 'rgba(23,32,14,.11)';
-  g.clearRect(0, 0, W, H);
-  const zone = SOUNDS[S.sel].zone, n = zone.hi - zone.lo + 1, cw = W / n;
-  // rows: pitch (up and down from the middle line), then timbre, then the keyboard strip
-  const SEG = 5, STEP = 7, keysH = 8, timbreH = 3 * STEP, top = 4;
-  const half = Math.floor((H - top - keysH - timbreH - 12) / 2 / STEP) * STEP, mid = top + half;
-  const st = S.sounds[S.sel], amount = combinedAmount(pct(S.global), pct(st)), last = lastMorph[S.sel];
-  const segsMax = half / STEP;
-  for (let k = 0; k < n; k++) {
-    const note = zone.lo + k, x = Math.round(k * cw) + 1, w = Math.max(2, Math.round(cw) - 2);
-    g.fillStyle = ghost;
-    for (let s = 0; s < segsMax; s++) { g.fillRect(x, mid - STEP - s * STEP + 1, w, SEG); g.fillRect(x, mid + 1 + s * STEP, w, SEG); }
-    // pitch: a segment per twelfth of the full 12 semitones' height, from the middle line
-    const lockEd = S.keyEdits[S.sel][note]?._lock ? S.keyEdits[S.sel][note] : null;
-    const semis = lockEd ? lockEd._st || 0 : pitchOffset(note, st.seed, amount.pitch, zone), segs = Math.round(Math.abs(semis) / 12 * segsMax);
-    g.fillStyle = ink;
-    for (let s = 0; s < segs; s++) g.fillRect(x, semis > 0 ? mid - STEP - s * STEP + 1 : mid + 1 + s * STEP, w, SEG);
-    // timbre: up to three segments
-    const ty = mid + half + 6, t = Math.round(amount.timbre * keyDistance(note, zone).dist * 3);
-    for (let s = 0; s < 3; s++) { g.fillStyle = s < t ? ink : ghost; g.fillRect(x, ty + (2 - s) * STEP, w, SEG); }
-    // the keyboard strip: white keys full, black keys short; C3 solid
-    const ky = ty + timbreH + 3, black = [1, 3, 6, 8, 10].includes(note % 12);
-    g.fillStyle = note === zone.base ? ink : black ? 'rgba(23,32,14,.35)' : 'rgba(23,32,14,.7)';
-    g.fillRect(x, ky, w, black ? keysH / 2 : keysH);
-    if (editKey[S.sel] === note) { g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(x - 2, top - 3, w + 4, ky + keysH - top + 6); }
-    // a key with its own edits: a solid block on the middle line
-    if (lockEd) { // a padlock on the middle line, and a frame round the column
-      const cx = x + w / 2, bw = Math.min(w + 2, 16);
-      g.fillStyle = ink; g.fillRect(cx - bw / 2, mid - 3, bw, 10);
-      g.strokeStyle = ink; g.lineWidth = 2.5; g.beginPath(); g.arc(cx, mid - 3, bw / 2 - 3, Math.PI, 0); g.stroke();
-      g.setLineDash([3, 3]); g.lineWidth = 1.5; g.strokeRect(x - 1, top - 1, w + 2, ky + keysH - top + 2); g.setLineDash([]);
-    } else if (S.keyEdits[S.sel][note]) { g.fillStyle = ink; g.fillRect(x - 1, mid - 3, w + 2, 7); }
+  const z = SOUNDS[S.sel].zone, box = $('keylist'); box.innerHTML = '';
+  for (let note = z.hi; note >= z.lo; note--) {
+    const ed = S.keyEdits[S.sel][note], n = editCount(ed);
+    const r = document.createElement('button'); r.type = 'button'; r.className = 'kl';
+    if (note === editKey[S.sel]) r.classList.add('sel');
+    if (ed?._lock) r.classList.add('locked');
+    const what = ed?._kit && ed._kit !== 'kept' ? ed._kit : ed ? `own sound · ${n} set` : `${SOUNDS[S.sel].name.toLowerCase()} base`;
+    r.innerHTML = `<b></b><span></span><i>${ed?._lock ? 'LOCKED' : ''}</i>`;
+    r.querySelector('b').textContent = noteName(note); r.querySelector('span').textContent = what;
+    r.addEventListener('click', () => { startAudio().then(() => play(S.sel, note, 100)); });
+    box.append(r);
   }
-  g.fillStyle = 'rgba(23,32,14,.55)'; g.fillRect(0, mid, W, 1);
 }
 window.addEventListener('resize', drawKeymap);
-// a click on the key map picks the key to edit (it doesn't play: notes come from MIDI)
-$('keymap').addEventListener('click', (e) => {
-  const zone = SOUNDS[S.sel].zone, r = $('keymap').getBoundingClientRect(), n = zone.hi - zone.lo + 1;
-  editKey[S.sel] = zone.lo + clamp(Math.floor((e.clientX - r.left - 3) / (r.width - 6) * n), 0, n - 1);
-  if (S.editAll) setEditAll(false);
-  drawKeymap(); drawFaders(); drawEditKey();
-});
 
 // ---------------------------------------------------------------------------------------------------------------
 // the seven sounds
@@ -425,23 +388,11 @@ function select(i, view) {
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === i));
   buildFaders(); drawSide(); drawEditKey();
 }
-function drawKeyLabels() {
-  // a label under each C in the zone, and under the base
-  const z = SOUNDS[S.sel].zone, n = z.hi - z.lo + 1, box = $('keylabels'); box.innerHTML = '';
-  for (let note = z.lo; note <= z.hi; note++) {
-    if (note % 12 && note !== z.base) continue;
-    const sp = document.createElement('span'); sp.textContent = noteName(note) + (note === z.base ? ' BASE' : '');
-    sp.style.left = ((note - z.lo + 0.5) / n * 100) + '%'; if (note === z.base) sp.className = 'base';
-    box.append(sp);
-  }
-}
 function drawSide() {
   const s = SOUNDS[S.sel];
-  $('side-name').textContent = s.name; $('side-ch').textContent = `${noteName(s.zone.lo)}-${noteName(s.zone.hi)} · BASE ${noteName(s.zone.base)}`;
+  $('side-name').textContent = s.name; $('side-ch').textContent = `${noteName(s.zone.lo)}-${noteName(s.zone.hi)} · ${s.zone.hi - s.zone.lo + 1} KEYS`;
   $('rand-name').textContent = s.name;
-  drawKeyLabels();
-  $('seed').textContent = hex(S.sounds[S.sel].seed);
-  soundDraws.forEach((d) => d()); globalDraws.forEach((d) => d()); randDraws.forEach((d) => d());
+  randDraws.forEach((d) => d());
   drawLocks(); drawKeymap();
 }
 
@@ -605,13 +556,13 @@ function drawEditKey() {
   $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
   $('edit-key').textContent = 'THIS KEY';
-  $('edit-info').textContent = S.view === 'fx' ? 'the effects: every key feeds them at its sends' : locked ? `${noteName(note)} is locked` : S.editAll ? 'the base: every key follows' : `${noteName(note)} only`;
+  $('edit-info').textContent = S.view === 'fx' ? 'the effects: every key feeds them at its sends' : locked ? `${noteName(note)} is locked` : S.editAll ? 'every key of the zone (locked keys stay)' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked; $('clear-keys').disabled = n === nl;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
   $('rand-key').disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) :
-    note === SOUNDS[S.sel].zone.base ? 'the base sound' : here ? `morph + ${here} edit${here === 1 ? '' : 's'}` : 'a morph of the base';
+    here ? `base + ${here} edit${here === 1 ? '' : 's'}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
   $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
   $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what;
   $('screen').classList.toggle('keylocked', locked);
@@ -619,7 +570,7 @@ function drawEditKey() {
 }
 $('edit-key').addEventListener('click', () => setEditAll(false));
 $('edit-all').addEventListener('click', () => setEditAll(true));
-$('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to its morph`); });
+$('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to the engine's base sound`); });
 $('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
 $('alter-key').addEventListener('click', () => alterKey());
 
@@ -683,7 +634,7 @@ function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttri
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 document.addEventListener('pointerdown', (e) => { if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openMenu(false); });
-$('clear-keys').addEventListener('click', () => { const e = S.keyEdits[S.sel]; for (const k in e) if (!e[k]._lock) delete e[k]; save(); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name}: every key back to its morph`); });
+$('clear-keys').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: every key a fresh kit sound (locked keys stay)`));
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -859,7 +810,6 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
-  else if (e.key === 'r' || e.key === 'R') reroll();
   else if (e.key === 'k' || e.key === 'K') randKey();
   else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'f' || e.key === 'F') fxBtn.click();
@@ -874,6 +824,8 @@ $('start-btn').addEventListener('click', async () => {
   await startAudio();
   startMidi();
 });
+// with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
+SOUNDS.forEach((_, i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
 buildStrip();
 select(clamp(S.sel, 0, SOUNDS.length - 1));
 // the layout: three zones up from the lowest key, moved by octaves with LOW KEY (the keys' edits move with them)

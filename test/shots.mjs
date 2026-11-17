@@ -2,6 +2,7 @@
 // page's test hook (no MIDI device needed). Fails on any page error.
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
+import { sendPar } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
@@ -36,7 +37,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   await p.evaluate(() => window.afx.cc(99, 1)); // nothing armed yet: ignored as unmapped
   await p.waitForTimeout(400);
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
-    if (st.sel !== 2 || !st.keyEdits[2]['66'] || st.global.depth !== 50) { errors++; console.log('cc: sel', st.sel, 'edits', st.keyEdits[2]['66'], 'depth', st.global.depth); } }
+    const echo = st.keyEdits[2]['66']?.[sendPar(4, 0)];
+    if (st.sel !== 2 || !st.keyEdits[2]['66'] || echo !== 64) { errors++; console.log('cc: sel', st.sel, 'edits', st.keyEdits[2]['66'], 'echo send', echo); } }
   await p.keyboard.press('Escape');
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);

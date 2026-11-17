@@ -9,10 +9,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
   (52, 60, 68). LOW KEY moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
-- **Key morph**: a zone's base key plays its sound as you made it. Every other key plays a variant, changing pitch and
-  timbre, more the further it is from the base (each end of a zone is the full amount). Each key's variant is fixed by
-  the sound's seed; **re-roll** for a new set. Depth, pitch and timbre sliders for all sounds and per sound; depth 0 plays
-  the base sound on every key.
+- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (RESET KEYS in the
+  RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
+  versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
   (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L), **NEW SOUND** (K),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
@@ -28,7 +27,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
-  LFO 1 speed / portamento / LFO 2 speed → morph depth / pitch / timbre (all sounds), osc 1 / osc 2 / sub levels → the
+  LFO 1 speed / portamento / LFO 2 speed → the key's echo / reverb / dist sends, osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.

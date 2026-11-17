@@ -30,7 +30,7 @@
         <div class="randrow">
           <button class="btn" id="alter" title="Nudge this engine's sound a little (10%), and each key with its own sound">ALTER</button>
           <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
-          <button class="btn" id="clear-keys" title="Every key of this zone back to its plain morph (locked keys stay)">CLEAR KEYS</button>
+          <button class="btn" id="clear-keys" title="Every key of this zone a fresh kit sound (locked keys stay)">RESET KEYS</button>
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="randrow">
@@ -60,7 +60,7 @@
       <button class="btn" id="alter-key" title="Nudge this key's sound a little (A; UNDO takes it back)">ALTER KEY</button>
       <button class="btn sm" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
       <button class="btn sm" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
-      <button class="btn sm" id="clear-key" title="This key back to its plain morph">CLEAR</button>
+      <button class="btn sm" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
     </div>
   </section>
 
@@ -68,21 +68,11 @@
 
   <div class="body">
     <aside class="side">
-      <section class="card">
-        <h2>MORPH <span class="dim">ALL ENGINES</span></h2>
-        <div class="bars" id="global-bars"></div>
-      </section>
       <section class="card grow">
         <h2><span id="side-name">DRUM</span> <span class="dim" id="side-ch">CH 1</span></h2>
         <div class="bars" id="sound-bars"></div>
-        <div class="seedrow">
-          <span class="dim">SEED</span><b class="seed" id="seed">0000</b>
-          <button class="btn" id="reroll" title="A new seed: every key gets a new variant (R)">RE-ROLL</button>
-        </div>
-        <div class="keymap">
-          <canvas id="keymap" aria-label="Key map: each key's pitch and timbre morph"></canvas>
-          <div class="keylabels" id="keylabels"></div>
-        </div>
+        <h3 class="klhead"><span>KEY</span><span>SOUND</span></h3>
+        <div class="keylist" id="keylist" aria-label="The zone's keys: click one to pick it and hear it"></div>
       </section>
     </aside>
 
@@ -90,14 +80,14 @@
       <div class="editbar">
         <span class="dim">KNOBS EDIT</span>
         <button class="btn" id="edit-key" title="Edits change only this key">THIS KEY</button>
-        <button class="btn" id="edit-all" title="Edits change the engine's base sound: every key's morph follows">ALL KEYS</button>
+        <button class="btn" id="edit-all" title="Edits go to every key of this zone at once (locked keys stay)">ALL KEYS</button>
         <span id="edit-info" class="info"></span>
         <button class="btn sm" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
         <button class="btn sm" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
       </div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
-      <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS edits the base, and every key follows.</span>
+      <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS sets a control on every key of the zone.</span>
         <span class="dim" id="zones"></span></footer>
     </section>
   </div>
