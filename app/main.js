@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkybe71';
-import { presetName } from './names.js?v=mwkybe71';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkybe71';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkybe71';
-import { KIT_FILES } from '../sound/kits.js?v=mwkybe71';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkybe71';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkybe71';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkzygyc';
+import { presetName } from './names.js?v=mwkzygyc';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkzygyc';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkzygyc';
+import { KIT_FILES } from '../sound/kits.js?v=mwkzygyc';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkzygyc';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkzygyc';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -24,13 +24,12 @@ const panPar = (v) => PAR['PAN' + (v + 1)], PAN_PARS = new Set([0, 1, 2, 3, 4, 5
 // a pan for a randomised sound of an engine voice, anywhere in its range (PAN_RANGE: the drum centred, the snare within
 // 20%, the metal anywhere)
 const randPan = (v) => { const [lo, hi] = PAN_RANGE[v]; return lo + Math.floor(rnd() * (hi - lo + 1)); };
-const defaultLocks = () => { const s = new Set(); for (const sc of VOICE_SCHEMAS) for (const e of sc) if (e.rand === 'lock') s.add(e.par); return s; };
 const S = {
   values: INIT_VALUES.slice(), // the kit: every sound's base
   defaults: INIT_VALUES.slice(), // what a double-click resets to (the last kit loaded)
   global: { depth: 100, pitch: 100, timbre: 100 },
   sounds: SOUNDS.map(() => ({ depth: 50, pitch: 50, timbre: 50, seed: newSeed() })),
-  locks: defaultLocks(),
+  locks: new Set(), // the controls with a closed padlock: nothing random changes them (none as it comes)
   // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence; autoLevel:
   // the randomisers level each sound they deal or alter
   rand: { alter: 10, wild: false, rhythms: 50, autoLevel: true },
@@ -50,9 +49,9 @@ try {
     const fit = (a) => { const o = INIT_VALUES.slice(); o.set(a.slice(0, ALL_PARAMS)); return o; };
     S.values = fit(d.values); S.defaults = fit(d.defaults || d.values);
     if (d.fx) for (const k in S.fx) Object.assign(S.fx[k], d.fx[k]);
-    if (d.values.length < ALL_PARAMS) d.locks = [...d.locks, ...[...defaultLocks()].filter((p) => p >= d.values.length)]; // new controls (sends, repeat): locked
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
     if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
+    if (d.lockRule !== 2) { const was = new Set(VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par)); d.locks = d.locks.filter((p) => !was.has(p)); } // (these used to be locked as they came)
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
@@ -64,7 +63,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
@@ -81,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkybe71', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkzygyc', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -160,7 +159,7 @@ const editing = () => !S.editAll;
 function valueNow(par) { return editing() ? keyPatch(S.sel, editKey[S.sel]).vals.get(par) : S.values[par]; }
 // a control changed by hand on a key: the value it had as dealt is kept (ed._o), so its label lights, the notch
 // outside its ring shows where it was, and a double-click puts it back. Turned back to that value, it's no longer
-// an edit. A new sound on the key (NEW SOUND, SCATTER, PASTE) starts again with none
+// an edit. A new sound on the key (NEW SOUND, RANDOM, PASTE) starts again with none
 function handEdit(ed, par, was, v) {
   const o = (ed._o ||= {});
   if (!(par in o)) o[par] = was;
@@ -340,7 +339,7 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
   pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals],
-  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS }; // a key's AUTO LEVEL correction, dB
+  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS, locks: () => [...S.locks], setFx: (fx) => applyFx(fx) }; // a key's AUTO LEVEL correction, dB
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -438,7 +437,7 @@ $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
 $('auto-on').checked = S.rand.autoLevel;
 $('auto-on').addEventListener('change', () => { S.rand.autoLevel = $('auto-on').checked; save();
-  detail(S.rand.autoLevel ? 'AUTO LEVEL <em>on</em>: NEW SOUND, SCATTER and ALTER bring each key to its engine\'s level' : 'AUTO LEVEL <em>off</em>: a dealt sound plays as loud as its kit made it'); });
+  detail(S.rand.autoLevel ? 'AUTO LEVEL <em>on</em>: NEW SOUND, RANDOM and ALTER bring each key to its engine\'s level' : 'AUTO LEVEL <em>off</em>: a dealt sound plays as loud as its kit made it'); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // the zone's keys, one row each: its note, the sound it plays, and whether it's locked or edited. A click picks the key
@@ -571,8 +570,11 @@ function seqPanel(el, voice) {
     b.addEventListener('click', () => { editValue(pat, valueNow(pat) ^ (1 << i)); drawFaders(); });
     steps.append(b); seqSteps.push(b);
   }
-  lock.title = 'Lock the sequencer: NEW SOUND leaves its steps and ACTIVE alone';
-  lock.addEventListener('click', () => { const l = !S.locks.has(pat); for (const p of [on, pat]) if (l) S.locks.add(p); else S.locks.delete(p); save(); drawFaders(); drawLocks(); });
+  lock.title = 'Lock the sequencer: the dice, RANDOM and the RHYTHMS slider leave its steps and ACTIVE alone, on every key';
+  lock.addEventListener('click', () => {
+    const l = !S.locks.has(pat); for (const p of [on, pat]) if (l) S.locks.add(p); else S.locks.delete(p); save(); drawFaders(); drawLocks();
+    detail(l ? `${SOUNDS[S.sel].name} SEQ <em>locked</em>: the dice, RANDOM and RHYTHMS leave every ${SOUNDS[S.sel].name.toLowerCase()} key's steps as they are` : `${SOUNDS[S.sel].name} SEQ <em>unlocked</em>`);
+  });
   faderDraws.push(() => {
     const p = valueNow(pat), a = valueNow(on);
     seqSteps.forEach((b, i) => b.setAttribute('aria-pressed', !!((p >> i) & 1)));
@@ -766,7 +768,7 @@ function vfader(e) {
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
     const locked = S.locks.has(e.par);
     lock.setAttribute('aria-pressed', locked);
-    lock.title = locked ? `${e.label.toUpperCase()} is locked: the randomisers leave it alone. Click to unlock` : `Lock ${e.label.toUpperCase()}: the randomisers leave it alone`;
+    lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
   };
   const put = (x) => {
     x = clamp(Math.round(x), 0, e.max);
@@ -786,7 +788,10 @@ function vfader(e) {
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
   el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
   tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, valueNow(e.par))}</em>`));
-  lock.addEventListener('click', () => { if (S.locks.has(e.par)) S.locks.delete(e.par); else S.locks.add(e.par); save(); draw(); drawLocks(); });
+  lock.addEventListener('click', () => {
+    const on = !S.locks.has(e.par); if (on) S.locks.add(e.par); else S.locks.delete(e.par); save(); draw(); drawLocks();
+    detail(on ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);
+  });
   faderDraws.push(draw);
   return el;
 }
@@ -924,19 +929,22 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu
 // ---------------------------------------------------------------------------------------------------------------
 let rngState = (Date.now() ^ 0x9e3779b9) >>> 0 || 1;
 const rnd = () => { rngState ^= rngState << 13; rngState >>>= 0; rngState ^= rngState >>> 17; rngState ^= rngState << 5; rngState >>>= 0; return rngState / 4294967296; };
+// what ALTER moves: not a locked control, a modulation target, the sequencer, LEVEL or a send ('mix'), and not a
+// switch or setting the kit sound brought ('still': waveforms, modes, the LFO, velocity, sample rate) unless WILD
+const alters = (e, wild = S.rand.wild) => !(S.locks.has(e.par) || e.display.type === 'target' || e.seq || e.rand === 'mix' || (e.rand === 'still' && !wild));
 function randomiseVoice(voice, depth, wild) {
   const sc = VOICE_SCHEMAS[voice];
   if (!homes[voice]) homes[voice] = new Map(sc.map((e) => [e.par, S.values[e.par]]));
   const home = homes[voice];
   for (const e of sc) {
-    if (S.locks.has(e.par) || e.display.type === 'target' || e.seq) continue;
+    if (!alters(e, wild)) continue;
     setValue(e.par, vary(e, home.get(e.par), depth, wild), { quiet: true });
   }
 }
 // one control's value moved around h by depth: within its drum-safe range, or its whole range when wild
 function vary(e, h, depth, wild) {
   if (e.strict) { const [lo, hi] = e.rand; return clamp(Math.round(clamp(h, lo, hi) + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi); } // pan: always inside its range
-  const range = wild || e.rand === 'lock' ? [0, e.max] : e.rand; // an unlocked 'lock' control moves over its whole range
+  const range = wild || e.rand === 'still' ? [0, e.max] : e.rand; // (a control with no drum range moves over its whole range)
   let v = h;
   if (range === 'pitch') v = Math.round(h + (rnd() * 2 - 1) * depth * 12); // up to an octave either way
   else if (e.max < 20) { if (rnd() < depth) v = range[0] + Math.floor(rnd() * (Math.min(e.max, range[1]) - range[0] + 1)); }
@@ -954,7 +962,7 @@ function alterKeys(sound, depth) {
     if (S.keyEdits[sound][k]._lock) continue;
     const note = Number(k), now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][k];
     for (const e of sc) {
-      if (S.locks.has(e.par) || e.display.type === 'target' || e.seq) continue;
+      if (!alters(e)) continue;
       const v = vary(e, now.get(e.par), depth, S.rand.wild);
       if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
     }
@@ -969,7 +977,7 @@ const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, alterDepth(), S.r
 function alterOne(sound, note, depth) {
   const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice], now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][note] || {};
   for (const e of sc) {
-    if (S.locks.has(e.par) || e.display.type === 'target' || e.seq) continue;
+    if (!alters(e)) continue;
     const v = vary(e, now.get(e.par), depth, S.rand.wild);
     if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
   }
@@ -979,7 +987,7 @@ function alterOne(sound, note, depth) {
 function alterKey() {
   const sound = S.sel, note = editKey[sound];
   if (keyLocked(sound, note)) { lockedMsg(); return; }
-  randChange(() => { alterOne(sound, note, alterDepth()); if (S.editAll) setEditAll(false); }, `${SOUNDS[sound].name} ${noteName(note)} altered <em>${S.rand.alter}%</em> (UNDO takes it back)`)
+  randChange(() => { alterOne(sound, note, alterDepth()); if (S.editAll) setEditAll(false); }, `${SOUNDS[sound].name} ${noteName(note)} altered <em>${S.rand.alter}%${wildly()}</em>${keptNote([sound])} (UNDO takes it back)`)
     .then(() => { drawKeymap(); play(sound, note, 100); });
 }
 const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, alterDepth()); };
@@ -1077,15 +1085,28 @@ function pool(sound) {
   }
   return (pools[sound] = out);
 }
+// a new sound on a key leaves its locked controls as the key plays them now (now: the key's values before), and its
+// sends, which are part of the mix, not of the sound
+function keepLocked(ed, now) { for (const par of S.locks) if (now.has(par) && now.get(par) !== (ed[par] ?? S.values[par])) ed[par] = now.get(par); }
+function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
+// the padlocks that are holding something back on these engines, by name, for the message line
+function keptNote(sounds) {
+  const names = [];
+  for (const s of sounds) { const v = SOUNDS[s].engineVoice;
+    for (const e of VOICE_SCHEMAS[v]) if (S.locks.has(e.par) && !e.seq) names.push(e.label.toUpperCase());
+    if (S.locks.has(seqPatPar(v))) names.push('SEQ'); }
+  const u = [...new Set(names)];
+  return !u.length ? '' : u.join(', ').length <= 16 ? ` · locked <em>${u.join(', ')}</em> kept` : ` · <em>${u.length} locked knobs</em> kept`; // (short: the line must fit)
+}
 function scatter(sound) {
   const z = SOUNDS[sound].zone, p = pool(sound), order = [];
   for (let note = z.lo; note <= z.hi; note++) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note)) continue;
+    const now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
     const s = p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
-    const v = SOUNDS[sound].engineVoice;
-    ed._r = rnd(); ed[seqPatPar(v)] = randomPattern();
-    if (!S.locks.has(panPar(v))) ed[panPar(v)] = randPan(v);
+    ed._r = rnd(); ed[seqPatPar(v)] = randomPattern(); ed[panPar(v)] = randPan(v);
+    keepSends(ed, now, v); keepLocked(ed, now);
     levelKey(sound, note, true);
   }
   applyRhythms(sound); // and rhythms on the slider's share of the keys
@@ -1093,7 +1114,7 @@ function scatter(sound) {
 // ---- RHYTHMS (in the RANDOM menu): the share of keys that play a running sequence. Each key draws a number (kept
 // with its edits as _r); in each zone the keys with the lowest numbers, as many as the slider's share, play a rhythm.
 // Moving the slider up switches more keys on (each keeping its pattern, or dealt a random one), down switches them
-// off, always the same keys in the same order. SCATTER, RESET KEYS and SCATTER ALL deal every key a new number and
+// off, always the same keys in the same order. RANDOM and RANDOM ALL deal every key a new number and
 // pattern; NEW SOUND deals its one key a rhythm at the slider's chance. Locked keys, and a zone whose SEQ is locked,
 // are left alone ----
 const blankRank = (sound, note) => { const r = (Math.sin(note * 12.9898 + sound * 78.233) * 43758.5453) % 1; return r < 0 ? r + 1 : r; };
@@ -1130,7 +1151,7 @@ function setRhythms(pc) {
   save(); drawFaders(); drawKeymap(); drawEditKey(); randDraws.forEach((d) => d());
   detail(`RHYTHMS <em>${pc}%</em>: ${n} of ${all} keys play a rhythm (locked keys stay as they are)`);
 }
-// NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as SCATTER
+// NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as RANDOM
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
 function randKey() {
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
@@ -1143,39 +1164,45 @@ function randKey() {
     for (const [p, x] of now) if (p >= NUM_PARAMS) ed[p] = x; // the key keeps its sends
     dealRhythm(sound, ed, true); // and a rhythm, or none, as the RHYTHMS slider deals them
     ed[panPar(SOUNDS[sound].engineVoice)] = randPan(SOUNDS[sound].engineVoice); // and a pan in its range (a lock keeps the old one)
-    for (const par of S.locks) if (par in ed) ed[par] = now.get(par);
+    keepLocked(ed, now);
     S.keyEdits[sound][note] = ed;
     levelKey(sound, note, true);
     if (S.editAll) setEditAll(false);
-  }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${s.label}</em> (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
+  }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${s.label}</em>${keptNote([sound])} (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
 }
 diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
-$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})${levelled()}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three zones: a kit sound on every key${levelled()}`));
+const ALL3 = [0, 1, 2];
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a new kit sound on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three engines: a new kit sound on every key${levelled()}${keptNote(ALL3)}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
-$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}`));
-$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three zones: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}`));
+$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
+$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(ALL3)}`));
 $('level').addEventListener('click', () => randChange(() => levelZone(S.sel), `${SOUNDS[S.sel].name}: every key levelled to <em>${LEVEL_TARGET_DB[S.sel]} dB</em> (locked keys stay)`).then(sendTrim));
 $('kit-level').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => levelZone(i)), 'all three zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
 // ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit sound as
-// SCATTER ALL deals them (levelled, panned and given rhythms the same way), locked keys and hand edits included. Then
+// RANDOM ALL deals them (levelled, panned and given rhythms the same way), locked keys and hand edits included. Then
 // the effects: INIT_REVERB % of the keys get a reverb send and INIT_ECHO % an echo send (which keys is random, and a
-// key can have both), the rest none. BPM, the effects' own settings, the master, the zone levels and the control locks
-// stay. With locked keys it asks first (a second press within a few seconds); UNDO takes it back, locks and all ----
+// key can have both), the rest none. BPM, the effects and the master go back to their starting settings. A control
+// with a closed padlock keeps what each key has, the sends too. With locked keys it asks first (a second press within
+// a few seconds); UNDO takes it back, locks and all ----
 const INIT_REVERB = 30, INIT_ECHO = 20, INIT_SEND = { echo: [40, 85], reverb: [45, 95] };
 function initPatch() {
   const keys = [];
-  SOUNDS.forEach((def, sound) => { S.keyEdits[sound] = {}; scatter(sound); for (let n = def.zone.lo; n <= def.zone.hi; n++) keys.push([sound, n]); });
+  SOUNDS.forEach((def, sound) => { // (the key locks come off: every key gets a new sound; the hand edits go with the old sounds)
+    for (const n in S.keyEdits[sound]) delete S.keyEdits[sound][n]._lock;
+    scatter(sound); for (let n = def.zone.lo; n <= def.zone.hi; n++) keys.push([sound, n]); });
   // exactly the share of the keys, whichever they are
   const some = (pc) => { const a = keys.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return new Set(a.slice(0, Math.round(pc / 100 * a.length))); };
   const amount = ([lo, hi]) => lo + Math.floor(rnd() * (hi - lo + 1)), rev = some(INIT_REVERB), ech = some(INIT_ECHO);
   for (const k of keys) {
     const [sound, n] = k, v = SOUNDS[sound].engineVoice, ed = S.keyEdits[sound][n];
-    ed[sendPar(v, 0)] = ech.has(k) ? amount(INIT_SEND.echo) : 0; ed[sendPar(v, 1)] = rev.has(k) ? amount(INIT_SEND.reverb) : 0;
+    if (!S.locks.has(sendPar(v, 0))) ed[sendPar(v, 0)] = ech.has(k) ? amount(INIT_SEND.echo) : 0; // (a locked send keeps what the key had)
+    if (!S.locks.has(sendPar(v, 1))) ed[sendPar(v, 1)] = rev.has(k) ? amount(INIT_SEND.reverb) : 0;
   }
-  return { keys: keys.length, reverb: rev.size, echo: ech.size };
+  const sent = (i) => keys.filter(([sound, n]) => keyPatch(sound, n).vals.get(sendPar(SOUNDS[sound].engineVoice, i)) > 0).length;
+  return { keys: keys.length, reverb: sent(1), echo: sent(0) };
 }
 // a new patch starts from the effects as they come: BPM, the echo, the reverb, the distortion, the compressor and the
 // output level back to their starting settings (RETURN is how the keys play, not part of the sound: it stays)
@@ -1198,7 +1225,7 @@ $('init-patch').addEventListener('click', () => {
   let n;
   randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
     drawKeymap(); sendTrim(); drawPreset();
-    detail(`new patch <em>${S.preset.name}</em>: ${n.keys} kit sounds · ${n.reverb} with reverb, ${n.echo} with echo${levelled()} · BPM, FX and master reset (UNDO takes it back)`);
+    detail(`new patch <em>${S.preset.name}</em>: reverb on ${n.reverb}, echo on ${n.echo} · BPM, FX, master reset${keptNote(ALL3)}`);
   });
 });
 drawInit();
@@ -1217,16 +1244,16 @@ function undo() {
   detail(`undone: <em>${u.what}</em>${undoStack.length ? ` · ${undoStack.length} more` : ''}`);
 }
 $('undo').addEventListener('click', undo);
+// the knob padlocks, all three engines': how many are closed (the sequencer's two parts count as one), and UNLOCK ALL
+const lockCount = () => VOICE_SCHEMAS.flat().filter((e) => S.locks.has(e.par) && !/^SEQ_ON/.test(e.key)).length;
 function drawLocks() {
-  const n = VOICE_SCHEMAS[selVoice()].filter((e) => S.locks.has(e.par)).length;
-  $('lock-count').textContent = `${n} LOCKED`;
+  const n = lockCount();
+  $('lock-count').textContent = n ? `${n} LOCKED` : 'NONE LOCKED'; $('lock-none').disabled = !n;
 }
-$('lock-default').addEventListener('click', () => {
-  const d = defaultLocks();
-  for (const e of VOICE_SCHEMAS[selVoice()]) { if (d.has(e.par)) S.locks.add(e.par); else S.locks.delete(e.par); }
-  save(); drawFaders(); drawLocks();
+$('lock-none').addEventListener('click', () => {
+  const n = lockCount(); S.locks.clear(); save(); drawFaders(); drawLocks();
+  detail(`<em>${n}</em> knob${n === 1 ? '' : 's'} unlocked: everything is open to the dice, RANDOM and ALTER again`);
 });
-$('lock-none').addEventListener('click', () => { for (const e of VOICE_SCHEMAS[selVoice()]) S.locks.delete(e.par); save(); drawFaders(); drawLocks(); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // the computer's keys: [ and ] (or the left and right arrows) step to the key before or after and play it, Space plays

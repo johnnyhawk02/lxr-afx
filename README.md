@@ -9,14 +9,14 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
   (52, 60, 68). LOW KEY moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
-- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (SCATTER in the
+- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (RANDOM in the
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
   (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
-  whole engine or all three (INIT PATCH, scatter, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, control locks)
+  whole engine or all three (INIT PATCH, random, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, the knob padlocks)
   is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
@@ -40,10 +40,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   on it plays its lit steps in 1/16s on the BPM grid, starting on the next 1/16 after the press, round and round; with
   ACTIVE off the key plays once as usual. RANDOM deals a new pattern (and switches it on); editing steps while the key
   is held is heard at once. **NEW SOUND** gives the key a random pattern, switched on, at the RHYTHMS share (and switches it
-  off otherwise); its padlock keeps NEW SOUND off it. The other randomisers never touch it.
+  off otherwise); its padlock keeps NEW SOUND, RANDOM and the RHYTHMS slider off it, on every key of the engine.
 - **RHYTHMS** (RANDOM menu, 50% by default): the share of keys that play a running rhythm. Moving it switches keys on
   or off at once across all three zones (always the same keys in the same order, each keeping its pattern or dealt a
-  random one); SCATTER and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
+  random one); RANDOM and RANDOM ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
   at that chance. 0%: no key, 100%: every key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo, seq), with the **NEW SOUND** dice, the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
@@ -54,7 +54,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   wheel and the trackpad never change a control, so passing the pointer over one is safe). A control you
   change by hand on a key gets a **lit label**, a notch outside its ring shows where it was, and a **double-click puts
   it back**; the key header counts the edits ("Brownie snare · 2 edits") and the key gets a dot on the strip. The
-  small **padlock** at a knob's top right locks that control against the randomisers (faint: open, solid: locked). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
+  small **padlock** at a knob's top right locks that control (faint: open, solid: locked; see KNOB PADLOCKS below). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
   the distortion's PREGAIN, BASS and TONE) have their centre at the top and light from there out to either side; PAN
   reads **L100 … C … R100**, with L and R at the ends of its ring. By default an edit changes only the last key
   pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
@@ -64,18 +64,19 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
   LFO 1 speed / portamento → the key's echo / reverb sends, osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
-- **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
+- **Randomisers**: **RANDOM** deals a different real kit sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
-- **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
-  randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
+- **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,
+  the other randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
   plays a rhythm has a dashed foot, a key you edited by hand a dot.
 - **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit
-  sound, levelled, panned and given rhythms as SCATTER ALL deals them; **30% of the keys get a reverb send and 20% an
+  sound, levelled, panned and given rhythms as RANDOM ALL deals them; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
   edits are replaced, so with locked keys it asks first (press again within four seconds). **BPM goes back to 120 and
   the echo, the reverb, the distortion, the compressor and the output level to their starting settings**; RETURN, the
-  zone levels and the control locks stay. The new patch gets a new name and is not saved yet. UNDO brings the old
-  patch back: locks, effects, tempo, name and all.
+  zone levels and the knob padlocks stay, and a knob with a closed padlock keeps its setting on every key (a locked
+  send keeps its keys' sends). The new patch gets a new name and is not saved yet. UNDO brings the old patch back:
+  locks, effects, tempo, name and all.
 - **PRESETS** (the patch's name, beside the logo): the whole patch under a name. A preset holds every key's sound,
   edits, lock, rhythm and sends, the three engines' settings, the effects, the master and the BPM. **SAVE** keeps the
   patch under its name (a `*` after the name means it has changed since, or was never saved), **SAVE AS NEW** keeps it
@@ -83,24 +84,30 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   (UNDO takes the load back), **X** then **SURE?** deletes it. Type in the name box and press Enter to rename.
   Presets live in this browser (localStorage); **EXPORT** writes them all to one JSON file and **IMPORT** adds a
   file's presets to the list, so they can be backed up or moved to another computer. Keys are stored by their place
-  in the layout, so a preset loads the same wherever LOW KEY is. Not part of a preset: the control locks, the BS2
+  in the layout, so a preset loads the same wherever LOW KEY is. Not part of a preset: the knob padlocks, the BS2
   knob map, LOW KEY and the RANDOM menu's settings.
 - **Auto names**: every new patch is named by jumbling real words: the start of one word, sometimes the middle of a
   second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud (NEBUTRON,
   QUASARIUS, FITRON PEDE). One word of 6 to 10 letters or two of 4 to 7, never a real word of the lists, never a name
   already in use. **NEW NAME** rolls another. The words come from themed lists in `app/names.js` (space and physics,
   about 145 words each); to add a theme, add a list to `WORDS` there.
-- **RANDOM menu**: **SCATTER**, **ALTER** and **LEVEL** for the engine on screen, **SCATTER ALL**, **ALTER ALL** and
-  **LEVEL ALL** for all three.
+- **RANDOM menu**: **RANDOM**, **ALTER** and **LEVEL** for the engine on screen, **RANDOM ALL**, **ALTER ALL** and
+  **LEVEL ALL** for all three, each with a line under it saying what it does. RANDOM gives every key a new kit sound;
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
-  uses it too); **WILD** lets it take a control outside the ranges drums usually sit in. Locked keys and locked
-  controls stay. (RANDOMISE, VARY, RANDOM KIT and INIT are gone: they changed the engine's base sound, which no key
-  plays since every key got a sound of its own.)
+  uses it too). ALTER moves the knobs of the sound and leaves alone what a kit sound is built on (waveforms, FM mode,
+  filter type, the LFO, velocity, sample rate), LEVEL and the sends; **WILD** lets it take a control outside the
+  ranges drums usually sit in, and change those switches too. Locked keys stay. (RANDOM was called SCATTER.)
+- **KNOB PADLOCKS**: a knob with a closed padlock **keeps its setting on every key of its engine, whatever random
+  thing you press**: the dice, RANDOM, ALTER, ALTER KEY, their ALL versions and INIT PATCH. The message line names
+  what was kept ("locked DECAY, CUTOFF kept"). Nothing is locked as it comes; **UNLOCK ALL** in the RANDOM menu opens
+  every padlock, and the menu counts the closed ones. Only your own hand, UNDO and loading a preset change a locked
+  knob. (Before, 17 knobs came locked, so NEW SOUND kept the old waveform and switches under a new sound's name, and
+  RANDOM (then SCATTER) and INIT PATCH ignored the padlocks.) New sounds always keep a key's sends, locked or not.
 - **NEW SOUND is the dice** at the top right of the synth block, at the head of the key's own two columns (its FX
   sends and its LEVEL are below it). Press it, or K, and the key gets a different kit sound of its engine; the dice
   turns once and its face changes a few times, a third of a second (with reduced motion set, the face just changes).
 - **Auto level**: the kits' sounds are of very different loudness (the loudest drum is 50 dB above the quietest), so
-  every sound a randomiser deals or alters (NEW SOUND, SCATTER, ALTER, ALTER KEY, a paste onto another engine) is
+  every sound a randomiser deals or alters (NEW SOUND, RANDOM, ALTER, ALTER KEY, a paste onto another engine) is
   played offline, measured, and its key gets a **trim** that brings it to its engine's level: **drum -17 dB, snare
   -11.5 dB, metal -16 dB** (the loudest 100 ms of a hit, K-weighted, below full scale). Those are the middle loudness of
   each engine's kit sounds, so a typical sound plays as it always did, loud ones come down and quiet ones come up
@@ -117,7 +124,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
   a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR, the RHYTHMS slider. It keeps the last 40 steps, so pressing it again
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
-- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, ALTER,
+- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, RANDOM, RANDOM ALL, ALTER,
   ALTER ALL, ALTER KEY, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
   randomisers.

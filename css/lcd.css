@@ -421,12 +421,14 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .lock { position: absolute; border: 0; background: transparent; padding: 1px; width: 14px; height: 16px; line-height: 0; cursor: pointer;
   color: var(--ink); opacity: .26; left: calc(50% + var(--ks) / 2 - 3px); top: 19px; }
 .lock svg { display: block; width: 12px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.lock { z-index: 1; }
+.lock::after { content: ""; position: absolute; inset: -6px -7px; } /* (a bigger target than the padlock itself, over the edge of the next knob's box) */
 .lock:hover { opacity: .7; background: transparent; }
 .lock[aria-pressed="true"] { opacity: 1; background: transparent; color: var(--ink); }
 .lock[aria-pressed="true"] svg rect { fill: currentColor; }
 .faders .vf.big .lock { top: auto; bottom: 9px; left: calc(50% + 50px); width: 18px; height: 20px; }
 .faders .vf.big .lock svg { width: 16px; height: 18px; }
-.faders .sect.seq > .lock, .faders .sect.seq h3 .lock { position: static; margin: 0 0 0 auto; align-self: center; }
+.faders .sect.seq > .lock, .faders .sect.seq h3 .lock { position: relative; left: auto; top: auto; margin: 0 0 0 auto; align-self: center; }
 .faders .sect.seq h3 { padding-right: 0; }
 .faders { --ks: 58px; }
 .faders .vf.big .knob { width: 108px; height: 108px; }
@@ -443,6 +445,9 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
 .menupanel .randrow .btn { padding: 5px 6px; min-width: 0; }
 .menupanel .randrow .note { grid-column: span 2; align-self: center; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+/* what each button does, under it, in its column */
+.menupanel .randrow .cap { font-size: 14px; letter-spacing: 1px; line-height: 1.15; text-align: center; margin-top: -3px; }
+.menupanel .randrow .cap.wide { grid-column: 1 / -1; }
 .menupanel .bars + .bars { margin-top: 6px; }
 .menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
 .menupanel .chk.lvl { margin-top: 6px; }

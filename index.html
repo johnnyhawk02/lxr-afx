@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwkybe71">
+<link rel="stylesheet" href="css/lcd.css?v=mwkzygyc">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -47,29 +47,32 @@
       <div class="menupanel" id="menu-panel" hidden>
         <h3>NEW PATCH</h3>
         <div class="randrow">
-          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled, panned and given rhythms as SCATTER ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
+          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled, panned and given rhythms as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
           <span class="dim note" id="init-info"></span>
         </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">
-          <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
-          <button class="btn" id="alter" title="Nudge every key of this zone by the ALTER amount (locked keys and locked controls stay)">ALTER</button>
-          <button class="btn" id="level" title="Even out this zone as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">LEVEL</button>
+          <button class="btn" id="scatter" title="Every key of this engine gets a different sound of its type from the built-in kits. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
+          <button class="btn" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
+          <button class="btn" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">LEVEL</button>
+          <span class="dim cap">NEW KIT SOUND<br>ON EVERY KEY</span><span class="dim cap">NUDGE THE SOUNDS<br>THE KEYS HAVE</span><span class="dim cap">MAKE THE KEYS<br>EQUALLY LOUD</span>
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="randrow">
-          <button class="btn" id="kit-scatter" title="Every key of all three zones: a sound of its type from the built-in kits (locked keys stay)">SCATTER ALL</button>
-          <button class="btn" id="kit-alter" title="Nudge every key of all three zones by the ALTER amount (locked keys and locked controls stay)">ALTER ALL</button>
-          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all three zones is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
+          <button class="btn" id="kit-scatter" title="Every key of all three engines gets a sound of its type from the built-in kits. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
+          <button class="btn" id="kit-alter" title="Nudge every key of all three engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
+          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all three engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
+          <span class="dim cap wide">THE SAME, FOR ALL 25 KEYS: DRUM, SNARE AND METAL</span>
         </div>
         <h3>HOW MUCH</h3>
         <div class="bars" id="rand-bars" title="How far ALTER, ALTER ALL and ALTER KEY move each control"></div>
-        <div class="bars" id="rhythm-bars" title="How many keys play a running rhythm (their sequencer ACTIVE): 0% none, 100% every key. Moving it switches keys on and off at once; NEW SOUND and SCATTER deal rhythms at this share"></div>
-        <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER MAY LEAVE THE DRUM RANGES</span></label>
-        <label class="chk lvl" title="NEW SOUND, SCATTER and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
-        <h3>CONTROL LOCKS <span class="dim" id="lock-count">0 LOCKED</span></h3>
+        <div class="bars" id="rhythm-bars" title="How many keys play a running rhythm (their sequencer ACTIVE): 0% none, 100% every key. Moving it switches keys on and off at once; NEW SOUND and RANDOM deal rhythms at this share"></div>
+        <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit, and may change the waveforms, modes, LFO, velocity and sample rate settings a kit sound came with (it leaves those alone otherwise)"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER GOES ANYWHERE, SWITCHES TOO</span></label>
+        <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
+        <h3>KNOB PADLOCKS <span class="dim" id="lock-count">NONE LOCKED</span></h3>
         <div class="randrow">
-          <button class="btn sm" id="lock-default">DEFAULT LOCKS</button><button class="btn sm" id="lock-none">UNLOCK ALL</button>
+          <button class="btn sm" id="lock-none" title="Open every knob's padlock, on all three engines">UNLOCK ALL</button>
+          <span class="dim note">A LOCKED KNOB KEEPS ITS SETTING ON EVERY KEY, WHATEVER YOU PRESS HERE</span>
         </div>
       </div>
     </div>
@@ -132,6 +135,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwkybe71"></script>
+<script type="module" src="app/main.js?v=mwkzygyc"></script>
 </body>
 </html>

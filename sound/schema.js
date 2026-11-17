@@ -14,7 +14,9 @@
 //            | { type: 'target', voices } (a modulation target menu)
 //   morph    how the key morph treats it: 'timbre' (moved around the base), or null (never morphed)
 //   weight   timbre morph: how far it may move, as a fraction of its rand range at full depth
-//   rand     drum-safe randomiser range: [lo, hi], 'pitch' (semitones around the base) or 'lock' (locked by default)
+//   rand     drum-safe randomiser range: [lo, hi], 'pitch' (semitones around the base), 'still' (a switch or a setting
+//            the kit sound brings: ALTER leaves it alone unless WILD) or 'mix' (LEVEL and the sends: part of the mix,
+//            not of the sound, so ALTER never moves them)
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { OSC_WAVE_NAMES, FILTER_TYPE_NAMES, LFO_SYNC_NAMES } from '../engine/lxr.js';
@@ -96,9 +98,9 @@ function displayOf(key) {
 
 // the randomiser's drum-safe ranges (elixir-desktop app/randomise.js), by front-panel name
 const SAFE = {
-  WAVEFORM: 'lock', PWM: 'lock', REPEAT: 'lock', MODE: 'lock', FILTER_TYPE: 'lock', SAMPLE_RATE: 'lock',
-  VEL_AMT: 'lock', VEL_MOD_VOL: 'lock', VEL_DEST: 'lock', VOLUME: 'lock',
-  FREQ_LFO: 'lock', SYNC_LFO: 'lock', MOD_LFO: 'lock', WAVE_LFO: 'lock', RETRIGGER_LFO: 'lock', OFFSET_LFO: 'lock', TARGET_LFO: 'lock',
+  WAVEFORM: 'still', PWM: 'still', REPEAT: 'still', MODE: 'still', FILTER_TYPE: 'still', SAMPLE_RATE: 'still',
+  VEL_AMT: 'still', VEL_MOD_VOL: 'still', VEL_DEST: 'still', VOLUME: 'mix',
+  FREQ_LFO: 'still', SYNC_LFO: 'still', MOD_LFO: 'still', WAVE_LFO: 'still', RETRIGGER_LFO: 'still', OFFSET_LFO: 'still', TARGET_LFO: 'still',
   COARSE: 'pitch', FINE: [48, 78], ATTACK: [0, 6], EG_SLOPE: [0, 127], NOISE: [0, 127], MIX: [0, 127],
   PITCH_DECAY: [2, 80], MOD_AMOUNT: [0, 110], FM_AMOUNT: [0, 50], FM_FREQ: [0, 127],
   MOD_OSC1_FREQ: [0, 127], MOD_OSC2_FREQ: [0, 127], MOD_OSC1_GAIN: [0, 127], MOD_OSC2_GAIN: [0, 127],
@@ -183,7 +185,7 @@ function buildSchema(voice) {
   if (fmWaves.length === 2) { fmWaves[0].label = 'mod1 wave'; fmWaves[1].label = 'mod2 wave'; }
   for (const e of out) if (e.display.type === 'target' && !e.display.anyVoice) e.display.voices = [voice];
   SEND_FX.forEach((name, k) => out.push({ key: 'SEND_' + name.toUpperCase() + (voice + 1), par: sendPar(voice, k), label: name, text: 'SEND_' + name.toUpperCase(),
-    page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'lock' }));
+    page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'mix' }));
   // the sequencer (the editor draws it as a strip of steps; the randomisers leave it to NEW SOUND and its RANDOM)
   out.push({ key: 'SEQ_ON' + (voice + 1), par: seqOnPar(voice), label: 'active', text: 'SEQ_ON', page: 'mix', section: 'seq', min: 0, max: 1,
     def: 0, display: { type: 'menu', names: ['off', 'on'] }, morph: null, weight: 0, rand: 'seq', seq: true });

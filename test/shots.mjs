@@ -3,7 +3,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
-import { sendPar } from '../sound/schema.js';
+import { sendPar, VOICE_SCHEMAS } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
@@ -310,6 +310,49 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     for (let i = 0; i < 3; i++) await p.click('#bpm-down'); await p.click('#ret', { modifiers: ['Shift'] });
     const fx4 = await fxNow(); if (J(fx4) !== J(fx0)) { errors++; console.log('init patch, effects put back:', J(fx4), J(fx0)); }
     await p.click('#lock-key'); await p.waitForTimeout(100); }
+  // KNOB PADLOCKS: none is closed as it comes. A locked knob keeps its setting on every key through the dice, ALTER
+  // KEY, ALTER, RANDOM, their ALL versions and INIT PATCH, and the message line names it. A new sound brings its own
+  // waveforms and switches; ALTER leaves those alone unless WILD. RANDOM keeps every key's sends; a locked send keeps
+  // them through INIT PATCH too. UNLOCK ALL opens every padlock
+  { const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, still = sc.filter((e) => e.rand === 'still' && e.display.type !== 'target').map((e) => e.par), REV = sendPar(0, 1);
+    const J = JSON.stringify, bad = (what, ...x) => { errors++; console.log(`padlocks, ${what}:`, J(x).slice(0, 600)); };
+    const zone = () => p.evaluate(() => { const s = afx.sounds[0], o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(Object.fromEntries(afx.patch(0, k))); return o; });
+    const sends = () => p.evaluate((sp) => afx.sounds.flatMap((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) { const m = new Map(afx.patch(i, k)); o.push([m.get(sp[0][s.engineVoice]), m.get(sp[1][s.engineVoice])]); } return o; }),
+      [[0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 0)), [0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 1))]);
+    const press = async (id, ms = 450) => { await p.evaluate((id) => document.getElementById(id).click(), id); await p.waitForTimeout(ms);
+      const cut = await p.evaluate(() => { const d = document.getElementById('detail'); return d.scrollWidth > d.clientWidth + 1 && d.textContent; }); if (cut) bad('the message is cut off', cut);
+      return [await zone(), await p.textContent('#detail')]; };
+    const padlock = (label, dx = 0, dy = 0) => p.evaluate(([label, dx, dy]) => { const vf = [...document.querySelectorAll('#faders .vf')].find((v) => v.querySelector('.lab')?.textContent.trim().toLowerCase() === label), r = vf.querySelector('.lock').getBoundingClientRect(); return [r.right + dx, r.top + dy]; }, [label, dx, dy]);
+    const fxWas = await p.evaluate(() => JSON.stringify(afx.fx()));
+    await p.evaluate(() => { afx.cc(123, 0); const n = afx.sounds[0].zone.lo + 2; afx.noteOn(1, n, 100); afx.noteOff(n); }); await p.waitForTimeout(200);
+    const open = await p.evaluate(() => [afx.locks().length, document.getElementById('lock-count').textContent, document.getElementById('lock-none').disabled, document.querySelectorAll('#faders .lock[aria-pressed="true"]').length]);
+    if (open[0] !== 0 || open[1] !== 'NONE LOCKED' || !open[2] || open[3] !== 0) bad('as it comes', open);
+    const at = await padlock('decay', 3, -3); await p.mouse.click(at[0], at[1]); await p.waitForTimeout(150); // (a press just outside the little padlock still lands on it)
+    const shut = await p.evaluate(() => [afx.locks(), document.getElementById('lock-count').textContent, document.getElementById('detail').textContent]);
+    if (J(shut[0]) !== J([D]) || shut[1] !== '1 LOCKED' || !/DECAY locked/.test(shut[2])) bad('locking', shut);
+    let was = await zone(); const decays = J(was.map((k) => k[D])), moved = (a, b, pars) => a.reduce((n, k, i) => n + pars.filter((q) => k[q] !== b[i][q]).length, 0), others = sc.map((e) => e.par).filter((q) => q !== D && q < 247);
+    for (const [id, what, alter] of [['rand-key', 'the dice'], ['alter-key', 'ALTER KEY', 1], ['alter', 'ALTER', 1], ['scatter', 'RANDOM'], ['kit-alter', 'ALTER ALL', 1], ['kit-scatter', 'RANDOM ALL'], ['init-patch', 'INIT PATCH']]) {
+      const [now, msg] = await press(id, id === 'init-patch' ? 650 : 450);
+      if (J(now.map((k) => k[D])) !== decays || !/locked DECAY kept/.test(msg) || !moved(was, now, others)) bad(what, now.map((k) => k[D]), decays, msg, moved(was, now, others));
+      if (alter && moved(was, now, still)) bad(what + ' moved a switch', moved(was, now, still));
+      if (id === 'scatter' && !moved(was, now, still)) bad('RANDOM brought no switch of its own');
+      was = now;
+    }
+    await p.evaluate(() => document.getElementById('wild').click()); const [wild] = await press('kit-alter'); await p.evaluate(() => document.getElementById('wild').click());
+    if (!moved(was, wild, still) || J(wild.map((k) => k[D])) !== decays) bad('WILD', moved(was, wild, still));
+    // the sends: INIT PATCH dealt them (8 reverb, 5 echo), RANDOM ALL and ALTER ALL leave them; with the drum's reverb send locked INIT PATCH keeps the drum keys' reverb
+    const s0 = await sends(); await press('kit-scatter'); await press('kit-alter'); const s1 = await sends();
+    if (J(s1) !== J(s0) || s0.filter((k) => k[1] > 0).length !== 8 || s0.filter((k) => k[0] > 0).length !== 5) bad('sends through RANDOM ALL and ALTER ALL', s0, s1);
+    const ra = await padlock('reverb', -6, 8); await p.mouse.click(ra[0], ra[1]); await p.waitForTimeout(150);
+    const two = await p.evaluate(() => [afx.locks().length, document.getElementById('lock-count').textContent]);
+    const [, msg2] = await press('init-patch', 650), s2 = await sends();
+    const longest = await p.evaluate(() => { const d = document.getElementById('detail'), em = d.querySelectorAll('em'); em[0].textContent = 'WWWWWWW WWWWWWW'; em[1].textContent = 'WWWWWWW, WWWWWWW'; return [em.length, d.scrollWidth, d.clientWidth]; }); // (with the longest name it makes up, and the longest list of locked knobs)
+    if (longest[0] !== 2 || longest[1] > longest[2] + 1) bad('the INIT PATCH message at its longest is cut off', longest);
+    if (two[0] !== 2 || two[1] !== '2 LOCKED' || J(s2.slice(0, 8).map((k) => k[1])) !== J(s1.slice(0, 8).map((k) => k[1])) || J(s2) === J(s1) || !/locked DECAY, REVERB kept/.test(msg2)) bad('a locked send through INIT PATCH', two, msg2, s1.slice(0, 8), s2.slice(0, 8));
+    await press('lock-none', 150); const none = await p.evaluate(() => [afx.locks().length, document.getElementById('lock-count').textContent, document.getElementById('lock-none').disabled, document.getElementById('detail').textContent]);
+    const [free, msg3] = await press('scatter');
+    if (none[0] !== 0 || none[1] !== 'NONE LOCKED' || !none[2] || !/2 knobs unlocked/.test(none[3]) || J(free.map((k) => k[D])) === decays || /kept/.test(msg3)) bad('UNLOCK ALL', none, msg3);
+    await p.evaluate((was) => afx.setFx(JSON.parse(was)), fxWas); }
   // PRESETS: the patch's name in the top bar (made up, marked * until saved). SAVE keeps it; a change marks it again,
   // REVERT goes back and UNDO brings the change back; INIT PATCH starts a new unsaved one; a saved preset loads with its
   // effects (the BPM) wherever LOW KEY has the keys, and UNDO goes back, effects and name too; a typed name, NEW NAME,
@@ -368,6 +411,19 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (n) { errors++; console.log('the wheel changed a control', n, 'times'); } }
   await p.close();
 }
+// settings kept from before the padlocks changed: the knobs that used to be locked as they came (waveforms, switches, the
+// LFO, LEVEL, the sends) are open again, a knob locked by hand stays locked, and the sounds are as they were
+{ const p = await b.newPage({ viewport: { width: 1440, height: 790 } });
+  p.on('pageerror', (e) => { errors++; console.log('page error (kept settings):', e.message); });
+  await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.click('#start-btn'); await p.waitForTimeout(500);
+  const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, old = VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par);
+  const sig = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k)); return o; })));
+  await p.click('#bpm-up'); await p.click('#bpm-down'); await p.waitForTimeout(500); const before = await sig(); // (the page has kept its settings by now)
+  await p.evaluate(([old, D]) => { const d = JSON.parse(localStorage.getItem('lxr-afx-v3')); delete d.lockRule; d.locks = [...old, D]; localStorage.setItem('lxr-afx-v3', JSON.stringify(d)); }, [old, D]);
+  await p.reload(); await p.waitForFunction(() => window.afxReady);
+  const got = await p.evaluate(() => [afx.locks(), document.getElementById('lock-count').textContent]), after = await sig();
+  if (old.length < 50 || JSON.stringify(got[0]) !== JSON.stringify([D]) || got[1] !== '1 LOCKED' || after !== before) { errors++; console.log('kept settings:', old.length, JSON.stringify(got), after === before); }
+  await p.close(); }
 await b.close();
 console.log(errors ? `${errors} problems` : 'no errors');
 process.exit(errors ? 1 : 0);
