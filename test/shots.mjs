@@ -16,7 +16,7 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
     for (const [ch, n] of [[1, 52], [1, 60], [1, 70], [1, 55]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
   // an edit goes to the last drum key played (G2), not the base
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3') || 'null'));
-  await p.focus('.vtrack'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');
+  await p.focus('.knob'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');
   await p.waitForTimeout(500);
   const after = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
   const edits = after.keyEdits[0]['55'];
@@ -30,7 +30,7 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
     if (keys !== 8 || labelled !== 8) { errors++; console.log('scatter: drum keys', keys, 'labelled', labelled); } }
   // knobs: filter freq (CC16) on the key just played; LEARN maps CC 30 to the drum's decay
   await p.evaluate(() => { window.afx.noteOn(1, 66, 110); window.afx.cc(16, 20); window.afx.cc(18, 64); });
-  await p.click('#learn'); await p.click('#pages button:nth-child(1)');
+  await p.click('#learn'); await p.click('.vf .knob');
   await p.evaluate(() => window.afx.cc(99, 1)); // nothing armed yet: ignored as unmapped
   await p.waitForTimeout(400);
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
@@ -39,7 +39,15 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);
   if (scroll.some(Boolean)) { errors++; console.log(`${w}x${h}: page scrolls`, scroll); }
-  for (const pg of [1, 2, 3, 4]) { await p.click(`#pages button:nth-child(${pg + 1})`); await p.waitForTimeout(100); await p.screenshot({ path: `${out}/page${pg}-${w}x${h}.png` }); }
+  // every sound's knobs fit the editor (nothing cut off at the bottom or right)
+  for (const k of ['1', '2', '3']) {
+    await p.keyboard.press(k); await p.waitForTimeout(80);
+    if (k !== '3') await p.screenshot({ path: `${out}/sound${k}-${w}x${h}.png` });
+    const clip = await p.evaluate(() => { const f = document.getElementById('faders').getBoundingClientRect();
+      return [...document.querySelectorAll('#faders .vf, #faders .vsel')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > f.bottom + 1 || r.right > f.right + 1; }).length; });
+    if (clip) { errors++; console.log(`${w}x${h} sound ${k}: ${clip} controls cut off`); }
+  }
+
   await p.close();
 }
 await b.close();

@@ -108,7 +108,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .chk input:focus-visible + i { outline: 2px dashed var(--ink); outline-offset: 2px; }
 
 /* ---- the editor ---- */
-.editor { display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px; min-height: 0; min-width: 0; }
+.editor { display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-height: 0; min-width: 0; }
 .pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .pages .btn { min-height: 38px; font-size: 22px; letter-spacing: .14em; }
 .faders { display: flex; gap: 0; min-height: 0; border: 2px solid var(--ink); border-radius: 3px; padding: 10px 6px 8px; }
@@ -173,3 +173,26 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
   .seedrow { margin: 6px 0 4px; }
   .randrow { margin-top: 6px; }
 }
+
+/* ---- the editor's knobs: every section of the sound at once, wrapping ---- */
+.pages[hidden] { display: none; }
+.faders { --kw: 78px; --ks: 52px; flex-wrap: wrap; align-content: flex-start; row-gap: 10px; padding: 8px 4px; overflow: hidden; }
+.sect { flex: 0 0 auto; padding: 0 8px; }
+.sect .row { display: grid; grid-template-columns: repeat(var(--n), var(--kw)); gap: 0; flex: none; }
+.sect h3 { margin-bottom: 2px; }
+.vf { gap: 1px; }
+.vf output { font-size: 17px; }
+.vf .lab { font-size: 16px; }
+.knob { width: var(--ks); height: var(--ks); cursor: ns-resize; touch-action: none; }
+.knob svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+.knob .tk { stroke: var(--ghost); stroke-width: 3.6; }
+.knob .tk.on { stroke: var(--ink); }
+.knob .ptr { stroke: var(--ink); stroke-width: 3.5; stroke-linecap: square; }
+.knob .notch { stroke: var(--ink); stroke-width: 4; display: none; }
+.knob.morphed .notch { display: inline; }
+.vf.held .knob { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 50%; }
+.knob:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; border-radius: 50%; }
+.sect .vsel { grid-column: span 2; justify-content: flex-start; padding: 18px 6px 0; }
+.sect .vsel label { white-space: nowrap; }
+@media (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: 15px; } .vf output { font-size: 16px; } }
+@media (max-height: 820px) { .faders { row-gap: 6px; } }

@@ -256,11 +256,11 @@ function dragger(track, axis, o) {
   track.addEventListener('pointerdown', (e) => {
     if (e.button) return;
     track.setPointerCapture(e.pointerId); track.focus({ preventScroll: true }); e.preventDefault();
-    const r = track.getBoundingClientRect(), len = axis === 'x' ? r.width : r.height;
-    // a press off the bar's end jumps there
+    const r = track.getBoundingClientRect(), len = o.len || (axis === 'x' ? r.width : r.height);
+    // a press off the bar's end jumps there (not on a knob: it turns from where it is)
     const at = axis === 'x' ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
     const f = (o.get() - o.min) / (o.max - o.min);
-    if (Math.abs(at - f) * len > 8) o.put(o.min + clamp(at, 0, 1) * (o.max - o.min));
+    if (!o.len && Math.abs(at - f) * len > 8) o.put(o.min + clamp(at, 0, 1) * (o.max - o.min));
     d = { last: axis === 'x' ? e.clientX : e.clientY, acc: o.get(), len };
     o.held && o.held(true);
   });
@@ -409,11 +409,13 @@ const pageBtns = PAGES.map((p, i) => {
 });
 let faderDraws = [];
 function buildFaders() {
-  pageBtns.forEach((b, i) => b.setAttribute('aria-selected', i === S.page));
+  // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
-  const voice = SOUNDS[S.sel].engineVoice, page = PAGES[S.page];
-  const entries = VOICE_SCHEMAS[voice].filter((e) => e.page === page);
-  const sections = [...new Set(entries.map((e) => e.section))];
+  const voice = SOUNDS[S.sel].engineVoice;
+  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
+  // short sections share a row: velocity sits beside the mix, the LFO gets a row of its own
+  const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
+  const sections = [...new Set(entries.map((e) => e.section))].sort((a, b) => rank(a) - rank(b));
   for (const sec of sections) {
     const list = entries.filter((e) => e.section === sec);
     const n = list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0);
@@ -426,21 +428,36 @@ function buildFaders() {
   drawFaders();
 }
 function drawFaders() { faderDraws.forEach((d) => d()); }
+// a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
+// base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine
+const KNOB_N = 25, KNOB_A0 = Math.PI * 0.75, KNOB_SWEEP = Math.PI * 1.5;
+const KNOB_SVG = (() => {
+  let t = '';
+  for (let i = 0; i < KNOB_N; i++) {
+    const a = KNOB_A0 + i / (KNOB_N - 1) * KNOB_SWEEP, c = Math.cos(a), s = Math.sin(a);
+    t += `<line class="tk" x1="${(32 + 20 * c).toFixed(2)}" y1="${(32 + 20 * s).toFixed(2)}" x2="${(32 + 28 * c).toFixed(2)}" y2="${(32 + 28 * s).toFixed(2)}"/>`;
+  }
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/></svg>`;
+})();
 function vfader(e) {
   const el = document.createElement('div'); el.className = 'vf';
-  el.innerHTML = `<output></output><div class="vtrack" role="slider" tabindex="0"><i></i><b></b></div><span class="lab"></span><button class="lock" type="button">LOCK</button>`;
+  el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button">LOCK</button>`;
   el.querySelector('.lab').textContent = e.label;
-  const tr = el.querySelector('.vtrack'), out = el.querySelector('output'), lock = el.querySelector('.lock');
+  const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
+  const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   lock.title = `Lock ${e.label}: the randomisers leave it alone`;
   const draw = () => {
     const v = valueNow(e.par);
-    tr.style.setProperty('--f', v / e.max); out.textContent = showValue(e, v);
+    const f = e.max ? v / e.max : 0, lit = Math.round(f * (KNOB_N - 1));
+    ticks.forEach((t, i) => t.classList.toggle('on', i <= lit && (v > 0 || i === 0)));
+    ptr.setAttribute('transform', `rotate(${(KNOB_A0 + f * KNOB_SWEEP) * 180 / Math.PI} 32 32)`);
+    out.textContent = showValue(e, v);
     tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', showValue(e, v));
     // the notch: editing a key, where the base is; editing every key, where the last key played moved it
     const lm = lastMorph[S.sel], mv = editing() ? S.values[e.par] : lm && lm.values.get(e.par);
     tr.classList.toggle('morphed', mv !== undefined && mv !== v);
-    if (mv !== undefined) tr.style.setProperty('--m', mv / e.max);
+    if (mv !== undefined) notch.setAttribute('transform', `rotate(${(KNOB_A0 + mv / (e.max || 1) * KNOB_SWEEP) * 180 / Math.PI} 32 32)`);
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
     lock.setAttribute('aria-pressed', S.locks.has(e.par));
@@ -452,7 +469,7 @@ function vfader(e) {
     if (e.par === levelPar()) randDraws[1]();
     detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
   };
-  dragger(tr, 'y', { min: 0, max: e.max, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
+  dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
   // double-click: a key's edit goes (back to its morph); on every key, back to the kit's value
   const reset = () => {
     if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!editCount(ed)) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
@@ -639,7 +656,6 @@ $('lock-none').addEventListener('click', () => { for (const e of VOICE_SCHEMAS[s
 document.addEventListener('keydown', (e) => {
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
-  else if (e.key === '[' || e.key === ']') { S.page = (S.page + (e.key === ']' ? 1 : PAGES.length - 1)) % PAGES.length; save(); buildFaders(); }
   else if (e.key === 'r' || e.key === 'R') reroll();
 });
 

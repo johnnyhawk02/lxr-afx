@@ -13,7 +13,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   timbre, more the further it is from the base (each end of a zone is the full amount). Each key's variant is fixed by
   the sound's seed; **re-roll** for a new set. Depth, pitch and timbre sliders for all sounds and per sound; depth 0 plays
   the base sound on every key.
-- **Editor**: every parameter of each sound (tone, shape, filter, mod, mix). By default an edit changes only the last key
+- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
+  resets; a notch outside the ring marks the base). By default an edit changes only the last key
   pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and
   every key's morph follows. **CLEAR KEY** / **CLEAR ALL KEYS** take a sound's key edits away.
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
