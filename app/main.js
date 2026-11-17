@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkreyv1';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkreyv1';
-import { KIT_FILES } from '../sound/kits.js?v=mwkreyv1';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkreyv1';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkreyv1';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkryfcl';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkryfcl';
+import { KIT_FILES } from '../sound/kits.js?v=mwkryfcl';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkryfcl';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkryfcl';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -24,7 +24,7 @@ const S = {
   global: { depth: 100, pitch: 100, timbre: 100 },
   sounds: SOUNDS.map(() => ({ depth: 50, pitch: 50, timbre: 50, seed: newSeed() })),
   locks: defaultLocks(),
-  rand: { amount: 30, wild: false },
+  rand: { amount: 30, wild: false, rhythms: 50 }, // rhythms: the share of keys (%) that play a running sequence
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
@@ -68,7 +68,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkreyv1', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkryfcl', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -293,7 +293,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) s
 
 // for testing without a controller: afx.noteOn(channel, note, velocity) and afx.cc(number, value) from the console
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val),
-  seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par] };
+  seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
+  active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS };
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -386,6 +387,7 @@ const P = (v) => v + '%';
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
 const randDraws = [
   hbar($('rand-bars'), 'AMOUNT', { min: 0, max: 100, get: () => S.rand.amount, set: (v) => { S.rand.amount = v; save(); }, show: P, dflt: 30 }),
+  hbar($('rhythm-bars'), 'RHYTHMS', { min: 0, max: 100, get: () => S.rand.rhythms, set: (v) => setRhythms(v), show: P, dflt: 50 }),
 ];
 $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
@@ -892,8 +894,44 @@ function scatter(sound) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note)) continue;
     const s = p[order.pop()];
-    S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    dealRhythm(sound, S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) }, true);
   }
+}
+// ---- RHYTHMS (in the RANDOM menu): the share of keys that play a running sequence. Each key draws a number (kept
+// with its edits as _r) and plays a rhythm when that's under the slider, so moving the slider up switches more keys
+// on (each keeping its pattern, or dealt a random one) and down switches them off, always the same keys in the same
+// order. Dealing a key a sound (NEW SOUND, SCATTER, RESET KEYS, SCATTER ALL) draws it a new number and a new pattern.
+// Locked keys, and a zone whose SEQ is locked, are left alone ----
+function dealRhythm(sound, ed, fresh) {
+  const v = SOUNDS[sound].engineVoice, on = seqOnPar(v), pat = seqPatPar(v);
+  if (!ed || ed._lock || S.locks.has(pat)) return;
+  if (fresh || ed._r === undefined) ed._r = rnd();
+  const want = ed._r < S.rand.rhythms / 100 ? 1 : 0;
+  ed[on] = want;
+  if (want && (fresh || ed[pat] === undefined)) ed[pat] = randomPattern();
+}
+let rhythmUndo = 0;
+function setRhythms(pc) {
+  // one UNDO for a whole drag of the slider
+  if (!rhythmUndo) { undoValues = S.values.slice(); undoKeys = structuredClone(S.keyEdits); $('undo').disabled = false; }
+  clearTimeout(rhythmUndo); rhythmUndo = setTimeout(() => { rhythmUndo = 0; }, 900);
+  S.rand.rhythms = pc;
+  let n = 0, all = 0;
+  SOUNDS.forEach((def, sound) => {
+    const on = seqOnPar(def.engineVoice);
+    for (let note = def.zone.lo; note <= def.zone.hi; note++) {
+      let ed = S.keyEdits[sound][note];
+      if (!ed) { // a key with no sound of its own: its number from where it is, and it only gets edits to switch on
+        const r = (Math.sin(note * 12.9898 + sound * 78.233) * 43758.5453) % 1, rr = r < 0 ? r + 1 : r;
+        if (rr >= pc / 100 && !S.values[on]) { all++; continue; }
+        ed = S.keyEdits[sound][note] = { _r: rr };
+      }
+      dealRhythm(sound, ed, false);
+      all++; if (keyPatch(sound, note).vals.get(on)) n++;
+    }
+  });
+  save(); drawFaders(); drawKeymap(); drawEditKey(); randDraws.forEach((d) => d());
+  detail(`RHYTHMS <em>${pc}%</em>: ${n} of ${all} keys play a rhythm (locked keys stay as they are)`);
 }
 // NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as SCATTER
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
@@ -905,9 +943,7 @@ function randKey() {
   randChange(() => {
     const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
     for (const [p, x] of now) if (p >= NUM_PARAMS) ed[p] = x; // the key keeps its sends
-    // and half the time it gets a random sequence, switched on; the other half its sequence is off
-    const sv = SOUNDS[sound].engineVoice, on = seqOnPar(sv), pat = seqPatPar(sv);
-    if (!S.locks.has(pat)) { if (rnd() < 0.5) { ed[pat] = randomPattern(); ed[on] = 1; } else ed[on] = 0; }
+    dealRhythm(sound, ed, true); // and a rhythm, or none, as the RHYTHMS slider deals them
     for (const par of S.locks) if (par in ed) ed[par] = now.get(par);
     S.keyEdits[sound][note] = ed;
     if (S.editAll) setEditAll(false);

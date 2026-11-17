@@ -147,6 +147,19 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     for (let i = 0; i < 24; i++) { await p.click('#rand-key'); await p.waitForTimeout(30); if ((await ed())[on] === 1) ons++; }
     if (ons < 3 || ons > 21) { errors++; console.log('NEW SOUND turned the sequence on', ons, 'of 24 times'); }
   }
+  // RHYTHMS: 0% no key plays a rhythm, 100% every unlocked key does, 40% somewhere between; moving back down to 40%
+  // gives the same keys as before; one UNDO takes the drag back
+  if (w === 1440 && h === 900) {
+    const count = () => p.evaluate(() => { let n = 0, all = 0; afx.sounds.forEach((s, i) => { for (let k = s.zone.lo; k <= s.zone.hi; k++) { all++; if (afx.active(i, k)) n++; } }); return [n, all]; });
+    await p.evaluate(() => afx.rhythms(0)); const [n0] = await count();
+    await p.evaluate(() => afx.rhythms(40)); const [n40, all] = await count(); const keys40 = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
+    await p.evaluate(() => afx.rhythms(100)); const [n100] = await count();
+    await p.evaluate(() => afx.rhythms(40)); const keys40b = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
+    if (n0 !== 0 || n100 < all - 1 || n40 <= 0 || n40 >= all || keys40 !== keys40b) { errors++; console.log('rhythms:', n0, n40, n100, all, keys40 === keys40b); }
+    await p.evaluate(() => afx.rhythms(50));
+    await p.click('#menu-btn'); const bar = await p.isVisible('#rhythm-bars .htrack'); await p.click('#menu-btn');
+    if (!bar) { errors++; console.log('no RHYTHMS slider in the RANDOM menu'); }
+  }
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }

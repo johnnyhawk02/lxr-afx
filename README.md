@@ -36,8 +36,12 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Sequencer** (SEQ, each key its own): eight steps, **ACTIVE** and **RANDOM**. While the key is held and ACTIVE is
   on it plays its lit steps in 1/16s on the BPM grid, starting on the next 1/16 after the press, round and round; with
   ACTIVE off the key plays once as usual. RANDOM deals a new pattern (and switches it on); editing steps while the key
-  is held is heard at once. **NEW SOUND** gives the key a random pattern, switched on, half the time (and switches it
-  off the other half); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
+  is held is heard at once. **NEW SOUND** gives the key a random pattern, switched on, at the RHYTHMS share (and switches it
+  off otherwise); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
+- **RHYTHMS** (RANDOM menu, 50% by default): the share of keys that play a running rhythm. Moving it switches keys on
+  or off at once across all three zones (always the same keys in the same order, each keeping its pattern or dealt a
+  random one); NEW SOUND, SCATTER, RESET KEYS and SCATTER ALL deal rhythms at that share. 0%: no key, 100%: every
+  key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo, seq), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
