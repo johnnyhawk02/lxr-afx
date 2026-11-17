@@ -9,7 +9,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
   (52, 60, 68). LOW KEY moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
-- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (RESET KEYS in the
+- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (SCATTER in the
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
@@ -42,7 +42,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   off otherwise); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
 - **RHYTHMS** (RANDOM menu, 50% by default): the share of keys that play a running rhythm. Moving it switches keys on
   or off at once across all three zones (always the same keys in the same order, each keeping its pattern or dealt a
-  random one); SCATTER, RESET KEYS and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
+  random one); SCATTER and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
   at that chance. 0%: no key, 100%: every key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo, seq), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
@@ -65,8 +65,11 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
   randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
-  **ALTER ALL** do all three sounds, with undo.
-- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, RESET KEYS, RANDOMISE,
+  **ALTER ALL** do all three sounds.
+- **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
+  a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR, the RHYTHMS slider. It keeps the last 40 steps, so pressing it again
+  goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
+- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, RANDOMISE,
   RANDOM KIT, VARY, ALTER, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; LOCK on the pan knob keeps it out of the
   randomisers.

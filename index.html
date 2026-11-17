@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LXR-AFX</title>
-<meta name="description" content="A 7-voice MIDI drum instrument where every key plays a morphed variant of its sound. Engine: the LXR-02 firmware's drum voices, via Elixir.">
+<meta name="description" content="A MIDI drum instrument for a 25-key keyboard: three engines (drum, snare, metal), every key its own sound. Engine: the LXR-02 firmware's drum voices, via Elixir.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwksp1zf">
+<link rel="stylesheet" href="css/lcd.css?v=mwkt186m">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -16,7 +16,7 @@
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
     <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
-    <div class="lowkey" role="group" aria-label="Tempo, for the note repeat"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="Scroll to change, double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
+    <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="Scroll to change, double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
     <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="menu" id="menu">
@@ -30,9 +30,8 @@
           <button class="btn" id="vary" title="Vary this engine's sound around its home by the amount (unlocked controls only)">VARY</button>
         </div>
         <div class="randrow">
-          <button class="btn" id="alter" title="Nudge this engine's sound a little (10%), and each key with its own sound">ALTER</button>
+          <button class="btn" id="alter" title="Nudge every key of this zone a little (10%; locked keys stay)">ALTER</button>
           <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
-          <button class="btn" id="clear-keys" title="Every key of this zone a fresh kit sound (locked keys stay)">RESET KEYS</button>
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="bars" id="rhythm-bars" title="How many keys play a running rhythm (their sequencer ACTIVE): 0% none, 100% every key. Moving it switches keys on and off at once; NEW SOUND and SCATTER deal rhythms at this share"></div>
@@ -50,7 +49,7 @@
         </div>
       </div>
     </div>
-    <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
+    <button class="btn" id="undo" disabled title="Take back the last change to the sounds (Z, or Cmd+Z / Ctrl+Z); press again to go further back">UNDO</button>
   </header>
 
   <div class="main">
@@ -83,7 +82,7 @@
       </div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
-      <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS sets a control on every key of the zone.</span>
+      <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key.</span>
         <span class="dim" id="zones"></span></footer>
     </section>
   </div>
@@ -110,6 +109,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwksp1zf"></script>
+<script type="module" src="app/main.js?v=mwkt186m"></script>
 </body>
 </html>

@@ -66,6 +66,19 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.click('#undo'); await p.waitForTimeout(300);
     if (JSON.stringify(await st()) !== JSON.stringify(before)) { errors++; console.log('new sound: undo did not restore'); }
   }
+  // UNDO, several steps: two knobs turned, then NEW SOUND, then CLEAR; four UNDOs bring the key back step by step
+  if (w === 1440 && h === 900) {
+    const key = () => p.evaluate(() => JSON.stringify(afx.keyEdits()[0]['52'] || null));
+    await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 52, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(52));
+    const s0 = await key(), knobs = await p.$$('#faders .vf .knob');
+    await knobs[0].focus(); await p.keyboard.press('ArrowUp'); await p.keyboard.press('ArrowUp'); await p.waitForTimeout(120); const s1 = await key();
+    await knobs[1].focus(); await p.keyboard.press('ArrowDown'); await p.waitForTimeout(120); const s2 = await key();
+    await p.click('#rand-key'); await p.waitForTimeout(500); const s3 = await key();
+    await p.click('#clear-key'); await p.waitForTimeout(120); const s4 = await key();
+    const back = []; for (let i = 0; i < 4; i++) { await p.click('#undo'); await p.waitForTimeout(150); back.push(await key()); }
+    if (new Set([s0, s1, s2, s3, s4]).size !== 5 || back[0] !== s3 || back[1] !== s2 || back[2] !== s1 || back[3] !== s0) {
+      errors++; console.log('undo steps:', new Set([s0, s1, s2, s3, s4]).size, back[0] === s3, back[1] === s2, back[2] === s1, back[3] === s0); }
+  }
   // LOCK KEY: a locked key keeps its sound through SCATTER, RE-ROLL and a base edit
   { const k = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits[0]['51']);
     await p.evaluate(() => afx.noteOn(1, 51, 100)); await p.waitForTimeout(50);
