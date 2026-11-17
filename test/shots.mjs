@@ -218,6 +218,20 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
+  // NEW SOUND is the dice at the top right of the synth block (not in the key header any more): its cell is the last
+  // two columns of the first row, above FX SENDS; a press deals the key a new sound, changes the face and rolls; K too
+  { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
+    const g = await p.evaluate(() => { const r = (el) => el.getBoundingClientRect(), d = r(document.getElementById('rand-key')), cell = r(document.querySelector('#faders .sect.dice')), f = r(document.getElementById('faders')),
+      sends = r(document.querySelector('#faders .sect.sends')), lvl = r(document.querySelector('#faders .vf.big .knob'));
+      return { inHead: !!document.querySelector('#keyhead #rand-key'), right: f.right - cell.right, top: cell.top - f.top, above: sends.top - cell.bottom, sameCol: Math.abs(cell.left - sends.left) + Math.abs(cell.right - sends.right),
+        axis: Math.abs((d.left + d.right) / 2 - (lvl.left + lvl.right) / 2), square: Math.abs(d.width - d.height), inside: d.top >= cell.top && d.bottom <= cell.bottom, size: d.width }; });
+    if (g.inHead || g.right > 14 || g.top > 14 || g.above < 0 || g.above > 14 || g.sameCol > 1 || g.axis > 1.5 || g.square > 0.5 || !g.inside || g.size < 44) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
+    const name = () => p.textContent('#kh-info'), face = () => p.getAttribute('#rand-key', 'data-face');
+    const n0 = await name(), f0 = await face(); await p.click('#rand-key'); const rolling = await p.evaluate(() => document.getElementById('rand-key').classList.contains('roll'));
+    await p.waitForTimeout(450); const n1 = await name(), f1 = await face(), done = await p.evaluate(() => !document.getElementById('rand-key').classList.contains('roll'));
+    await p.evaluate(() => document.activeElement.blur()); await p.keyboard.press('k'); await p.waitForTimeout(450); const n2 = await name(), f2 = await face();
+    if (n1 === n0 || n2 === n1 || !rolling || !done || !/^[1-6]$/.test(f1) || !/^[1-6]$/.test(f2)) { errors++; console.log('dice roll:', JSON.stringify([n0, n1, n2, f0, f1, f2, rolling, done])); }
+    await p.click('#undo'); await p.waitForTimeout(100); await p.click('#undo'); await p.waitForTimeout(100); }
   // AUTO LEVEL: SCATTER ALL and ALTER ALL trim every key they deal (a locked key keeps its own), the AUTO chip at the
   // head of LEVEL takes a key's trim off and puts it back (ALL KEYS: the zone's), UNDO takes that back, and with AUTO
   // LEVEL off in the RANDOM menu a new sound plays untrimmed

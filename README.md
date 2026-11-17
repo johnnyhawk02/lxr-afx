@@ -13,7 +13,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
-  (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L), **NEW SOUND** (K),
+  (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (scatter, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, control locks) is in the
@@ -46,7 +46,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   random one); SCATTER and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
   at that chance. 0%: no key, 100%: every key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
-  velocity, mix / lfo, seq), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
+  velocity, mix / lfo, seq), with the **NEW SOUND** dice, the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
@@ -75,6 +75,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   uses it too); **WILD** lets it take a control outside the ranges drums usually sit in. Locked keys and locked
   controls stay. (RANDOMISE, VARY, RANDOM KIT and INIT are gone: they changed the engine's base sound, which no key
   plays since every key got a sound of its own.)
+- **NEW SOUND is the dice** at the top right of the synth block, at the head of the key's own two columns (its FX
+  sends and its LEVEL are below it). Press it, or K, and the key gets a different kit sound of its engine; the dice
+  turns once and its face changes a few times, a third of a second (with reduced motion set, the face just changes).
 - **Auto level**: the kits' sounds are of very different loudness (the loudest drum is 50 dB above the quietest), so
   every sound a randomiser deals or alters (NEW SOUND, SCATTER, ALTER, ALTER KEY, a paste onto another engine) is
   played offline, measured, and its key gets a **trim** that brings it to its engine's level: **drum -17 dB, snare

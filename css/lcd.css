@@ -454,3 +454,23 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* AUTO LEVEL's correction on the key: a chip at the head of the LEVEL cell, on the line of the row's headings */
 .faders .vf.big .auto { position: absolute; top: 0; left: 8px; min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
+
+/* NEW SOUND: a dice at the top right of the synth block, the head of the key's own two columns (its FX sends and its
+   LEVEL are below it, on the same axis). Flat: a square with seven pips, the lit ones its face (the unlit ones show
+   faintly, like the unlit ticks of a knob's ring). Pressed, it turns once as its face changes */
+.faders .sect.dice h3 { display: flex; align-items: center; gap: 6px; }
+.faders .sect.dice h3 span { overflow: hidden; text-overflow: ellipsis; }
+.faders .sect.dice h3 kbd { font: inherit; font-size: 13px; line-height: 1; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
+.dicebtn { margin: auto; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; width: calc(var(--ks) + 14px); height: calc(var(--ks) + 14px); flex: none; }
+.dicebtn .die { display: block; width: 100%; height: 100%; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 6px; }
+.dicebtn svg { display: block; width: 100%; height: 100%; }
+.dicebtn .pip { fill: var(--ink); opacity: .1; }
+.dicebtn .pip.on { opacity: 1; }
+.dicebtn:hover .die { background: var(--tint); }
+.dicebtn:active .die { background: var(--ink); }
+.dicebtn:active .pip { fill: var(--panel); }
+.dicebtn:focus-visible { outline: 2px dashed var(--ink); outline-offset: 3px; }
+.dicebtn:disabled { opacity: .3; cursor: default; }
+.dicebtn.roll .die { animation: dice-roll .32s cubic-bezier(.25, .6, .3, 1); }
+@keyframes dice-roll { from { transform: rotate(-360deg) scale(.8); } 60% { transform: rotate(-40deg) scale(1.06); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dicebtn.roll .die { animation: none; } }

@@ -1,12 +1,12 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO } from '../sound/schema.js?v=mwkva6ga';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkva6ga';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkva6ga';
-import { KIT_FILES } from '../sound/kits.js?v=mwkva6ga';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkva6ga';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkva6ga';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO } from '../sound/schema.js?v=mwkvk9bz';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkvk9bz';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkvk9bz';
+import { KIT_FILES } from '../sound/kits.js?v=mwkvk9bz';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkvk9bz';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkvk9bz';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -77,7 +77,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkva6ga', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkvk9bz', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -472,6 +472,28 @@ function drawSide() {
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
+// ---- NEW SOUND: the dice at the top right of the synth block (the key's own two columns: the dice, its FX sends, its
+// LEVEL). A press, or K, deals the key another kit sound of its engine and rolls the dice: it turns once while its
+// face changes a few times, a third of a second. Flat, like the rest of the panel: seven pips, the lit ones the face ----
+const DICE_PIPS = { tl: [5, 5], tr: [19, 5], ml: [5, 12], mr: [19, 12], bl: [5, 19], br: [19, 19], c: [12, 12] };
+const DICE_FACES = [[], ['c'], ['tl', 'br'], ['tl', 'c', 'br'], ['tl', 'tr', 'bl', 'br'], ['tl', 'tr', 'c', 'bl', 'br'], ['tl', 'tr', 'ml', 'mr', 'bl', 'br']];
+const diceBtn = document.createElement('button');
+diceBtn.type = 'button'; diceBtn.className = 'dicebtn'; diceBtn.id = 'rand-key';
+diceBtn.title = 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button';
+diceBtn.setAttribute('aria-label', 'New sound on this key');
+diceBtn.innerHTML = `<span class="die"><svg viewBox="0 0 28 28" aria-hidden="true">${Object.entries(DICE_PIPS).map(([k, [x, y]]) => `<rect class="pip" data-p="${k}" x="${x}" y="${y}" width="4" height="4"/>`).join('')}</svg></span>`;
+let diceFace = 0, diceT = 0;
+function showDice(n) { diceFace = n; diceBtn.dataset.face = n; for (const r of diceBtn.querySelectorAll('.pip')) r.classList.toggle('on', DICE_FACES[n].includes(r.dataset.p)); }
+function rollDice() {
+  clearInterval(diceT);
+  const next = () => { let n; do n = 1 + Math.floor(Math.random() * 6); while (n === diceFace); showDice(n); };
+  next();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; // no turning: the face just changes
+  diceBtn.classList.remove('roll'); void diceBtn.offsetWidth; diceBtn.classList.add('roll'); // (the turn starts again)
+  let left = 3; diceT = setInterval(() => { next(); if (!--left) clearInterval(diceT); }, 80);
+}
+showDice(5);
+diceBtn.addEventListener('animationend', () => diceBtn.classList.remove('roll'));
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
 const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'seq']];
@@ -507,6 +529,9 @@ function buildFaders() {
   el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
   for (const e of sends) el.querySelector('.row').append(vfader(e));
   box.append(el);
+  const dice = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 3); dice.className = 'sect dice sep'; dice.style.setProperty('--n', 2);
+  dice.innerHTML = '<h3><span>new sound</span><kbd>K</kbd></h3>'; dice.append(diceBtn);
+  box.append(dice);
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
   // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press levels the
@@ -801,7 +826,7 @@ function drawEditKey() {
   $('edit-info').textContent = locked ? `${noteName(note)} is locked` : S.editAll ? 'every key of the zone (locked keys stay)' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
-  $('rand-key').disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
+  diceBtn.disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const he = handEdits(edits[note]), hand = he ? ` · ${he} edit${he === 1 ? '' : 's'}` : '';
   const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) + hand :
@@ -1105,6 +1130,7 @@ function randKey() {
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
   let s; do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
+  rollDice();
   randChange(() => {
     const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
     for (const [p, x] of now) if (p >= NUM_PARAMS) ed[p] = x; // the key keeps its sends
@@ -1116,8 +1142,8 @@ function randKey() {
     if (S.editAll) setEditAll(false);
   }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${s.label}</em> (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
 }
-$('rand-key').addEventListener('click', () => { if (!learn) randKey(); });
-$('rand-key').dataset.learn = JSON.stringify({ t: 'randkey' });
+diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
+diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
 $('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})${levelled()}`));
 $('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three zones: a kit sound on every key${levelled()}`));
