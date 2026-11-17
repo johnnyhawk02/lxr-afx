@@ -67,14 +67,6 @@
   <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span></nav>
 
   <div class="body">
-    <aside class="side">
-      <section class="card grow">
-        <h2><span id="side-name">DRUM</span> <span class="dim" id="side-ch">CH 1</span></h2>
-        <div class="bars" id="sound-bars"></div>
-        <h3 class="klhead"><span>KEY</span><span>SOUND</span></h3>
-        <div class="keylist" id="keylist" aria-label="The zone's keys: click one to pick it and hear it"></div>
-      </section>
-    </aside>
 
     <section class="editor">
       <div class="editbar">
@@ -90,6 +82,11 @@
       <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS sets a control on every key of the zone.</span>
         <span class="dim" id="zones"></span></footer>
     </section>
+    <aside class="fxside" aria-label="Effects">
+      <h2>FX <span class="dim">THIS KEY'S SENDS</span></h2>
+      <div class="sendrow" id="fxsends"></div>
+      <div id="fxglobal"></div>
+    </aside>
   </div>
 
   <div class="start" id="start">

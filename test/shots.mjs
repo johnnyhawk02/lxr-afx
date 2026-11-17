@@ -98,14 +98,13 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     await p.click('#undo'); await p.waitForTimeout(400);
     if (JSON.stringify((await ke())[1]['58']) !== JSON.stringify(before)) { errors++; console.log('paste: undo did not restore'); }
   }
-  // FX: the FX tab shows the three effects; a key's sends are knobs on its engine page
-  { await p.click('.snd.fx'); await p.waitForTimeout(150);
-    const secs = await p.$$eval('#faders .sect h3', (h) => h.map((x) => x.textContent));
-    if (secs.join() !== 'ECHO,REVERB,DISTORTION') { errors++; console.log('fx page:', secs); }
-    await p.screenshot({ path: `${out}/fx-${w}x${h}.png` });
-    await p.click('.snd.fx'); await p.waitForTimeout(150);
-    const sends = await p.$$eval('#faders .sect h3', (h) => h.map((x) => x.textContent));
-    if (!sends.includes('fx sends')) { errors++; console.log('no fx sends section', sends); }
+  // FX: the right column holds this key's sends and the three effects
+  { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => x.textContent));
+    const sends = await p.$$eval('#fxsends .vf', (v) => v.length);
+    if (secs.join() !== 'ECHO,REVERB,DISTORTION' || sends !== 3) { errors++; console.log('fx column:', secs, sends); }
+    const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
+      return [...document.querySelectorAll('.fxside .vf')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
+    if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
   }
   await p.close();
 }

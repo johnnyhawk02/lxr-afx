@@ -341,7 +341,6 @@ const P = (v) => v + '%';
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
 const randDraws = [
   hbar($('rand-bars'), 'AMOUNT', { min: 0, max: 100, get: () => S.rand.amount, set: (v) => { S.rand.amount = v; save(); }, show: P, dflt: 30 }),
-  hbar($('sound-bars'), 'LEVEL', { min: 0, max: 127, get: () => S.values[levelPar()], set: (v) => { setValue(levelPar(), v); drawFaders(); }, show: String, dflt: () => S.defaults[levelPar()], learn: { t: 'zlevel', s: 0 } }),
 ];
 $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
@@ -350,20 +349,7 @@ $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; sa
 // the zone's keys, one row each: its note, the sound it plays, and whether it's locked or edited. A click picks the key
 // and plays it (drawKeymap keeps its old name: everything that changes a key calls it)
 // ---------------------------------------------------------------------------------------------------------------
-function drawKeymap() {
-  const z = SOUNDS[S.sel].zone, box = $('keylist'); box.innerHTML = '';
-  for (let note = z.hi; note >= z.lo; note--) {
-    const ed = S.keyEdits[S.sel][note], n = editCount(ed);
-    const r = document.createElement('button'); r.type = 'button'; r.className = 'kl';
-    if (note === editKey[S.sel]) r.classList.add('sel');
-    if (ed?._lock) r.classList.add('locked');
-    const what = ed?._kit && ed._kit !== 'kept' ? ed._kit : ed ? `own sound · ${n} set` : `${SOUNDS[S.sel].name.toLowerCase()} base`;
-    r.innerHTML = `<b></b><span></span><i>${ed?._lock ? 'LOCKED' : ''}</i>`;
-    r.querySelector('b').textContent = noteName(note); r.querySelector('span').textContent = what;
-    r.addEventListener('click', () => { startAudio().then(() => play(S.sel, note, 100)); });
-    box.append(r);
-  }
-}
+function drawKeymap() { /* the key list is gone: the strip on top shows the keys */ drawStrip(); }
 window.addEventListener('resize', drawKeymap);
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -378,11 +364,7 @@ const soundBtns = SOUNDS.map((s, i) => {
   $('sounds').append(b);
   return b;
 });
-const fxBtn = document.createElement('button');
-fxBtn.className = 'btn snd fx'; fxBtn.type = 'button'; fxBtn.setAttribute('role', 'tab'); fxBtn.innerHTML = '<span>FX</span><span class="ch">echo · reverb · dist</span>';
-fxBtn.title = 'The three send effects (F)';
-fxBtn.addEventListener('click', () => { S.view = S.view === 'fx' ? 'synth' : 'fx'; save(); buildFaders(); drawEditKey(); });
-$('sounds').append(fxBtn);
+
 function select(i, view) {
   S.sel = i; if (view) S.view = view; save();
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === i));
@@ -390,7 +372,6 @@ function select(i, view) {
 }
 function drawSide() {
   const s = SOUNDS[S.sel];
-  $('side-name').textContent = s.name; $('side-ch').textContent = `${noteName(s.zone.lo)}-${noteName(s.zone.hi)} · ${s.zone.hi - s.zone.lo + 1} KEYS`;
   $('rand-name').textContent = s.name;
   randDraws.forEach((d) => d());
   drawLocks(); drawKeymap();
@@ -401,14 +382,11 @@ function drawSide() {
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
 function buildFaders() {
-  fxBtn.setAttribute('aria-selected', S.view === 'fx');
-  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', S.view !== 'fx' && k === S.sel));
-  $('screen').classList.toggle('fxview', S.view === 'fx');
-  if (S.view === 'fx') { buildFx(); return; }
+  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === S.sel));
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
-  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
+  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.section !== 'fx sends'));
   // short sections share a row: velocity sits beside the mix, the LFO gets a row of its own
   const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo', 'fx sends'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
   const sections = [...new Set(entries.map((e) => e.section))].sort((a, b) => rank(a) - rank(b));
@@ -421,6 +399,10 @@ function buildFaders() {
     for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
     box.append(el);
   }
+  // the right: this key's sends (knobs like the rest of the key's), then the three effects
+  const sends = $('fxsends'); sends.innerHTML = '';
+  for (const e of VOICE_SCHEMAS[voice].filter((x) => x.section === 'fx sends')) sends.append(vfader(e));
+  buildFx();
   drawFaders();
 }
 function drawFaders() { faderDraws.forEach((d) => d()); }
@@ -451,7 +433,7 @@ const FX_PAGE = [
   ['dist', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['color', 127], ['tone', 127], ['volume', 127], ['level', 100, (v) => v + '%', 'return']]],
 ];
 function buildFx() {
-  const box = $('faders'); box.innerHTML = ''; faderDraws = [];
+  const box = $('fxglobal'); box.innerHTML = '';
   for (const [id, name, knobs] of FX_PAGE) {
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
@@ -459,10 +441,6 @@ function buildFx() {
       el.querySelector('.row').append(gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
-  const note = document.createElement('p'); note.className = 'fxnote';
-  note.innerHTML = 'Each key feeds these at its own <em>FX SENDS</em> (ECHO, REVERB, DIST knobs on its engine page). ALL KEYS sets the engine\'s sends for every key.';
-  box.append(note);
-  drawFaders();
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine
@@ -502,7 +480,7 @@ function vfader(e) {
     x = clamp(Math.round(x), 0, e.max);
     if (x === valueNow(e.par)) return;
     editValue(e.par, x); draw();
-    if (e.par === levelPar()) randDraws[1]();
+
     detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
   };
   dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
@@ -556,7 +534,7 @@ function drawEditKey() {
   $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
   $('edit-key').textContent = 'THIS KEY';
-  $('edit-info').textContent = S.view === 'fx' ? 'the effects: every key feeds them at its sends' : locked ? `${noteName(note)} is locked` : S.editAll ? 'every key of the zone (locked keys stay)' : `${noteName(note)} only`;
+  $('edit-info').textContent = locked ? `${noteName(note)} is locked` : S.editAll ? 'every key of the zone (locked keys stay)' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked; $('clear-keys').disabled = n === nl;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
   $('rand-key').disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
@@ -812,7 +790,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'k' || e.key === 'K') randKey();
   else if (e.key === 'a' || e.key === 'A') alterKey();
-  else if (e.key === 'f' || e.key === 'F') fxBtn.click();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
 });
 
@@ -863,7 +840,6 @@ function alignEngines() {
   const base = row.getBoundingClientRect().left;
   const place = (b, el) => { const r = el.getBoundingClientRect(); Object.assign(b.style, { left: `${(r.left - base) / k}px`, width: `${r.width / k}px` }); };
   document.querySelectorAll('#keystrip .kgroup').forEach((g, i) => place(soundBtns[i], g));
-  place(fxBtn, document.querySelector('.keyacts'));
   const tag = row.querySelector('.tag'); tag.style.left = `${parseFloat(soundBtns[0].style.left) - tag.offsetWidth - 12}px`;
 }
 function fitScreen() {

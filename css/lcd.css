@@ -297,3 +297,15 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .sounds .snd { position: absolute; top: 0; height: 38px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: 20px; }
 .sounds .snd .ch { font-size: 15px; }
 @media (max-width: 1340px) { .sounds .snd { font-size: 18px; } .sounds .snd .ch { font-size: 13px; } }
+
+/* ---- body: the synth on the left, the FX on the right ---- */
+.body { grid-template-columns: 1fr auto; }
+.fxside { display: flex; flex-direction: column; gap: 4px; min-height: 0; border-left: var(--rule); padding-left: 14px; --kw: 62px; --ks: 42px; }
+.fxside h2 { margin-bottom: 2px; }
+.fxside .sendrow { display: grid; grid-template-columns: repeat(3, var(--kw)); padding-bottom: 6px; border-bottom: var(--rule); }
+.fxside .sect { padding: 6px 0 0; }
+.fxside .sect + .sect { border-left: 0; border-top: var(--rule); margin-top: 6px; }
+.fxside .sect .row { display: grid; grid-template-columns: repeat(var(--n), var(--kw)); }
+.fxside .vf output { font-size: 16px; } .fxside .vf .lab { font-size: 15px; }
+.fxside .knob { width: var(--ks); height: var(--ks); }
+@media (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
