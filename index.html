@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css">
+<link rel="stylesheet" href="css/lcd.css?v=mwkltwhv">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -94,6 +94,18 @@
     <p id="start-text"></p>
   </div>
 </main>
-<script type="module" src="app/main.js"></script>
+<script>
+// if the page's code fails to load or start (a stale cached file, an error), say so instead of sitting on START
+(function () {
+  let err = '';
+  addEventListener('error', function (e) { err = err || (e.message || 'a file failed to load'); }, true);
+  setTimeout(function () {
+    if (window.afxReady) return;
+    var t = document.getElementById('start-text');
+    if (t) t.textContent = 'The page didn\'t finish loading (' + (err || 'timed out') + '). Reload it with Cmd+Shift+R (Ctrl+Shift+R on a PC).';
+  }, 5000);
+})();
+</script>
+<script type="module" src="app/main.js?v=mwkltwhv"></script>
 </body>
 </html>
