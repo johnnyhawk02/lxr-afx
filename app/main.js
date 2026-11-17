@@ -24,6 +24,9 @@ const S = {
   locks: defaultLocks(),
   rand: { amount: 30, wild: false },
   sel: 0, page: 0,
+  // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
+  keyEdits: SOUNDS.map(() => ({})),
+  editAll: false, // the editor edits the last key pressed (false) or the base of every key (true)
   midiCh: 0, // 0: channels 1-7 play the seven sounds; 1-7: every note, on any channel, plays that sound
 };
 try {
@@ -32,6 +35,7 @@ try {
     S.values = Uint8Array.from(d.values); S.defaults = Uint8Array.from(d.defaults || d.values);
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0; S.midiCh = d.midiCh | 0;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll;
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -40,7 +44,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, midiCh: S.midiCh }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, midiCh: S.midiCh, keyEdits: S.keyEdits, editAll: S.editAll }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
@@ -63,17 +67,30 @@ async function startAudio() {
   if (ctx.state !== 'running') await ctx.resume();
 }
 
-// a sound on a key: the morph of its base for that key, then the trigger
-const lastMorph = SOUNDS.map(() => null);
-function play(sound, note, vel) {
-  const def = SOUNDS[sound], sc = VOICE_SCHEMAS[def.engineVoice], st = S.sounds[sound];
+// what a key of a sound plays: every parameter of its voice, from the base, then the key's morph, then the key's own
+// edits on top. All of the voice's parameters are sent with each note (the engine skips unchanged ones), so an edit
+// made on one key never stays on for the next
+function keyPatch(sound, note) {
+  const def = SOUNDS[sound], v = def.engineVoice, st = S.sounds[sound];
   const amount = combinedAmount(pct(S.global), pct(st));
-  const m = morphKey({ schema: sc, base: S.values, note, seed: st.seed, amount, voice: def.engineVoice });
+  const m = morphKey({ schema: VOICE_SCHEMAS[v], base: S.values, note, seed: st.seed, amount, voice: v });
+  const vals = new Map(voiceOwned(v).map((p) => [p, S.values[p]]));
+  for (const [p, x] of m.params) vals.set(p, x);
+  const ed = S.keyEdits[sound][note];
+  if (ed) for (const p in ed) vals.set(Number(p), ed[p]);
+  return { note: m.note, vals, semitones: m.semitones };
+}
+// a sound on a key, and that key becomes the one the editor edits
+const lastMorph = SOUNDS.map(() => null);
+const editKey = SOUNDS.map(() => BASE_NOTE);
+function play(sound, note, vel) {
+  const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
-  send({ type: 'play', sound, note: m.note, vel, params: m.params });
-  lastMorph[sound] = { key: note, values: new Map(m.params), semitones: m.semitones };
+  send({ type: 'play', sound, note: m.note, vel, params: [...m.vals] });
+  lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
+  editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
-  if (sound === S.sel) { drawFaders(); drawKeymap(); }
+  if (sound === S.sel) { drawFaders(); drawKeymap(); drawEditKey(); }
 }
 const pct = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, k === 'seed' ? v : v / 100]));
 
@@ -86,6 +103,19 @@ function setValue(par, v, { quiet = false } = {}) {
   if (!quiet) for (const k in homes) if (VOICE_SCHEMAS[k].some((e) => e.par === par)) delete homes[k];
   save();
 }
+
+// an edit in the editor: to the last key pressed (kept as that key's own value), or to the base of every key
+const editing = () => !S.editAll;
+function valueNow(par) { return editing() ? keyPatch(S.sel, editKey[S.sel]).vals.get(par) : S.values[par]; }
+function editValue(par, v) {
+  if (!editing()) { setValue(par, v); return; }
+  const note = editKey[S.sel], k = S.keyEdits[S.sel];
+  (k[note] ||= {})[par] = v;
+  send({ type: 'param', par, value: v }); // heard on what's still ringing
+  save(); drawKeymap(); drawEditKey();
+}
+const keyEdited = (par) => { const ed = S.keyEdits[S.sel][editKey[S.sel]]; return !!ed && ed[par] !== undefined; };
+function clearKey(sound, note) { delete S.keyEdits[sound][note]; save(); }
 
 // ---------------------------------------------------------------------------------------------------------------
 // MIDI: note-ons on channels 1..7, keys C1..C5
@@ -252,11 +282,20 @@ function drawKeymap() {
     const ky = ty + timbreH + 3, black = [1, 3, 6, 8, 10].includes(note % 12);
     g.fillStyle = note === BASE_NOTE ? ink : black ? 'rgba(23,32,14,.35)' : 'rgba(23,32,14,.7)';
     g.fillRect(x, ky, w, black ? keysH / 2 : keysH);
-    if (last && last.key === note) { g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(x - 2, top - 3, w + 4, ky + keysH - top + 6); }
+    if (editKey[S.sel] === note) { g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(x - 2, top - 3, w + 4, ky + keysH - top + 6); }
+    // a key with its own edits: a solid block on the middle line
+    if (S.keyEdits[S.sel][note]) { g.fillStyle = ink; g.fillRect(x - 1, mid - 3, w + 2, 7); }
   }
   g.fillStyle = 'rgba(23,32,14,.55)'; g.fillRect(0, mid, W, 1);
 }
 window.addEventListener('resize', drawKeymap);
+// a click on the key map picks the key to edit (it doesn't play: notes come from MIDI)
+$('keymap').addEventListener('click', (e) => {
+  const r = $('keymap').getBoundingClientRect(), n = HIGH_NOTE - LOW_NOTE + 1;
+  editKey[S.sel] = LOW_NOTE + clamp(Math.floor((e.clientX - r.left) / r.width * n), 0, n - 1);
+  if (S.editAll) setEditAll(false);
+  drawKeymap(); drawFaders(); drawEditKey();
+});
 
 // ---------------------------------------------------------------------------------------------------------------
 // the seven sounds
@@ -273,7 +312,7 @@ const soundBtns = SOUNDS.map((s, i) => {
 function select(i) {
   S.sel = i; save();
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === i));
-  buildFaders(); drawSide();
+  buildFaders(); drawSide(); drawEditKey();
 }
 function drawSide() {
   const s = SOUNDS[S.sel];
@@ -320,26 +359,32 @@ function vfader(e) {
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   lock.title = `Lock ${e.label}: the randomisers leave it alone`;
   const draw = () => {
-    const v = S.values[e.par];
+    const v = valueNow(e.par);
     tr.style.setProperty('--f', v / e.max); out.textContent = showValue(e, v);
     tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', showValue(e, v));
-    const lm = lastMorph[S.sel], mv = lm && lm.values.get(e.par);
+    // the notch: editing a key, where the base is; editing every key, where the last key played moved it
+    const lm = lastMorph[S.sel], mv = editing() ? S.values[e.par] : lm && lm.values.get(e.par);
     tr.classList.toggle('morphed', mv !== undefined && mv !== v);
     if (mv !== undefined) tr.style.setProperty('--m', mv / e.max);
-    el.classList.toggle('changed', v !== S.defaults[e.par]);
+    el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
+    el.classList.toggle('keyed', editing() && keyEdited(e.par));
     lock.setAttribute('aria-pressed', S.locks.has(e.par));
   };
   const put = (x) => {
     x = clamp(Math.round(x), 0, e.max);
-    if (x === S.values[e.par]) return;
-    setValue(e.par, x); draw();
+    if (x === valueNow(e.par)) return;
+    editValue(e.par, x); draw();
     if (e.par === levelPar()) randDraws[1]();
-    detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, x)}</em>${e.morph ? ' · morphs with timbre' : ''}`);
+    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
   };
-  dragger(tr, 'y', { min: 0, max: e.max, get: () => S.values[e.par], put, held: (h) => el.classList.toggle('held', h) });
-  const reset = () => put(S.defaults[e.par]);
+  dragger(tr, 'y', { min: 0, max: e.max, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
+  // double-click: a key's edit goes (back to its morph); on every key, back to the kit's value
+  const reset = () => {
+    if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!Object.keys(ed).length) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
+    else put(S.defaults[e.par]);
+  };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
-  tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, S.values[e.par])}</em>${e.morph ? ' · morphs with timbre' : ''}`));
+  tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, valueNow(e.par))}</em>`));
   lock.addEventListener('click', () => { if (S.locks.has(e.par)) S.locks.delete(e.par); else S.locks.add(e.par); save(); draw(); drawLocks(); });
   faderDraws.push(draw);
   return el;
@@ -364,14 +409,29 @@ function targetSelect(e, voice) {
     s.append(og);
   }
   s.addEventListener('change', () => {
-    setValue(e.par, Number(s.value));
-    if (e.display.anyVoice) setValue(PAR.VOICE_LFO1 + voice, voiceOfTarget(Number(s.value)) + 1, { quiet: true });
+    editValue(e.par, Number(s.value));
+    if (e.display.anyVoice) editValue(PAR.VOICE_LFO1 + voice, voiceOfTarget(Number(s.value)) + 1);
     detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${s.selectedOptions[0].text}</em>`);
   });
   el.append(s);
-  faderDraws.push(() => { s.value = S.values[e.par]; });
+  faderDraws.push(() => { s.value = valueNow(e.par); el.classList.toggle('keyed', editing() && keyEdited(e.par)); });
   return el;
 }
+
+// ---- what the editor edits: the last key (KEY) or every key (ALL KEYS); clearing a key's edits ----
+function setEditAll(all) { S.editAll = all; save(); drawEditKey(); drawFaders(); }
+function drawEditKey() {
+  const note = editKey[S.sel], edits = S.keyEdits[S.sel], n = Object.keys(edits).length;
+  const here = edits[note] ? Object.keys(edits[note]).length : 0;
+  $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
+  $('edit-key').textContent = 'KEY ' + noteName(note);
+  $('edit-info').textContent = S.editAll ? 'editing the base: every key follows' : `${here} edit${here === 1 ? '' : 's'} on ${noteName(note)} · ${n} key${n === 1 ? '' : 's'} edited`;
+  $('clear-key').disabled = !here; $('clear-keys').disabled = !n;
+}
+$('edit-key').addEventListener('click', () => setEditAll(false));
+$('edit-all').addEventListener('click', () => setEditAll(true));
+$('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to its morph`); });
+$('clear-keys').addEventListener('click', () => { S.keyEdits[S.sel] = {}; save(); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name}: every key back to its morph`); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before

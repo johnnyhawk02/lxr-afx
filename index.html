@@ -61,8 +61,16 @@
 
     <section class="editor">
       <div class="pages" id="pages" role="tablist" aria-label="Editor pages"></div>
+      <div class="editbar">
+        <span class="dim">EDIT</span>
+        <button class="btn" id="edit-key" title="Edits change only the last key pressed (or the key picked on the key map)">KEY C3</button>
+        <button class="btn" id="edit-all" title="Edits change the base sound: every key's morph follows">ALL KEYS</button>
+        <span id="edit-info" class="info"></span>
+        <button class="btn sm" id="clear-key" title="This key back to its plain morph">CLEAR KEY</button>
+        <button class="btn sm" id="clear-keys" title="Every key of this sound back to its plain morph">CLEAR ALL KEYS</button>
+      </div>
       <div class="faders" id="faders"></div>
-      <footer class="status"><span id="detail">C3 plays the base sound. Edit it here; every other key morphs from it.</span>
+      <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS edits the base, and every key follows.</span>
         <span class="dim">C3 = MIDI 60 · CH 1-7 · C1-C5</span></footer>
     </section>
   </div>

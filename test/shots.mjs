@@ -15,6 +15,13 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.click('#start-btn'); await p.waitForTimeout(800);
   await p.click('#chsel button:nth-child(5)'); await p.waitForTimeout(100);
   for (const [ch, n] of [[1, 60], [1, 84], [2, 43], [1, 79]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
+  // an edit goes to the last key played (G4 on drum 3), not the base
+  const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v1') || 'null'));
+  await p.focus('.vtrack'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');
+  await p.waitForTimeout(500);
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v1')));
+  const edits = after.keyEdits[2]['79'];
+  if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on G4 only', edits); }
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);
   if (scroll.some(Boolean)) { errors++; console.log(`${w}x${h}: page scrolls`, scroll); }

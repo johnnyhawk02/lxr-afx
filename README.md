@@ -11,7 +11,9 @@ A 7-voice MIDI drum instrument in the browser where every key plays a morphed va
 - **Key morph**: C3 plays the sound as you made it. Every other key plays a variant, changing pitch and timbre, more the
   further it is from C3. Each key's variant is fixed by the sound's seed; **re-roll** for a new set. Depth, pitch and
   timbre sliders for all sounds and per sound; depth 0 plays the base sound on every key.
-- **Editor**: every parameter of each sound (tone, shape, filter, mod, mix). Editing changes the base; the morphs follow.
+- **Editor**: every parameter of each sound (tone, shape, filter, mod, mix). By default an edit changes only the last key
+  pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and
+  every key's morph follows. **CLEAR KEY** / **CLEAR ALL KEYS** take a sound's key edits away.
 - **Randomisers**: per sound (amount, wild, per-control locks, from a built-in kit, alter) and kit-wide (random kit,
   alter all), with undo.
 
