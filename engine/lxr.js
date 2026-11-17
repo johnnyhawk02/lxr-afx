@@ -1817,6 +1817,10 @@ export class LxrEngine {
 // variation (the early reflections' level).
 // One change, marked: the modulated delays' smoothed length starts at its target, not at 0 (the firmware's smoothing
 // is so slow, 0.00013 Hz, that from 0 it would sit at about one sample for minutes).
+// One addition, off unless asked for (stereo = true; not in the firmware, whose USE_OUT_2 is 0): the right side from
+// taps of its own. The left side stays the firmware's output, sample for sample; the right reads the same two loops at
+// other points (the first loop's delays where the left reads the second's, as a plate reverb's two outputs do) and
+// the early reflections at other times, through a tilt EQ of its own. Equally loud, and unlike the left.
 // ---------------------------------------------------------------------------------------
 const VERB_SIZE = 0x800; // MAX_ALLPASS_SIZE
 function makeVerbDelay() { return { buf: new Float32Array(VERB_SIZE), readPtr: 0, length: 256, writePtr: 256, roomSz: 1 }; }
@@ -1865,10 +1869,15 @@ function tiltSetParameter(e, p) {
 }
 function tiltProcess(e, x) { e.lp = e.a0 * x + e.b1 * e.lp; return e.lgain * e.lp + e.hgain * (x - e.lp); }
 const VERB_EARLY = [12, 24, 38, 50];
+// (the addition: the right side's early reflections, % of the early delay. The same four levels in another order and
+// between the left's in time, the right's quiet one first, so that neither side leads)
+const VERB_EARLY_R = [8, 19, 33, 45];
+const VERB_R = 0.6; // (and its taps' gain: the left's 0.6, see test/reverb.test.mjs for the balance)
 export class ReverbBus {
   constructor() {
     this.input = new Int16Array(BLOCK * 2);
     this.eq = makeTilt(); this.eqFb = makeTilt();
+    this.stereo = false; this.eqFbR = makeTilt(); // (the addition)
     this.lfo = { s: [0.5, 0], a: 2 * Math.sin(Math.PI * 1.31 / REAL_FS) };
     this.earlyVolume = 1; this.feedback = 0;
     this.lpFeedback = makeOnePole(); this.lpFeedback.r = 0.5; this.lpImpulse = makeOnePole(); this.lpImpulse.r = 0.5;
@@ -1891,7 +1900,7 @@ export class ReverbBus {
     this.parameter[idx] = v;
     if (idx === 0) verbSetRoomSize(this.preDelay, 0.02166 + v * 0.97784342688330871492);
     else if (idx === 1) this.feedback = v;
-    else if (idx === 2) { tiltSetParameter(this.eq, -1 + 2 * v); tiltSetParameter(this.eqFb, -1 + 2 * v); this.lpFeedback.r = f(v); }
+    else if (idx === 2) { tiltSetParameter(this.eq, -1 + 2 * v); tiltSetParameter(this.eqFb, -1 + 2 * v); tiltSetParameter(this.eqFbR, -1 + 2 * v); this.lpFeedback.r = f(v); }
     else if (idx === 3) this.earlyVolume = v;
   }
   /** Reverb_process, all wet: this.input (stereo int16, interleaved) -> added into out */
@@ -1925,7 +1934,17 @@ export class ReverbBus {
       o2 -= verbReadTapSample(this.delay[1], 1066) * 0.6;
       const o = tiltProcess(this.eqFb, early * this.earlyVolume + o2);
       const wet = Math.max(-32768, Math.min(32767, Math.trunc(o * 32768)));
-      out[2 * i] = qadd16(out[2 * i], wet); out[2 * i + 1] = qadd16(out[2 * i + 1], wet);
+      let wetR = wet;
+      if (this.stereo) { // (the addition: the right side from its own taps)
+        const earlyR = verbReadTap(this.early, VERB_EARLY_R[0]) * 0.5 + verbReadTap(this.early, VERB_EARLY_R[1])
+          + verbReadTap(this.early, VERB_EARLY_R[2]) * 0.25 + verbReadTap(this.early, VERB_EARLY_R[3]) * 0.125;
+        let r2 = verbReadTapSample(this.delay[0], 353) * VERB_R;
+        r2 -= verbReadTapSample(this.apDelay[1].d, 1228) * VERB_R;
+        r2 += verbReadTapSample(this.delay[1], 1375) * VERB_R;
+        r2 -= verbReadTapSample(this.delay[3], 121) * VERB_R;
+        wetR = Math.max(-32768, Math.min(32767, Math.trunc(tiltProcess(this.eqFbR, earlyR * this.earlyVolume + r2) * 32768)));
+      }
+      out[2 * i] = qadd16(out[2 * i], wet); out[2 * i + 1] = qadd16(out[2 * i + 1], wetR);
     }
   }
 }

@@ -22,6 +22,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
+  The **reverb is stereo**: the firmware's reverb gave one output, the same on both sides; here that output is the
+  left side, and the right side reads the same reverb loops at other points and the early reflections at other
+  times. The two sides are equally loud and unlike each other, so the tail spreads between the speakers.
   The echo's **SYNC** switch turns TIME from milliseconds into a note length at the BPM (1/32 to 1/2, with triplets and
   dotted lengths, 1/8D by default), and it follows the BPM; switched off, TIME goes back to the milliseconds it had.
 - **Master distortion** (`sound/dirt.js`, our own design after a dual-path bass distortion pedal's signal flow), before
@@ -150,7 +153,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 
 | Path | What it is |
 |---|---|
-| `engine/` | the LXR-02 firmware's drum engine in JavaScript, copied from [elixir-desktop](https://github.com/johnnyhawk02/elixir-desktop) (one addition: `renderBlock(only)` renders a single voice, for AUTO LEVEL's measurement) |
+| `engine/` | the LXR-02 firmware's drum engine in JavaScript, copied from [elixir-desktop](https://github.com/johnnyhawk02/elixir-desktop) (two additions: `renderBlock(only)` renders a single voice, for AUTO LEVEL's measurement, and the reverb has a right-hand output of its own when `stereo` is set) |
 | `sound/schema.js` | the seven sounds and each one's parameter schema (range, default, display, morph and randomiser rules) |
 | `sound/morph.js` | the old key morph (no longer used by the page; kept with its tests) |
 | `sound/instrument.js` | the engine as an instrument: `voices[i].play(note, velocity, params)` and `render(left, right)`, no UI |
@@ -165,6 +168,7 @@ No build step: the page loads the ES modules directly.
 ```sh
 node test/morph.test.mjs                        # the morph and engine checks
 node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
+node test/reverb.test.mjs                       # the stereo reverb: left as the firmware's, right as loud and unlike it
 node test/names.test.mjs                        # the preset names: sayable, varied, never a list word, always a mix of lists
 python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: laptop sizes and the phone (needs Playwright)
 ```

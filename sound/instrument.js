@@ -10,8 +10,8 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS } from './schema.js?v=mwl1li0t';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwl1li0t';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS } from './schema.js?v=mwl1wqod';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwl1wqod';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -63,7 +63,7 @@ export class LxrInstrument {
     // change while a sound rings glides there over a block (no click)
     this.trim = new Float32Array(6).fill(1); this.trimNow = new Float32Array(6).fill(1);
     this.echo = new FxBus(); this.echo.fxType = FX_DELAY; this.echo.forceWet = true;
-    this.verb = new ReverbBus();
+    this.verb = new ReverbBus(); this.verb.stereo = true; // (the right side from its own taps: a stereo reverb)
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
