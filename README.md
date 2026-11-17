@@ -16,8 +16,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
-  whole engine or all three (scatter, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, control locks) is in the
-  **RANDOM** menu.
+  whole engine or all three (INIT PATCH, scatter, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, control locks)
+  is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
@@ -69,6 +69,11 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
   randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
   plays a rhythm has a dashed foot, a key you edited by hand a dot.
+- **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit
+  sound, levelled, panned and given rhythms as SCATTER ALL deals them; **30% of the keys get a reverb send and 20% an
+  echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
+  edits are replaced, so with locked keys it asks first (press again within four seconds). BPM, the effects' own
+  settings, the master, the zone levels and the control locks stay. UNDO brings the old patch back, locks and all.
 - **RANDOM menu**: **SCATTER**, **ALTER** and **LEVEL** for the engine on screen, **SCATTER ALL**, **ALTER ALL** and
   **LEVEL ALL** for all three.
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY

@@ -1,12 +1,12 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO } from '../sound/schema.js?v=mwkvk9bz';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkvk9bz';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkvk9bz';
-import { KIT_FILES } from '../sound/kits.js?v=mwkvk9bz';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkvk9bz';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkvk9bz';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkw8420';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkw8420';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkw8420';
+import { KIT_FILES } from '../sound/kits.js?v=mwkw8420';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkw8420';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkw8420';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -77,7 +77,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkvk9bz', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkw8420', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -905,7 +905,7 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 document.addEventListener('pointerdown', (e) => { if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openMenu(false); });
@@ -1152,6 +1152,46 @@ $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `
 $('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three zones: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}`));
 $('level').addEventListener('click', () => randChange(() => levelZone(S.sel), `${SOUNDS[S.sel].name}: every key levelled to <em>${LEVEL_TARGET_DB[S.sel]} dB</em> (locked keys stay)`).then(sendTrim));
 $('kit-level').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => levelZone(i)), 'all three zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
+// ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit sound as
+// SCATTER ALL deals them (levelled, panned and given rhythms the same way), locked keys and hand edits included. Then
+// the effects: INIT_REVERB % of the keys get a reverb send and INIT_ECHO % an echo send (which keys is random, and a
+// key can have both), the rest none. BPM, the effects' own settings, the master, the zone levels and the control locks
+// stay. With locked keys it asks first (a second press within a few seconds); UNDO takes it back, locks and all ----
+const INIT_REVERB = 30, INIT_ECHO = 20, INIT_SEND = { echo: [40, 85], reverb: [45, 95] };
+function initPatch() {
+  const keys = [];
+  SOUNDS.forEach((def, sound) => { S.keyEdits[sound] = {}; scatter(sound); for (let n = def.zone.lo; n <= def.zone.hi; n++) keys.push([sound, n]); });
+  // exactly the share of the keys, whichever they are
+  const some = (pc) => { const a = keys.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return new Set(a.slice(0, Math.round(pc / 100 * a.length))); };
+  const amount = ([lo, hi]) => lo + Math.floor(rnd() * (hi - lo + 1)), rev = some(INIT_REVERB), ech = some(INIT_ECHO);
+  for (const k of keys) {
+    const [sound, n] = k, v = SOUNDS[sound].engineVoice, ed = S.keyEdits[sound][n];
+    ed[sendPar(v, 0)] = ech.has(k) ? amount(INIT_SEND.echo) : 0; ed[sendPar(v, 1)] = rev.has(k) ? amount(INIT_SEND.reverb) : 0;
+  }
+  return { keys: keys.length, reverb: rev.size, echo: ech.size };
+}
+let initArmed = 0;
+const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filter((e) => e._lock).length, 0);
+function drawInit() {
+  const nl = lockedKeys();
+  $('init-patch').setAttribute('aria-pressed', !!initArmed);
+  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH KIT SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO`;
+}
+function disarmInit() { clearTimeout(initArmed); initArmed = 0; drawInit(); }
+$('init-patch').addEventListener('click', () => {
+  const nl = lockedKeys();
+  if (nl && !initArmed) { // locked keys are the ones you kept on purpose: asked once
+    initArmed = setTimeout(disarmInit, 4000); drawInit();
+    detail(`INIT PATCH replaces every key, the <em>${nl} locked</em> too: press it again to go ahead`); return;
+  }
+  disarmInit();
+  let n;
+  randChange(() => { n = initPatch(); if (S.editAll) setEditAll(false); }, 'INIT PATCH').then(() => {
+    drawKeymap(); sendTrim();
+    detail(`new patch: a kit sound on all ${n.keys} keys · <em>${n.reverb}</em> with reverb, <em>${n.echo}</em> with echo${levelled()} (UNDO takes it back)`);
+  });
+});
+drawInit();
 function undo() {
   const u = undoStack.pop();
   if (!u) { detail('nothing to undo'); return; }

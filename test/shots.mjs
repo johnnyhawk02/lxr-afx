@@ -275,6 +275,28 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (l0[1].some((x) => x !== 0) || nz([l1[1]]) < 5 || J(l1[0]) !== J(l0[0]) || J(l1[2]) !== J(l0[2]) || nz(l2) < 18 || J(l2[1]) !== J(l1[1]) || s2 !== s0 || J(l3) !== J(l1))
       { errors++; console.log('level keys:', J([l0, l1, l2, l3]), s2 === s0); }
     await p.evaluate(() => afx.cc(123, 0)); }
+  // INIT PATCH: a new patch. With a locked key it asks first (the first press changes nothing); then every key has a
+  // fresh kit sound and no lock, 8 of the 25 keys a reverb send and 5 an echo send (30% and 20%), the rest none, the
+  // pans and rhythms as SCATTER ALL deals them, levelled; UNDO brings the old patch back, its lock too
+  { const state = () => p.evaluate(([e, r]) => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) { const m = new Map(afx.patch(i, k)), ed = afx.keyEdits()[i][k] || {};
+      o.push({ echo: m.get(e[s.engineVoice]), rev: m.get(r[s.engineVoice]), kit: ed._kit || '', lock: !!ed._lock, pan: afx.pan(i, k), on: afx.active(i, k), trim: afx.trim(i, k) }); } return o; }),
+      [[0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 0)), [0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 1))]);
+    const press = () => p.evaluate(() => document.getElementById('init-patch').click()), J = JSON.stringify;
+    await p.evaluate(() => { afx.cc(123, 0); const n = afx.sounds[2].zone.lo + 4; afx.noteOn(1, n, 100); afx.noteOff(n); }); await p.waitForTimeout(150);
+    await p.click('#lock-key'); await p.waitForTimeout(100);
+    const before = await state(); await press(); await p.waitForTimeout(150);
+    const asked = await state(), armed = await p.getAttribute('#init-patch', 'aria-pressed'), info = await p.textContent('#init-info');
+    await press(); await p.waitForTimeout(600); const st = await state(), all = st.flat();
+    const rev = all.filter((k) => k.rev > 0), ech = all.filter((k) => k.echo > 0), ons = st.map((z) => z.filter((k) => k.on).length);
+    if (J(asked) !== J(before) || armed !== 'true' || !/1 LOCKED KEY/.test(info)) { errors++; console.log('init patch, asking:', armed, info, J(asked) === J(before)); }
+    if (all.length !== 25 || all.some((k) => !k.kit || k.lock) || rev.length !== 8 || ech.length !== 5 || rev.some((k) => k.rev < 45 || k.rev > 95) || ech.some((k) => k.echo < 40 || k.echo > 85)
+      || !st[0].every((k) => k.pan === 63) || !st[1].every((k) => k.pan >= 51 && k.pan <= 76) || J(ons) !== J([4, 4, 5]) || all.filter((k) => k.trim !== 0).length < 18)
+      { errors++; console.log('init patch:', 'reverb', rev.length, 'echo', ech.length, 'rhythms', J(ons), J(all.map((k) => [k.kit, k.lock, k.echo, k.rev, k.pan, k.trim]))); }
+    await p.waitForTimeout(100); await press(); await p.waitForTimeout(600); const again = await state(); // nothing locked now: one press
+    if (J(again.flat().map((k) => k.kit)) === J(all.map((k) => k.kit)) || again.flat().filter((k) => k.rev > 0).length !== 8) { errors++; console.log('init patch, second: the same patch again'); }
+    await p.click('#undo'); await p.waitForTimeout(100); await p.click('#undo'); await p.waitForTimeout(150); const back = await state();
+    if (J(back) !== J(before)) { errors++; console.log('init patch, undo:', J(back.flat().map((k) => [k.kit, k.lock])), J(before.flat().map((k) => [k.kit, k.lock]))); }
+    await p.click('#lock-key'); await p.waitForTimeout(100); }
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;

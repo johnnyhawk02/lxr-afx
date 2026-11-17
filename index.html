@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwkvk9bz">
+<link rel="stylesheet" href="css/lcd.css?v=mwkw8420">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -22,6 +22,11 @@
     <div class="menu" id="menu">
       <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all three, and how much">RANDOM ▾</button>
       <div class="menupanel" id="menu-panel" hidden>
+        <h3>NEW PATCH</h3>
+        <div class="randrow">
+          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled, panned and given rhythms as SCATTER ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; BPM, the effects, the master and the zone levels stay. UNDO takes it back">INIT PATCH</button>
+          <span class="dim note" id="init-info"></span>
+        </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">
           <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
@@ -104,6 +109,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwkvk9bz"></script>
+<script type="module" src="app/main.js?v=mwkw8420"></script>
 </body>
 </html>

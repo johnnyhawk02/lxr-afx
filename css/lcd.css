@@ -442,6 +442,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel { width: 470px; }
 .menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
 .menupanel .randrow .btn { padding: 5px 6px; min-width: 0; }
+.menupanel .randrow .note { grid-column: span 2; align-self: center; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
 .menupanel .bars + .bars { margin-top: 6px; }
 .menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
 .menupanel .chk.lvl { margin-top: 6px; }
