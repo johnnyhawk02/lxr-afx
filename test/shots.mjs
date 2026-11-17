@@ -100,7 +100,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   }
   // FX: the right column holds this key's sends and the three effects
   { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => x.textContent));
-    const sends = await p.$$eval('#fxsends .vf', (v) => v.length);
+    const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3').textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
     if (secs.join() !== 'ECHO,REVERB,DISTORTION' || sends !== 3) { errors++; console.log('fx column:', secs, sends); }
     const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
       return [...document.querySelectorAll('.fxside .vf')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });

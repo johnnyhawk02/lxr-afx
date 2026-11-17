@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkltwhv';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkltwhv';
-import { KIT_FILES } from '../sound/kits.js?v=mwkltwhv';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkltwhv';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwklwcby';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwklwcby';
+import { KIT_FILES } from '../sound/kits.js?v=mwklwcby';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwklwcby';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,7 +67,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkltwhv', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwklwcby', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') showPeaks(e.data.peaks); };
   node.connect(ctx.destination);
@@ -386,7 +386,7 @@ function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
-  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.section !== 'fx sends'));
+  const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
   // short sections share a row: velocity sits beside the mix, the LFO gets a row of its own
   const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo', 'fx sends'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
   const sections = [...new Set(entries.map((e) => e.section))].sort((a, b) => rank(a) - rank(b));
@@ -399,9 +399,7 @@ function buildFaders() {
     for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
     box.append(el);
   }
-  // the right: this key's sends (knobs like the rest of the key's), then the three effects
-  const sends = $('fxsends'); sends.innerHTML = '';
-  for (const e of VOICE_SCHEMAS[voice].filter((x) => x.section === 'fx sends')) sends.append(vfader(e));
+  // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
   drawFaders();
 }
