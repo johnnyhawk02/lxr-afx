@@ -15,7 +15,7 @@
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
-    <div class="lcdbox zones" title="MIDI channel 1: three zones, all three can sound at once">CH 1 · DRUM C0-B1 · SNARE C2-B3 · METAL C4-B5</div>
+    <div class="lcdbox zones" id="zones" title="MIDI channel 1: three zones, all three can sound at once"></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="kitrand" role="group" aria-label="Kit randomiser">
       <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
@@ -77,7 +77,7 @@
 
   <div class="start" id="start">
     <button class="btn big" id="start-btn">START AUDIO + MIDI</button>
-    <p>MIDI channel 1: drum on C0-B1, snare on C2-B3, metal on C4-B5, all three at once. Each zone's base key (C1, C3, C5) plays its sound as you made it; the other keys are variants of it.</p>
+    <p id="start-text"></p>
   </div>
 </main>
 <script type="module" src="app/main.js"></script>

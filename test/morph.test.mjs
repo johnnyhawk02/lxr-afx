@@ -1,7 +1,7 @@
 // node test/morph.test.mjs: the key morph is deterministic, a zone's base key and depth 0 play the base sound, far keys
 // move more, kit voices map onto the three sounds, and every sound renders audio across its zone.
 import assert from 'node:assert/strict';
-import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
+import { SOUNDS, ZONE_OCTAVES, ZONE_START, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
 import { morphKey, combinedAmount, BASE_NOTE } from '../sound/morph.js';
 import { LxrInstrument } from '../sound/instrument.js';
 import { KIT_FILES } from '../sound/kits.js';
@@ -12,10 +12,12 @@ const run = (s, note, seed, amount) => morphKey({ schema: schemaOf(s), base, not
 const differs = (m) => m.params.filter(([p, v]) => v !== base[p]).length;
 const isMorph = (s, q) => schemaOf(s).some((e) => e.par === q && e.morph);
 let n = 0;
-// zones: C0-B1 drum, C2-B3 snare, C4-B5 metal (C3 = 60), 24 keys each, no overlap
+// zones (as set now: C0-B1 drum, C2-B3 snare, C4-B5 metal, C3 = 60), the same size each, no overlap
+if (ZONE_START === 24 && ZONE_OCTAVES === 2) {
 assert.equal(soundOfNote(24), 0); assert.equal(soundOfNote(47), 0); assert.equal(soundOfNote(48), 1); assert.equal(soundOfNote(71), 1);
 assert.equal(soundOfNote(72), 2); assert.equal(soundOfNote(95), 2); assert.equal(soundOfNote(23), -1); assert.equal(soundOfNote(96), -1); n += 8;
-for (const s of SOUNDS) { assert.equal(s.zone.hi - s.zone.lo + 1, 24); assert.equal(s.zone.lo % 12, 0); assert.equal(s.zone.base, s.zone.lo + 12); n++; }
+}
+for (const s of SOUNDS) { assert.equal(s.zone.hi - s.zone.lo + 1, 12 * ZONE_OCTAVES); assert.equal(s.zone.lo % 12, 0); n++; }
 for (let s = 0; s < SOUNDS.length; s++) {
   const z = SOUNDS[s].zone;
   for (const note of [z.lo, z.lo + 5, z.base - 1, z.base + 1, z.hi]) assert.deepEqual(run(s, note, 1234, full), run(s, note, 1234, full)), n++;

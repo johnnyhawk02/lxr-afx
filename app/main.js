@@ -130,7 +130,7 @@ function onMidi(e) {
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
   const sound = soundOfNote(note);
-  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (C0-B5)`); return; }
+  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[SOUNDS.length - 1].zone.hi)})`); return; }
   play(sound, note, vel);
 }
 async function startMidi() {
@@ -524,4 +524,9 @@ $('start-btn').addEventListener('click', async () => {
   startMidi();
 });
 select(clamp(S.sel, 0, SOUNDS.length - 1));
+// the zones, as schema.js sets them
+const zoneText = (s) => `${s.name} ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`;
+$('zones').textContent = 'CH 1 · ' + SOUNDS.map(zoneText).join(' · ');
+$('start-text').textContent = `MIDI channel 1: ${SOUNDS.map((s) => `${s.name.toLowerCase()} on ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`).join(', ')}, all three at once. `
+  + `Each zone's base key (${SOUNDS.map((s) => noteName(s.zone.base)).join(', ')}) plays its sound as you made it; the other keys are variants of it.`;
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots
