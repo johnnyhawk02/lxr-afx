@@ -1,13 +1,14 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlb0ple';
-import { presetName } from './names.js?v=mwlb0ple';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlb0ple';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlb0ple';
-import { KIT_FILES } from '../sound/kits.js?v=mwlb0ple';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlb0ple';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlb0ple';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlb2f6e';
+import { presetName } from './names.js?v=mwlb2f6e';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlb2f6e';
+import { breed, isDud } from '../sound/breed.js?v=mwlb2f6e';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlb2f6e';
+import { KIT_FILES } from '../sound/kits.js?v=mwlb2f6e';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlb2f6e';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlb2f6e';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -31,8 +32,9 @@ const S = {
   sounds: SOUNDS.map(() => ({ depth: 50, pitch: 50, timbre: 50, seed: newSeed() })),
   locks: new Set(), // the controls with a closed padlock: nothing random changes them (none as it comes)
   // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence; autoLevel:
-  // the randomisers level each sound they deal or alter
-  rand: { alter: 10, wild: false, rhythms: 0, autoLevel: true }, // (rhythms: always 0, the sequencer is gone)
+  // the randomisers level each sound they deal or alter; source: where NEW SOUND, RANDOM and INIT PATCH get a sound,
+  // 'kit' (a kit sound as it is) or 'breed' (two kit sounds crossed, sound/breed.js)
+  rand: { alter: 10, wild: false, rhythms: 0, autoLevel: true, source: 'kit' }, // (rhythms: always 0, the sequencer is gone)
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
@@ -80,7 +82,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlb0ple', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlb2f6e', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -532,7 +534,7 @@ function buildFaders() {
   for (const e of sends) el.querySelector('.row').append(vfader(e));
   box.append(el);
   const dice = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 3); dice.className = 'sect dice sep'; dice.style.setProperty('--n', 2);
-  dice.innerHTML = '<h3><span>new sound</span><kbd>K</kbd></h3>'; dice.append(diceBtn);
+  dice.innerHTML = '<h3><span class="dice-src"></span><kbd>K</kbd></h3>'; dice.append(diceBtn); drawSource();
   box.append(dice);
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
@@ -1089,6 +1091,37 @@ function pool(sound) {
 // a new sound on a key leaves its locked controls as the key plays them now (now: the key's values before), and its
 // sends, which are part of the mix, not of the sound
 function keepLocked(ed, now) { for (const par of S.locks) if (now.has(par) && now.get(par) !== (ed[par] ?? S.values[par])) ed[par] = now.get(par); }
+// ---- BREED (NEW SOUNDS FROM in the RANDOM menu): instead of a kit sound as it is, two different kit sounds of the
+// engine's type crossed section by section and nudged a little (sound/breed.js). Each child is played offline first
+// (level.js) and a dud (nearly silent, or still ringing at full after 1.5 s) is thrown away for another, up to
+// 8 tries; the last one stands if every try is a dud. NEW SOUND, RANDOM, RANDOM ALL and INIT PATCH all follow it ----
+function breeding() { return S.rand.source === 'breed'; }
+function bredSound(sound) {
+  const p = pool(sound), v = SOUNDS[sound].engineVoice;
+  let s;
+  for (let i = 0; i < 8; i++) { // (BREED_TRIES: 8)
+    const a = p[Math.floor(rnd() * p.length)];
+    let b; do b = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && b === a);
+    s = { label: `${a.label} × ${b.label}`, vals: breed({ schema: VOICE_SCHEMAS[v], a: a.vals, b: b.vals, rnd }).vals };
+    if (!isDud(measure(sound, S.values, s.vals), LEVEL_TARGET_DB[sound])) break;
+  }
+  return s;
+}
+function drawSource() {
+  const b = breeding();
+  $('src-kit').setAttribute('aria-pressed', !b); $('src-breed').setAttribute('aria-pressed', b);
+  for (const el of document.querySelectorAll('.dice-src')) el.textContent = b ? 'breed' : 'new sound';
+  diceBtn.title = b ? 'BREED (K): a new sound on this key only, bred from two kit sounds of its type. UNDO takes it back; LEARN can put it on a button'
+    : 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button';
+  for (const id of ['scatter-cap', 'kit-scatter-cap']) { const el = $(id); if (el) el.innerHTML = b ? 'NEW BRED SOUND<br>ON EVERY KEY' : 'NEW KIT SOUND<br>ON EVERY KEY'; }
+}
+function setSource(src) {
+  S.rand.source = src; save(); drawSource();
+  detail(src === 'breed' ? 'NEW SOUNDS FROM <em>BREED</em>: the dice, RANDOM and INIT PATCH cross two kit sounds into a new one'
+    : 'NEW SOUNDS FROM <em>KIT</em>: the dice, RANDOM and INIT PATCH deal kit sounds as they are');
+}
+$('src-kit').addEventListener('click', () => setSource('kit'));
+$('src-breed').addEventListener('click', () => setSource('breed'));
 function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
 // the padlocks that are holding something back on these engines, by name, for the message line
 function keptNote(sounds) {
@@ -1105,7 +1138,7 @@ function scatter(sound) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note)) continue;
     const now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
-    const s = p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    const s = breeding() ? bredSound(sound) : p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
     ed._r = rnd(); ed[seqPatPar(v)] = randomPattern(); ed[panPar(v)] = randPan(v);
     keepSends(ed, now, v); keepLocked(ed, now);
     levelKey(sound, note, true);
@@ -1162,7 +1195,7 @@ function setRhythms(pc, press) { // press: a button's name (the phone's menu), n
 function randKey() {
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
-  let s; do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
+  let s; if (breeding()) s = bredSound(sound); else do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
   rollDice();
   randChange(() => {
@@ -1180,8 +1213,8 @@ diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
 const ALL3 = [0, 1, 2];
-$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a new kit sound on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three engines: a new kit sound on every key${levelled()}${keptNote(ALL3)}`));
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three engines: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key${levelled()}${keptNote(ALL3)}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
 $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
 $('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(ALL3)}`));

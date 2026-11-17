@@ -7,7 +7,7 @@
 // range it counts most), in dB below digital full scale. The correction is kept on the key as its TRIM (trimPar in
 // schema.js), a gain of its own that the instrument applies to the voice: the LEVEL knob stays yours.
 import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js';
-import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB } from './schema.js?v=mwlb0ple';
+import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB } from './schema.js?v=mwlb2f6e';
 
 // each engine's target: the middle (median) loudness of all its sounds in the built-in kits, so a typical kit sound
 // plays as it always did and the drums, snares and metals keep the balance the kits were made with
@@ -36,7 +36,7 @@ function kWeight() {
  * How loud a sound is. sound: 0 drum, 1 snare, 2 metal; kit: every parameter's value (the engine's base); vals: the
  * key's own values over it, [[parameter, value], ...] or a Map; note: the note the key plays it at (60 is the sound's
  * own pitch). Returns { db, peak }: the loudest 100 ms, K-weighted, in dB below full scale, and the highest sample
- * (0..1). A silent sound gives db -Infinity.
+ * (0..1), and held: true when it is still about as loud as it got after 1.5 s. A silent sound gives db -Infinity.
  */
 export function measure(sound, kit, vals, note = 60) {
   const def = SOUNDS[sound], v = def.engineVoice, values = new Uint8Array(NUM_PARAMS);
@@ -47,8 +47,8 @@ export function measure(sound, kit, vals, note = 60) {
   e.loadKit(values);
   e.trigger(def.trigger, 100, note);
   const k = kWeight(), energy = new Float64Array(MAX_BLOCKS);
-  let peak = 0, win = 0, best = 0;
-  for (let b = 0; b < MAX_BLOCKS; b++) {
+  let peak = 0, win = 0, best = 0, b = 0;
+  for (; b < MAX_BLOCKS; b++) {
     if (b >= BLOCKS && !(win > best / 2)) break; // past the usual length only while it is still about as loud as it got
     const o = e.renderBlock(v)[v]; // this voice alone
     let sum = 0;
@@ -57,7 +57,8 @@ export function measure(sound, kit, vals, note = 60) {
     if (b >= WINDOW) win -= energy[b - WINDOW];
     if (win > best) best = win;
   }
-  return { db: best > 0 ? 10 * Math.log10(best / (WINDOW * BLOCK)) : -Infinity, peak };
+  // held: still about as loud as it got after 1.5 s (a sound that swells or rings on: BREED's dud filter skips those)
+  return { db: best > 0 ? 10 * Math.log10(best / (WINDOW * BLOCK)) : -Infinity, peak, held: b >= MAX_BLOCKS };
 }
 
 /** the TRIM value (0..127, TRIM_ZERO is no correction) that brings a measured sound to its engine's target: never a

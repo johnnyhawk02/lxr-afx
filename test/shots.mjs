@@ -38,6 +38,13 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
     const keys = Object.keys(st.keyEdits[0]).length, labelled = Object.values(st.keyEdits[0]).filter((e) => e._kit).length;
     if (keys !== 8 || labelled !== 8) { errors++; console.log('scatter: drum keys', keys, 'labelled', labelled); } }
+  // BREED: RANDOM with NEW SOUNDS FROM on BREED deals every drum key a bred sound (two kit sounds named), then back to KIT
+  await p.mclick('#src-breed'); await p.mclick('#scatter'); await p.waitForTimeout(600);
+  { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
+    const bred = Object.values(st.keyEdits[0]).filter((e) => / × /.test(e._kit || '')).length;
+    if (st.rand.source !== 'breed' || bred !== 8) { errors++; console.log('breed: source', st.rand.source, 'bred keys', bred); } }
+  if (w === 1440 && h === 900) { await p.click('#menu-btn'); await p.waitForTimeout(150); await p.screenshot({ path: `${out}/breed-menu-${w}x${h}.png` }); await p.keyboard.press('Escape'); }
+  await p.mclick('#src-kit');
   // knobs: filter freq (CC16) on the key just played; LEARN maps CC 30 to the drum's decay
   await p.evaluate(() => { window.afx.noteOn(1, 66, 110); window.afx.cc(16, 20); window.afx.cc(18, 64); });
   await p.click('#learn'); await p.click('.vf .knob');

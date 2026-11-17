@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwlb0ple">
+<link rel="stylesheet" href="css/lcd.css?v=mwlb2f6e">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -74,12 +74,19 @@
           <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
           <span class="dim note" id="init-info"></span>
         </div>
+        <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
+        <div class="randrow">
+          <button class="btn" id="src-kit" aria-pressed="true" title="New sounds are kit sounds as they are: one of the built-in kits' sounds of the engine's type">KIT</button>
+          <button class="btn" id="src-breed" aria-pressed="false" title="New sounds are bred: two kit sounds of the engine's type crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little. Duds (nearly silent, or ringing on) are skipped">BREED</button>
+          <span></span>
+          <span class="dim cap">A KIT SOUND<br>AS IT IS</span><span class="dim cap">TWO KIT SOUNDS<br>CROSSED</span>
+        </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">
           <button class="btn" id="scatter" title="Every key of this engine gets a different sound of its type from the built-in kits. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
           <button class="btn" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
           <button class="btn" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">LEVEL</button>
-          <span class="dim cap">NEW KIT SOUND<br>ON EVERY KEY</span><span class="dim cap">NUDGE THE SOUNDS<br>THE KEYS HAVE</span><span class="dim cap">MAKE THE KEYS<br>EQUALLY LOUD</span>
+          <span class="dim cap" id="scatter-cap">NEW KIT SOUND<br>ON EVERY KEY</span><span class="dim cap">NUDGE THE SOUNDS<br>THE KEYS HAVE</span><span class="dim cap">MAKE THE KEYS<br>EQUALLY LOUD</span>
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="randrow">
@@ -175,6 +182,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwlb0ple"></script>
+<script type="module" src="app/main.js?v=mwlb2f6e"></script>
 </body>
 </html>
