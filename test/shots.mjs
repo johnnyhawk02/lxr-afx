@@ -3,7 +3,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
-import { sendPar, VOICE_SCHEMAS } from '../sound/schema.js';
+import { sendPar, VOICE_SCHEMAS, trimPar, TRIM_ZERO } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
@@ -11,9 +11,13 @@ let errors = 0;
 for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440, 790]]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   // a click on a control, opening the RANDOM menu first if it lives there
+  // a knob turned the only way it turns: pressed and dragged (up: true turns it up), dy pixels
+  p.nudge = async (k, up, dy = 14) => { if (typeof k === 'string') k = await p.$(k); const b = await k.boundingBox(), x = b.x + b.width / 2, y = b.y + b.height / 2;
+    await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(x, y + (up ? -1 : 1) * dy * i / 4); await p.mouse.up(); };
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
   // LOW KEY, RETURN, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
-  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(low-up|low-down|ret|learn|cc-reset)$/.test(sel) && !(await p.isVisible(sel))) await click('#settings-btn'); return click(sel, o); }; }
+  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
+    await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; } return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
   await p.goto(url); await p.waitForTimeout(600);
@@ -22,7 +26,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     for (const [ch, n] of [[1, 52], [1, 60], [1, 70], [1, 55]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
   // an edit goes to the last drum key played (G2), not the base
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3') || 'null'));
-  await p.focus('.knob'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');
+  await p.nudge('.knob', true, 30);
   await p.waitForTimeout(500);
   const after = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
   const edits = after.keyEdits[0]['55'];
@@ -74,8 +78,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const key = () => p.evaluate(() => JSON.stringify(afx.keyEdits()[0]['52'] || null));
     await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 52, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(52));
     const s0 = await key(), knobs = await p.$$('#faders .vf .knob');
-    const turn = async (k) => { await k.focus(); await p.keyboard.press(Number(await k.getAttribute('aria-valuenow')) > 2 ? 'ArrowDown' : 'ArrowUp'); }; // (a way it can move)
-    await turn(knobs[0]); await turn(knobs[0]); await p.waitForTimeout(120); const s1 = await key();
+    const turn = async (k) => p.nudge(k, Number(await k.getAttribute('aria-valuenow')) <= 2); // (a way it can move)
+    await turn(knobs[0]); await p.waitForTimeout(120); const s1 = await key();
     await turn(knobs[1]); await p.waitForTimeout(120); const s2 = await key();
     await p.click('#rand-key'); await p.waitForTimeout(500); const s3 = await key();
     await p.click('#clear-key'); await p.waitForTimeout(120); const s4 = await key();
@@ -89,8 +93,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const val = () => p.$eval('#faders .vf output', (o) => o.textContent), lit = () => p.$$eval('#faders .vf.keyed', (e) => e.length);
     const info = () => p.textContent('#kh-info'), dots = () => p.$$eval('#keystrip .k.own', (e) => e.length);
     const v0 = await val(), l0 = await lit(), d0 = await dots(), knob = await p.$('#faders .vf .knob');
-    const dir = Number(await knob.getAttribute('aria-valuenow')) > 2 ? 'ArrowDown' : 'ArrowUp';
-    await knob.focus(); await p.keyboard.press(dir); await p.keyboard.press(dir); await p.waitForTimeout(100);
+    await p.nudge(knob, Number(await knob.getAttribute('aria-valuenow')) <= 2); await p.waitForTimeout(100);
     const v1 = await val(), l1 = await lit(), i1 = await info(), d1 = await dots();
     await knob.dblclick(); await p.waitForTimeout(100);
     const v2 = await val(), l2 = await lit(), i2 = await info();
@@ -250,25 +253,19 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (nz(t1) < 18 || nz(t2) < 18 || moved(t0, t1) < 15 || t1[0][2] !== t0[0][2] || t2[0][2] !== t0[0][2] || t2.flat().some((x) => x < -16 || x > 12 || (x * 4) % 1))
       { errors++; console.log('auto level:', JSON.stringify([t0, t1, t2])); }
     await p.click('#lock-key'); await p.waitForTimeout(100);
-    // a snare key that has a trim: the chip shows it, a press takes it off, another puts the same one back
+    // a snare key that has a trim: the chip shows it; a press measures it again and keeps it (never switches it off)
     const i = t2[1].findIndex((x) => x !== 0); await tap(1, i); await p.waitForTimeout(200);
-    const c0 = await chip(); await p.click('#auto-level'); const c1 = await chip(), off = (await trims())[1][i];
-    await p.click('#auto-level'); const c2 = await chip();
-    if (c0[1] !== 'true' || !/^AUTO [+-]\d+\.\ddB$/.test(c0[0]) || c1[0] !== 'AUTO 0dB' || c1[1] !== 'false' || off !== 0 || c2[0] !== c0[0])
-      { errors++; console.log('auto chip:', JSON.stringify([c0, c1, off, c2])); }
-    // ALL KEYS: the zone's count; a press takes every correction off, another levels every key; UNDO goes back a step
-    await p.click('#edit-all'); const a0 = await chip(); await p.waitForTimeout(100); await p.click('#auto-level'); const a1 = await chip(), z1 = (await trims())[1];
-    await p.waitForTimeout(100); await p.click('#auto-level'); const a2 = await chip(), z2 = (await trims())[1];
-    await p.click('#undo'); await p.waitForTimeout(100); const z3 = (await trims())[1]; await p.click('#edit-key');
-    if (!/^AUTO [1-8]\/8$/.test(a0[0]) || a1[0] !== 'AUTO 0/8' || a1[1] !== 'false' || z1.some((x) => x !== 0) || !/^AUTO [5-8]\/8$/.test(a2[0]) || z3.some((x) => x !== 0))
-      { errors++; console.log('auto chip, all keys:', JSON.stringify([a0, a1, z1, a2, z2, z3])); }
+    const c0 = await chip(); await p.click('#auto-level'); const c1 = await chip(), still = (await trims())[1][i];
+    if (c0[1] !== 'true' || !/^AUTO [+-]\d+\.\ddB$/.test(c0[0]) || c1[0] !== c0[0] || c1[1] !== 'true' || still !== t2[1][i])
+      { errors++; console.log('auto chip:', JSON.stringify([c0, c1, still, t2[1][i]])); }
     // off: NEW SOUND deals the key its sound as the kit made it
     await menu('auto-on'); await tap(1, i); await p.waitForTimeout(150); await p.click('#rand-key'); await p.waitForTimeout(400);
     const offTrim = (await trims())[1][i], offChip = await chip();
     await menu('auto-on');
     if (offTrim !== 0 || offChip[0] !== 'AUTO 0dB') { errors++; console.log('auto level off:', offTrim, offChip); }
     // LEVEL (this engine) and LEVEL ALL even out the keys as they are, their sounds untouched; UNDO takes it back
-    await p.click('#edit-all'); await p.waitForTimeout(100); if ((await chip())[1] === 'true') await p.click('#auto-level'); await p.click('#edit-key'); await p.waitForTimeout(100);
+    await p.evaluate(([t, z]) => { for (const ed of Object.values(afx.keyEdits()[1])) if (ed && ed[t] !== undefined) ed[t] = z; }, [trimPar(3), TRIM_ZERO]); // (every snare key's correction off first)
+    await p.waitForTimeout(100);
     const snd = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k).filter(([par]) => par < 247)); return o; })));
     const s0 = await snd(), l0 = await trims();
     await menu('level'); await p.waitForTimeout(400); const l1 = await trims();
@@ -405,7 +402,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
-    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob', '#faders select', '#bpm']) {
+    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob', '#faders select']) {
       const el = await p.$(sel); if (!el) { errors++; console.log('wheel: no', sel); continue; }
       const box = await el.boundingBox(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       for (const dy of [-240, 360]) { await p.mouse.wheel(0, dy); await p.waitForTimeout(30); if (await read() !== before) n++; }
@@ -420,7 +417,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.click('#start-btn'); await p.waitForTimeout(500);
   const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, old = VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par);
   const sig = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k)); return o; })));
-  await p.click('#bpm-up'); await p.click('#bpm-down'); await p.waitForTimeout(500); const before = await sig(); // (the page has kept its settings by now)
+  await p.evaluate(() => { document.getElementById('bpm-up').click(); document.getElementById('bpm-down').click(); }); await p.waitForTimeout(500); const before = await sig(); // (the page has kept its settings by now)
   await p.evaluate(([old, D]) => { const d = JSON.parse(localStorage.getItem('lxr-afx-v3')); delete d.lockRule; d.locks = [...old, D]; localStorage.setItem('lxr-afx-v3', JSON.stringify(d)); }, [old, D]);
   await p.reload(); await p.waitForFunction(() => window.afxReady);
   const got = await p.evaluate(() => [afx.locks(), document.getElementById('lock-count').textContent]), after = await sig();

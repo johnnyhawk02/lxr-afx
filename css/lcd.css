@@ -42,7 +42,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .btn:disabled { opacity: .3; cursor: default; background: transparent; color: var(--ink); }
 .btn.sm { min-height: 26px; font-size: 16px; padding: 1px 8px; }
 .btn.big { font-size: 28px; padding: 10px 28px; background: var(--ink); color: var(--panel); text-shadow: none; }
-.btn:focus-visible, [role="slider"]:focus-visible, .lock:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.btn:focus-visible, .lock:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 
 /* ---- the top line ---- */
 .top { display: flex; align-items: center; gap: 14px; min-width: 0; }
@@ -109,7 +109,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .chk input:focus-visible + i { outline: 2px dashed var(--ink); outline-offset: 2px; }
 
 /* ---- the editor ---- */
-.editor { display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-height: 0; min-width: 0; }
+.editor { display: grid; grid-template-rows: 1fr auto; gap: 10px; min-height: 0; min-width: 0; }
 .pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .pages .btn { min-height: 38px; font-size: 22px; letter-spacing: .14em; }
 .faders { display: flex; gap: 0; min-height: 0; border: 2px solid var(--ink); border-radius: 3px; padding: 10px 6px 8px; }
@@ -129,13 +129,8 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .vtrack b { display: none; position: absolute; left: -7px; right: -7px; height: 3px; bottom: calc(var(--m) * (100% - 3px)); background: var(--ink);
   box-shadow: 0 0 0 2px var(--panel); }
 .vtrack.morphed b { display: block; }
-.vf.held .vtrack { outline: 2px solid var(--ink); outline-offset: 3px; }
 .vf.changed .lab::after { content: "*"; }
 .vf.keyed .lab, .vsel.keyed label { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
-.editbar { display: flex; align-items: center; gap: 6px; font-size: 19px; min-width: 0; }
-.editbar > .dim { letter-spacing: .1em; }
-.editbar #edit-key { min-width: 6.5em; }
-.editbar .info { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; }
 .keymap canvas { cursor: pointer; }
 body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px; cursor: crosshair; }
 .lock { border: 2px solid var(--ink); border-radius: 2px; background: transparent; font-size: 14px; line-height: 1; padding: 1px 4px 0; cursor: pointer;
@@ -192,8 +187,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .knob .notch { stroke: var(--ink); stroke-width: 4; display: none; }
 .knob.morphed .notch { display: inline; }
 .knob .lr { fill: var(--ink); font: 700 18px/1 var(--font); text-anchor: middle; }
-.vf.held .knob { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 50%; }
-.knob:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; border-radius: 50%; }
 .sect .vsel { grid-column: span 2; justify-content: flex-start; padding: 18px 6px 0; }
 .sect .vsel label { white-space: nowrap; }
 @media (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: 15px; } .vf output { font-size: 16px; } }
@@ -249,7 +242,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keylocked .keyhead .k.own::after { background: var(--panel); }
 .keylocked .keyhead .k.sel { background: var(--panel); color: var(--ink); outline-color: var(--panel); }
 .editor { position: relative; }
-.faders, .lockveil { grid-area: 2 / 1; }
+.faders, .lockveil { grid-area: 1 / 1; }
 .lockveil { display: none; z-index: 2; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none;
   background: repeating-linear-gradient(135deg, rgba(23, 32, 14, .1) 0 3px, transparent 3px 11px); }
 .lockveil b { font-weight: 400; font-size: 34px; letter-spacing: .2em; background: var(--ink); color: var(--panel); padding: 2px 16px; text-shadow: none; }
@@ -266,7 +259,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* ---- the FX page ---- */
 .snd.fx { letter-spacing: .1em; }
-.fxview .editbar #edit-key, .fxview .editbar #edit-all, .fxview .editbar > .dim:first-child { visibility: hidden; }
 .fxview .lockveil { display: none; }
 .fxview .faders { opacity: 1; pointer-events: auto; }
 .fxnote { flex: 1 0 100%; margin: 14px 8px 0; font-size: 19px; color: var(--muted); }
@@ -566,7 +558,6 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pv-send > span { align-self: center; font-size: 17px; letter-spacing: 1px; }
 .pv-send .track { grid-column: 2 / 5; position: relative; height: 40px; border: 2px solid var(--ink); border-radius: 3px; cursor: pointer; touch-action: none; }
 .pv-send .track i { position: absolute; left: 3px; top: 3px; bottom: 3px; max-width: calc(100% - 6px); background: var(--ink); }
-.pv-send .track:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .pv-send output { align-self: center; text-align: right; font-size: 22px; }
 .pv-msg { height: 2.4em; overflow: hidden; font-size: 15px; line-height: 1.2; letter-spacing: .5px; }
 .pv-msg em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 3px; text-shadow: none; }

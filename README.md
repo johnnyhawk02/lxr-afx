@@ -36,7 +36,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   HP at FREQ) into an envelope (SENS, DECAY, shown on the ENV meter) that turns PREGAIN, CUTOFF or TONE up or down.
 - **Mono, last-note priority, per zone**: each zone (drum, snare, metal) plays one key at a time, the newest. Hold a
   key, press another in the same zone and it takes over (with its own sound and sequence); let go of it while the
-  first is still held and the first comes back on the next step of the BPM grid (**RETURN** in SETTINGS: NOW,
+  first is still held and the first comes back on the next step of the BPM grid (**RETURN** in SETTINGS, with **BPM**: NOW,
   1/32, **1/16** by default, 1/8, 1/4). The three zones don't affect each other. MIDI all-notes-off lets go of every
   zone.
 - **Sequencer** (SEQ, each key its own): eight steps, **ACTIVE** and **RANDOM**. While the key is held and ACTIVE is
@@ -53,15 +53,14 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
-- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, or the arrow keys once clicked; the scroll
-  wheel and the trackpad never change a control, so passing the pointer over one is safe). A control you
+- **Editor**: every parameter of the sound on one screen, as knobs (press and drag up/down; the scroll
+  wheel, the trackpad and the arrow keys never change a control, nothing stays marked after a drag, so passing the pointer over one is safe). A control you
   change by hand on a key gets a **lit label**, a notch outside its ring shows where it was, and a **double-click puts
   it back**; the key header counts the edits ("Brownie snare · 2 edits") and the key gets a dot on the strip. The
   small **padlock** at a knob's top right locks that control (faint: open, solid: locked; see KNOB PADLOCKS below). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
   the distortion's PREGAIN, BASS and TONE) have their centre at the top and light from there out to either side; PAN
-  reads **L100 … C … R100**, with L and R at the ends of its ring. By default an edit changes only the last key
-  pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
-  stay). **CLEAR** puts a key back to the engine's base sound.
+  reads **L100 … C … R100**, with L and R at the ends of its ring. An edit changes only the last key
+  pressed (or the key picked in the key list), always. **CLEAR** puts a key back to the engine's base sound.
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
@@ -70,7 +69,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Randomisers**: **RANDOM** deals a different real kit sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,
-  the other randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
+  the other randomisers, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
   plays a rhythm has a dashed foot, a key you edited by hand a dot.
 - **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit
   sound, levelled, panned and given rhythms as RANDOM ALL deals them; **30% of the keys get a reverb send and 20% an
@@ -119,8 +118,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   each engine's kit sounds, so a typical sound plays as it always did, loud ones come down and quiet ones come up
   (never past full scale, at most 12 dB up or 16 dB down). The trim is a gain of its own: the **LEVEL** knob and the
   zone levels stay yours, and LEVEL's padlock has no say in it. The **AUTO** button at the head of the LEVEL cell
-  shows the key's trim ("AUTO -3.5dB"); press it to take the trim off, press again to measure and level the key as it
-  is now (editing ALL KEYS it does the whole zone and counts the keys, "AUTO 6/8"). **LEVEL** and **LEVEL ALL** in the
+  shows the key's trim ("AUTO -3.5dB"); press it to measure the key as it plays now and level it again. **LEVEL** and **LEVEL ALL** in the
   RANDOM menu even out the keys you have now without changing their sounds. **AUTO LEVEL** in the RANDOM menu (on as
   it comes) switches the automatic part off: a newly dealt sound then plays as loud as its kit made it. Locked keys
   are left alone; UNDO takes any of it back.

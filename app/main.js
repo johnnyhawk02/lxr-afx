@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl9rh6b';
-import { presetName } from './names.js?v=mwl9rh6b';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl9rh6b';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl9rh6b';
-import { KIT_FILES } from '../sound/kits.js?v=mwl9rh6b';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl9rh6b';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl9rh6b';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlaqwn0';
+import { presetName } from './names.js?v=mwlaqwn0';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlaqwn0';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlaqwn0';
+import { KIT_FILES } from '../sound/kits.js?v=mwlaqwn0';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlaqwn0';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlaqwn0';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -53,7 +53,7 @@ try {
     if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
     if (d.lockRule !== 2) { const was = new Set(VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par)); d.locks = d.locks.filter((p) => !was.has(p)); } // (these used to be locked as they came)
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
-    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; // (the knobs edit the key played, always: Johnny, 2026-11-17) if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
   }
 } catch (e) { /* first visit, or storage blocked */ }
@@ -80,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl9rh6b', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlaqwn0', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -379,13 +379,14 @@ function showPeaks(peaks) {
 // ---------------------------------------------------------------------------------------------------------------
 let detailT = 0;
 const detail = (html) => { $('detail').innerHTML = html; };
-// a drag changes a value from where it was; Shift is fine. Only a press and drag (or the arrow keys, once it's been
-// clicked) changes a control: the scroll wheel and the trackpad never do, so passing the pointer over one is safe
+// a drag changes a value from where it was; Shift is fine. Only a press and drag changes a control: the scroll wheel,
+// the trackpad and the arrow keys never do, and nothing marks a control after it's let go (Johnny: no selection
+// circle), so passing the pointer over one is safe
 function dragger(track, axis, o) {
   let d = null;
   track.addEventListener('pointerdown', (e) => {
     if (e.button) return;
-    track.setPointerCapture(e.pointerId); track.focus({ preventScroll: true }); e.preventDefault();
+    track.setPointerCapture(e.pointerId); e.preventDefault();
     const r = track.getBoundingClientRect(), len = o.len || (axis === 'x' ? r.width : r.height);
     // a press off the bar's end jumps there (not on a knob: it turns from where it is)
     const at = axis === 'x' ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
@@ -402,15 +403,10 @@ function dragger(track, axis, o) {
   });
   const end = () => { if (d) { d = null; o.held && o.held(false); } };
   track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
-  track.addEventListener('keydown', (e) => {
-    const big = Math.max(1, Math.round((o.max - o.min) / 10));
-    const k = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: big, PageDown: -big }[e.key];
-    if (k) { o.put(o.get() + k); e.preventDefault(); e.stopPropagation(); }
-  });
 }
 function hbar(box, label, o) {
   const el = document.createElement('div'); el.className = 'hb';
-  el.innerHTML = `<span class="lab"></span><div class="htrack" role="slider" tabindex="0"><i></i></div><output></output>`;
+  el.innerHTML = `<span class="lab"></span><div class="htrack" role="slider"><i></i></div><output></output>`;
   el.querySelector('.lab').textContent = label;
   const tr = el.querySelector('.htrack'), out = el.querySelector('output');
   tr.setAttribute('aria-label', label); tr.setAttribute('aria-valuemin', o.min); tr.setAttribute('aria-valuemax', o.max);
@@ -539,8 +535,8 @@ function buildFaders() {
   box.append(dice);
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
-  // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press levels the
-  // key now, or takes its correction off; editing ALL KEYS it does the whole zone and counts the keys that have one
+  // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
+  // key as it plays now and levels it again (it never switches it off)
   const auto = document.createElement('button'); auto.type = 'button'; auto.className = 'btn sm hdb auto'; auto.id = 'auto-level';
   auto.addEventListener('click', autoPress); big.append(auto);
   faderDraws.push(() => drawAuto(auto));
@@ -594,7 +590,7 @@ function showSteps(steps) {
 // ---- the FX page: the three send effects every key feeds (each key's sends are its FX SENDS knobs) ----
 function gknob(label, o) {
   const el = document.createElement('div'); el.className = 'vf';
-  el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span>`;
+  el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span>`;
   el.querySelector('.lab').textContent = label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr');
   tr.setAttribute('aria-label', label);
@@ -723,7 +719,7 @@ function buildDirt() {
   return [dist, side];
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
-// base (editing a key) or the last key's morph (editing every key). Drag up or down, or the arrow keys; Shift is fine
+// base (editing a key) or the last key's morph (editing every key). Drag up or down; Shift is fine
 const KNOB_N = 25, KNOB_A0 = Math.PI * 0.75, KNOB_SWEEP = Math.PI * 1.5;
 const KNOB_SVG = (() => {
   let t = '';
@@ -748,7 +744,7 @@ const LOCK_SVG = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 
 const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
 function vfader(e) {
   const el = document.createElement('div'); el.className = 'vf';
-  el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
+  el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
@@ -831,10 +827,7 @@ function setEditAll(all) { S.editAll = all; save(); drawEditKey(); drawFaders();
 function drawEditKey() {
   const note = editKey[S.sel], edits = S.keyEdits[S.sel], n = Object.keys(edits).length;
   const here = editCount(edits[note]), from = edits[note] && edits[note]._kit;
-  $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
-  $('edit-key').textContent = 'THIS KEY';
-  $('edit-info').textContent = locked ? `${noteName(note)} is locked` : S.editAll ? 'every key of the zone (locked keys stay)' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
   diceBtn.disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
@@ -847,8 +840,6 @@ function drawEditKey() {
   $('screen').classList.toggle('keylocked', locked);
   drawStrip();
 }
-$('edit-key').addEventListener('click', () => setEditAll(false));
-$('edit-all').addEventListener('click', () => setEditAll(true));
 $('clear-key').addEventListener('click', () => { if (!keyLocked(S.sel, editKey[S.sel])) snapshot(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} CLEAR`); clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to the engine's base sound`); });
 $('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
 $('alter-key').addEventListener('click', () => alterKey());
@@ -1035,8 +1026,8 @@ function drawAuto(b) {
   if (editing()) {
     const x = valueNow(t), on = x !== TRIM_ZERO, db = trimDb(x);
     b.textContent = `AUTO ${on ? trimText(x) : '0dB'}`; b.setAttribute('aria-pressed', on);
-    b.title = on ? `AUTO LEVEL turned this key ${db > 0 ? 'up' : 'down'} ${Math.abs(db).toFixed(1)} dB, to ${target}. Press to take the correction off`
-      : `This key plays as loud as its sound is. Press to bring it to ${target}`;
+    b.title = on ? `AUTO LEVEL turned this key ${db > 0 ? 'up' : 'down'} ${Math.abs(db).toFixed(1)} dB, to ${target}. Press to measure the key as it plays now and level it again`
+      : `This key is at ${target}. Press to measure it as it plays now and level it again`;
   } else {
     const { keys, on } = autoKeys(sound);
     b.textContent = `AUTO ${on.length}/${keys.length}`; b.setAttribute('aria-pressed', on.length > 0);
@@ -1064,8 +1055,8 @@ function autoPress() {
     const note = editKey[sound], key = `${name} ${noteName(note)}`;
     if (keyLocked(sound, note)) { lockedMsg(); return; }
     snapshot(`${key} AUTO LEVEL`);
-    const on = valueNow(t) === TRIM_ZERO, x = set(note, on);
-    detail(!on ? `${key}: no auto level, it plays as loud as its sound is` : x === TRIM_ZERO ? `${key} is at the ${name} level already` : `${key} levelled: <em>${trimText(x)}</em>`);
+    const x = set(note, true); // (a press always measures and levels the key again, never takes it off: Johnny, 2026-11-17)
+    detail(x === TRIM_ZERO ? `${key} is at the ${name} level already` : `${key} levelled again: <em>${trimText(x)}</em>`);
   } else {
     const { keys, on } = autoKeys(sound);
     snapshot(`${name} ALL KEYS AUTO LEVEL`);

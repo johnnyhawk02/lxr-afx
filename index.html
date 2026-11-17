@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwl9rh6b">
+<link rel="stylesheet" href="css/lcd.css?v=mwlaqwn0">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -46,16 +46,18 @@
       </div>
     </div>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
-    <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="menu" id="smenu">
-      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="The keyboard's layout, how held keys come back, and the hardware knobs' mapping">SETTINGS ▾</button>
+      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="Tempo, how held keys come back, the keyboard's layout and the hardware knobs' mapping">SETTINGS ▾</button>
       <div class="menupanel settings" id="settings-panel" hidden>
+        <h3>TEMPO</h3>
+        <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
+        <p class="dim note">FOR THE SEQUENCERS AND THE SYNCED ECHO: − AND + (SHIFT: BY 10), DOUBLE-CLICK THE NUMBER FOR 120</p>
+        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
+        <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
         <h3>KEYBOARD</h3>
         <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
         <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
-        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
-        <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
         <h3>HARDWARE KNOBS</h3>
         <div class="randrow">
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
@@ -120,12 +122,6 @@
 
 
     <section class="editor">
-      <div class="editbar">
-        <span class="dim">KNOBS EDIT</span>
-        <button class="btn" id="edit-key" title="Edits change only this key">THIS KEY</button>
-        <button class="btn" id="edit-all" title="Edits go to every key of this zone at once (locked keys stay)">ALL KEYS</button>
-        <span id="edit-info" class="info"></span>
-      </div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
       <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
@@ -155,8 +151,8 @@
       <button class="btn two" id="pv-alter">ALTER</button>
       <button class="btn" id="pv-lock" aria-pressed="false">LOCK</button>
     </div>
-    <div class="pv-send" id="pv-echo"><span>ECHO</span><div class="track" role="slider" tabindex="0" aria-label="This key's echo send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
-    <div class="pv-send" id="pv-reverb"><span>REVERB</span><div class="track" role="slider" tabindex="0" aria-label="This key's reverb send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-send" id="pv-echo"><span>ECHO</span><div class="track" role="slider" aria-label="This key's echo send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-send" id="pv-reverb"><span>REVERB</span><div class="track" role="slider" aria-label="This key's reverb send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
     <div class="pv-row">
       <button class="btn two" id="pv-init" aria-pressed="false">INIT PATCH</button>
       <button class="btn two" id="pv-random">RANDOM ALL</button>
@@ -182,6 +178,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwl9rh6b"></script>
+<script type="module" src="app/main.js?v=mwlaqwn0"></script>
 </body>
 </html>
