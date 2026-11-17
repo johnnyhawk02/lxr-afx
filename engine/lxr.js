@@ -224,8 +224,10 @@ function calcNoiseBlock(osc, buf, size, gain, rng) {
   }
 }
 
-// waveforms above PWM are user samples, which this port doesn't load; like the firmware
-// without samples, they leave the buffer as it was
+// waveforms above PWM are user samples, which this port doesn't load: they are silent (the
+// firmware without samples leaves the buffer as it was, so it replays whatever another part
+// of the voice put there last; the merged voice's parts keep their own buffers, so that would
+// no longer be the same garbage)
 function calcNextOscSampleBlock(osc, buf, size, gain, pwm, rng) {
   switch (osc.waveform) {
     case SINE: calcSineBlock(osc, buf, size, gain); break;
@@ -234,7 +236,7 @@ function calcNextOscSampleBlock(osc, buf, size, gain, pwm, rng) {
     case REC: calcWavetableOscBlock(osc, REC_BASE, buf, size, gain); break;
     case NOISE: calcNoiseBlock(osc, buf, size, gain, rng); break;
     case PWM: calcPwmBlock(osc, buf, size, gain, pwm); break;
-    default: break;
+    default: buf.fill(0, 0, size); break;
   }
 }
 
@@ -246,7 +248,7 @@ function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
     case REC: calcFmBlock(osc, REC_BASE, mod, buf, size, gain); break;
     case NOISE: calcNoiseBlock(osc, buf, size, gain, rng); break;
     case PWM: calcPwmFmBlock(osc, mod, buf, size, gain, pwm); break;
-    default: break;
+    default: buf.fill(0, 0, size); break;
   }
 }
 
@@ -616,64 +618,65 @@ export const MODULATABLE = new Set([
 ].map((n) => PAR[n]));
 
 // ---------------------------------------------------------------------------------------
-// Voices: DrumVoice.c, Snare.c, CymbalVoice.c, HiHat.c
+// Voices: one merged voice (not in the firmware) that holds every part of DrumVoice.c, Snare.c,
+// CymbalVoice.c and HiHat.c:
+//   tone   the main oscillator, with the pitch envelope (pitchEg) and the click's snap
+//   mod A  a modulator (modOsc, gain fmModAmount): FM into the tone, or mixed beside it (mixOscs)
+//   mod B  a second modulator (modOsc2, gain fmModAmount2), summed with mod A, always FM
+//   noise  sample-and-hold noise (noiseOsc), crossfaded with the tone by mix
+//   click  the transient
+// The filter takes whichever of tone, noise and click are routed to it (routeT, routeN, routeC);
+// the rest is added after it. A part is only made if the voice has it (srcA, srcB, srcN).
+// fmEnv: the FM depth follows mod A's gain and the pitch envelope (the drum's FM) instead of
+// staying at full (the metal's).
+//
+// kind keeps what each firmware voice does differently in its last steps, so a kit sound
+// plays sample for sample as it did: 'drum' (amp envelope interpolated over the block, then
+// velocity, smoothed drive and mixer level), 'metal' (one gain per block, then the drive) or
+// 'snare' (noise filtered alone and crossfaded with the tone in float, then one gain). It
+// also keeps the firmware's small trigger differences (drum: filter reset, sine start).
 // ---------------------------------------------------------------------------------------
-function makeDrumVoice(i) {
+export const VOICE_KINDS = ['drum', 'drum', 'drum', 'snare', 'metal', 'metal'];
+
+function makeVoice(kind, i) {
   const v = {
-    osc: makeOsc(), modOsc: makeOsc(), fmModAmount: f(0.5), vol: f(0.8), velo: 0, pan: 0,
-    triggeredPanL: 0, triggeredPanR: 0, oscPitchEg: { decay: f(0.01), slope: 0, value: 0 },
-    egPitchModAmount: f(0.5), transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(),
-    distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 1,
-    ampFilterInput: 0, lastGain: 0, mixOscs: 1, snapEg: { value: 0 }, volumeMod: 1,
-    combinedVolume: 0, faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
+    kind, osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), noiseOsc: makeOsc(),
+    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, routeT: 1, routeN: 1, routeC: 1,
+    fmModAmount: f(0.5), fmModAmount2: f(0.5), mixOscs: 0, mix: 0, carrierGain: 1,
+    vol: f(0.8), velo: 0, pan: 0, triggeredPanL: 0, triggeredPanR: 0,
+    oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
+    transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
+    distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0,
+    ampFilterInput: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
+    faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
+    hatDecays: 0, decayClosed: 0, decayOpen: 0, isOpen: 0,
   };
-  v.faderFilter.r = 0.01;
-  v.mixerVolFilter.r = 0.01;
-  v.distortion.driveFilter.r = 0.01;
-  SVF_init(v.filter);
-  Object.assign(v.modOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
-  Object.assign(v.osc, { freq: 440, modNodeValue: 1, waveform: TRI + i, fmMod: 0, midiFreq: 70 << 8 | 64 });
-  slopeEg2_init(v.oscVolEg);
   v.distortion.shape = distShape(0);
-  return v;
-}
-
-function makeSnare() {
-  const v = {
-    osc: makeOsc(), noiseOsc: makeOsc(), filterType: 0, vol: f(0.8), pan: 0, triggeredPanL: 0,
-    triggeredPanR: 0, mix: 0, velo: 0, filter: makeFilter(), oscPitchEg: { decay: f(0.01), slope: 0, value: 0 },
-    egPitchModAmount: f(0.5), lfo: makeLfo(), transGen: makeTransient(), oscVolEg: makeSlopeEg(),
-    egValueOscVol: 0, distortionShape: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
-    faderFilter: makeOnePole(), pwm: 0,
-  };
-  v.faderFilter.r = 0.1;
-  Object.assign(v.noiseOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
-  Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, modNodeValue: 1 });
-  v.distortionShape = distShape(0);
+  for (const o of [v.modOsc, v.modOsc2, v.noiseOsc]) Object.assign(o, { freq: 440, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+  v.noiseOsc.waveform = NOISE;
+  if (kind === 'drum') { // initDrumVoice()
+    Object.assign(v, { srcA: 1, pitchEg: 1, fmEnv: 1, mixOscs: 1, filterType: 1 });
+    v.faderFilter.r = 0.01;
+    v.mixerVolFilter.r = 0.01;
+    v.distortion.driveFilter.r = 0.01;
+    Object.assign(v.modOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+    Object.assign(v.osc, { freq: 440, modNodeValue: 1, waveform: TRI + i, fmMod: 0, midiFreq: 70 << 8 | 64 });
+  } else if (kind === 'snare') { // Snare_init()
+    Object.assign(v, { srcN: 1, pitchEg: 1, routeT: 0, routeC: 0 });
+    v.faderFilter.r = 0.1;
+    Object.assign(v.noiseOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+    Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, modNodeValue: 1 });
+  } else { // Cymbal_init(), HiHat_init(): an FM oscillator driven by two mod oscillators
+    Object.assign(v, { srcA: 1, srcB: 1, routeC: 0, carrierGain: i === 5 ? f(0.5) : 1, hatDecays: i === 5 ? 1 : 0 });
+    v.faderFilter.r = 0.1;
+    Object.assign(v.modOsc, { freq: 440, waveform: SINE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+    Object.assign(v.modOsc2, { freq: 440, waveform: NOISE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+    Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 1, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
+  }
   slopeEg2_init(v.oscVolEg);
   SVF_init(v.filter);
   return v;
 }
-
-// cymbal and hihat share one structure: an FM oscillator driven by two mod oscillators
-function makeMetal() {
-  const v = {
-    osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), fmModAmount1: f(0.5), fmModAmount2: f(0.5),
-    vol: f(0.8), pan: 0, triggeredPanL: 0, triggeredPanR: 0, velo: 0, filter: makeFilter(), filterType: 0,
-    lfo: makeLfo(), transGen: makeTransient(), distortionShape: 0, oscVolEg: makeSlopeEg(), egValueOscVol: 0,
-    volumeMod: 1, snapEg: { value: 0 }, combinedVolume: 0, faderFilter: makeOnePole(), pwm: 0,
-    decayClosed: 0, decayOpen: 0, isOpen: 0,
-  };
-  v.faderFilter.r = 0.1;
-  v.distortionShape = distShape(0);
-  Object.assign(v.modOsc, { freq: 440, waveform: SINE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
-  Object.assign(v.modOsc2, { freq: 440, waveform: NOISE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
-  Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 1, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
-  slopeEg2_init(v.oscVolEg);
-  SVF_init(v.filter);
-  return v;
-}
-
 function updatePan(v) {
   v.triggeredPanL = f(Math.sqrt(f((127 - v.pan) / 127)));
   v.triggeredPanR = f(Math.sqrt(f(v.pan / 127)));
@@ -1160,15 +1163,17 @@ export class LxrEngine {
     this.audioRouting = new Uint8Array(6);
     this.velocityModulators = Array.from({ length: 6 }, makeModNode);
     // initDrumVoice(), Snare_init(), HiHat_init(), Cymbal_init()
-    this.drums = [0, 1, 2].map(makeDrumVoice);
-    this.snare = makeSnare();
-    this.hat = makeMetal();
-    this.cymbal = makeMetal();
-    this.lfos = [this.drums[0].lfo, this.drums[1].lfo, this.drums[2].lfo, this.snare.lfo, this.cymbal.lfo, this.hat.lfo];
+    // the six voices, all one merged voice (VOICE_KINDS: what each firmware voice was), and their firmware names
+    this.voices = VOICE_KINDS.map(makeVoice);
+    this.drums = this.voices.slice(0, 3);
+    [this.snare, this.cymbal, this.hat] = this.voices.slice(3);
+    this.lfos = this.voices.map((v) => v.lfo);
     this.out = Array.from({ length: 6 }, () => new Int16Array(BLOCK));
-    this._modBuf = new Int16Array(BLOCK);
-    this._buf2 = new Int16Array(BLOCK);
-    this._buf3 = new Int16Array(BLOCK);
+    this._bA = new Int16Array(BLOCK); // mod A (with mod B summed in)
+    this._bB = new Int16Array(BLOCK); // mod B
+    this._bN = new Int16Array(BLOCK); // noise
+    this._bC = new Int16Array(BLOCK); // click
+    this._bT = new Int16Array(BLOCK); // the tone, when it skips the filter
     this.fx = new FxBus(); // FxBus_init()
     this.fxOut = new Int16Array(BLOCK * 2);
     this.xmod = null; // crossfeed matrix, see setCrossMod(); null = the firmware's signal path
@@ -1194,10 +1199,10 @@ export class LxrEngine {
     this.xmod.amt.set(amounts);
     this.xmod.target = targets.slice();
   }
-  _xOscs() { return [this.drums[0].osc, this.drums[1].osc, this.drums[2].osc, this.snare.osc, this.cymbal.osc, this.hat.osc]; }
+  _xOscs() { return this.voices.map((v) => v.osc); }
   _xmodBefore() {
     const x = this.xmod, oscs = this._xOscs();
-    const filters = [this.drums[0].filter, this.drums[1].filter, this.drums[2].filter, this.snare.filter, this.cymbal.filter, this.hat.filter];
+    const filters = this.voices.map((v) => v.filter);
     // envelope follower on last block's outputs: instant attack, ~30 ms release
     for (let n = 0; n < 6; n++) {
       let pk = 0; for (const v of x.prev[n]) { const a = v < 0 ? -v : v; if (a > pk) pk = a; }
@@ -1285,10 +1290,8 @@ export class LxrEngine {
 
   /** voiceControl_noteOn: voice 0..2 drums, 3 snare, 4 cymbal, 5 closed hat, 6 open hat */
   trigger(voice, velocity = 127, note = SEQ_DEFAULT_NOTE) {
-    if (voice < 3) this._drumTrigger(voice, velocity, note);
-    else if (voice < 4) this._snareTrigger(velocity, note);
-    else if (voice < 5) this._cymbalTrigger(velocity, note);
-    else this._hatTrigger(velocity, voice - 5, note);
+    if (voice < 6) this._trigger(voice, velocity, note, 0);
+    else this._trigger(5, velocity, note, 1);
   }
 
   // ----- modulation -----
@@ -1319,168 +1322,115 @@ export class LxrEngine {
   }
 
   // ----- triggers -----
-  _drumTrigger(n, vel, note) {
-    const v = this.drums[n];
+  // voiceControl_noteOn for one voice (open: the hi-hat's open trigger)
+  _trigger(n, vel, note, open) {
+    const v = this.voices[n], drum = v.kind === 'drum';
     this._lfoRetrigger(n);
     this._modUpdate(this.velocityModulators[n], f(vel / 127));
     let offset = 1;
     if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
-    resetPhase(v.osc, offset, drumSineStart);
-    resetPhase(v.modOsc, 1, drumSineStart);
-    osc_setBaseNote(v.osc, note);
-    osc_setBaseNote(v.modOsc, note);
-    v.oscPitchEg.value = 1;
-    slopeEg2_trigger(v.oscVolEg);
-    v.velo = f(vel / 127);
-    v.transGen.phase = 0;
-    v.snapEg.value = 1;
-    SVF_reset(v.filter);
-    updatePan(v);
-  }
-  _snareTrigger(vel, note) {
-    const v = this.snare;
-    this._lfoRetrigger(3);
-    this._modUpdate(this.velocityModulators[3], f(vel / 127));
-    let offset = 1;
-    if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
-    resetPhase(v.osc, offset, otherSineStart);
-    v.oscPitchEg.value = 1;
-    slopeEg2_trigger(v.oscVolEg);
-    v.velo = f(vel / 127);
-    osc_setBaseNote(v.osc, note);
-    v.transGen.phase = 0;
-    v.snapEg.value = 1;
-    updatePan(v);
-  }
-  _metalTrigger(v, lfoVoice, vel, note) {
-    this._lfoRetrigger(lfoVoice);
-    this._modUpdate(this.velocityModulators[lfoVoice], f(vel / 127));
-    let offset = 1;
-    if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
-    resetPhase(v.osc, offset, otherSineStart);
-    v.modOsc.phase = 0;
+    resetPhase(v.osc, offset, drum ? drumSineStart : otherSineStart);
+    if (drum) resetPhase(v.modOsc, 1, drumSineStart); else v.modOsc.phase = 0;
     v.modOsc2.phase = 0;
     osc_setBaseNote(v.osc, note);
     osc_setBaseNote(v.modOsc, note);
     osc_setBaseNote(v.modOsc2, note);
-  }
-  _cymbalTrigger(vel, note) {
-    const v = this.cymbal;
-    this._metalTrigger(v, 4, vel, note);
+    v.oscPitchEg.value = 1;
+    if (v.hatDecays) { v.isOpen = open; v.oscVolEg.decay = open ? v.decayOpen : v.decayClosed; }
     slopeEg2_trigger(v.oscVolEg);
     v.velo = f(vel / 127);
     v.transGen.phase = 0;
     v.snapEg.value = 1;
-    updatePan(v);
-  }
-  _hatTrigger(vel, isOpen, note) {
-    const v = this.hat;
-    this._metalTrigger(v, 5, vel, note);
-    v.isOpen = isOpen;
-    v.oscVolEg.decay = isOpen ? v.decayOpen : v.decayClosed;
-    slopeEg2_trigger(v.oscVolEg);
-    v.velo = f(vel / 127);
-    v.transGen.phase = 0;
-    v.snapEg.value = 1;
+    if (drum) SVF_reset(v.filter);
     updatePan(v);
   }
 
   // ----- per-block control rate (calc*Async) -----
-  _drumAsync(v) {
-    const egPitch = decayEg_calc(v.oscPitchEg);
-    v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount));
+  _async(v) {
+    let egPitch = 0;
+    if (v.pitchEg) { egPitch = decayEg_calc(v.oscPitchEg); v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount)); }
     if (v.transGen.waveform === 0) {
       const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
-      v.osc.pitchMod = f(v.osc.pitchMod + f(snap * v.transGen.volume));
+      v.osc.pitchMod = f((v.pitchEg ? v.osc.pitchMod : 1) + f(snap * v.transGen.volume));
     }
-    v.osc.fmMod = f(v.fmModAmount * egPitch);
-    const eg = v.oscVolEg;
-    if (eg.attack === 1 && (eg.state === EG_A || eg.state === EG_REPEAT)) {
-      // attack 0: jump straight to the new gain instead of ramping
-      v.ampFilterInput = slopeEg2_calc(eg);
-      v.lastGain = v.ampFilterInput;
-    } else {
-      v.lastGain = v.ampFilterInput;
-      v.ampFilterInput = slopeEg2_calc(eg);
-    }
+    if (v.fmEnv) v.osc.fmMod = f(v.fmModAmount * egPitch);
+    if (v.kind === 'drum') {
+      const eg = v.oscVolEg;
+      if (eg.attack === 1 && (eg.state === EG_A || eg.state === EG_REPEAT)) {
+        // attack 0: jump straight to the new gain instead of ramping
+        v.ampFilterInput = slopeEg2_calc(eg);
+        v.lastGain = v.ampFilterInput;
+      } else {
+        v.lastGain = v.ampFilterInput;
+        v.ampFilterInput = slopeEg2_calc(eg);
+      }
+    } else v.egValueOscVol = f(slopeEg2_calc(v.oscVolEg));
     osc_setFreq(v.osc);
-    osc_setFreq(v.modOsc);
-  }
-  _snareAsync(v) {
-    const egPitch = decayEg_calc(v.oscPitchEg);
-    v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount));
-    v.egValueOscVol = f(slopeEg2_calc(v.oscVolEg));
-    if (v.transGen.waveform === 0) {
-      const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
-      v.osc.pitchMod = f(v.osc.pitchMod + f(snap * v.transGen.volume));
-    }
-    osc_setFreq(v.osc);
-    osc_setFreq(v.noiseOsc);
-  }
-  _metalAsync(v) {
-    v.egValueOscVol = f(slopeEg2_calc(v.oscVolEg));
-    if (v.transGen.waveform === 0) {
-      const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
-      v.osc.pitchMod = f(1 + f(snap * v.transGen.volume));
-    }
-    osc_setFreq(v.osc);
-    osc_setFreq(v.modOsc);
-    osc_setFreq(v.modOsc2);
+    if (v.srcA) osc_setFreq(v.modOsc);
+    if (v.srcB) osc_setFreq(v.modOsc2);
+    if (v.srcN) osc_setFreq(v.noiseOsc);
   }
 
   // ----- audio rate (calc*SyncBlock) -----
-  _drumSync(n, buf) {
-    const v = this.drums[n], mod = this._modBuf, size = BLOCK;
-    calcNextOscSampleBlock(v.modOsc, mod, size, v.fmModAmount, v.pwm, this.rng);
-    if (v.mixOscs) {
-      calcNextOscSampleBlock(v.osc, buf, size, f(1 - v.fmModAmount), v.pwm, this.rng);
-      for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], mod[i]);
+  _sync(n, buf) {
+    const v = this.voices[n], size = BLOCK, rng = this.rng, A = this._bA, B = this._bB, N = this._bN, C = this._bC;
+    // the parts, in the order the firmware's voices draw their noise: mod A, mod B, noise, tone
+    if (v.srcA) calcNextOscSampleBlock(v.modOsc, A, size, v.fmModAmount, v.pwm, rng);
+    if (v.srcB) {
+      calcNextOscSampleBlock(v.modOsc2, B, size, v.fmModAmount2, v.pwm, rng);
+      if (v.srcA) for (let i = 0; i < size; i++) A[i] = qadd16(A[i], B[i]);
+      else A.set(B);
+    }
+    const snare = v.kind === 'snare';
+    if (v.srcN) calcNoiseBlock(v.noiseOsc, N, size, snare ? f(0.9) : f(f(0.9) * v.mix), rng);
+    const mixA = v.mixOscs && v.srcA;
+    let g = mixA ? f(1 - v.fmModAmount) : v.carrierGain;
+    if (v.mix) g = f(g * f(1 - v.mix));
+    if (mixA) {
+      calcNextOscSampleBlock(v.osc, buf, size, g, v.pwm, rng);
+      for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], A[i]);
+    } else if (v.srcA || v.srcB) calcNextOscSampleFmBlock(v.osc, A, buf, size, g, v.pwm, rng);
+    else calcNextOscSampleBlock(v.osc, buf, size, g, v.pwm, rng);
+    transient_calcBlock(v.transGen, C, size);
+    if (snare) { this._snareFinish(n, v, buf); return; }
+    // the filter, on the parts routed to it; the others are added after it
+    const T = this._bT, toFilter = v.routeT || v.routeC || (v.srcN && v.routeN);
+    if (!v.routeT) { T.set(buf); buf.fill(0); }
+    if (v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
+    if (v.srcN && v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
+    if (toFilter) SVF_calcBlockZDF(v.filter, v.filterType, buf, size);
+    if (!v.routeT) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], T[i]);
+    if (!v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
+    if (v.srcN && !v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
+    if (v.kind === 'drum') {
+      // amp EG, interpolated over the block (bufferTool_addGainInterpolated)
+      const gain = f(v.ampFilterInput), last = f(v.lastGain), d = f(gain - last);
+      for (let i = 0; i < size; i++) buf[i] = toI16(buf[i] * (last + f(i / f(size - 1)) * d));
+      if (v.volumeMod) for (let i = 0; i < size; i++) buf[i] = toI16(f(buf[i] * v.velo));
+      // drive, with the drive amount smoothed per sample (calcDistBlockFiltered)
+      for (let i = 0; i < size; i++) buf[i] = distortSample(buf[i], calcOnePole(v.distortion.driveFilter, v.distortion.shape));
+      for (let i = 0; i < size; i++) {
+        const mixVol = calcOnePole(v.mixerVolFilter, v.vol);
+        v.combinedVolume = f(mixVol * calcOnePole(v.faderFilter, this.faderVolume[n]));
+        buf[i] = toI16(f(buf[i] * v.combinedVolume));
+      }
     } else {
-      calcNextOscSampleFmBlock(v.osc, mod, buf, size, 1, v.pwm, this.rng);
-    }
-    transient_calcBlock(v.transGen, mod, size);
-    for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], mod[i]);
-    SVF_calcBlockZDF(v.filter, v.filterType, buf, size);
-    // amp EG, interpolated over the block (bufferTool_addGainInterpolated)
-    const gain = f(v.ampFilterInput), last = f(v.lastGain), d = f(gain - last);
-    for (let i = 0; i < size; i++) buf[i] = toI16(buf[i] * (last + f(i / f(size - 1)) * d));
-    if (v.volumeMod) for (let i = 0; i < size; i++) buf[i] = toI16(f(buf[i] * v.velo));
-    // drive, with the drive amount smoothed per sample (calcDistBlockFiltered)
-    for (let i = 0; i < size; i++) buf[i] = distortSample(buf[i], calcOnePole(v.distortion.driveFilter, v.distortion.shape));
-    for (let i = 0; i < size; i++) {
-      const mixVol = calcOnePole(v.mixerVolFilter, v.vol);
-      v.combinedVolume = f(mixVol * calcOnePole(v.faderFilter, this.faderVolume[n]));
-      buf[i] = toI16(f(buf[i] * v.combinedVolume));
+      v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
+      for (let j = 0; j < size; j++) buf[j] = toI16(f(buf[j] * f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n]))));
+      for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
     }
   }
-  _snareSync(buf) {
-    const v = this.snare, osc = this._buf2, trans = this._buf3, size = BLOCK;
-    calcNoiseBlock(v.noiseOsc, buf, size, f(0.9), this.rng);
-    SVF_calcBlockZDF(v.filter, v.filterType, buf, size);
-    calcNextOscSampleBlock(v.osc, osc, size, f(1 - v.mix), v.pwm, this.rng);
-    transient_calcBlock(v.transGen, trans, size);
+  // the snare's last steps: the noise filtered alone, crossfaded with the tone in float, one gain, the drive
+  _snareFinish(n, v, buf) {
+    const N = this._bN, C = this._bC, size = BLOCK;
+    SVF_calcBlockZDF(v.filter, v.filterType, N, size);
     v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
     for (let j = 0; j < size; j++) {
-      let tmp = fmaf(buf[j], v.mix, osc[j]);
-      tmp = f(tmp + trans[j]);
-      buf[j] = toI16(f(f(v.combinedVolume * tmp) * calcOnePole(v.faderFilter, this.faderVolume[3])));
+      let tmp = fmaf(N[j], v.mix, buf[j]);
+      tmp = f(tmp + C[j]);
+      buf[j] = toI16(f(f(v.combinedVolume * tmp) * calcOnePole(v.faderFilter, this.faderVolume[n])));
     }
-    for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortionShape);
-  }
-  _metalSync(v, fmGain, faderIdx, buf) {
-    const mod = this._buf2, mod2 = this._buf3, size = BLOCK;
-    calcNextOscSampleBlock(v.modOsc, mod, size, v.fmModAmount1, v.pwm, this.rng);
-    calcNextOscSampleBlock(v.modOsc2, mod2, size, v.fmModAmount2, v.pwm, this.rng);
-    for (let i = 0; i < size; i++) mod[i] = qadd16(mod[i], mod2[i]);
-    calcNextOscSampleFmBlock(v.osc, mod, buf, size, fmGain, v.pwm, this.rng);
-    SVF_calcBlockZDF(v.filter, v.filterType, buf, size);
-    transient_calcBlock(v.transGen, mod, size);
-    v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
-    for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], mod[i]);
-    for (let j = 0; j < size; j++) {
-      buf[j] = toI16(f(buf[j] * f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[faderIdx]))));
-    }
-    for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortionShape);
+    for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
   }
   _decimate(n, buf) {
     const inc = f(this.decimationRate[n] * this.decimationRate[6]);
@@ -1504,31 +1454,16 @@ export class LxrEngine {
     this._resetTargets();
     for (const vm of this.velocityModulators) this._modUpdate(vm, vm.lastVal);
     for (const lfo of this.lfos) this._modUpdate(lfo.modTarget, lfo_calc(lfo, this.rng));
+    const o = this.out, V = this.voices;
     if (only >= 0 && !this.xmod) {
-      const o = this.out, b = o[only];
-      if (only < 3) { const d = this.drums[only]; SVF_recalcFreq(d.filter); this._drumAsync(d); this._drumSync(only, b); }
-      else if (only === 3) { SVF_recalcFreq(this.snare.filter); this._snareAsync(this.snare); this._snareSync(b); }
-      else if (only === 4) { SVF_recalcFreq(this.cymbal.filter); this._metalAsync(this.cymbal); this._metalSync(this.cymbal, 1, 4, b); }
-      else { SVF_recalcFreq(this.hat.filter); this._metalAsync(this.hat); this._metalSync(this.hat, f(0.5), 5, b); }
-      this._decimate(only, b);
+      const v = V[only], b = o[only];
+      SVF_recalcFreq(v.filter); this._async(v); this._sync(only, b); this._decimate(only, b);
       return o;
     }
-    SVF_recalcFreq(this.drums[0].filter);
-    SVF_recalcFreq(this.drums[1].filter);
-    SVF_recalcFreq(this.drums[2].filter);
-    SVF_recalcFreq(this.snare.filter);
-    SVF_recalcFreq(this.cymbal.filter);
-    SVF_recalcFreq(this.hat.filter);
+    for (const v of V) SVF_recalcFreq(v.filter);
     if (this.xmod) this._xmodBefore();
-    for (const d of this.drums) this._drumAsync(d);
-    this._snareAsync(this.snare);
-    this._metalAsync(this.cymbal);
-    this._metalAsync(this.hat);
-    const o = this.out;
-    for (let n = 0; n < 3; n++) { this._drumSync(n, o[n]); this._decimate(n, o[n]); }
-    this._snareSync(o[3]); this._decimate(3, o[3]);
-    this._metalSync(this.cymbal, 1, 4, o[4]); this._decimate(4, o[4]);
-    this._metalSync(this.hat, f(0.5), 5, o[5]); this._decimate(5, o[5]);
+    for (const v of V) this._async(v);
+    for (let n = 0; n < 6; n++) { this._sync(n, o[n]); this._decimate(n, o[n]); }
     if (this.xmod) this._xmodAfter();
     return o;
   }
@@ -1542,7 +1477,7 @@ export class LxrEngine {
   renderFx(gains = null, width = null) {
     const fx = this.fx, inp = fx.input, out = this.fxOut;
     inp.fill(0); out.fill(0);
-    const pans = [this.drums[0], this.drums[1], this.drums[2], this.snare, this.cymbal, this.hat];
+    const pans = this.voices;
     let any = false;
     for (let n = 0; n < 6; n++) {
       if (this.audioRouting[n] !== MIXER_ROUTING_FX_BUS) continue;
@@ -1575,7 +1510,7 @@ export class LxrEngine {
 
   /** stereo mix of this.out using each voice's pan from its last trigger, as floats -1..1 */
   mixStereo(left, right, offset = 0) {
-    const pans = [this.drums[0], this.drums[1], this.drums[2], this.snare, this.cymbal, this.hat];
+    const pans = this.voices;
     for (let i = 0; i < BLOCK; i++) {
       let l = 0, r = 0;
       for (let n = 0; n < 6; n++) {
@@ -1691,7 +1626,7 @@ export class LxrEngine {
         case CC.CYM_WAVE3: cy.modOsc2.waveform = wave(NUM_OSC_WAVEFORMS); break;
         case CC.CYM_MOD_OSC_F1: setCoarse(cy.modOsc, itg); break;
         case CC.CYM_MOD_OSC_F2: setCoarse(cy.modOsc2, itg); break;
-        case CC.CYM_MOD_OSC_GAIN1: cy.fmModAmount1 = flt; break;
+        case CC.CYM_MOD_OSC_GAIN1: cy.fmModAmount = flt; break;
         case CC.CYM_MOD_OSC_GAIN2: cy.fmModAmount2 = flt; break;
         case CC.CYM_FIL_FREQ: SVF_directSetFilterValue(cy.filter, filterValue()); break;
         case CC.CYM_RESO: SVF_setReso(cy.filter, flt); break;
@@ -1709,14 +1644,14 @@ export class LxrEngine {
         case CC.F_OSC6_COARSE: setCoarse(hh.osc, itg); break;
         case CC.MOD_OSC_F1: setCoarse(hh.modOsc, itg); break;
         case CC.MOD_OSC_F2: setCoarse(hh.modOsc2, itg); break;
-        case CC.MOD_OSC_GAIN1: hh.fmModAmount1 = flt; break;
+        case CC.MOD_OSC_GAIN1: hh.fmModAmount = flt; break;
         case CC.MOD_OSC_GAIN2: hh.fmModAmount2 = flt; break;
         case CC.VELOA6: hh.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
         case CC.REPEAT1: sn.oscVolEg.repeat = itg; break;
         case CC.EG_SNARE1_SLOPE: slopeEg2_setSlope(sn.oscVolEg, itg); break;
-        case CC.SNARE_DISTORTION: sn.distortionShape = distShape(flt); break;
-        case CC.CYMBAL_DISTORTION: cy.distortionShape = distShape(flt); break;
-        case CC.HAT_DISTORTION: hh.distortionShape = distShape(flt); break;
+        case CC.SNARE_DISTORTION: sn.distortion.shape = distShape(flt); break;
+        case CC.CYMBAL_DISTORTION: cy.distortion.shape = distShape(flt); break;
+        case CC.HAT_DISTORTION: hh.distortion.shape = distShape(flt); break;
         case CC.FREQ_LFO1: case CC.FREQ_LFO2: case CC.FREQ_LFO3: case CC.FREQ_LFO4: case CC.FREQ_LFO5: case CC.FREQ_LFO6:
           this._lfoSetFreq(this.lfos[num - CC.FREQ_LFO1], flt); break;
         case CC.AMOUNT_LFO1: case CC.AMOUNT_LFO2: case CC.AMOUNT_LFO3: case CC.AMOUNT_LFO4: case CC.AMOUNT_LFO5: case CC.AMOUNT_LFO6:
