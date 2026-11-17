@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwktlkr8';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwktlkr8';
-import { KIT_FILES } from '../sound/kits.js?v=mwktlkr8';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwktlkr8';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwktlkr8';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkusucf';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkusucf';
+import { KIT_FILES } from '../sound/kits.js?v=mwkusucf';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkusucf';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkusucf';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwktlkr8', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkusucf', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -372,7 +372,8 @@ function showPeaks(peaks) {
 // ---------------------------------------------------------------------------------------------------------------
 let detailT = 0;
 const detail = (html) => { $('detail').innerHTML = html; };
-// a drag changes a value from where it was; Shift is fine
+// a drag changes a value from where it was; Shift is fine. Only a press and drag (or the arrow keys, once it's been
+// clicked) changes a control: the scroll wheel and the trackpad never do, so passing the pointer over one is safe
 function dragger(track, axis, o) {
   let d = null;
   track.addEventListener('pointerdown', (e) => {
@@ -394,7 +395,6 @@ function dragger(track, axis, o) {
   });
   const end = () => { if (d) { d = null; o.held && o.held(false); } };
   track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
-  track.addEventListener('wheel', (e) => { e.preventDefault(); o.put(o.get() + (e.deltaY < 0 ? 1 : -1) * (o.max - o.min > 20 ? 2 : 1)); }, { passive: false });
   track.addEventListener('keydown', (e) => {
     const big = Math.max(1, Math.round((o.max - o.min) / 10));
     const k = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: big, PageDown: -big }[e.key];
@@ -864,6 +864,9 @@ function drawStrip() {
   }
 }
 
+// a menu (LFO DEST, VEL DEST) doesn't change under the scroll wheel either (some browsers step a focused one)
+document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
+
 // ---- the RANDOM menu ----
 function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
@@ -1112,11 +1115,10 @@ function drawZones() {
   soundBtns.forEach((b, i) => { b.querySelector('.ch').textContent = `${noteName(SOUNDS[i].zone.lo)}-${noteName(SOUNDS[i].zone.hi)}`; });
   $('low-down').disabled = S.zoneStart - 12 < 0; $('low-up').disabled = S.zoneStart + 12 + 24 > 127;
 }
-// the tempo (for the note repeat): - and + by 1 (Shift: 10), the scroll wheel, double-click for 120
+// the tempo (for the sequencers and the synced echo): - and + by 1 (Shift: 10), double-click for 120
 function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 240); $('bpm').textContent = S.fx.tempo.bpm; sendFx(); }
 $('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
 $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey ? 10 : 1)));
-$('bpm').addEventListener('wheel', (e) => { e.preventDefault(); setBpm(S.fx.tempo.bpm + (e.deltaY < 0 ? 1 : -1)); }, { passive: false });
 $('bpm').addEventListener('dblclick', () => setBpm(120));
 $('bpm').textContent = S.fx.tempo.bpm;
 // RETURN: when a zone goes back to an earlier held key, it plays it again now or on the next step of the grid

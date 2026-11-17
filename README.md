@@ -49,7 +49,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
-- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys). A control you
+- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, or the arrow keys once clicked; the scroll
+  wheel and the trackpad never change a control, so passing the pointer over one is safe). A control you
   change by hand on a key gets a **lit label**, a notch outside its ring shows where it was, and a **double-click puts
   it back**; the key header counts the edits ("Brownie snare · 2 edits") and the key gets a dot on the strip. The
   small **padlock** at a knob's top right locks that control against the randomisers (faint: open, solid: locked). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,

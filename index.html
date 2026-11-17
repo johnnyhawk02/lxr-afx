@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwktlkr8">
+<link rel="stylesheet" href="css/lcd.css?v=mwkusucf">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -16,7 +16,7 @@
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
     <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
-    <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="Scroll to change, double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
+    <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
     <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="menu" id="menu">
@@ -102,6 +102,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwktlkr8"></script>
+<script type="module" src="app/main.js?v=mwkusucf"></script>
 </body>
 </html>

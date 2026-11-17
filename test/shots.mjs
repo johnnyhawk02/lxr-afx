@@ -218,6 +218,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
+  // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
+  { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
+    const before = await read(); let n = 0;
+    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob', '#faders select', '#bpm']) {
+      const el = await p.$(sel); if (!el) { errors++; console.log('wheel: no', sel); continue; }
+      const box = await el.boundingBox(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      for (const dy of [-240, 360]) { await p.mouse.wheel(0, dy); await p.waitForTimeout(30); if (await read() !== before) n++; }
+    }
+    if (n) { errors++; console.log('the wheel changed a control', n, 'times'); } }
   await p.close();
 }
 await b.close();

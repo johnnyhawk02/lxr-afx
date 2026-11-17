@@ -10,8 +10,8 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwktlkr8';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwktlkr8';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwkusucf';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkusucf';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
