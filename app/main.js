@@ -173,8 +173,10 @@ function ccTargetName(t) {
   if (t.t === 'par') return t.label[0];
   if (t.t === 'global') return 'morph ' + t.k + ' (all)';
   if (t.t === 'sound') return 'morph ' + t.k;
+  if (t.t === 'randkey') return 'new sound on the key';
   return SOUNDS[t.s].name.toLowerCase() + ' level';
 }
+const ccHeld = {};
 let learn = null; // null, { armed: true } waiting for a control, then { target } waiting for a knob
 let ccDraw = 0;
 function onCC(cc, val) {
@@ -190,6 +192,10 @@ function onCC(cc, val) {
   let text;
   if (t.t === 'global') { S.global[t.k] = Math.round(val / 127 * 100); text = `${ccTargetName(t)} ${S.global[t.k]}%`; }
   else if (t.t === 'sound') { S.sounds[S.sel][t.k] = Math.round(val / 127 * 100); text = `${SOUNDS[S.sel].name} ${ccTargetName(t)} ${S.sounds[S.sel][t.k]}%`; }
+  else if (t.t === 'randkey') { // a button: acts once as it goes past half way up
+    const up = val >= 64, was = ccHeld[cc]; ccHeld[cc] = up;
+    if (up && !was) randKey(); return;
+  }
   else if (t.t === 'zlevel') { setValue(PAR.VOL1 + SOUNDS[t.s].engineVoice, val); text = `${ccTargetName(t)} ${val}`; }
   else {
     const sc = VOICE_SCHEMAS[SOUNDS[S.sel].engineVoice];
@@ -618,6 +624,21 @@ function scatter(sound) {
     S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
   }
 }
+// NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as SCATTER
+// deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
+function randKey() {
+  const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
+  let s; do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
+  const now = keyPatch(sound, note).vals;
+  randChange(() => {
+    const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    for (const par of S.locks) if (par in ed) ed[par] = now.get(par);
+    S.keyEdits[sound][note] = ed;
+    if (S.editAll) setEditAll(false);
+  }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${s.label}</em> (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
+}
+$('rand-key').addEventListener('click', () => { if (!learn) randKey(); });
+$('rand-key').dataset.learn = JSON.stringify({ t: 'randkey' });
 $('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})`));
 $('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), 'all three zones: a kit sound on every key'));
 $('rand').addEventListener('click', () => randChange(() => pickVoice(S.sel, S.rand.amount / 100),
@@ -657,6 +678,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'r' || e.key === 'R') reroll();
+  else if (e.key === 'k' || e.key === 'K') randKey();
 });
 
 // ---------------------------------------------------------------------------------------------------------------

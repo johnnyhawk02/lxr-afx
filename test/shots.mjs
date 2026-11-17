@@ -50,6 +50,18 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     if (clip) { errors++; console.log(`${w}x${h} sound ${k}: ${clip} controls cut off`); }
   }
 
+  // NEW SOUND: only the played key changes, and UNDO takes it back
+  { const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits[0]);
+    await p.evaluate(() => afx.noteOn(1, 50, 100)); await p.waitForTimeout(50);
+    const before = await st();
+    await p.click('#rand-key'); await p.waitForTimeout(600);
+    const after = await st();
+    const changed = Object.keys({ ...before, ...after }).filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+    if (changed.join() !== '50' || !after['50']?._kit) { errors++; console.log('new sound: changed', changed, after['50']?._kit); }
+    if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/newsound-${w}x${h}.png` });
+    await p.click('#undo'); await p.waitForTimeout(300);
+    if (JSON.stringify(await st()) !== JSON.stringify(before)) { errors++; console.log('new sound: undo did not restore'); }
+  }
   await p.close();
 }
 await b.close();
