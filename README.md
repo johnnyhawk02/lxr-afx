@@ -21,6 +21,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
+  The echo's **SYNC** switch turns TIME from milliseconds into a note length at the BPM (1/32 to 1/2, with triplets and
+  dotted lengths, 1/8D by default), and it follows the BPM; switched off, TIME goes back to the milliseconds it had.
 - **Master distortion** (`sound/dirt.js`, our own design after a dual-path bass distortion pedal's signal flow), before
   the compressor, off until its **ON** is pressed. A dirty path, PREGAIN, then a filter (FILTER: high-pass, or LP),
   GAIN into two anti-aliased clip stages (CLIP: diode, hard and early, or LED, louder and more open), then TONE (bass,

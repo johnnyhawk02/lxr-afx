@@ -64,4 +64,12 @@ const near = (a, b) => Math.abs(a - b) < 0.02; // a block is 0.003 beats at 120 
 { const { inst, log, until } = rig(2, 0b11111111);
   until(0.1); inst.play(0, 60, 100, null, false); until(2);
   ok(log.length === 1, 'an auditioned key repeated: ' + log.length); }
+// the echo's SYNC: TIME is a note length at the BPM, and follows the BPM
+{ const inst = new LxrInstrument(48000), fs = 44140, echo = { time: 74, feedback: 60, tone: 90, pingpong: 0, sync: 1, div: 7 };
+  inst.setFx({ echo, tempo: { bpm: 120, ret: 2 } });
+  ok(Math.abs(inst.echo.delay.sync - 0.375 * fs) < 1, 'echo 1/8D at 120: ' + inst.echo.delay.sync);
+  inst.setFx({ echo, tempo: { bpm: 90, ret: 2 } });
+  ok(Math.abs(inst.echo.delay.sync - 0.5 * fs) < 1, 'echo 1/8D at 90: ' + inst.echo.delay.sync);
+  inst.setFx({ echo: { ...echo, sync: 0 }, tempo: { bpm: 90, ret: 2 } });
+  ok(Math.abs(inst.echo.delay.sync - 0.219 * fs) < 30, 'echo unsynced: ' + inst.echo.delay.sync); }
 console.log(fails ? `${fails} of ${checks} checks failed` : `ok: ${checks} checks`); process.exit(fails ? 1 : 0);

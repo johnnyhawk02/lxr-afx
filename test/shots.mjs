@@ -159,6 +159,13 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => afx.rhythms(50));
     await p.click('#menu-btn'); const bar = await p.isVisible('#rhythm-bars .htrack'); await p.click('#menu-btn');
     if (!bar) { errors++; console.log('no RHYTHMS slider in the RANDOM menu'); }
+    // the echo's SYNC: TIME reads a note length, unchanged by the BPM; off again, back to its milliseconds
+    { const echoTime = () => p.$$eval('.fxside .vf', (els) => els.find((e) => e.querySelector('.lab')?.textContent === 'time')?.querySelector('output').textContent);
+      let sb = null;
+      for (const e of await p.$$('.fxside .vsw')) if ((await e.$eval('.lab', (x) => x.textContent)) === 'sync') sb = await e.$('.swb');
+      const t0 = await echoTime(); await sb.click(); const t1 = await echoTime(); await p.click('#bpm-up'); const t2 = await echoTime(); await p.click('#bpm-down');
+      await sb.click(); const t3 = await echoTime();
+      if (!/ms$/.test(t0) || t1 !== '1/8D' || t2 !== '1/8D' || t3 !== t0) { errors++; console.log('echo sync:', t0, t1, t2, t3); } }
     // randomised pans: SCATTER ALL puts every drum key in the centre, the snare's within 20%, the metal's anywhere
     await p.evaluate(() => document.getElementById('kit-scatter').click()); await p.waitForTimeout(400);
     const pans = await p.evaluate(() => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.pan(i, k)); return o; }));

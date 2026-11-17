@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwksf1ix';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwksf1ix';
-import { KIT_FILES } from '../sound/kits.js?v=mwksf1ix';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwksf1ix';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwksf1ix';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwksp1zf';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwksp1zf';
+import { KIT_FILES } from '../sound/kits.js?v=mwksp1zf';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwksp1zf';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwksp1zf';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwksf1ix', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwksp1zf', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -529,7 +529,7 @@ function gknob(label, o) {
     out.textContent = o.show ? o.show(v) : String(v); tr.setAttribute('aria-valuenow', v);
   };
   const put = (v) => { v = clamp(Math.round(v), 0, o.max); if (v !== o.get()) { o.set(v); draw(); } };
-  dragger(tr, 'y', { min: 0, max: o.max, len: 160, get: o.get, put, held: (h) => el.classList.toggle('held', h) });
+  dragger(tr, 'y', { min: 0, get max() { return o.max; }, len: 160, get: o.get, put, held: (h) => el.classList.toggle('held', h) });
   const reset = () => put(o.dflt); el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
   faderDraws.push(draw);
   return el;
@@ -537,8 +537,31 @@ function gknob(label, o) {
 const sendFx = () => { send({ type: 'fx', fx: S.fx }); save(); };
 // the right-hand column: the send effects (each key feeds them at its ECHO and REVERB knobs), then the master that
 // everything (dry and the effects' returns) goes through: distortion, compressor, level. A string is a heading
+// the echo's TIME: milliseconds, or with SYNC on a note length at the BPM (1/32 .. 1/2, triplets and dotted), which
+// follows the BPM. Each keeps its own setting, so SYNC off goes back to the time it had
+const E = () => S.fx.echo;
+const ECHO_TIME = {
+  get max() { return E().sync ? ECHO_DIVS.length - 1 : 127; },
+  get: () => (E().sync ? E().div : E().time),
+  set: (v) => { E()[E().sync ? 'div' : 'time'] = v; sendFx(); },
+  show: (v) => (E().sync ? ECHO_DIVS[v][0] : echoMs(v) + ' ms'),
+  get dflt() { return FX_DEFAULTS.echo[E().sync ? 'div' : 'time']; },
+};
+// a switch in a knob's cell: a button that steps through its settings, named on the button, lit away from the first
+function gswitch(label, names, title, get, set) {
+  const el = document.createElement('div'); el.className = 'vf vsw';
+  el.innerHTML = '<output></output><button class="swb" type="button"></button><span class="lab"></span>';
+  el.querySelector('.lab').textContent = label;
+  const b = el.querySelector('.swb'); b.title = title;
+  const draw = () => { b.textContent = names[get()] ?? names[0]; b.setAttribute('aria-pressed', get() > 0); };
+  b.addEventListener('click', () => { set((get() + 1) % names.length); faderDraws.forEach((d) => d()); });
+  faderDraws.push(draw);
+  return el;
+}
 const FX_PAGE = [
-  ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode']]],
+  ['echo', 'ECHO', [['time', ECHO_TIME], ['sync', 'switch', ['OFF', 'ON'], 'Sync: TIME in note lengths at the BPM (1/32 to 1/2, triplets and dotted), following the BPM', (v) => {
+    E().sync = v; sendFx(); detail(v ? `ECHO SYNC <em>ON</em>: TIME ${ECHO_DIVS[E().div][0]} at ${S.fx.tempo.bpm} BPM` : `ECHO SYNC <em>OFF</em>: TIME ${echoMs(E().time)} ms`);
+  }], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode']]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
   'DIRT', // the distortion and its sidechain: buildDirt
@@ -554,8 +577,10 @@ function buildFx() {
     const [id, name, knobs] = item;
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
-    for (const [k, max, show, label] of knobs)
-      el.querySelector('.row').append(gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
+    for (const [k, max, show, label, set] of knobs)
+      el.querySelector('.row').append(typeof max === 'object' ? gknob(k, max) // a knob of its own (the echo's TIME)
+        : max === 'switch' ? gswitch(k, show, label, () => S.fx[id][k], set)
+          : gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
   // beside the output level: the compressor's gain reduction

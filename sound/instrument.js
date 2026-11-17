@@ -10,14 +10,14 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwksf1ix';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwksf1ix';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwksp1zf';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwksp1zf';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
 // to the dry mix at unity. settings: see FX_DEFAULTS
 export const FX_DEFAULTS = {
-  echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
+  echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100, sync: 0, div: 7 }, // sync: TIME is a note length (div)
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
   tempo: { bpm: 120, ret: 2 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
   // next 1/32, 1/16, 1/8 or 1/4 (1..4)
@@ -30,6 +30,11 @@ export const FX_DEFAULTS = {
 // release 10..1000 ms, knee 0..24 dB, makeup 0..24 dB
 // the echo's time knob (0..127) in milliseconds: 10 ms to 2 s, evenly in octaves
 export const echoMs = (v) => Math.round(10 * Math.pow(200, v / 127));
+// the echo's TIME with SYNC on: note lengths at the BPM, shortest first (T triplet, D dotted), each as [name, beats]
+export const ECHO_DIVS = [['1/32', 1 / 8], ['1/16T', 1 / 6], ['1/16', 1 / 4], ['1/8T', 1 / 3], ['1/16D', 3 / 8], ['1/8', 1 / 2],
+  ['1/4T', 2 / 3], ['1/8D', 3 / 4], ['1/4', 1], ['1/2T', 4 / 3], ['1/4D', 3 / 2], ['1/2', 2]];
+// the echo's time in seconds: TIME's milliseconds, or with SYNC its note length at the BPM
+export const echoSeconds = (echo, bpm) => (echo.sync ? (ECHO_DIVS[echo.div] || ECHO_DIVS[7])[1] * 60 / bpm : echoMs(echo.time) / 1000);
 
 export class Voice {
   constructor(inst, index) {
@@ -79,16 +84,15 @@ export class LxrInstrument {
   }
   /** the effects' settings: { echo, reverb, master, tempo }, each as FX_DEFAULTS (0..127 values) */
   setFx(fx) {
-    const { echo, reverb } = fx;
+    const { echo, reverb, master, tempo, dirt } = fx;
+    if (tempo) { this.setBpm(tempo.bpm); if (tempo.ret !== undefined) this.retQ = tempo.ret; } // (first: a synced echo follows it)
     if (echo) {
       this.echo.delay.type = echo.pingpong ? 1 : 0;
       [0.5, 0.5, echo.tone / 127, echo.feedback / 127].forEach((v, i) => this.echo.setParameter(i, v));
-      this.echo.setDelaySync(echoMs(echo.time) / 1000 * REAL_FS);
+      this.echo.setDelaySync(echoSeconds(echo, this.bpm) * REAL_FS);
       this.ret[0] = 1; // returns fixed at unity
     }
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; }
-    const { master, tempo, dirt } = fx;
-    if (tempo) { this.setBpm(tempo.bpm); if (tempo.ret !== undefined) this.retQ = tempo.ret; }
     if (dirt) this.dirt.set(dirt);
     if (master) Object.assign(this.m, master);
   }
