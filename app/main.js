@@ -1,12 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkw8420';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkw8420';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkw8420';
-import { KIT_FILES } from '../sound/kits.js?v=mwkw8420';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkw8420';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkw8420';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkxw90o';
+import { presetName } from './names.js?v=mwkxw90o';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkxw90o';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkxw90o';
+import { KIT_FILES } from '../sound/kits.js?v=mwkxw90o';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkxw90o';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkxw90o';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -40,6 +41,7 @@ const S = {
   ccMap: null, // knob map, CC number -> target; null: the Bass Station 2 default
   fx: structuredClone(FX_DEFAULTS), // the three send effects' settings (the FX page)
   view: 'synth', // the editor shows the engine's knobs ('synth') or the effects ('fx')
+  preset: { id: null, name: '' }, // the patch's name, and the saved preset it is (null: not saved yet)
   zoneStart: DEFAULT_ZONE_START, // the layout's lowest key (moved by octaves with LOW KEY) // the editor edits the last key pressed (false) or the base of every key (true)
 };
 try {
@@ -53,6 +55,7 @@ try {
     if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
+    if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -61,8 +64,9 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1 }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
+    drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
 };
 
@@ -77,7 +81,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkw8420', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkxw90o', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -139,10 +143,10 @@ function setValue(par, v, { quiet = false } = {}) {
 // within 1.2 s), and so is anything that changes several controls at once (within 60 ms). The effects and the master
 // aren't sounds: UNDO leaves them ----
 const undoStack = [];
-function snapshot(what, merge) {
-  const now = performance.now(), top = undoStack[undoStack.length - 1];
-  if (top && (now - top.t0 < 60 || (merge && top.merge === merge && now - top.t < 1200))) { top.t = now; return; }
-  undoStack.push({ what, merge, t: now, t0: now, values: S.values.slice(), keys: structuredClone(S.keyEdits) });
+function snapshot(what, merge, whole) { // whole: a new patch is coming (a preset, INIT PATCH), so the effects and the patch's name are kept too
+  const now = performance.now(), top = undoStack[undoStack.length - 1], all = () => (whole ? { fx: structuredClone(S.fx), preset: { ...S.preset } } : {});
+  if (top && (now - top.t0 < 60 || (merge && top.merge === merge && now - top.t < 1200))) { top.t = now; if (whole && !top.fx) Object.assign(top, all()); return; }
+  undoStack.push({ what, merge, t: now, t0: now, values: S.values.slice(), keys: structuredClone(S.keyEdits), ...all() });
   if (undoStack.length > 40) undoStack.shift();
   drawUndo();
 }
@@ -715,7 +719,7 @@ function buildDirt() {
   return [dist, side];
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
-// base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine
+// base (editing a key) or the last key's morph (editing every key). Drag up or down, or the arrow keys; Shift is fine
 const KNOB_N = 25, KNOB_A0 = Math.PI * 0.75, KNOB_SWEEP = Math.PI * 1.5;
 const KNOB_SVG = (() => {
   let t = '';
@@ -905,10 +909,13 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) openPresets(false); }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
-document.addEventListener('pointerdown', (e) => { if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openMenu(false); });
+document.addEventListener('pointerdown', (e) => {
+  if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
+  if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); } });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -976,9 +983,9 @@ function alterKey() {
     .then(() => { drawKeymap(); play(sound, note, 100); });
 }
 const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, alterDepth()); };
-async function randChange(fn, what) {
+async function randChange(fn, what, whole) {
   await startAudio();
-  snapshot(what.replace(/<[^>]+>/g, '').replace(/\s*(\(| · )UNDO takes it back\)?/, ''));
+  snapshot(what.replace(/<[^>]+>/g, '').replace(/\s*(\(| · )UNDO takes it back\)?/, ''), undefined, whole);
   fn();
   for (const s of lastMorph.keys()) lastMorph[s] = null;
   save(); drawFaders(); drawSide(); drawEditKey();
@@ -1186,9 +1193,9 @@ $('init-patch').addEventListener('click', () => {
   }
   disarmInit();
   let n;
-  randChange(() => { n = initPatch(); if (S.editAll) setEditAll(false); }, 'INIT PATCH').then(() => {
-    drawKeymap(); sendTrim();
-    detail(`new patch: a kit sound on all ${n.keys} keys · <em>${n.reverb}</em> with reverb, <em>${n.echo}</em> with echo${levelled()} (UNDO takes it back)`);
+  randChange(() => { n = initPatch(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
+    drawKeymap(); sendTrim(); drawPreset();
+    detail(`new patch <em>${S.preset.name}</em>: a kit sound on all ${n.keys} keys · ${n.reverb} with reverb, ${n.echo} with echo${levelled()} (UNDO takes it back)`);
   });
 });
 drawInit();
@@ -1196,8 +1203,9 @@ function undo() {
   const u = undoStack.pop();
   if (!u) { detail('nothing to undo'); return; }
   for (let p = 0; p < ALL_PARAMS; p++) setValue(p, u.values[p], { quiet: true });
-  S.keyEdits.forEach((ks, i) => { for (const k in ks) if (ks[k]._lock) u.keys[i][k] = ks[k]; }); // a key locked now stays as it is
+  if (!u.fx) S.keyEdits.forEach((ks, i) => { for (const k in ks) if (ks[k]._lock) u.keys[i][k] = ks[k]; }); // a key locked now stays as it is
   S.keyEdits = u.keys;
+  if (u.fx) { applyFx(u.fx); S.preset = u.preset; drawPreset(); } // a whole patch back: its effects and its name too
   for (const s of lastMorph.keys()) lastMorph[s] = null;
   for (const k in homes) delete homes[k];
   save(); drawUndo(); drawKeymap(); drawEditKey(); drawFaders(); drawSide();
@@ -1233,7 +1241,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault(); if (e.key === 'c') copyKey(); else pasteKey(); return;
   }
   if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'z') { if (e.target.closest('input, textarea, [contenteditable]')) return; e.preventDefault(); undo(); return; }
-  if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest('select, input[type="text"]') || e.metaKey || e.ctrlKey || e.altKey) return; // (typing a name)
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'z' || e.key === 'Z') undo();
   else if (e.key === '[' || e.key === ']') stepKey(e.key === ']' ? 1 : -1);
@@ -1254,6 +1262,178 @@ $('start-btn').addEventListener('click', async () => {
   await startAudio();
   startMidi();
 });
+// ---------------------------------------------------------------------------------------------------------------
+// PRESETS: the whole patch (every key's sound, edits, lock, sequence and sends, the engines' base, the effects, the
+// master and the BPM) kept under a name in this browser (localStorage). A new patch gets a made-up name (names.js);
+// NEW NAME rolls another, or type one. SAVE keeps the patch under its name (again: over the saved one), SAVE AS NEW
+// keeps a copy under a new name, REVERT goes back to the saved version. A press on a saved preset loads it (UNDO goes
+// back to what was there, effects and all); its X, pressed twice, deletes it. EXPORT writes every saved preset to a
+// file and IMPORT reads one back, so nothing depends on this browser's storage alone.
+// The keys are kept by their place in the layout (0..24), so a preset loads wherever LOW KEY has put the keys. The
+// control locks, the knob map, LOW KEY and the RANDOM menu's settings are the instrument's, not a patch's
+// ---------------------------------------------------------------------------------------------------------------
+const PRESET_STORE = 'lxr-afx-presets-v1';
+const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1 },
+  reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 240, ret: 4 },
+  dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127, sc: 1, src: 3, scfilt: 2, freq: 127, sens: 127, decay: 127, dir: 1, target: 2 },
+  master: { thresh: 40, ratio: 200, attack: 100, release: 1000, knee: 24, makeup: 24, level: 100 } };
+const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
+const cleanLabel = (s) => String(s ?? '').replace(/[<>&\u0000-\u001f]/g, '').slice(0, 48); // (labels are shown as HTML)
+const intIn = (x, lo, hi) => clamp(Math.round(Number(x)) || 0, lo, hi);
+// a preset from storage or a file, checked and tidied: only what a patch can hold gets in (null: not a preset)
+function tidyPreset(p) {
+  const d = p && p.data;
+  if (!d || !Array.isArray(d.values) || d.values.length < NUM_PARAMS || !Array.isArray(d.keys)) return null;
+  const values = [...INIT_VALUES]; d.values.slice(0, ALL_PARAMS).forEach((x, i) => { values[i] = intIn(x, 0, 255); });
+  const keys = SOUNDS.map((def, i) => {
+    const out = {}, src = d.keys[i] && typeof d.keys[i] === 'object' ? d.keys[i] : {};
+    for (const k in src) {
+      const rel = Number(k), e = src[k], o = {};
+      if (!Number.isInteger(rel) || rel < def.zone.lo - S.zoneStart || rel > def.zone.hi - S.zoneStart || !e || typeof e !== 'object') continue;
+      for (const f in e) {
+        if (f === '_kit') o._kit = cleanLabel(e._kit);
+        else if (f === '_lock') { if (e._lock) o._lock = true; }
+        else if (f === '_st' || f === '_r') o[f] = Number(e[f]) || 0;
+        else if (f === '_o' && e._o && typeof e._o === 'object') { const h = {}; for (const q in e._o) if (/^\d+$/.test(q) && Number(q) < ALL_PARAMS) h[q] = intIn(e._o[q], 0, 255); if (Object.keys(h).length) o._o = h; }
+        else if (/^\d+$/.test(f) && Number(f) < ALL_PARAMS) o[f] = intIn(e[f], 0, 255);
+      }
+      out[rel] = o;
+    }
+    return out;
+  });
+  const fx = {};
+  for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
+  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx } };
+}
+const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
+let presets = [];
+try { const a = JSON.parse(localStorage.getItem(PRESET_STORE)); if (Array.isArray(a)) presets = a.map(tidyPreset).filter(Boolean); } catch (e) { /* none kept, or storage blocked */ }
+// the list kept in the browser; false if it couldn't be (storage full or blocked)
+function storePresets() { try { localStorage.setItem(PRESET_STORE, JSON.stringify(presets)); return true; } catch (e) { return false; } }
+const storeOr = (said) => { if (!storePresets()) said += ' · <em>the browser would not keep it</em> (storage full or blocked): EXPORT writes a file'; detail(said); };
+// the patch as a preset keeps it: the keys by their place in the layout
+const shiftKeys = (ks, by) => ks.map((k) => Object.fromEntries(Object.entries(k || {}).map(([n, e]) => [Number(n) + by, structuredClone(e)])));
+const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx) });
+// the same patch, whatever order its parts were written in
+const canon = (x) => (Array.isArray(x) ? '[' + x.map(canon).join() + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => k + ':' + canon(x[k])).join() + '}' : JSON.stringify(x));
+const presetSaved = () => presets.find((p) => p.id === S.preset.id);
+const presetDirty = () => { const p = presetSaved(); return !p || canon(p.data) !== canon(patchData()); };
+const newName = () => presetName(Math.random, new Set([...presets.map((p) => p.name), S.preset.name]));
+// the effects as given (a preset's, or an UNDO's), shown and sent
+function applyFx(fx) {
+  for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], fx[k]);
+  $('bpm').textContent = S.fx.tempo.bpm; drawRet(); sendFx(); drawFaders();
+}
+function applyPatch(d) {
+  d.values.forEach((x, p) => { if (p < ALL_PARAMS) setValue(p, x, { quiet: true }); });
+  S.keyEdits = shiftKeys(d.keys, S.zoneStart);
+  for (const k in homes) delete homes[k];
+  applyFx(d.fx);
+}
+// the key on screen as it is now, to what's still ringing
+const sendKey = () => { for (const [par, x] of keyPatch(S.sel, editKey[S.sel]).vals) send({ type: 'param', par, value: x }); };
+function loadPreset(id, what) {
+  const p = presets.find((x) => x.id === id);
+  if (!p) return;
+  randChange(() => { applyPatch(p.data); S.preset = { id: p.id, name: p.name }; if (S.editAll) setEditAll(false); }, `${what || 'loaded'} <em>${p.name}</em> (UNDO takes it back)`, true)
+    .then(() => { drawKeymap(); drawPreset(); sendKey(); });
+}
+function savePreset(asNew) {
+  let p = asNew ? null : presetSaved();
+  if (asNew) S.preset = { id: null, name: newName() };
+  if (p) { p.data = patchData(); p.name = S.preset.name; p.t = Date.now(); }
+  else { p = { id: newId(), name: S.preset.name, t: Date.now(), data: patchData() }; presets.push(p); S.preset.id = p.id; }
+  save(); drawPreset();
+  storeOr(`saved <em>${p.name}</em>${asNew ? ' as a new preset' : ''} · ${presets.length} preset${presets.length === 1 ? '' : 's'} kept in this browser`);
+}
+function renamePreset(name) {
+  name = cleanName(name);
+  if (!name || name === S.preset.name) { drawPreset(); return; }
+  S.preset.name = name;
+  const p = presetSaved();
+  if (p) p.name = name;
+  save(); drawPreset();
+  if (p) storeOr(`preset renamed <em>${name}</em>`); else detail(`this patch is <em>${name}</em>: SAVE keeps it`);
+}
+let delArmed = null, delT = 0;
+function deletePreset(id) {
+  const p = presets.find((x) => x.id === id);
+  if (!p) return;
+  clearTimeout(delT);
+  if (delArmed !== id) { delArmed = id; delT = setTimeout(() => { delArmed = null; drawPreset(); }, 4000); drawPreset(); detail(`delete <em>${p.name}</em>? Press its X again (it can't be undone)`); return; }
+  delArmed = null;
+  presets = presets.filter((x) => x.id !== id);
+  if (S.preset.id === id) S.preset.id = null; // the patch on screen stays, not saved any more
+  save(); drawPreset(); storeOr(`deleted <em>${p.name}</em>`);
+}
+function exportPresets() {
+  if (!presets.length) { detail('nothing saved yet: SAVE keeps this patch, then EXPORT writes the list to a file'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'presets', version: 1, presets }, null, 1)], { type: 'application/json' }));
+  a.download = `lxr-afx-presets-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  detail(`exported <em>${presets.length}</em> preset${presets.length === 1 ? '' : 's'} to ${a.download}`);
+}
+// presets from a file's text, added to the list: one already here (the same patch under the same id) is skipped, one
+// with the same id but another patch comes in beside it
+function importPresets(text) {
+  let list;
+  try { const j = JSON.parse(text); list = Array.isArray(j) ? j : j && j.presets; } catch (e) { list = null; }
+  if (!Array.isArray(list)) { detail('that file has no LXR-AFX presets in it'); return 0; }
+  let added = 0, had = 0;
+  for (const raw of list) {
+    const p = tidyPreset(raw);
+    if (!p) continue;
+    const old = presets.find((x) => x.id === p.id);
+    if (old && canon(old.data) === canon(p.data)) { had++; continue; }
+    if (old) p.id = newId();
+    if (!p.t) p.t = Date.now();
+    presets.push(p); added++;
+  }
+  drawPreset();
+  storeOr(added ? `imported <em>${added}</em> preset${added === 1 ? '' : 's'}${had ? ` (${had} already here)` : ''}` : had ? `nothing new: all ${had} are already here` : 'that file has no LXR-AFX presets in it');
+  return added;
+}
+function drawPreset() {
+  const p = presetSaved(), dirty = presetDirty();
+  $('preset-name').textContent = S.preset.name; $('preset-mark').textContent = dirty ? '*' : '';
+  $('preset-btn').title = `${S.preset.name}: ${!p ? 'not saved yet' : dirty ? 'changed since it was saved' : 'saved'}. Save, load, rename and delete presets, and write them to a file`;
+  if ($('preset-panel').hidden) return;
+  $('preset-state').textContent = !p ? 'NOT SAVED YET' : dirty ? 'CHANGED SINCE SAVED' : 'SAVED';
+  if (document.activeElement !== $('preset-input')) $('preset-input').value = S.preset.name;
+  $('preset-save').disabled = !!p && !dirty; $('preset-save-new').disabled = !p; $('preset-revert').disabled = !p || !dirty;
+  $('preset-count').textContent = presets.length ? String(presets.length) : '';
+  const list = $('preset-list'); list.innerHTML = '';
+  if (!presets.length) { list.innerHTML = '<p class="dim">NOTHING SAVED YET<br>SAVE KEEPS THIS PATCH IN THIS BROWSER</p>'; return; }
+  for (const x of [...presets].sort((a, b) => b.t - a.t)) {
+    const row = document.createElement('div'); row.className = 'prow'; if (x.id === S.preset.id) row.setAttribute('aria-current', 'true');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pload'; b.textContent = x.name; b.title = `Load ${x.name} (UNDO goes back to this patch)`;
+    b.addEventListener('click', () => loadPreset(x.id));
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'pdel'; del.textContent = delArmed === x.id ? 'SURE?' : 'X';
+    del.title = `Delete ${x.name}: press twice`; del.setAttribute('aria-label', `Delete ${x.name}`); del.setAttribute('aria-pressed', delArmed === x.id);
+    del.addEventListener('click', () => deletePreset(x.id));
+    row.append(b, del); list.append(row);
+  }
+}
+function openPresets(open) {
+  $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
+  if (open) { openMenu(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
+}
+$('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
+$('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));
+$('preset-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('preset-input').blur(); });
+$('preset-roll').addEventListener('click', () => renamePreset(newName()));
+$('preset-save').addEventListener('click', () => savePreset(false));
+$('preset-save-new').addEventListener('click', () => savePreset(true));
+$('preset-revert').addEventListener('click', () => loadPreset(S.preset.id, 'back to the saved'));
+$('preset-export').addEventListener('click', exportPresets);
+$('preset-import').addEventListener('click', () => $('preset-file').click());
+$('preset-file').addEventListener('change', async () => { const f = $('preset-file').files[0]; if (f) importPresets(await f.text()); $('preset-file').value = ''; });
+S.preset = { id: typeof S.preset.id === 'string' ? S.preset.id : null, name: cleanName(S.preset.name) || newName() }; // (as the browser kept it, tidied)
+if (S.preset.id && !presetSaved()) S.preset.id = null; // (its preset was deleted somewhere else)
+drawPreset();
+window.afx.presets = { list: () => presets, now: () => S.preset, dirty: presetDirty, import: importPresets, name: newName };
+
 // with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
 SOUNDS.forEach((_, i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
 buildStrip();

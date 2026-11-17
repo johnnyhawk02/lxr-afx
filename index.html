@@ -8,12 +8,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwkw8420">
+<link rel="stylesheet" href="css/lcd.css?v=mwkxw90o">
 </head>
 <body>
 <main class="screen" id="screen">
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
+    <div class="menu" id="pmenu">
+      <button class="btn pbtn" id="preset-btn" aria-haspopup="true" aria-expanded="false"><span class="dim">PRESET</span><b id="preset-name"></b><i id="preset-mark"></i><span>▾</span></button>
+      <div class="menupanel pleft" id="preset-panel" hidden>
+        <h3>THIS PATCH <span class="dim" id="preset-state"></span></h3>
+        <div class="randrow">
+          <input class="pname" id="preset-input" type="text" maxlength="18" spellcheck="false" autocomplete="off" aria-label="The patch's name" title="The patch's name: type one, or press NEW NAME for another made-up one">
+          <button class="btn" id="preset-roll" title="Another name, jumbled out of pieces of space and physics words">NEW NAME</button>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="preset-save" title="Keep this patch under its name: every key, the effects, the master and the BPM. Saved again, it replaces the saved one">SAVE</button>
+          <button class="btn" id="preset-save-new" title="Keep this patch as another preset, under a new name; the one it came from stays as it was saved">SAVE AS NEW</button>
+          <button class="btn" id="preset-revert" title="Go back to this preset as it was saved (UNDO brings your changes back)">REVERT</button>
+        </div>
+        <h3>SAVED <span class="dim" id="preset-count"></span></h3>
+        <div class="plist" id="preset-list"></div>
+        <h3>FILE</h3>
+        <div class="randrow">
+          <button class="btn" id="preset-export" title="Write every saved preset to a file on this computer">EXPORT</button>
+          <button class="btn" id="preset-import" title="Read presets from an exported file and add them to the list">IMPORT</button>
+          <input type="file" id="preset-file" accept=".json,application/json" hidden>
+        </div>
+      </div>
+    </div>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
     <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
     <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
@@ -109,6 +132,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwkw8420"></script>
+<script type="module" src="app/main.js?v=mwkxw90o"></script>
 </body>
 </html>

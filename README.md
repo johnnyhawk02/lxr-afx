@@ -73,7 +73,22 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   sound, levelled, panned and given rhythms as SCATTER ALL deals them; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
   edits are replaced, so with locked keys it asks first (press again within four seconds). BPM, the effects' own
-  settings, the master, the zone levels and the control locks stay. UNDO brings the old patch back, locks and all.
+  settings, the master, the zone levels and the control locks stay. The new patch gets a new name and is not saved
+  yet. UNDO brings the old patch back, locks, name and all.
+- **PRESETS** (the patch's name, beside the logo): the whole patch under a name. A preset holds every key's sound,
+  edits, lock, rhythm and sends, the three engines' settings, the effects, the master and the BPM. **SAVE** keeps the
+  patch under its name (a `*` after the name means it has changed since, or was never saved), **SAVE AS NEW** keeps it
+  as another preset under a new name, **REVERT** goes back to the saved one. Click a preset in the list to load it
+  (UNDO takes the load back), **X** then **SURE?** deletes it. Type in the name box and press Enter to rename.
+  Presets live in this browser (localStorage); **EXPORT** writes them all to one JSON file and **IMPORT** adds a
+  file's presets to the list, so they can be backed up or moved to another computer. Keys are stored by their place
+  in the layout, so a preset loads the same wherever LOW KEY is. Not part of a preset: the control locks, the BS2
+  knob map, LOW KEY and the RANDOM menu's settings.
+- **Auto names**: every new patch is named by jumbling real words: the start of one word, sometimes the middle of a
+  second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud (NEBUTRON,
+  QUASARIUS, FITRON PEDE). One word of 6 to 10 letters or two of 4 to 7, never a real word of the lists, never a name
+  already in use. **NEW NAME** rolls another. The words come from themed lists in `app/names.js` (space and physics,
+  about 145 words each); to add a theme, add a list to `WORDS` there.
 - **RANDOM menu**: **SCATTER**, **ALTER** and **LEVEL** for the engine on screen, **SCATTER ALL**, **ALTER ALL** and
   **LEVEL ALL** for all three.
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
@@ -117,6 +132,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 | `sound/worklet.js` | the instrument in an AudioWorklet |
 | `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every kit sound and prints each engine's median) |
 | `app/main.js`, `css/lcd.css` | the page |
+| `app/names.js` | the preset names: the themed word lists (`WORDS`) and the jumbler, no UI |
 | `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from (`node tools/build-kits.mjs` rebuilds `kits.js`) |
 
 No build step: the page loads the ES modules directly.
@@ -124,6 +140,7 @@ No build step: the page loads the ES modules directly.
 ```sh
 node test/morph.test.mjs                        # the morph and engine checks
 node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
+node test/names.test.mjs                        # the preset names: sayable, varied, never a list word
 python3 -m http.server 8123 & node test/shots.mjs   # screenshots at 1440x900 and 1280x800 (needs Playwright)
 ```
 

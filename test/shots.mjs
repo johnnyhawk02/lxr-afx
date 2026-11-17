@@ -1,6 +1,7 @@
 // node test/shots.mjs [url] [outdir]: screenshots at 1440x900 and 1280x800, after playing a few notes through the
 // page's test hook (no MIDI device needed). Fails on any page error.
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import { sendPar } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
@@ -297,6 +298,53 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.click('#undo'); await p.waitForTimeout(100); await p.click('#undo'); await p.waitForTimeout(150); const back = await state();
     if (J(back) !== J(before)) { errors++; console.log('init patch, undo:', J(back.flat().map((k) => [k.kit, k.lock])), J(before.flat().map((k) => [k.kit, k.lock]))); }
     await p.click('#lock-key'); await p.waitForTimeout(100); }
+  // PRESETS: the patch's name in the top bar (made up, marked * until saved). SAVE keeps it; a change marks it again,
+  // REVERT goes back and UNDO brings the change back; INIT PATCH starts a new unsaved one; a saved preset loads with its
+  // effects (the BPM) wherever LOW KEY has the keys, and UNDO goes back, effects and name too; a typed name, NEW NAME,
+  // SAVE AS NEW, delete (two presses), EXPORT and IMPORT
+  { const P = () => p.evaluate(() => ({ id: afx.presets.now().id, n: afx.presets.list().length, dirty: afx.presets.dirty(), name: document.getElementById('preset-name').textContent,
+      mark: document.getElementById('preset-mark').textContent, bpm: document.getElementById('bpm').textContent, stored: (JSON.parse(localStorage.getItem('lxr-afx-presets-v1')) || []).length }));
+    const sig = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k)); return o; })));
+    const press = (id) => p.evaluate((id) => document.getElementById(id).click(), id), settle = () => p.waitForTimeout(450); // (the mark follows the page's save, 300 ms on)
+    const state = () => p.textContent('#preset-state'), bad = (what, ...x) => { errors++; console.log(`presets, ${what}:`, JSON.stringify(x)); };
+    const NAME = /^[A-Z]{6,10}$|^[A-Z]{4,7} [A-Z]{4,7}$/;
+    await p.evaluate(() => afx.cc(123, 0)); await settle();
+    const a0 = await P(); await p.click('#preset-btn'); await p.waitForTimeout(100); const st0 = await state();
+    await press('preset-save'); await settle(); const a1 = await P(), st1 = await state(), s1 = await sig();
+    if (!NAME.test(a0.name) || a0.mark !== '*' || a0.id !== null || a0.n !== 0 || st0 !== 'NOT SAVED YET' || a1.n !== 1 || a1.stored !== 1 || a1.mark !== '' || !a1.id || st1 !== 'SAVED') bad('save', a0, st0, a1, st1);
+    await press('kit-alter'); await settle(); const a2 = await P(), s2 = await sig();
+    await press('preset-revert'); await settle(); const a3 = await P(), s3 = await sig();
+    await press('undo'); await settle(); const a4 = await P(), s4 = await sig();
+    if (a2.mark !== '*' || !a2.dirty || s2 === s1 || a3.mark !== '' || s3 !== s1 || a4.mark !== '*' || s4 !== s2 || a4.id !== a1.id) bad('change, revert, undo', a2, a3, a4, s2 === s1, s3 === s1, s4 === s2);
+    await press('preset-save'); await settle();
+    await press('init-patch'); await p.waitForTimeout(600); await p.click('#bpm-up'); await settle(); const b0 = await P();
+    await p.click('#preset-btn'); await press('preset-save'); await settle(); const b1 = await P(), sB = await sig();
+    if (b0.id !== null || b0.name === a1.name || !NAME.test(b0.name) || b0.mark !== '*' || b0.bpm !== '121' || b1.n !== 2 || b1.mark !== '' || b1.name !== b0.name) bad('init patch, second preset', b0, b1);
+    await p.click('#low-up'); await p.click('#preset-btn'); await p.waitForTimeout(100);
+    await p.evaluate((name) => [...document.querySelectorAll('#preset-list .pload')].find((x) => x.textContent === name).click(), a1.name); await p.waitForTimeout(600);
+    const c1 = await P(), sC = await sig(), where = await p.evaluate(() => afx.sounds.map((s, i) => Object.keys(afx.keyEdits()[i]).every((n) => n >= s.zone.lo && n <= s.zone.hi) && Object.keys(afx.keyEdits()[i]).length));
+    await press('undo'); await settle(); const c2 = await P(), sU = await sig(); await p.click('#low-down');
+    if (c1.id !== a1.id || c1.name !== a1.name || c1.bpm !== '120' || sC !== s2 || c1.mark !== '' || JSON.stringify(where) !== '[8,8,9]' || c2.name !== b1.name || c2.id !== b1.id || c2.bpm !== '121' || sU !== sB || c2.mark !== '')
+      bad('load, undo', c1, where, c2, sC === s2, sU === sB);
+    await p.click('#preset-btn'); await p.waitForTimeout(100); const info0 = await p.textContent('#kh-info');
+    await p.fill('#preset-input', ''); await p.click('#preset-input'); await p.keyboard.type('kazoo <b>1'); await p.keyboard.press('Enter'); await settle();
+    const d1 = await P(), info1 = await p.textContent('#kh-info'), listed = await p.$$eval('#preset-list .pload', (els) => els.map((e) => e.textContent));
+    await press('preset-roll'); await settle(); const d2 = await P();
+    if (d1.name !== 'KAZOO B1' || info1 !== info0 || !listed.includes('KAZOO B1') || d1.mark !== '' || d1.id !== b1.id || d2.name === d1.name || !NAME.test(d2.name) || d2.id !== d1.id || d2.mark !== '') bad('names', d1, listed, d2, info0, info1);
+    await press('preset-save-new'); await settle(); const e1 = await P(), del = '#preset-list .prow[aria-current="true"] .pdel';
+    await p.click(del); const sure = await p.textContent(del), e2 = await P(); await p.click(del); await settle(); const e3 = await P();
+    if (e1.n !== 3 || e1.id === d2.id || e1.name === d2.name || sure !== 'SURE?' || e2.n !== 3 || e3.n !== 2 || e3.id !== null || e3.mark !== '*' || e3.stored !== 2) bad('save as new, delete', e1, sure, e2, e3);
+    const [dl] = await Promise.all([p.waitForEvent('download'), press('preset-export')]);
+    const text = readFileSync(await dl.path(), 'utf8'), file = JSON.parse(text), imp = (t) => p.evaluate((t) => afx.presets.import(t), t);
+    const im1 = await imp(text); await p.click('#preset-list .pdel'); await p.click('#preset-list .pdel'); await settle(); const f0 = await P();
+    const im2 = await imp(text), f1 = await P(), im3 = (await imp('{"hello": 1}')) + (await imp('not json'));
+    const evil = { presets: [{ ...file.presets[0], id: 'zzzzzz1', name: '<img src=x onerror=alert(1)>bad', data: { ...file.presets[0].data, keys: [{ 0: { _kit: '<i>x</i>', 5: 999, _lock: 1 }, 99: { 5: 1 } }, {}, {}] } }] };
+    const im4 = await imp(JSON.stringify(evil)), got = await p.evaluate(() => { const x = afx.presets.list().find((q) => q.id === 'zzzzzz1'); return x && [x.name, x.data.keys[0][0], Object.keys(x.data.keys[0])]; });
+    if (file.app !== 'lxr-afx' || file.presets.length !== 2 || im1 !== 0 || f0.n !== 1 || im2 !== 1 || f1.n !== 2 || f1.stored !== 2 || im3 !== 0 || im4 !== 1 || !got || /[<>=()]/.test(got[0]) || got[0].length > 18
+      || /[<>]/.test(got[1]._kit) || got[1][5] !== 255 || got[1]._lock !== true || got[2].join() !== '0') bad('export, import', file.presets.length, im1, f0, im2, f1, im3, im4, got);
+    await p.keyboard.press('Escape'); const shut = await p.evaluate(() => document.getElementById('preset-panel').hidden);
+    const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), l = r('last'), lt = document.getElementById('last-text'); return [b.left > r('screen').left, document.getElementById('last').offsetWidth, [...document.getElementById('last').parentElement.children].map((c) => (c.id || c.className) + ' ' + c.offsetWidth).join(' | ') + ' · ' + lt.textContent]; });
+    if (!shut || !bar[0] || bar[1] < 175) bad('top bar', shut, bar); } // (room left for the last note, whatever the name's length)
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;

@@ -338,7 +338,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keyname b { font-size: 40px; }
 @media (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
 
-.lowkey b.bpm { min-width: 3.2em; cursor: ns-resize; }
+.lowkey b.bpm { min-width: 3.2em; }
 
 /* ---- tidy-up: bigger knobs that fill the panel, clearer section headings, the key's big LEVEL bottom right ---- */
 .faders { --kw: 78px; --ks: 54px; position: relative; row-gap: 18px; padding: 10px 8px; align-content: flex-start; }
@@ -475,3 +475,31 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .dicebtn.roll .die { animation: dice-roll .32s cubic-bezier(.25, .6, .3, 1); }
 @keyframes dice-roll { from { transform: rotate(-360deg) scale(.8); } 60% { transform: rotate(-40deg) scale(1.06); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dicebtn.roll .die { animation: none; } }
+
+/* ---- PRESETS: the patch's name in the top bar, beside the logo; its menu opens under it, from the left ---- */
+.pbtn { display: flex; align-items: center; gap: 8px; max-width: 300px; }
+.pbtn b { font-weight: 400; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbtn i { font-style: normal; width: .6em; margin-left: -4px; }
+.pbtn:active .dim, .pbtn[aria-expanded="true"] .dim { color: inherit; }
+.menupanel.pleft { left: 0; right: auto; }
+.menupanel .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+  border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
+.menupanel .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.menupanel .plist { max-height: min(232px, 30vh); overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
+.menupanel .plist p { margin: 0; padding: 10px; font-size: 15px; letter-spacing: 1px; line-height: 1.3; }
+.menupanel .prow { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-top: 1px solid rgba(23, 32, 14, .25); }
+.menupanel .prow:first-child { border-top: 0; }
+.menupanel .prow button { font: inherit; font-size: 18px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; cursor: pointer; min-height: 28px; text-align: left; padding: 2px 10px; }
+.menupanel .prow .pload { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menupanel .prow .pdel { font-size: 15px; padding: 2px 10px; border-left: 1px solid rgba(23, 32, 14, .25); text-align: center; min-width: 36px; }
+.menupanel .prow button:hover { background: var(--tint); }
+.menupanel .prow[aria-current="true"] .pload, .menupanel .prow .pdel[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+.menupanel .prow button:focus-visible { outline: 2px dashed var(--ink); outline-offset: -3px; }
+/* room for it in the top bar: the MIDI box is as wide as what it says and gives way first when the line is tight,
+   the last note's box takes what is left (its width never follows its text, so the boxes between stay put), the LOW
+   KEY box is a little narrower, and on a laptop-wide window the PRESET and LAST labels go and the logo is smaller */
+.midi { flex: 0 50 auto; min-width: 120px; max-width: 180px; }
+.last { flex: 1 1 190px; }
+.lowkey b { min-width: 4.6em; }
+@media (max-width: 1500px) { .last > .dim, .pbtn > .dim { display: none; } .pbtn b { max-width: 130px; } }
+@media (min-width: 1341px) and (max-width: 1500px) { .top { gap: 10px; } .logo { font-size: 36px; letter-spacing: .1em; } .lowkey > .dim { letter-spacing: .02em; } }
