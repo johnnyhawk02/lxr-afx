@@ -1,0 +1,160 @@
+/* LXR-AFX: one pane of grey-green LCD glass in a black bezel (the look of Elixir Desktop). One ink, a faint ghost of
+   the unlit segments, the offset shadow LCD type casts on its backplane, a pixel font throughout. Buttons are outlined
+   boxes that invert when pressed or chosen; sliders and meters are segmented bars. Laid out for a laptop screen
+   (1440 x 900, 1280 x 800): nothing scrolls. */
+:root {
+  --panel: #a7b58c; --ink: #17200e; --muted: rgba(23, 32, 14, .62); --ghost: rgba(23, 32, 14, .11);
+  --tint: rgba(23, 32, 14, .07); --rule: 1px solid rgba(23, 32, 14, .32);
+  --font: "VT323", ui-monospace, monospace;
+  --shadow: 2px 2.2px .3px rgba(23, 32, 14, .18);
+  --seg: 5px; --gap: 3px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: radial-gradient(120% 80% at 50% 0%, #2a2d28, #161815) fixed; padding: 8px; overflow: hidden; font-family: var(--font); color: var(--ink); }
+button { font: inherit; color: inherit; }
+
+.screen {
+  position: relative; height: calc(100vh - 16px); max-width: 1600px; margin: 0 auto;
+  display: grid; grid-template-rows: auto auto 1fr; gap: 10px; padding: 12px 16px 14px;
+  border: 6px solid #0b0c0a; border-radius: 12px; user-select: none; -webkit-user-select: none;
+  text-shadow: var(--shadow); font-size: 20px; line-height: 1.1;
+  background-color: var(--panel);
+  background-image: linear-gradient(170deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .05)),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px),
+    radial-gradient(60% 34% at 12% 100%, rgba(255, 252, 195, .5), rgba(255, 252, 200, 0) 70%),
+    radial-gradient(52% 30% at 88% 102%, rgba(250, 255, 200, .4), rgba(250, 255, 205, 0) 70%),
+    radial-gradient(38% 22% at 72% 38%, rgba(40, 50, 25, .12), rgba(40, 50, 25, 0) 70%),
+    linear-gradient(180deg, rgba(30, 38, 20, .2) 0%, rgba(30, 38, 20, 0) 30%),
+    radial-gradient(130% 100% at 50% 60%, rgba(0, 0, 0, 0) 55%, rgba(20, 26, 12, .28) 100%);
+  box-shadow: inset 0 6px 16px rgba(0, 0, 0, .36), inset -8px 8px 18px rgba(0, 0, 0, .2), inset 0 0 0 1px rgba(255, 255, 255, .1);
+}
+.dim { color: var(--muted); }
+h2 { margin: 0 0 8px; font-size: 22px; font-weight: 400; letter-spacing: .14em; display: flex; gap: 10px; align-items: baseline; }
+h2 .dim { font-size: 18px; letter-spacing: .08em; }
+
+/* ---- buttons: an outlined box, inverted when pressed or chosen ---- */
+.btn { background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 3px 12px; min-height: 34px;
+  text-transform: uppercase; letter-spacing: .06em; font-size: 19px; cursor: pointer; text-shadow: var(--shadow);
+  box-shadow: 2px 2.2px 0 rgba(23, 32, 14, .14); white-space: nowrap; }
+.btn:hover { background: var(--tint); }
+.btn:active, .btn[aria-pressed="true"], .btn[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+.btn:disabled { opacity: .3; cursor: default; background: transparent; color: var(--ink); }
+.btn.sm { min-height: 26px; font-size: 16px; padding: 1px 8px; }
+.btn.big { font-size: 28px; padding: 10px 28px; background: var(--ink); color: var(--panel); text-shadow: none; }
+.btn:focus-visible, [role="slider"]:focus-visible, .lock:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
+
+/* ---- the top line ---- */
+.top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.logo { margin: 0; font-size: 40px; font-weight: 400; letter-spacing: .12em; line-height: 1; padding: 0 6px 0 2px; white-space: nowrap; }
+.logo span { color: var(--muted); }
+.lcdbox { border: 2px solid var(--ink); border-radius: 3px; padding: 4px 10px; min-height: 34px; display: flex; align-items: center; gap: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 19px; }
+.midi { flex: 0 1 260px; min-width: 120px; display: block; line-height: 24px; }
+.midi.live::before { content: "● "; }
+.last { flex: 1 1 auto; min-width: 0; }
+.last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: .04em; }
+.last.hit { background: var(--ink); color: var(--panel); text-shadow: none; }
+.last.hit .dim { color: var(--panel); opacity: .7; }
+.kitrand { display: flex; gap: 6px; align-items: center; }
+.kitrand > .dim { margin-right: 2px; letter-spacing: .1em; }
+
+/* ---- the seven sounds ---- */
+.sounds { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.snd { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; font-size: 22px; padding: 2px 8px; }
+.snd .ch { font-size: 16px; opacity: .7; }
+.snd i { position: absolute; left: 7px; top: 50%; width: 9px; height: 9px; margin-top: -5px; border: 2px solid currentColor; border-radius: 1px; }
+.snd i.on { background: currentColor; }
+
+/* ---- body: the side column and the editor ---- */
+.body { display: grid; grid-template-columns: clamp(330px, 28vw, 420px) 1fr; gap: 16px; min-height: 0; }
+.side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.card { border-top: var(--rule); padding-top: 8px; }
+.side .card:first-child { border-top: 0; padding-top: 0; }
+
+/* horizontal segmented bars (morph depths, amount, level) */
+.bars { display: grid; gap: 4px; }
+.hb { display: grid; grid-template-columns: 74px 1fr 64px; align-items: center; gap: 10px; font-size: 19px; }
+.hb .lab { letter-spacing: .06em; cursor: default; }
+.hb output { text-align: right; font-variant-numeric: tabular-nums; }
+.htrack { --f: 0; position: relative; height: 22px; cursor: ew-resize; touch-action: none;
+  background: repeating-linear-gradient(to right, var(--ghost) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap))); }
+.htrack i { position: absolute; left: 0; top: 0; bottom: 0; width: round(down, calc(var(--f) * 100%), 8px);
+  background: repeating-linear-gradient(to right, var(--ink) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap)));
+  filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+
+.seedrow { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; font-size: 19px; }
+.seed { font-weight: 400; font-size: 26px; letter-spacing: .14em; border: 2px solid var(--ink); padding: 0 8px; border-radius: 3px; min-width: 6.4em; text-align: center; }
+.seedrow .btn { margin-left: auto; }
+.side .card.grow { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.keymap { flex: 1; display: flex; flex-direction: column; min-height: 90px; }
+.keymap canvas { display: block; width: 100%; flex: 1; min-height: 0; }
+.keylabels { display: flex; justify-content: space-between; font-size: 16px; color: var(--muted); margin-top: 2px; }
+.keylabels span:nth-child(3) { color: var(--ink); }
+
+.randrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.randrow .btn { flex: 1 1 auto; padding: 3px 6px; }
+.randrow.small { margin-top: 6px; gap: 6px; }
+.randrow.small .dim { flex: 1; white-space: nowrap; }
+.chk { position: relative; display: flex; align-items: center; gap: 6px; font-size: 19px; cursor: pointer; padding-right: 4px; }
+.chk input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chk i { width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 2px; box-shadow: inset 0 0 0 3px var(--panel); }
+.chk input:checked + i { background: var(--ink); }
+.chk input:focus-visible + i { outline: 2px dashed var(--ink); outline-offset: 2px; }
+
+/* ---- the editor ---- */
+.editor { display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-height: 0; min-width: 0; }
+.pages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.pages .btn { min-height: 38px; font-size: 22px; letter-spacing: .14em; }
+.faders { display: flex; gap: 0; min-height: 0; border: 2px solid var(--ink); border-radius: 3px; padding: 10px 6px 8px; }
+.sect { display: flex; flex-direction: column; min-width: 0; flex: var(--n) 1 0; padding: 0 6px; }
+.sect + .sect { border-left: var(--rule); }
+.sect h3 { margin: 0 0 6px; font-size: 18px; font-weight: 400; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+.sect .row { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 4px; flex: 1; min-height: 0; }
+.vf { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; min-height: 0; }
+.vf output { font-size: 19px; height: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-variant-numeric: tabular-nums; }
+.vf .lab { font-size: 18px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
+.vtrack { --f: 0; --m: 0; position: relative; width: min(52px, 100%); flex: 1; min-height: 60px; cursor: ns-resize; touch-action: none;
+  background: repeating-linear-gradient(to top, var(--ghost) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap))); }
+.vtrack i { position: absolute; left: 0; right: 0; bottom: 0; height: round(down, calc(var(--f) * 100%), 8px);
+  background: repeating-linear-gradient(to top, var(--ink) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap)));
+  filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+/* the last played key's morphed value: a notch beside the bar */
+.vtrack b { display: none; position: absolute; left: -7px; right: -7px; height: 3px; bottom: calc(var(--m) * (100% - 3px)); background: var(--ink);
+  box-shadow: 0 0 0 2px var(--panel); }
+.vtrack.morphed b { display: block; }
+.vf.held .vtrack { outline: 2px solid var(--ink); outline-offset: 3px; }
+.vf.changed .lab::after { content: "*"; }
+.lock { border: 2px solid var(--ink); border-radius: 2px; background: transparent; font-size: 14px; line-height: 1; padding: 1px 4px 0; cursor: pointer;
+  letter-spacing: .06em; color: var(--muted); border-color: rgba(23, 32, 14, .4); text-shadow: none; }
+.lock[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.lock.na { visibility: hidden; }
+.vsel { display: flex; flex-direction: column; gap: 6px; min-width: 0; justify-content: center; }
+.vsel label { font-size: 18px; text-transform: uppercase; letter-spacing: .04em; }
+.vsel select { font: inherit; font-size: 18px; color: var(--ink); background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 4px; width: 100%; }
+.vsel select option, .vsel select optgroup { background: var(--panel); }
+.status { display: flex; justify-content: space-between; gap: 16px; font-size: 19px; white-space: nowrap; overflow: hidden; }
+.status #detail { overflow: hidden; text-overflow: ellipsis; }
+.status em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 4px; text-shadow: none; }
+
+/* ---- start: audio needs a press before it can play ---- */
+.start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: rgba(167, 181, 140, .82); backdrop-filter: blur(2px); border-radius: 6px; z-index: 10; text-align: center; }
+.start p { max-width: 30em; font-size: 22px; margin: 0; }
+.start[hidden] { display: none; }
+
+@media (max-width: 1340px) {
+  .screen { font-size: 18px; padding: 10px 12px 12px; }
+  .logo { font-size: 34px; }
+  .btn { font-size: 17px; padding: 3px 9px; }
+  .kitrand > .dim { display: none; }
+  .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }
+  .snd { font-size: 20px; min-height: 42px; }
+}
+@media (max-height: 820px) {
+  .screen { gap: 8px; }
+  .bars { gap: 2px; }
+  .htrack { height: 19px; }
+  .seedrow { margin: 6px 0 4px; }
+  .randrow { margin-top: 6px; }
+}
