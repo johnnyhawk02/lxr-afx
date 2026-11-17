@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkqendq';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkqendq';
-import { KIT_FILES } from '../sound/kits.js?v=mwkqendq';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkqendq';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkqendq';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkqts5l';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkqts5l';
+import { KIT_FILES } from '../sound/kits.js?v=mwkqts5l';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkqts5l';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkqts5l';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -68,7 +68,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkqendq', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkqts5l', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); } };
   node.connect(ctx.destination);
@@ -101,11 +101,12 @@ const editCount = (ed) => (ed ? Object.keys(ed).filter((k) => k[0] !== '_').leng
 // a sound on a key, and that key becomes the one the editor edits
 const lastMorph = SOUNDS.map(() => null);
 const editKey = SOUNDS.map((s) => s.zone.base);
-function play(sound, note, vel) {
+// hold: a key held down (on the keyboard or the strip), so a repeat rate repeats it until it's let go; otherwise (a
+// randomiser auditioning a key) it plays once. back: the zone going back to an earlier held key (see noteOff)
+function play(sound, note, vel, { hold = false, back = false } = {}) {
   const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
-  send({ type: 'play', sound, note: m.note, vel, params: [...m.vals] });
-  heldNote[sound] = note;
+  send({ type: back ? 'back' : 'play', sound, note: m.note, vel, params: [...m.vals], hold });
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
   editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
@@ -173,17 +174,35 @@ function onMidi(e) {
   if ((st & 0xf0) !== 0x90) return;
   noteOn(ch, note, vel);
 }
-// a key let go: if it's the key its sound last played, that sound's note repeat stops
-const heldNote = SOUNDS.map(() => -1);
-function noteOff(note) {
-  const sound = soundOfNote(note);
-  if (sound >= 0 && heldNote[sound] === note) { heldNote[sound] = -1; send({ type: 'release', sound }); }
+// each zone is mono, last-note priority: the keys held down in it, oldest first. A new key takes over; letting go of
+// the newest key while an earlier one is still held takes the zone back to that one (its sound and its repeat rate),
+// which plays again on the next step of the BPM grid (RETURN: now, or the next 1/32, 1/16, 1/8 or 1/4). Letting go
+// of a key that isn't the newest changes nothing; letting go of the last one stops the zone's repeat. The three zones
+// don't affect each other
+const held = SOUNDS.map(() => []);
+function keyDown(sound, note, vel) {
+  const st = held[sound], i = st.findIndex((k) => k.note === note);
+  if (i >= 0) st.splice(i, 1);
+  st.push({ note, vel });
+  play(sound, note, vel, { hold: true });
 }
+function noteOff(note) {
+  const sound = soundOfNote(note); if (sound < 0) return;
+  const st = held[sound], i = st.findIndex((k) => k.note === note);
+  if (i < 0) return;
+  st.splice(i, 1);
+  if (i < st.length) return; // not the newest key: the zone stays on the newest
+  if (!st.length) { send({ type: 'release', sound }); return; }
+  const prev = st[st.length - 1];
+  play(sound, prev.note, prev.vel, { hold: true, back: true });
+}
+// MIDI all notes off / all sound off: every zone let go
+function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0; send({ type: 'release', sound }); } }); }
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
   const sound = soundOfNote(note);
   if (sound < 0) { showLastText(`${noteName(note)} #${note} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[SOUNDS.length - 1].zone.hi)})`); return; }
-  play(sound, note, vel);
+  keyDown(sound, note, vel);
 }
 async function startMidi() {
   if (!navigator.requestMIDIAccess) { midiStatus('MIDI: not in this browser (use Chrome or Edge)'); return; }
@@ -223,6 +242,7 @@ const ccHeld = {};
 let learn = null; // null, { armed: true } waiting for a control, then { target } waiting for a knob
 let ccDraw = 0;
 function onCC(cc, val) {
+  if (cc === 120 || cc === 123) { allOff(); return; }
   if (learn && learn.target) {
     S.ccMap = { ...ccMap() };
     for (const k in S.ccMap) if (JSON.stringify(S.ccMap[k]) === JSON.stringify(learn.target)) delete S.ccMap[k]; // one knob per control
@@ -702,7 +722,7 @@ function buildStrip() {
       k.title = `${s.name} ${noteName(note)} #${note}`;
       k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
       // held down, it plays like a key on the keyboard (a key with a repeat rate repeats until it's let go)
-      k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => play(i, note, 100)); });
+      k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => keyDown(i, note, 100)); });
       const up = () => noteOff(note); k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
       g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
     }
@@ -932,6 +952,12 @@ $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey
 $('bpm').addEventListener('wheel', (e) => { e.preventDefault(); setBpm(S.fx.tempo.bpm + (e.deltaY < 0 ? 1 : -1)); }, { passive: false });
 $('bpm').addEventListener('dblclick', () => setBpm(120));
 $('bpm').textContent = S.fx.tempo.bpm;
+// RETURN: when a zone goes back to an earlier held key, it plays it again now or on the next step of the grid
+const RETURNS = ['NOW', '1/32', '1/16', '1/8', '1/4'];
+const drawRet = () => { $('ret').textContent = RETURNS[S.fx.tempo.ret] ?? '1/16'; };
+$('ret').addEventListener('click', (e) => { S.fx.tempo.ret = (S.fx.tempo.ret + (e.shiftKey ? RETURNS.length - 1 : 1)) % RETURNS.length; drawRet(); sendFx();
+  detail(`RETURN <em>${RETURNS[S.fx.tempo.ret]}</em>: let go of the newest key in a zone and the earlier held key comes back ${S.fx.tempo.ret ? 'on the next ' + RETURNS[S.fx.tempo.ret] : 'at once'}`); });
+drawRet();
 function moveZones(by) {
   const to = S.zoneStart + by;
   if (to < 0 || to + 24 > 127) return;

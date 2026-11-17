@@ -124,6 +124,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (left > 11 || right > 6) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (11 allowed), right column on ${right} (6 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
+  // legato, last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 goes back
+  // to D2 (the key shown), letting go of the snare changes nothing in the drum zone; RETURN steps through its settings
+  { const key = () => p.textContent('#kh-note');
+    await p.evaluate(() => { afx.noteOn(1, 50, 100); afx.noteOn(1, 52, 100); });
+    const a = await key();
+    await p.evaluate(() => { afx.noteOn(1, 57, 100); afx.noteOff(57); afx.noteOff(52); }); const b = await key();
+    await p.evaluate(() => afx.noteOff(50));
+    await p.click('#ret'); const r1 = await p.textContent('#ret'); await p.click('#ret', { modifiers: ['Shift'] }); const r0 = await p.textContent('#ret');
+    if (a !== 'E2' || b !== 'D2' || r1 !== '1/8' || r0 !== '1/16') { errors++; console.log('legato:', a, b, r1, r0); } }
   // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'repeat'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
