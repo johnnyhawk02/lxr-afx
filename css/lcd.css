@@ -521,12 +521,20 @@ html.phone .dk, html.phone #start-text { display: none; }
 html.phone .ph { display: revert; }
 html.phone .start { gap: 14px; padding: 0 18px; background: rgba(167, 181, 140, .95); }
 html.phone .start p { font-size: 19px; line-height: 1.25; max-width: 20em; }
-html.phone .pv { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) repeat(6, auto); gap: 6px; height: 100%; }
+html.phone .pv { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) repeat(6, auto); gap: 6px; height: 100%; }
 .pv > * { grid-column: 1 / -1; min-width: 0; }
 .pv-pads, .pv-row, .pv-send { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.pv-top { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
-.pv-top .logo { font-size: 30px; letter-spacing: .08em; padding: 0; }
-.pv-top b { font-weight: 400; margin-left: auto; overflow: hidden; text-overflow: ellipsis; font-size: 19px; letter-spacing: 1px; }
+.pv-top { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.pv-top .logo { grid-column: span 2; font-size: 30px; letter-spacing: .08em; padding: 0; white-space: nowrap; }
+.pv-top b { grid-column: span 2; font-weight: 400; max-height: 2.1em; overflow: hidden; font-size: 17px; line-height: 1.05; letter-spacing: 1px; } /* (a name of two words takes two lines) */
+.pv-top .btn { min-width: 0; min-height: 40px; padding: 2px; font-size: 16px; touch-action: manipulation; }
+.pv-top .btn[aria-expanded="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+/* the menu: over the pads and the buttons, from under the top row down to the message line, which stays in sight */
+.pv-menu { position: absolute; inset: -2px -5px -5px -2px; padding: 2px 5px 5px 2px; grid-row: 2 / 8; grid-column: 1 / -1; z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px 6px;
+  align-content: start; overflow: hidden; background: var(--panel); }
+.pv-menu[hidden] { display: none; }
+.pv-menu > .btn { grid-column: 1 / -1; min-width: 0; min-height: 50px; padding: 4px 2px; font-size: 19px; touch-action: manipulation; }
+.pv-menu > .cap { grid-column: 1 / -1; margin-bottom: 8px; font-size: 13px; line-height: 1.1; letter-spacing: 1px; opacity: .62; }
 .pv-pads { grid-auto-rows: minmax(0, 1fr); min-height: 0; }
 .pad { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 0; padding: 0;
   border: 2px solid var(--ink); border-radius: 4px; background: transparent; color: var(--ink); font: inherit; text-shadow: var(--shadow); cursor: pointer;

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwl0y756">
+<link rel="stylesheet" href="css/lcd.css?v=mwl1li0t">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -128,7 +128,14 @@
 
   <!-- the phone view (a phone held upright, or ?phone): a pad for each of the 25 keys, and the few controls a hand needs -->
   <div class="pv" id="pv">
-    <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b></div>
+    <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b><button class="btn" id="pv-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="pv-menu">MENU</button></div>
+    <div class="pv-menu" id="pv-menu" hidden>
+      <button class="btn" id="pv-norhythm">REMOVE ALL RHYTHMS</button><span class="cap" id="pv-norhythm-cap"></span>
+      <button class="btn" id="pv-rhythm">RHYTHMS ON HALF THE KEYS</button><span class="cap">ABOUT HALF THE KEYS RUN A RHYTHM WHILE HELD</span>
+      <button class="btn" id="pv-rand-eng">RANDOM: DRUM KEYS</button><span class="cap" id="pv-rand-eng-cap"></span>
+      <button class="btn" id="pv-alter-eng">ALTER: DRUM KEYS</button><span class="cap" id="pv-alter-eng-cap"></span>
+      <button class="btn" id="pv-alter-all">ALTER ALL</button><span class="cap">NUDGE THE SOUNDS OF ALL 25 KEYS</span>
+    </div>
     <div class="pv-pads" id="pv-pads" role="group" aria-label="The 25 keys"></div>
     <div class="pv-key"><b id="pv-key"></b><span id="pv-what"></span></div>
     <div class="pv-row">
@@ -163,6 +170,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwl0y756"></script>
+<script type="module" src="app/main.js?v=mwl1li0t"></script>
 </body>
 </html>

@@ -427,8 +427,9 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
 // THE PHONE VIEW: a phone held upright (a Pixel 9a's 412 x 923, with and without the browser's bars, and a small
 // 360 x 640) gets 25 pads on a five-column grid and nothing scrolls; a pad plays and picks its key, held like a key,
 // several at once; NEW SOUND rolls the pad pressed last, UNDO takes it back; the ECHO and REVERB bars set that key's
-// sends; LOCK locks the key; INIT PATCH and RANDOM ALL deal new sounds; the message line says what happened. ?desktop
-// keeps the big screen on a phone and ?phone gives the phone view anywhere
+// sends; LOCK locks the key; INIT PATCH and RANDOM ALL deal new sounds; the message line says what happened. MENU (top
+// right) opens a menu whose first item is REMOVE ALL RHYTHMS. ?desktop keeps the big screen on a phone and ?phone
+// gives the phone view anywhere
 for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   const cx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2.625, hasTouch: true, isMobile: true });
   const p = await cx.newPage(), cdp = await cx.newCDPSession(p), J = JSON.stringify;
@@ -479,6 +480,35 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
     bad('lock, init patch', d1.lock, padLocked, d1.dice, d1.lockBtn, d2.sends, ask, d3.kit, d4.kit, d4.lock, d4.name, initBtn, d4.msg);
   await p.tap('#pv-random'); await p.waitForTimeout(600); const f1 = await st(); await p.tap('#pv-alter'); await p.waitForTimeout(400); const f2 = await st();
   if (f1.kit === d4.kit || !/all three engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
+  // MENU, on the fifth column: the first thing on it is REMOVE ALL RHYTHMS. It covers the pads and the buttons down to
+  // the message line; a press does its thing and closes it. With the rhythms gone no pad has a dashed foot and new
+  // sounds come without one; UNDO brings them back, and RHYTHMS ON HALF THE KEYS deals them again
+  const menu = () => p.evaluate(() => ({ run: document.querySelectorAll('.pad.run').length, share: afx.rand().rhythms, open: !document.getElementById('pv-menu').hidden, btn: document.getElementById('pv-menu-btn').textContent,
+    off: document.getElementById('pv-norhythm').disabled, cap: document.getElementById('pv-norhythm-cap').textContent, msg: document.getElementById('pv-msg').textContent,
+    kits: [0, 1, 2].map((s) => Object.values(afx.keyEdits()[s]).map((e) => e._kit).join()), eng: [document.getElementById('pv-rand-eng').textContent, document.getElementById('pv-alter-eng').textContent, document.getElementById('pv-rand-eng-cap').textContent] }));
+  const press = async (id) => { await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); await p.tap(id); await p.waitForTimeout(450); return menu(); };
+  const m0 = await menu(); await p.tap('#pv-menu-btn'); await p.waitForTimeout(200); const m1 = await menu();
+  const ml = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), mid = (e) => { const x = r(e); return document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2); }, m = document.getElementById('pv-menu'),
+      items = [...m.querySelectorAll('button')], xs = [...new Set([...document.querySelectorAll('.pad')].map((e) => Math.round(r(e).left)))], msg = document.getElementById('pv-msg');
+    return { first: items[0].textContent, n: items.length, small: items.filter((e) => r(e).height < 44).length, out: [...m.children].filter((e) => r(e).bottom > r(m).bottom + 0.5 || r(e).right > innerWidth || r(e).left < 0).length,
+      covers: [document.querySelectorAll('.pad')[12], document.querySelectorAll('.pad')[24], document.getElementById('pv-init'), document.getElementById('pv-undo'), document.querySelector('#pv-echo .track')].every((e) => m.contains(mid(e))),
+      msgSeen: mid(msg) === msg || msg.contains(mid(msg)), onGrid: xs.includes(Math.round(r(document.getElementById('pv-menu-btn')).left)), btnH: Math.round(r(document.getElementById('pv-menu-btn')).height) }; });
+  if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-menu.png` });
+  if (m0.run !== 13 || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || ml.first !== 'REMOVE ALL RHYTHMS' || ml.n !== 5 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40 || m1.off
+    || m1.cap !== '13 OF 25 KEYS RUN A RHYTHM WHILE HELD') bad('the menu', m0.run, m0.open, m0.btn, m1.open, m1.btn, ml, m1.off, m1.cap);
+  await p.tap('#pv-norhythm'); await p.waitForTimeout(350); const m2 = await menu();
+  await p.tap('#pv-random'); await p.waitForTimeout(500); const m3 = await menu(); // (new sounds, and still no rhythm)
+  await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m4 = await menu(); await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m5 = await menu(); // (opened and closed: nothing changes)
+  await p.tap('#pv-undo'); await p.waitForTimeout(300); await p.tap('#pv-undo'); await p.waitForTimeout(300); const m6 = await menu();
+  if (m2.run || m2.open || m2.share !== 0 || !/^all rhythms removed/.test(m2.msg) || m3.run || m3.kits[0] === m0.kits[0] || !m4.open || !m4.off || m4.cap !== 'NO KEY RUNS A RHYTHM NOW' || m5.open || J(m5.kits) !== J(m3.kits)
+    || m6.run !== 13 || m6.share !== 50 || J(m6.kits) !== J(m0.kits)) bad('remove all rhythms', m2.run, m2.open, m2.share, m2.msg, m3.run, m4.open, m4.off, m4.cap, m5.open, m6.run, m6.share, J(m6.kits) === J(m0.kits));
+  await press('#pv-norhythm'); const m7 = await press('#pv-rhythm');
+  if (m7.run !== 13 || m7.share !== 50 || m7.open || !/^rhythms on 13 of 25 keys/.test(m7.msg)) bad('rhythms on half the keys', m7.run, m7.share, m7.open, m7.msg);
+  // RANDOM and ALTER for the engine of the pad pressed last, and ALTER ALL
+  await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250);
+  const m8 = await press('#pv-rand-eng'), m9 = await press('#pv-alter-eng'), m10 = await press('#pv-alter-all');
+  if (J(m8.eng) !== J(['RANDOM: SNARE KEYS', 'ALTER: SNARE KEYS', 'A NEW KIT SOUND ON EACH OF THE 8 SNARE KEYS']) || m8.kits[1] === m7.kits[1] || m8.kits[0] !== m7.kits[0] || m8.kits[2] !== m7.kits[2] || !/^SNARE: a new kit sound on every key/.test(m8.msg)
+    || !/^SNARE: every key altered/.test(m9.msg) || !/^all three engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
   const end = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight, Math.round(document.getElementById('pv-msg').getBoundingClientRect().bottom) <= innerHeight]);
   if (end[0] > 0 || end[1] > 0 || !end[2]) bad('it scrolls after use', end);
   if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });

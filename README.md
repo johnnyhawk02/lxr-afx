@@ -127,6 +127,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
   a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR, the RHYTHMS slider. It keeps the last 40 steps, so pressing it again
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
+  Undoing a move of the RHYTHMS slider puts the slider back too.
 - **Pan when randomising**: every randomiser that places a sound (NEW SOUND, RANDOM, RANDOM ALL, ALTER,
   ALTER ALL, ALTER KEY, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
@@ -137,7 +138,11 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   below act on: **NEW SOUND** (the dice) and **ALTER** for that key, **LOCK**, and two bars, **ECHO** and **REVERB**,
   for that key's sends (touch or slide along a bar). Under them **INIT PATCH**, **RANDOM ALL** and **UNDO**, and the
   message line that says what happened. A dashed foot on a pad means the key has a rhythm; a padlock means it is
-  locked. The patch is the same one the big screen plays and stores. Presets, the knobs and the effects are on the big
+  locked. **MENU** (top right; the same button closes it) opens a menu over the pads. Its first item is **REMOVE ALL
+  RHYTHMS**: no key runs a rhythm any more, and new sounds come without one (the RHYTHMS slider at 0%; a locked key
+  keeps its rhythm). Under it **RHYTHMS ON HALF THE KEYS** deals them again, **RANDOM** and **ALTER** act on the
+  engine of the pad pressed last, and **ALTER ALL** on all 25 keys. A press does its thing and closes the menu; UNDO
+  takes any of them back. The patch is the same one the big screen plays and stores. Presets, the knobs and the effects are on the big
   screen only, and the phone doesn't ask for MIDI. Add `?desktop` to the address for the big screen on a phone, or
   `?phone` for the phone screen on a computer.
 

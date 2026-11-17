@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl0y756';
-import { presetName } from './names.js?v=mwl0y756';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl0y756';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl0y756';
-import { KIT_FILES } from '../sound/kits.js?v=mwl0y756';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl0y756';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl0y756';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl1li0t';
+import { presetName } from './names.js?v=mwl1li0t';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl1li0t';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl1li0t';
+import { KIT_FILES } from '../sound/kits.js?v=mwl1li0t';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl1li0t';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl1li0t';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -80,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl0y756', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl1li0t', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -336,7 +336,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) s
 
 // for testing without a controller: afx.noteOn(channel, note, velocity) and afx.cc(number, value) from the console
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val),
-  seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
+  seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v), rand: () => S.rand,
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
   pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals],
   trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS, locks: () => [...S.locks], setFx: (fx) => applyFx(fx), sendPars: (v) => [sendPar(v, 0), sendPar(v, 1)] }; // a key's AUTO LEVEL correction, dB
@@ -1143,8 +1143,10 @@ function applyRhythms(sound) { // a whole zone, at exactly the slider's share
     if (want && ed[pat] === undefined) ed[pat] = randomPattern();
   });
 }
-function setRhythms(pc) {
-  snapshot('RHYTHMS', 'rhythms'); // one UNDO for a whole drag of the slider
+function setRhythms(pc, press) { // press: a button's name (the phone's menu), not the slider
+  const was = S.rand.rhythms;
+  snapshot(press || 'RHYTHMS', press ? undefined : 'rhythms'); // one UNDO for a whole drag of the slider
+  const top = undoStack[undoStack.length - 1]; if (top && top.rhythms === undefined) top.rhythms = was; // (UNDO puts the share back too)
   S.rand.rhythms = pc;
   let n = 0, all = 0;
   SOUNDS.forEach((def, sound) => {
@@ -1153,7 +1155,10 @@ function setRhythms(pc) {
     for (let note = def.zone.lo; note <= def.zone.hi; note++) { all++; if (keyPatch(sound, note).vals.get(on)) n++; }
   });
   save(); drawFaders(); drawKeymap(); drawEditKey(); randDraws.forEach((d) => d());
-  detail(`RHYTHMS <em>${pc}%</em>: ${n} of ${all} keys play a rhythm (locked keys stay as they are)`);
+  if (!press) detail(`RHYTHMS <em>${pc}%</em>: ${n} of ${all} keys play a rhythm (locked keys stay as they are)`);
+  else if (pc) detail(`rhythms on <em>${n} of ${all}</em> keys: they run while the key is held`);
+  else detail(n ? `rhythms removed, but <em>${n} locked key${n === 1 ? ' keeps its' : 's keep their'}</em> rhythm · new sounds come without one`
+    : `<em>all rhythms removed</em>: no key runs one, and new sounds come without one · UNDO takes it back`);
 }
 // NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as RANDOM
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
@@ -1239,6 +1244,7 @@ function undo() {
   for (let p = 0; p < ALL_PARAMS; p++) setValue(p, u.values[p], { quiet: true });
   if (!u.fx) S.keyEdits.forEach((ks, i) => { for (const k in ks) if (ks[k]._lock) u.keys[i][k] = ks[k]; }); // a key locked now stays as it is
   S.keyEdits = u.keys;
+  if (u.rhythms !== undefined) { S.rand.rhythms = u.rhythms; randDraws.forEach((d) => d()); } // the RHYTHMS share, where it was
   if (u.fx) { applyFx(u.fx); S.preset = u.preset; drawPreset(); } // a whole patch back: its effects and its name too
   for (const s of lastMorph.keys()) lastMorph[s] = null;
   for (const k in homes) delete homes[k];
@@ -1557,6 +1563,16 @@ const sendBars = [['pv-echo', 0, 'ECHO'], ['pv-reverb', 1, 'REVERB']].map(([id, 
 });
 for (const [id, to] of [['pv-alter', 'alter-key'], ['pv-lock', 'lock-key'], ['pv-init', 'init-patch'], ['pv-random', 'kit-scatter'], ['pv-undo', 'undo']]) $(id).addEventListener('click', () => $(to).click());
 $('pv-dice').addEventListener('click', () => diceBtn.click());
+// the phone's menu (MENU, top right; the same button closes it): REMOVE ALL RHYTHMS first, then the presses of the
+// RANDOM menu that the pads' screen has no button for. A press does its thing and closes the menu, so the pads show it
+function phoneMenu(open) {
+  $('pv-menu').hidden = !open; $('pv-menu-btn').setAttribute('aria-expanded', open); $('pv-menu-btn').textContent = open ? 'CLOSE' : 'MENU';
+  if (open) drawPhone();
+}
+$('pv-menu-btn').addEventListener('click', () => phoneMenu($('pv-menu').hidden));
+for (const [id, fn] of [['pv-norhythm', () => setRhythms(0, 'REMOVE ALL RHYTHMS')], ['pv-rhythm', () => setRhythms(50, 'RHYTHMS ON HALF THE KEYS')],
+  ['pv-rand-eng', () => $('scatter').click()], ['pv-alter-eng', () => $('alter').click()], ['pv-alter-all', () => $('kit-alter').click()]])
+  $(id).addEventListener('click', () => { phoneMenu(false); fn(); });
 // what the big screen says and shows, said and shown here too: the message line, UNDO there to press, INIT PATCH asking
 const mirror = (el, opts, fn) => { new MutationObserver(fn).observe(el, opts); fn(); };
 mirror($('undo'), { attributes: true, attributeFilter: ['disabled'] }, () => { $('pv-undo').disabled = $('undo').disabled; });
@@ -1564,12 +1580,18 @@ mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] },
 new MutationObserver(() => { $('pv-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
 drawPhone = () => {
   if (!phoneOn) return;
+  let runs = 0;
   for (const { b, i, j } of pads) {
-    const note = SOUNDS[i].zone.lo + j, ed = S.keyEdits[i][note];
+    const note = SOUNDS[i].zone.lo + j, ed = S.keyEdits[i][note], run = !!keyPatch(i, note).vals.get(seqOnPar(SOUNDS[i].engineVoice));
     b.firstChild.textContent = noteName(note); b.setAttribute('aria-label', `${SOUNDS[i].name} ${noteName(note)}`);
     b.classList.toggle('sel', i === S.sel && note === editKey[i]); b.classList.toggle('locked', !!ed?._lock);
-    b.classList.toggle('run', !!keyPatch(i, note).vals.get(seqOnPar(SOUNDS[i].engineVoice))); // (a dashed foot: held, it plays a rhythm)
+    b.classList.toggle('run', run); if (run) runs++; // (a dashed foot: held, it plays a rhythm)
   }
+  { const z = SOUNDS[S.sel].zone, keys = `${z.hi - z.lo + 1} ${SOUNDS[S.sel].name} KEYS`; // the menu, as things are
+    $('pv-norhythm').disabled = !runs && !S.rand.rhythms;
+    $('pv-norhythm-cap').textContent = runs ? `${runs} OF ${pads.length} KEYS RUN A RHYTHM WHILE HELD` : 'NO KEY RUNS A RHYTHM NOW';
+    $('pv-rand-eng').textContent = `RANDOM: ${SOUNDS[S.sel].name} KEYS`; $('pv-rand-eng-cap').textContent = `A NEW KIT SOUND ON EACH OF THE ${keys}`;
+    $('pv-alter-eng').textContent = `ALTER: ${SOUNDS[S.sel].name} KEYS`; $('pv-alter-eng-cap').textContent = `NUDGE THE SOUNDS OF THE ${keys}`; }
   const note = editKey[S.sel], locked = keyLocked(S.sel, note), kit = S.keyEdits[S.sel][note]?._kit;
   $('pv-key').textContent = noteName(note);
   $('pv-what').textContent = `${SOUNDS[S.sel].name} · ${locked ? 'locked' + (kit && kit !== 'kept' ? ' · ' + kit : '') : kit && kit !== 'kept' ? kit : 'its own sound'}`;
