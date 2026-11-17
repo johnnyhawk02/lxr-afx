@@ -352,27 +352,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .grm { grid-template-columns: 1fr; gap: 4px; margin: 0; flex: 1; }
 .grm output { text-align: left; }
 @media (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
-/* the synth panel: four rows filling its height, each row's sections sharing its width by knob count; LEVEL on the right */
-.faders { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 8px 8px 8px 6px; --ks: 50px; }
-.faders .rows { display: grid; grid-template-rows: repeat(4, 1fr); min-height: 0; min-width: 0; }
-.faders .srow { display: flex; min-width: 0; min-height: 0; padding: 4px 0; }
-.faders .srow + .srow { border-top: var(--rule); }
-.faders .srow .sect { flex: var(--n) 1 0; min-width: 0; padding: 0 8px; }
-.faders .srow .sect + .sect { border-left: var(--rule); }
-.faders .sect .row { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
-.faders .sect h3 { border-bottom: 0; margin-bottom: 2px; }
-.faders .levelcol { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-left: var(--rule); padding: 0 6px 6px 14px; }
-.faders .vf.big { position: static; }
-@media (max-width: 1340px) { .faders { --ks: 44px; } }
-@media (max-height: 820px) { .faders { --ks: 46px; } }
-.faders .sect h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.faders .srow { padding: 2px 0; }
-@media (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } }
-@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
-.faders .srow .vf .lab { font-size: 13px; letter-spacing: 0; padding: 0 3px; }
-.faders .levelcol { gap: 14px; }
-.faders .levelcol .sect.sends { width: 100%; border-bottom: var(--rule); padding-bottom: 10px; }
-.faders .levelcol .sect.sends .vf .lab { font-size: 13px; }
 /* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
    as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
 .fxside .sect.dirt .row + .row { margin-top: 2px; }
@@ -392,3 +371,27 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .envm .segs i { flex: 1; background: var(--ghost); }
 .envm .segs i.on { background: var(--ink); }
 .envm .lab { font-size: 15px; }
+
+/* the synth panel on one grid (buildFaders): equal cells, one knob to a cell (a menu takes two), four equal rows, the
+   key's FX sends and LEVEL in the last two columns. Rules sit on the cell edges and never move a knob */
+.faders { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 0; padding: 4px 6px 6px; --ks: 50px; overflow: hidden; }
+.faders .sect { position: relative; min-width: 0; min-height: 0; padding: 4px 0 0; display: flex; flex-direction: column; }
+.faders .sect.rt, .faders .vf.big.rt { border-top: var(--rule); }
+.faders .sect + .sect { border-left: 0; }
+.faders .sect.sep::before, .faders .vf.big.sep::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; border-left: var(--rule); }
+.faders .sect h3 { padding: 0 8px; margin: 0 0 2px; border-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.faders .sect .row { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0; align-items: start; }
+.faders .sect .vf .lab { font-size: 13px; letter-spacing: 0; padding: 0 3px; max-width: calc(100% - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.faders .sect .vsel { grid-column: span 2; padding: 18px 8px 0; }
+.faders .vf.big { position: relative; right: auto; bottom: auto; justify-content: flex-end; padding-bottom: 6px; width: auto; }
+.faders .sect.fill::before { display: none; }
+.faders .vf.big .knob { width: 96px; height: 96px; }
+@media (max-width: 1340px) { .faders { --ks: 44px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
+@media (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } .faders .vf.big .knob { width: 80px; height: 80px; } }
+@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
+/* the right column on one set of columns: every effect's knobs, the distortion's switches, the ENV meter, the output
+   level and the gain-reduction meter all sit in the same six cells */
+.fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
+.fxside .mout .grm { grid-column: 2 / 7; align-self: center; padding-left: 8px; }
+.fxside .sect h3 { padding-left: 0; }

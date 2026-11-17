@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkpuvnx';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkpuvnx';
-import { KIT_FILES } from '../sound/kits.js?v=mwkpuvnx';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkpuvnx';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkpuvnx';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkqendq';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkqendq';
+import { KIT_FILES } from '../sound/kits.js?v=mwkqendq';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkqendq';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkqendq';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -68,7 +68,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkpuvnx', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkqendq', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); } };
   node.connect(ctx.destination);
@@ -405,6 +405,10 @@ function drawSide() {
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
+// the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
+// velocity and mix) fills 11 cells
+const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'note repeat']];
+const GRID_COLS = 11;
 function buildFaders() {
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === S.sel));
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
@@ -412,35 +416,31 @@ function buildFaders() {
   const voice = SOUNDS[S.sel].engineVoice;
   const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
   const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl));
-  // four rows of sections, each row stretched across the panel (a section as wide as its knobs need), and the big LEVEL
-  // in a column of its own on the right, at the bottom
-  const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'note repeat']];
-  const grid = document.createElement('div'); grid.className = 'rows'; box.append(grid);
-  for (const secs of ROWS) {
-    const r = document.createElement('div'); r.className = 'srow';
+  // one grid for the whole panel: four rows, and columns of equal cells, one knob to a cell (a menu takes two), so
+  // every knob lines up with the knobs above and below it. Each row's sections follow on from cell 1; a row that
+  // doesn't fill the width ends in an empty filler (so the row rules run the whole way). The last two columns are
+  // the key's own: its FX sends in row 2, directly above its big LEVEL across rows 3 and 4
+  const cell = (el, r0, r1, c0, c1) => { el.style.gridArea = `${r0} / ${c0} / ${r1} / ${c1}`; return el; };
+  ROWS.forEach((secs, r) => {
+    let col = 1;
+    const sect = (n, cls) => { const el = document.createElement('div'); el.className = 'sect' + (cls || '') + (r ? ' rt' : '') + (col > 1 ? ' sep' : ''); el.style.setProperty('--n', n); cell(el, r + 1, r + 2, col, col + n); col += n; box.append(el); return el; };
     for (const sec of secs) {
       const list = entries.filter((e) => e.section === sec);
       if (!list.length) continue;
-      const n = list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0);
-      const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', n);
+      const el = sect(list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0));
       el.innerHTML = `<h3>${sec === 'note repeat' ? 'repeat' : sec}</h3><div class="row"></div>`;
       const row = el.querySelector('.row');
       for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
-      r.append(el);
     }
-    grid.append(r);
-  }
-  const side = document.createElement('div'); side.className = 'levelcol';
-  // the key's FX sends sit directly above its LEVEL
+    if (col <= GRID_COLS) sect(GRID_COLS + 1 - col, ' fill');
+  });
   const sends = entries.filter((e) => e.section === 'fx sends');
-  if (sends.length) {
-    const el = document.createElement('div'); el.className = 'sect sends'; el.style.setProperty('--n', sends.length);
-    el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
-    for (const e of sends) el.querySelector('.row').append(vfader(e));
-    side.append(el);
-  }
-  const big = vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)); big.classList.add('big');
-  side.append(big); box.append(side);
+  const el = cell(document.createElement('div'), 2, 3, GRID_COLS + 1, GRID_COLS + 3); el.className = 'sect sends rt sep'; el.style.setProperty('--n', 2);
+  el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
+  for (const e of sends) el.querySelector('.row').append(vfader(e));
+  box.append(el);
+  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
+  box.append(big);
   // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
   drawFaders();

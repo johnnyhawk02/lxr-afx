@@ -100,7 +100,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   }
   // FX: the right column holds this key's sends and the three effects
   { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
-    const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3').textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
+    const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3')?.textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
     if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
     const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
       return [...document.querySelectorAll('.fxside .vf, .fxside .envm, .fxside .hdb')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
@@ -115,6 +115,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.click('.sect.dirt h3 .hdb'); await p.click('.sect.dirt .vsw .swb >> nth=2'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1');
     await p.waitForTimeout(600);
   }
+  // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 11 columns, and every
+  // control in the right column on its 6
+  for (const i of [0, 1, 2]) {
+    await p.click(`#sounds .snd >> nth=${i}`); await p.waitForTimeout(100);
+    const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
+    const left = await cols('#faders .sect:not(.sends) .vf .knob'), right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
+    if (left > 11 || right > 6) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (11 allowed), right column on ${right} (6 allowed)`); }
+  }
+  await p.click('#sounds .snd >> nth=0');
   // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'repeat'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');

@@ -32,7 +32,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo, repeat), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
-  right. Pasting a key onto
+  right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
+  below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
