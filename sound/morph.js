@@ -23,7 +23,8 @@ export function hash3(a, b, c) {
   h ^= h >>> 16;
   return h >>> 0;
 }
-// a value in -1..1 from the seed, the key and what it's for (a parameter number, or one of the salts below)
+// a value in -1..1 from the seed, the key (its place in its zone, so moving the zones keeps each key's variant) and what
+// it's for (a parameter number, or one of the salts below)
 export const unit = (seed, note, salt) => hash3(seed, note, salt) / 2147483648 - 1;
 const SALT_PITCH = 1000, SALT_FINE = 1001;
 
@@ -38,7 +39,7 @@ export function keyDistance(note, zone) {
 export function pitchOffset(note, seed, pitch, zone) {
   const { dist, side } = keyDistance(note, zone);
   if (!dist || !pitch) return 0;
-  return MAX_PITCH * pitch * dist * (0.5 * side + 0.5 * unit(seed, note, SALT_PITCH));
+  return MAX_PITCH * pitch * dist * (0.5 * side + 0.5 * unit(seed, note - zone.lo, SALT_PITCH));
 }
 
 export function morphKey({ schema, base, note, seed, amount, voice, zone }) {
@@ -57,7 +58,7 @@ export function morphKey({ schema, base, note, seed, amount, voice, zone }) {
     if (!t) { params.push([e.par, b]); continue; }
     const [lo0, hi0] = Array.isArray(e.rand) ? e.rand : [e.min, e.max];
     const lo = Math.min(lo0, b), hi = Math.max(hi0, b); // the base stays reachable, even outside the range
-    const v = b + unit(seed, note, e.par) * t * e.weight * (hi - lo);
+    const v = b + unit(seed, note - zone.lo, e.par) * t * e.weight * (hi - lo);
     params.push([e.par, clamp(Math.round(v), lo, hi)]);
   }
   return { note: BASE_NOTE + whole, params, semitones: st };

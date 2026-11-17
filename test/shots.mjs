@@ -13,21 +13,21 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.goto(url); await p.waitForTimeout(600);
   await p.screenshot({ path: `${out}/start-${w}x${h}.png` });
   await p.click('#start-btn'); await p.waitForTimeout(800);
-    for (const [ch, n] of [[1, 36], [1, 60], [1, 88], [1, 47]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
-  // an edit goes to the last drum key played (B1), not the base
-  const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v2') || 'null'));
+    for (const [ch, n] of [[1, 52], [1, 60], [1, 70], [1, 55]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
+  // an edit goes to the last drum key played (G2), not the base
+  const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3') || 'null'));
   await p.focus('.vtrack'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');
   await p.waitForTimeout(500);
-  const after = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v2')));
-  const edits = after.keyEdits[0]['47'];
-  if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on B1', edits); }
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
+  const edits = after.keyEdits[0]['55'];
+  if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on G2', edits); }
   // the randomisers pull variants from the kits without errors
   for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.click(id); await p.waitForTimeout(80); }
-  await p.evaluate(() => window.afx.noteOn(1, 47, 110));
+  await p.evaluate(() => window.afx.noteOn(1, 55, 110));
   await p.waitForTimeout(400);
-  { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v2')));
+  { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
     const keys = Object.keys(st.keyEdits[0]).length, labelled = Object.values(st.keyEdits[0]).filter((e) => e._kit).length;
-    if (keys !== 24 || labelled !== 24) { errors++; console.log('scatter: drum keys', keys, 'labelled', labelled); } }
+    if (keys !== 8 || labelled !== 8) { errors++; console.log('scatter: drum keys', keys, 'labelled', labelled); } }
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);
   if (scroll.some(Boolean)) { errors++; console.log(`${w}x${h}: page scrolls`, scroll); }

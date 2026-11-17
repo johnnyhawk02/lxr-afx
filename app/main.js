@@ -1,7 +1,7 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice } from '../sound/schema.js';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js';
 import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js';
 import { KIT_FILES } from '../sound/kits.js';
 
@@ -14,7 +14,7 @@ const hex = (s) => (s >>> 0).toString(16).toUpperCase().padStart(8, '0');
 // ---------------------------------------------------------------------------------------------------------------
 // state, kept in this browser
 // ---------------------------------------------------------------------------------------------------------------
-const STORE = 'lxr-afx-v2'; // v2: AFX mode (three zones on channel 1)
+const STORE = 'lxr-afx-v3'; // v3: AFX mode, three zones on the Bass Station 2's 25 keys
 const defaultLocks = () => { const s = new Set(); for (const sc of VOICE_SCHEMAS) for (const e of sc) if (e.rand === 'lock') s.add(e.par); return s; };
 const S = {
   values: INIT_VALUES.slice(), // the kit: every sound's base
@@ -26,7 +26,8 @@ const S = {
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
-  editAll: false, // the editor edits the last key pressed (false) or the base of every key (true)
+  editAll: false,
+  zoneStart: DEFAULT_ZONE_START, // the layout's lowest key (moved by octaves with LOW KEY) // the editor edits the last key pressed (false) or the base of every key (true)
 };
 try {
   const d = JSON.parse(localStorage.getItem(STORE));
@@ -34,7 +35,7 @@ try {
     S.values = Uint8Array.from(d.values); S.defaults = Uint8Array.from(d.defaults || d.values);
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
-    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart;
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -43,11 +44,12 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
 
+setZoneStart(S.zoneStart);
 const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(atob(k.data), (c) => c.charCodeAt(0))));
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -134,7 +136,7 @@ function onMidi(e) {
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
   const sound = soundOfNote(note);
-  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[SOUNDS.length - 1].zone.hi)})`); return; }
+  if (sound < 0) { showLastText(`${noteName(note)} #${note} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[SOUNDS.length - 1].zone.hi)})`); return; }
   play(sound, note, vel);
 }
 async function startMidi() {
@@ -162,7 +164,7 @@ function showLastText(t) {
 }
 function showLast(sound, note, vel, st) {
   const p = note === SOUNDS[sound].zone.base ? 'BASE' : (st >= 0 ? '+' : '−') + Math.abs(st).toFixed(1) + 'ST';
-  showLastText(`${SOUNDS[sound].name} · ${noteName(note)} · V${vel} · ${p}`);
+  showLastText(`${SOUNDS[sound].name} · ${noteName(note)} #${note} · V${vel} · ${p}`);
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
@@ -576,9 +578,26 @@ $('start-btn').addEventListener('click', async () => {
   startMidi();
 });
 select(clamp(S.sel, 0, SOUNDS.length - 1));
-// the zones, as schema.js sets them
-const zoneText = (s) => `${s.name} ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`;
-$('zones').textContent = 'CH 1 · ' + SOUNDS.map(zoneText).join(' · ');
+// the layout: three zones up from the lowest key, moved by octaves with LOW KEY (the keys' edits move with them)
+function drawZones() {
+  const zoneText = (s) => `${s.name} ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`;
+  $('zones').textContent = 'CH 1 · ' + SOUNDS.map(zoneText).join(' · ') + ' · C3 = #60';
+  $('low-key').textContent = `${noteName(S.zoneStart)} #${S.zoneStart}`;
+  soundBtns.forEach((b, i) => { b.querySelector('.ch').textContent = `${noteName(SOUNDS[i].zone.lo)}-${noteName(SOUNDS[i].zone.hi)}`; });
+  $('low-down').disabled = S.zoneStart - 12 < 0; $('low-up').disabled = S.zoneStart + 12 + 24 > 127;
+}
+function moveZones(by) {
+  const to = S.zoneStart + by;
+  if (to < 0 || to + 24 > 127) return;
+  S.zoneStart = to; setZoneStart(to);
+  S.keyEdits = S.keyEdits.map((k) => Object.fromEntries(Object.entries(k).map(([n, e]) => [Number(n) + by, e])));
+  SOUNDS.forEach((s, i) => { editKey[i] += by; lastMorph[i] = null; });
+  save(); drawZones(); drawSide(); drawFaders(); drawEditKey();
+  detail(`lowest key <em>${noteName(to)} #${to}</em>`);
+}
+$('low-down').addEventListener('click', () => moveZones(-12));
+$('low-up').addEventListener('click', () => moveZones(12));
+drawZones();
 $('start-text').textContent = `MIDI channel 1: ${SOUNDS.map((s) => `${s.name.toLowerCase()} on ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`).join(', ')}, all three at once. `
   + `Each zone's base key (${SOUNDS.map((s) => noteName(s.zone.base)).join(', ')}) plays its sound as you made it; the other keys are variants of it.`;
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots

@@ -23,11 +23,16 @@ export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
 
 // AFX mode: three sounds, one per engine type, each on its own zone of the keyboard (MIDI channel 1), no overlap, all
-// three able to sound at once. The zones run up from ZONE_START, ZONE_OCTAVES each, in this order; each zone's base key
-// is its middle (its middle C with two octaves; F# with one). Change these two lines to change the layout.
-export const ZONE_START = 24; // C0 (C3 = MIDI 60)
-export const ZONE_OCTAVES = 2;
-const zone = (i) => { const lo = ZONE_START + i * 12 * ZONE_OCTAVES; return { lo, hi: lo + 12 * ZONE_OCTAVES - 1, base: lo + 6 * ZONE_OCTAVES }; };
+// three able to sound at once. The zones run up from the lowest key, ZONE_SIZES keys each, in this order, to fit the
+// 25 keys of a Bass Station 2 at its default octave; each zone's base key is its middle key. The lowest key can be moved
+// by octaves on the page (setZoneStart)
+export const ZONE_SIZES = [8, 8, 9];
+export const DEFAULT_ZONE_START = 48; // the Bass Station 2's lowest key at its default octave (C2 with C3 = MIDI 60)
+function zonesFrom(start) {
+  let lo = start;
+  return ZONE_SIZES.map((n) => { const z = { lo, hi: lo + n - 1, base: lo + Math.floor(n / 2) }; lo += n; return z; });
+}
+const zone = (i) => zonesFrom(DEFAULT_ZONE_START)[i];
 // engineVoice: which of the engine's six voice instances makes it; trigger: the note-on index; sources: the kit voices
 // of the same engine type that the randomiser draws from
 export const SOUNDS = [
@@ -35,6 +40,8 @@ export const SOUNDS = [
   { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], zone: zone(1) },
   { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], zone: zone(2) },
 ];
+// move every zone so the lowest starts on start (a MIDI note)
+export function setZoneStart(start) { zonesFrom(start).forEach((z, i) => Object.assign(SOUNDS[i].zone, z)); }
 // the sound whose zone holds a note, or -1
 export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo && note <= s.zone.hi);
 

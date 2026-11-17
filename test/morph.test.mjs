@@ -1,7 +1,7 @@
 // node test/morph.test.mjs: the key morph is deterministic, a zone's base key and depth 0 play the base sound, far keys
 // move more, kit voices map onto the three sounds, and every sound renders audio across its zone.
 import assert from 'node:assert/strict';
-import { SOUNDS, ZONE_OCTAVES, ZONE_START, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
+import { SOUNDS, ZONE_SIZES, setZoneStart, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
 import { morphKey, combinedAmount, BASE_NOTE } from '../sound/morph.js';
 import { LxrInstrument } from '../sound/instrument.js';
 import { KIT_FILES } from '../sound/kits.js';
@@ -12,12 +12,12 @@ const run = (s, note, seed, amount) => morphKey({ schema: schemaOf(s), base, not
 const differs = (m) => m.params.filter(([p, v]) => v !== base[p]).length;
 const isMorph = (s, q) => schemaOf(s).some((e) => e.par === q && e.morph);
 let n = 0;
-// zones (as set now: C0-B1 drum, C2-B3 snare, C4-B5 metal, C3 = 60), the same size each, no overlap
-if (ZONE_START === 24 && ZONE_OCTAVES === 2) {
-assert.equal(soundOfNote(24), 0); assert.equal(soundOfNote(47), 0); assert.equal(soundOfNote(48), 1); assert.equal(soundOfNote(71), 1);
-assert.equal(soundOfNote(72), 2); assert.equal(soundOfNote(95), 2); assert.equal(soundOfNote(23), -1); assert.equal(soundOfNote(96), -1); n += 8;
-}
-for (const s of SOUNDS) { assert.equal(s.zone.hi - s.zone.lo + 1, 12 * ZONE_OCTAVES); assert.equal(s.zone.lo % 12, 0); n++; }
+// zones: 8, 8 and 9 keys up from the Bass Station 2's lowest key (48), no gaps, no overlap
+assert.deepEqual(SOUNDS.map((s) => [s.zone.lo, s.zone.hi, s.zone.base]), [[48, 55, 52], [56, 63, 60], [64, 72, 68]]); n++;
+assert.equal(soundOfNote(47), -1); assert.equal(soundOfNote(48), 0); assert.equal(soundOfNote(55), 0); assert.equal(soundOfNote(56), 1);
+assert.equal(soundOfNote(63), 1); assert.equal(soundOfNote(64), 2); assert.equal(soundOfNote(72), 2); assert.equal(soundOfNote(73), -1); n += 8;
+// moving the zones an octave keeps each key's variant
+{ const a = run(0, 50, 9, full); setZoneStart(60); const b = run(0, 62, 9, full); setZoneStart(48); assert.deepEqual(a, b); n++; }
 for (let s = 0; s < SOUNDS.length; s++) {
   const z = SOUNDS[s].zone;
   for (const note of [z.lo, z.lo + 5, z.base - 1, z.base + 1, z.hi]) assert.deepEqual(run(s, note, 1234, full), run(s, note, 1234, full)), n++;
@@ -29,7 +29,7 @@ for (let s = 0; s < SOUNDS.length; s++) {
     const d = (m) => m.params.reduce((a, [p, v]) => a + Math.abs(v - base[p]), 0) + Math.abs(m.semitones) * 10;
     near += d(run(s, z.base + 1, seed, full)); far += d(run(s, z.hi, seed, full)) + d(run(s, z.lo, seed, full));
   }
-  assert.ok(far > near * 5, `sound ${s}: far ${far} near ${near}`); n++;
+  assert.ok(far > near * 3, `sound ${s}: far ${far} near ${near}`); n++;
   assert.notDeepEqual(run(s, z.hi, 1, full), run(s, z.hi, 2, full)); n++;
   assert.equal(run(s, z.hi, 5, { pitch: 1, timbre: 0 }).params.filter(([q, v]) => v !== base[q] && isMorph(s, q)).length, 0); n++;
   assert.equal(run(s, z.hi, 5, { pitch: 0, timbre: 1 }).note, BASE_NOTE); n++;

@@ -15,7 +15,7 @@
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
-    <div class="lcdbox zones" id="zones" title="MIDI channel 1: three zones, all three can sound at once"></div>
+    <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="kitrand" role="group" aria-label="Kit randomiser">
       <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
@@ -73,7 +73,7 @@
       </div>
       <div class="faders" id="faders"></div>
       <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS edits the base, and every key follows.</span>
-        <span class="dim">CH 1 · C3 = MIDI 60</span></footer>
+        <span class="dim" id="zones"></span></footer>
     </section>
   </div>
 

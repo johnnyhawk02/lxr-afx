@@ -53,7 +53,10 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .midi { flex: 0 1 180px; min-width: 100px; display: block; line-height: 24px; }
 .midi.live::before { content: "● "; }
 .last { flex: 1 1 auto; min-width: 0; }
-.zones { flex: 0 1 auto; min-width: 0; }
+.lowkey { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lowkey > .dim { letter-spacing: .08em; }
+.lowkey b { font-weight: 400; min-width: 5.6em; justify-content: center; }
+.lowkey .btn.sm { min-width: 28px; min-height: 30px; font-size: 20px; }
 .last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .last.hit { background: var(--ink); color: var(--panel); text-shadow: none; }
 .last.hit .dim { color: var(--panel); opacity: .7; }
