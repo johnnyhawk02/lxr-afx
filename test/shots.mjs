@@ -106,6 +106,10 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
       return [...document.querySelectorAll('.fxside .vf')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
     if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
   }
+  // NOTE REPEAT: every engine page has a RATE knob; the BPM box steps
+  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'note repeat'));
+    await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
+    if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
   await p.close();
 }
 await b.close();

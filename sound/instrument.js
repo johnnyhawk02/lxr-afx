@@ -10,7 +10,7 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, FX_DISTORTION } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, ALL_PARAMS } from './schema.js?v=mwkmgli3';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, ALL_PARAMS } from './schema.js?v=mwkn1dyn';
 
 // The three send effects (as in Elixir Desktop): the firmware's delay as an echo, its reverb (written for the firmware but
 // never switched on there) and its distortion, each a bus of its own, all wet, fed by every voice at its send and added
@@ -20,6 +20,7 @@ export const FX_DEFAULTS = {
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
   dist: { type: 0, drive: 70, color: 64, tone: 80, volume: 90, level: 100 },
   // the master: the whole mix (dry and FX returns) through a distortion, then a compressor, then the level
+  tempo: { bpm: 120 }, // for the note repeat
   master: { type: 0, drive: 40, tone: 90, mix: 0, thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
 };
 // the master compressor's knobs in real units: threshold 0..-40 dB, ratio 1:1..20:1 (tenths), attack 1..100 ms,
@@ -56,6 +57,9 @@ export class LxrInstrument {
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
+    // note repeat: per voice its rate (0 off, 1..4: 1/64, 1/32, 1/16, 1/8 of a bar), and per sound the held note
+    // that repeats: { note, vel, left } (left: engine samples to the next hit, fractional so it never drifts)
+    this.rate = new Uint8Array(6); this.held = SOUNDS.map(() => null); this.bpm = 120;
     this.mDist = new FxBus(); this.mDist.fxType = FX_DISTORTION; this.mDist.forceWet = true;
     this.m = { ...FX_DEFAULTS.master }; this.mMixAt = 0; this.env = 0; this.gr = 0;
     this.setFx(FX_DEFAULTS);
@@ -63,6 +67,7 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
+    if (par >= REPEAT_BASE) { this.rate[par - REPEAT_BASE] = value; return; }
     if (par >= SEND_BASE) { const i = par - SEND_BASE; this.sends[i % 3][Math.floor(i / 3)] = value / 127; return; }
     if (this.e.activeParameters[par] !== value) this.e.setParam(par, value);
   }
@@ -76,7 +81,8 @@ export class LxrInstrument {
       this.ret[0] = echo.level / 100;
     }
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = reverb.level / 100; }
-    const { master } = fx;
+    const { master, tempo } = fx;
+    if (tempo) this.setBpm(tempo.bpm);
     if (master) {
       Object.assign(this.m, master);
       this.mDist.distortion.type = master.type;
@@ -90,10 +96,26 @@ export class LxrInstrument {
   }
   play(sound, note, velocity, params) {
     if (params) for (const [par, v] of params) this.setParam(par, v);
-    this.e.trigger(SOUNDS[sound].trigger, Math.max(1, Math.min(127, velocity | 0)), note);
+    const vel = Math.max(1, Math.min(127, velocity | 0));
+    this.e.trigger(SOUNDS[sound].trigger, vel, note);
+    // a held key with a repeat rate retriggers until it's released (the same note and velocity)
+    const r = this.rate[SOUNDS[sound].engineVoice];
+    this.held[sound] = r ? { note, vel, left: this.repeatLen(r) } : null;
   }
+  /** a key let go: its repeat stops (key: the MIDI note the page played, to ignore an older key's release) */
+  release(sound) { this.held[sound] = null; }
+  repeatLen(r) { return 240 / this.bpm / (2 ** (7 - r)) * REAL_FS; } // r 1..4: 1/64 .. 1/8 of a 4/4 bar
+  setBpm(bpm) { this.bpm = Math.max(20, Math.min(300, bpm)); }
   // one 64-sample block at the engine's rate: each voice panned as it was triggered
   _block(dst) {
+    // repeats due in this block (the engine triggers on its 64-sample blocks, 1.45 ms; the timing carries the remainder)
+    for (let s = 0; s < this.held.length; s++) {
+      const h = this.held[s]; if (!h) continue;
+      const r = this.rate[SOUNDS[s].engineVoice];
+      if (!r) { this.held[s] = null; continue; }
+      h.left -= BLOCK;
+      if (h.left <= 0) { this.e.trigger(SOUNDS[s].trigger, h.vel, h.note); h.left += this.repeatLen(r); if (h.left <= 0) h.left = this.repeatLen(r); }
+    }
     const out = this.e.renderBlock(), e = this.e;
     const pans = [e.drums[0], e.drums[1], e.drums[2], e.snare, e.cymbal, e.hat];
     const [L, R] = dst;

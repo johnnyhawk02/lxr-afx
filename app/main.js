@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkmgli3';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkmgli3';
-import { KIT_FILES } from '../sound/kits.js?v=mwkmgli3';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkmgli3';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkn1dyn';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkn1dyn';
+import { KIT_FILES } from '../sound/kits.js?v=mwkn1dyn';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkn1dyn';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -35,11 +35,11 @@ const S = {
 };
 try {
   const d = JSON.parse(localStorage.getItem(STORE));
-  if (d && d.values && (d.values.length === NUM_PARAMS || d.values.length === ALL_PARAMS)) {
+  if (d && d.values && d.values.length >= NUM_PARAMS) {
     const fit = (a) => { const o = INIT_VALUES.slice(); o.set(a.slice(0, ALL_PARAMS)); return o; };
     S.values = fit(d.values); S.defaults = fit(d.defaults || d.values);
     if (d.fx) for (const k in S.fx) Object.assign(S.fx[k], d.fx[k]);
-    if (d.values.length === NUM_PARAMS) d.locks = [...d.locks, ...[...defaultLocks()].filter((p) => p >= NUM_PARAMS)]; // the sends are new: locked
+    if (d.values.length < ALL_PARAMS) d.locks = [...d.locks, ...[...defaultLocks()].filter((p) => p >= d.values.length)]; // new controls (sends, repeat): locked
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
@@ -67,7 +67,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkmgli3', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkn1dyn', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
   node.connect(ctx.destination);
@@ -104,6 +104,7 @@ function play(sound, note, vel) {
   const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
   send({ type: 'play', sound, note: m.note, vel, params: [...m.vals] });
+  heldNote[sound] = note;
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
   editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
@@ -167,8 +168,15 @@ function onMidi(e) {
   const [st, note, vel] = e.data;
   const ch = (st & 0x0f) + 1;
   if ((st & 0xf0) === 0xb0) { if (ch === 1) onCC(note, vel); return; } // a knob or slider (control change)
-  if ((st & 0xf0) !== 0x90 || !vel) return; // note-ons only (a note-on at velocity 0 is a note-off)
+  if ((st & 0xf0) === 0x80 || ((st & 0xf0) === 0x90 && !vel)) { if (ch === 1) noteOff(note); return; } // a key let go
+  if ((st & 0xf0) !== 0x90) return;
   noteOn(ch, note, vel);
+}
+// a key let go: if it's the key its sound last played, that sound's note repeat stops
+const heldNote = SOUNDS.map(() => -1);
+function noteOff(note) {
+  const sound = soundOfNote(note);
+  if (sound >= 0 && heldNote[sound] === note) { heldNote[sound] = -1; send({ type: 'release', sound }); }
 }
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
@@ -263,7 +271,7 @@ document.addEventListener('pointerdown', (e) => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) setLearn(null); });
 
 // for testing without a controller: afx.noteOn(channel, note, velocity) and afx.cc(number, value) from the console
-window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), cc: (cc, val) => onCC(cc, val) };
+window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val) };
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -396,7 +404,7 @@ function buildFaders() {
   const voice = SOUNDS[S.sel].engineVoice;
   const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
   // short sections share a row: velocity sits beside the mix, the LFO gets a row of its own
-  const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo', 'fx sends'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
+  const ORDER = ['osc', 'fm', 'amp', 'pitch', 'click', 'filter', 'velocity', 'mix', 'lfo', 'fx sends', 'note repeat'], rank = (x) => (ORDER.indexOf(x) + 1 || 99);
   const sections = [...new Set(entries.map((e) => e.section))].sort((a, b) => rank(a) - rank(b));
   for (const sec of sections) {
     const list = entries.filter((e) => e.section === sec);
@@ -605,7 +613,9 @@ function buildStrip() {
       const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + ([1, 3, 6, 8, 10].includes(note % 12) ? ' blk' : '');
       k.title = `${s.name} ${noteName(note)} #${note}`;
       k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
-      k.addEventListener('click', () => { startAudio().then(() => play(i, note, 100)); });
+      // held down, it plays like a key on the keyboard (a key with a repeat rate repeats until it's let go)
+      k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => play(i, note, 100)); });
+      const up = () => noteOff(note); k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
       g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
     }
     box.append(g);
@@ -827,6 +837,13 @@ function drawZones() {
   soundBtns.forEach((b, i) => { b.querySelector('.ch').textContent = `${noteName(SOUNDS[i].zone.lo)}-${noteName(SOUNDS[i].zone.hi)}`; });
   $('low-down').disabled = S.zoneStart - 12 < 0; $('low-up').disabled = S.zoneStart + 12 + 24 > 127;
 }
+// the tempo (for the note repeat): - and + by 1 (Shift: 10), the scroll wheel, double-click for 120
+function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 240); $('bpm').textContent = S.fx.tempo.bpm; sendFx(); }
+$('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
+$('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey ? 10 : 1)));
+$('bpm').addEventListener('wheel', (e) => { e.preventDefault(); setBpm(S.fx.tempo.bpm + (e.deltaY < 0 ? 1 : -1)); }, { passive: false });
+$('bpm').addEventListener('dblclick', () => setBpm(120));
+$('bpm').textContent = S.fx.tempo.bpm;
 function moveZones(by) {
   const to = S.zoneStart + by;
   if (to < 0 || to + 24 > 127) return;

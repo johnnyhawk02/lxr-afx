@@ -3,7 +3,7 @@
 //   { type: 'param', par, value }               one parameter edit (the base sound)
 //   { type: 'play', sound, note, vel, params }  play a sound (params: [[par, value], ...] set first)
 // It posts { type: 'peaks', peaks } about 30 times a second for the level lights.
-import { LxrInstrument } from './instrument.js?v=mwkmgli3';
+import { LxrInstrument } from './instrument.js?v=mwkn1dyn';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {
@@ -15,6 +15,7 @@ registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
       if (m.type === 'kit') this.inst.loadKit(m.values);
       else if (m.type === 'param') this.inst.setParam(m.par, m.value);
       else if (m.type === 'fx') this.inst.setFx(m.fx);
+      else if (m.type === 'release') this.inst.release(m.sound);
       else if (m.type === 'play') this.inst.play(m.sound, m.note, m.vel, m.params);
     };
   }

@@ -10,7 +10,7 @@
 //     amount  { pitch, timbre }: the combined depths, 0..1 each (global depth x sound depth x global x sound slider)
 //     voice   the engine voice (for its fine tune parameter)
 //   returns the note the engine is triggered with and the [parameter, value] pairs to send before the trigger
-import { pitchPars } from './schema.js?v=mwkmgli3';
+import { pitchPars } from './schema.js?v=mwkn1dyn';
 
 export const BASE_NOTE = 60; // the note the engine plays a sound at its own pitch (C3 in Novation / Ableton naming)
 export const MAX_PITCH = 12; // semitones either way at the far ends of the keyboard, at full depth

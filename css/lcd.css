@@ -335,3 +335,5 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keyhead .keylock { min-width: 7em; min-height: 36px; font-size: 19px; }
 .keyname b { font-size: 40px; }
 @media (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
+
+.lowkey b.bpm { min-width: 3.2em; cursor: ns-resize; }

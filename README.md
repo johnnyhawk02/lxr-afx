@@ -21,6 +21,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   delay as an echo, its reverb, its distortion), then the **master**: everything, dry and FX returns, through a
   distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB / DIST sends are FX SENDS knobs with its synth knobs.
+- **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
+  it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
 - **Left column**: the key, its engine, and the synth knobs; an engine's level is the LEVEL knob in MIX.
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
