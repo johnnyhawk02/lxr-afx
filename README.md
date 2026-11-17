@@ -8,7 +8,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Three zones on MIDI channel 1**, laid out for the 25 keys of a Bass Station 2 at its default octave (lowest key MIDI
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
-  (52, 60, 68). LOW KEY moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
+  (52, 60, 68). LOW KEY (in **SETTINGS**, top bar) moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
 - **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (RANDOM in the
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
@@ -36,7 +36,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   HP at FREQ) into an envelope (SENS, DECAY, shown on the ENV meter) that turns PREGAIN, CUTOFF or TONE up or down.
 - **Mono, last-note priority, per zone**: each zone (drum, snare, metal) plays one key at a time, the newest. Hold a
   key, press another in the same zone and it takes over (with its own sound and sequence); let go of it while the
-  first is still held and the first comes back on the next step of the BPM grid (**RETURN** in the top bar: NOW,
+  first is still held and the first comes back on the next step of the BPM grid (**RETURN** in SETTINGS: NOW,
   1/32, **1/16** by default, 1/8, 1/4). The three zones don't affect each other. MIDI all-notes-off lets go of every
   zone.
 - **Sequencer** (SEQ, each key its own): eight steps, **ACTIVE** and **RANDOM**. While the key is held and ACTIVE is
@@ -66,7 +66,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
   LFO 1 speed / portamento → the key's echo / reverb sends, osc 1 / osc 2 / sub levels → the
-  drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
+  drum / snare / metal levels. **LEARN** (in SETTINGS, with **BS2 MAP**, which puts the Bass Station 2 map back) maps any knob to any control: press it, click the control, turn the knob.
 - **Randomisers**: **RANDOM** deals a different real kit sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,

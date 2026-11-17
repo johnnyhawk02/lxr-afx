@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl9g8wn';
-import { presetName } from './names.js?v=mwl9g8wn';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl9g8wn';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl9g8wn';
-import { KIT_FILES } from '../sound/kits.js?v=mwl9g8wn';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl9g8wn';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl9g8wn';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl9rh6b';
+import { presetName } from './names.js?v=mwl9rh6b';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl9rh6b';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl9rh6b';
+import { KIT_FILES } from '../sound/kits.js?v=mwl9rh6b';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl9rh6b';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl9rh6b';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -80,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl9g8wn', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl9rh6b', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -918,13 +918,18 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) openPresets(false); }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
+// ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
+function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); } }
+$('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
+$('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
 document.addEventListener('pointerdown', (e) => {
   if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
+  if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); } });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -1459,7 +1464,7 @@ function drawPreset() {
 }
 function openPresets(open) {
   $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
-  if (open) { openMenu(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
+  if (open) { openMenu(false); openSettings(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
 }
 $('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
 $('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));

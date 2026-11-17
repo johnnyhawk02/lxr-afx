@@ -571,3 +571,12 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pv-msg { height: 2.4em; overflow: hidden; font-size: 15px; line-height: 1.2; letter-spacing: .5px; }
 .pv-msg em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 3px; text-shadow: none; }
 .pv-msg .dim { display: none; }
+
+/* ---- SETTINGS (top bar): LOW KEY and RETURN on one four-column grid (label, −, value, +), the hardware knobs below ---- */
+.menupanel.settings .lowkey { display: grid; grid-template-columns: 1fr 34px 1.3fr 34px; gap: 8px; align-items: center; margin-top: 6px; }
+.menupanel.settings .lowkey > .dim { font-size: 18px; letter-spacing: .1em; }
+.menupanel.settings .lowkey b { min-width: 0; justify-content: center; }
+.menupanel.settings .lowkey .btn.sm { min-height: 34px; min-width: 0; padding: 0; }
+.menupanel.settings .lowkey #ret { grid-column: 2 / 5; font-size: 19px; }
+.menupanel.settings .note { margin: 4px 0 6px; font-size: 14px; letter-spacing: 1px; line-height: 1.15; }
+.menupanel.settings .randrow .note { grid-column: 1 / -1; margin: 0; }

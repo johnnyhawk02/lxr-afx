@@ -12,6 +12,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   // a click on a control, opening the RANDOM menu first if it lives there
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
+  // LOW KEY, RETURN, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
+  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(low-up|low-down|ret|learn|cc-reset)$/.test(sel) && !(await p.isVisible(sel))) await click('#settings-btn'); return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
   await p.goto(url); await p.waitForTimeout(600);
