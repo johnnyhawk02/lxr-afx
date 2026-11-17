@@ -79,6 +79,23 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     await p.click('#lock-key'); await p.waitForTimeout(400);
     if ((await k())?._lock) { errors++; console.log('lock key: did not unlock'); }
   }
+  // COPY / PASTE: Ctrl+C on one key, Ctrl+V on another plays the same sound; onto another engine it maps; UNDO
+  { const ke = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits);
+    await p.evaluate(() => afx.noteOn(1, 50, 100)); await p.waitForTimeout(50);
+    await p.keyboard.press('Control+c');
+    await p.evaluate(() => afx.noteOn(1, 49, 100)); await p.waitForTimeout(50);
+    await p.keyboard.press('Control+v'); await p.waitForTimeout(700);
+    const a = await ke(), src = a[0]['50'] || {}, dst = a[0]['49'];
+    const diff = dst ? Object.keys(dst).filter((k) => k[0] !== '_' && src[k] !== undefined && src[k] !== dst[k]) : ['none'];
+    if (!dst || !dst._kit || diff.length) { errors++; console.log('paste: differs', diff); }
+    await p.evaluate(() => afx.noteOn(1, 58, 100)); await p.waitForTimeout(50);
+    const before = (await ke())[1]['58'];
+    await p.click('#paste-key'); await p.waitForTimeout(600);
+    if (!(await ke())[1]['58']?._kit) { errors++; console.log('paste across engines: nothing'); }
+    if (w === 1440 && h === 760) await p.screenshot({ path: `${out}/paste-${w}x${h}.png` });
+    await p.click('#undo'); await p.waitForTimeout(400);
+    if (JSON.stringify((await ke())[1]['58']) !== JSON.stringify(before)) { errors++; console.log('paste: undo did not restore'); }
+  }
   await p.close();
 }
 await b.close();

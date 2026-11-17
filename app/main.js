@@ -552,7 +552,7 @@ function drawEditKey() {
   $('edit-info').textContent = locked ? `${noteName(note)} is locked` : S.editAll ? 'the base: every key follows' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked; $('clear-keys').disabled = n === nl;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
-  $('rand-key').disabled = locked; $('alter-key').disabled = locked;
+  $('rand-key').disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) :
     note === SOUNDS[S.sel].zone.base ? 'the base sound' : here ? `morph + ${here} edit${here === 1 ? '' : 's'}` : 'a morph of the base';
@@ -566,6 +566,34 @@ $('edit-all').addEventListener('click', () => setEditAll(true));
 $('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to its morph`); });
 $('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
 $('alter-key').addEventListener('click', () => alterKey());
+
+// ---- copy and paste a key's sound: copy takes everything the key plays now (its pitch too); paste puts it on the
+// current key as that key's own sound. Onto another engine it maps by control name (pitch, decay, filter, ...), as the
+// randomisers map kit voices; what the other engine doesn't have stays as the key had it. The level stays the zone's ----
+var clip = null; // var: drawEditKey reads it before this line runs
+function copyKey() {
+  const sound = S.sel, note = editKey[sound], m = keyPatch(sound, note), ed = S.keyEdits[sound][note];
+  clip = { sound, voice: SOUNDS[sound].engineVoice, vals: [...m.vals], st: m.semitones,
+    label: `${ed?._kit && ed._kit !== 'kept' ? ed._kit : SOUNDS[sound].name.toLowerCase() + ' ' + noteName(note)}` };
+  $('paste-key').disabled = false; $('paste-key').title = `Paste ${clip.label} onto this key (Cmd+V / Ctrl+V)`;
+  detail(`copied <em>${SOUNDS[sound].name} ${noteName(note)}</em> · pick a key and paste (Cmd+V / Ctrl+V)`);
+}
+function pasteKey() {
+  if (!clip) { detail('nothing copied yet: COPY (Cmd+C / Ctrl+C) a key first'); return; }
+  const sound = S.sel, note = editKey[sound], v = SOUNDS[sound].engineVoice;
+  if (keyLocked(sound, note)) { lockedMsg(); return; }
+  let pairs = clip.vals;
+  if (clip.voice !== v) { const arr = S.values.slice(); for (const [p, x] of clip.vals) arr[p] = x; pairs = mapVoice(arr, clip.voice, v); }
+  const level = PAR.VOL1 + v, now = keyPatch(sound, note).vals;
+  const ed = { _kit: clip.label, _st: clip.st };
+  for (const [p, x] of now) if (p !== level) ed[p] = x;
+  for (const [p, x] of pairs) if (p !== level && now.has(p)) ed[p] = x;
+  randChange(() => { S.keyEdits[sound][note] = ed; if (S.editAll) setEditAll(false); },
+    `pasted <em>${clip.label}</em> onto ${SOUNDS[sound].name} ${noteName(note)}${clip.voice !== v ? ' (mapped to ' + SOUNDS[sound].name.toLowerCase() + ')' : ''} · UNDO takes it back`)
+    .then(() => { drawKeymap(); play(sound, note, 100); });
+}
+$('copy-key').addEventListener('click', copyKey);
+$('paste-key').addEventListener('click', pasteKey);
 
 // ---- the key strip: every key of the layout, grouped by engine; click picks the key and plays it ----
 const stripKeys = [];
@@ -767,6 +795,11 @@ $('lock-none').addEventListener('click', () => { for (const e of VOICE_SCHEMAS[s
 // keys: 1-7 pick a sound, [ and ] the editor page, R re-rolls the seed
 // ---------------------------------------------------------------------------------------------------------------
 document.addEventListener('keydown', (e) => {
+  // Cmd+C / Cmd+V (Ctrl on a PC): copy and paste a key's sound, unless a text field or a selection has them
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 'c' || e.key === 'v')) {
+    if (e.target.closest('input, select, textarea, [contenteditable]') || String(getSelection())) return;
+    e.preventDefault(); if (e.key === 'c') copyKey(); else pasteKey(); return;
+  }
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'r' || e.key === 'R') reroll();
