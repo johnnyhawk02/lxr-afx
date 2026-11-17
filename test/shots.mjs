@@ -96,6 +96,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const locks = await p.$$eval('#faders .lock', (b) => [b.length, b.filter((x) => x.querySelector('svg')).length]);
     if (locks[0] < 20 || locks[0] !== locks[1]) { errors++; console.log('lock icons:', locks); }
   }
+  // ] and [ step to the next and the previous key (across the zones), playing it
+  if (w === 1440 && h === 900) {
+    await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 55, 100); }); await p.waitForTimeout(80); await p.evaluate(() => { afx.noteOff(55); document.activeElement.blur(); });
+    const at = async () => (await p.textContent('#kh-engine')) + ' ' + (await p.textContent('#kh-num'));
+    const k0 = await at(); await p.keyboard.press(']'); await p.waitForTimeout(250); const k1 = await at();
+    await p.keyboard.press('ArrowRight'); await p.waitForTimeout(250); const k2 = await at();
+    await p.keyboard.press('['); await p.waitForTimeout(150); await p.keyboard.press('['); await p.waitForTimeout(250); const k3 = await at();
+    if (k0 !== 'DRUM #55' || k1 !== 'SNARE #56' || k2 !== 'SNARE #57' || k3 !== 'DRUM #55') { errors++; console.log('key steps:', k0, k1, k2, k3); }
+  }
   // LOCK KEY: a locked key keeps its sound through SCATTER, RE-ROLL and a base edit
   { const k = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits[0]['51']);
     await p.evaluate(() => afx.noteOn(1, 51, 100)); await p.waitForTimeout(50);

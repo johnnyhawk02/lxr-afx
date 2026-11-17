@@ -72,6 +72,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   uses it too); **WILD** lets it take a control outside the ranges drums usually sit in. Locked keys and locked
   controls stay. (RANDOMISE, VARY, RANDOM KIT and INIT are gone: they changed the engine's base sound, which no key
   plays since every key got a sound of its own.)
+- **Computer keys**: **[** and **]** (or the left and right arrows) step to the key before or after and play it, **Space**
+  plays the key again, **K** new sound, **A** alter key, **L** lock key, **Z** undo, **1-3** pick an engine, Cmd/Ctrl+C
+  and V copy and paste a key. The buttons show their keys.
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
   a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR, the RHYTHMS slider. It keeps the last 40 steps, so pressing it again
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.

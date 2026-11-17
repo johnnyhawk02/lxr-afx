@@ -152,7 +152,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* ---- start: audio needs a press before it can play ---- */
 .start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  background: rgba(167, 181, 140, .82); backdrop-filter: blur(2px); border-radius: 6px; z-index: 10; text-align: center; }
+  background: rgba(167, 181, 140, .88); border-radius: 6px; z-index: 10; text-align: center; }
 .start p { max-width: 30em; font-size: 22px; margin: 0; }
 .start[hidden] { display: none; }
 
@@ -445,3 +445,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel .bars + .bars { margin-top: 6px; }
 .menupanel .chk.wild { margin-top: 8px; font-size: 18px; }
 .menupanel .chk.wild .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- the keys that work a button, shown on it ---- */
+.btn kbd { font: inherit; font-size: 13px; line-height: 1; margin-left: 6px; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
+.btn:disabled kbd { opacity: .4; }
+.status #detail .dim { margin-left: 10px; }

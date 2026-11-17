@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkthatw';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkthatw';
-import { KIT_FILES } from '../sound/kits.js?v=mwkthatw';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkthatw';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkthatw';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwktlkr8';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwktlkr8';
+import { KIT_FILES } from '../sound/kits.js?v=mwktlkr8';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwktlkr8';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwktlkr8';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkthatw', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwktlkr8', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1064,8 +1064,14 @@ $('lock-default').addEventListener('click', () => {
 $('lock-none').addEventListener('click', () => { for (const e of VOICE_SCHEMAS[selVoice()]) S.locks.delete(e.par); save(); drawFaders(); drawLocks(); });
 
 // ---------------------------------------------------------------------------------------------------------------
-// keys: 1-7 pick a sound, [ and ] the editor page, R re-rolls the seed
+// the computer's keys: [ and ] (or the left and right arrows) step to the key before or after and play it, Space plays
+// the key again, K a new sound, A alter, L lock, Z undo, 1-3 pick an engine, Cmd/Ctrl+C and V copy and paste
 // ---------------------------------------------------------------------------------------------------------------
+function stepKey(by) {
+  const i = stripKeys.findIndex((k) => k.sound === S.sel && k.note === editKey[S.sel]);
+  const to = stripKeys[(Math.max(0, i) + by + stripKeys.length) % stripKeys.length];
+  startAudio().then(() => play(to.sound, to.note, 100));
+}
 document.addEventListener('keydown', (e) => {
   // Cmd+C / Cmd+V (Ctrl on a PC): copy and paste a key's sound, unless a text field or a selection has them
   if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 'c' || e.key === 'v')) {
@@ -1076,6 +1082,11 @@ document.addEventListener('keydown', (e) => {
   if (e.target.closest('select') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'z' || e.key === 'Z') undo();
+  else if (e.key === '[' || e.key === ']') stepKey(e.key === ']' ? 1 : -1);
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest('input, [role="slider"]')) { e.preventDefault(); stepKey(e.key === 'ArrowRight' ? 1 : -1); }
+  else if (e.key === ' ' && !e.target.closest('input, textarea') && (!e.target.closest('button') || e.target.closest('.k'))) {
+    e.preventDefault(); startAudio().then(() => play(S.sel, editKey[S.sel], 100)); // (on any other button, Space presses it)
+  }
   else if (e.key === 'k' || e.key === 'K') randKey();
   else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
