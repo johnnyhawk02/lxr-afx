@@ -128,6 +128,15 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   ALTER ALL, ALTER KEY, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
   randomisers.
+- **On a phone** (held upright): a simple screen takes the big one's place, by itself. **25 pads**, one for each key,
+  five to a row, lowest at the top left, shaded by engine (drum, snare, metal). A pad plays its key for as long as it
+  is held (a key with a rhythm runs it), several fingers at once, and the pad pressed last is the one the buttons
+  below act on: **NEW SOUND** (the dice) and **ALTER** for that key, **LOCK**, and two bars, **ECHO** and **REVERB**,
+  for that key's sends (touch or slide along a bar). Under them **INIT PATCH**, **RANDOM ALL** and **UNDO**, and the
+  message line that says what happened. A dashed foot on a pad means the key has a rhythm; a padlock means it is
+  locked. The patch is the same one the big screen plays and stores. Presets, the knobs and the effects are on the big
+  screen only, and the phone doesn't ask for MIDI. Add `?desktop` to the address for the big screen on a phone, or
+  `?phone` for the phone screen on a computer.
 
 ## Code
 
@@ -149,7 +158,7 @@ No build step: the page loads the ES modules directly.
 node test/morph.test.mjs                        # the morph and engine checks
 node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
 node test/names.test.mjs                        # the preset names: sayable, varied, never a list word
-python3 -m http.server 8123 & node test/shots.mjs   # screenshots at 1440x900 and 1280x800 (needs Playwright)
+python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: laptop sizes and the phone (needs Playwright)
 ```
 
 ## Licence

@@ -424,6 +424,78 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   const got = await p.evaluate(() => [afx.locks(), document.getElementById('lock-count').textContent]), after = await sig();
   if (old.length < 50 || JSON.stringify(got[0]) !== JSON.stringify([D]) || got[1] !== '1 LOCKED' || after !== before) { errors++; console.log('kept settings:', old.length, JSON.stringify(got), after === before); }
   await p.close(); }
+// THE PHONE VIEW: a phone held upright (a Pixel 9a's 412 x 923, with and without the browser's bars, and a small
+// 360 x 640) gets 25 pads on a five-column grid and nothing scrolls; a pad plays and picks its key, held like a key,
+// several at once; NEW SOUND rolls the pad pressed last, UNDO takes it back; the ECHO and REVERB bars set that key's
+// sends; LOCK locks the key; INIT PATCH and RANDOM ALL deal new sounds; the message line says what happened. ?desktop
+// keeps the big screen on a phone and ?phone gives the phone view anywhere
+for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
+  const cx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2.625, hasTouch: true, isMobile: true });
+  const p = await cx.newPage(), cdp = await cx.newCDPSession(p), J = JSON.stringify;
+  const bad = (what, ...x) => { errors++; console.log(`phone ${w}x${h}, ${what}:`, J(x).slice(0, 500)); };
+  p.on('pageerror', (e) => bad('page error', e.message));
+  await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(400);
+  const lay = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), pads = [...document.querySelectorAll('#pv-pads .pad')], xs = [...new Set(pads.map((e) => Math.round(r(e).left)))];
+    return { phone: document.documentElement.classList.contains('phone'), pads: pads.length, xs, small: pads.filter((e) => r(e).width < 44 || r(e).height < 44).length,
+      scroll: [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight], inner: [innerWidth, innerHeight],
+      out: [...document.querySelectorAll('#pv > *, #pv button, #pv .track')].filter((e) => r(e).left < 0 || r(e).right > innerWidth + 0.5 || r(e).top < 0 || r(e).bottom > innerHeight + 0.5).map((e) => e.id || e.className),
+      offGrid: [...document.querySelectorAll('.pv-row > button, .pv-send .track')].filter((e) => !xs.includes(Math.round(r(e).left))).map((e) => e.id || e.className),
+      shown: [...document.querySelectorAll('.top, .main, .keyhead, #faders')].filter((e) => e.offsetParent !== null).length, start: getComputedStyle(document.getElementById('start-phone')).display !== 'none' && !document.getElementById('start').hidden,
+      labels: [pads[0], pads[8], pads[24]].map((e) => e.textContent) }; });
+  if (!lay.phone || lay.pads !== 25 || lay.xs.length !== 5 || lay.small || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.inner[0] !== w || lay.out.length || lay.offGrid.length || lay.shown || !lay.start
+    || J(lay.labels) !== J(['C2DRUM', 'G#2SNARE', 'C4METAL'])) bad('layout', lay);
+  await p.tap('#start-btn'); await p.waitForTimeout(500);
+  const mid = async (sel, n = 0, fx = 0.5) => { const r = await p.locator(sel).nth(n).boundingBox(); return { x: r.x + r.width * fx, y: r.y + r.height / 2 }; };
+  const st = () => p.evaluate(() => { const sel = document.querySelector('.pad.sel'), i = [...document.querySelectorAll('.pad')].indexOf(sel), s = i < 8 ? 0 : i < 16 ? 1 : 2, note = 48 + i, ed = afx.keyEdits()[s][note] || {}, m = new Map(afx.patch(s, note)), v = afx.sounds[s].engineVoice;
+    return { i, key: document.getElementById('pv-key').textContent, what: document.getElementById('pv-what').textContent, kit: ed._kit, lock: !!ed._lock, sends: [...afx.seqPars(v)].length && [m.get(afx.sendPars(v)[0]), m.get(afx.sendPars(v)[1])],
+      outs: [document.querySelector('#pv-echo output').textContent, document.querySelector('#pv-reverb output').textContent], msg: document.getElementById('pv-msg').textContent, undo: !document.getElementById('pv-undo').disabled,
+      down: document.querySelectorAll('.pad.down').length, name: document.getElementById('pv-name').textContent, big: document.getElementById('kh-note').textContent, dice: document.getElementById('pv-dice').disabled, lockBtn: document.getElementById('pv-lock').textContent }; });
+  // a tap plays and picks the pad
+  const at9 = await mid('.pad', 9); await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250); const a = await st();
+  if (a.i !== 9 || a.key !== 'A2' || a.big !== 'A2' || !/^SNARE · /.test(a.what) || a.down !== 0 || !/SNARE/.test(await p.textContent('#last-text'))) bad('a tap', a, await p.textContent('#last-text'));
+  // two fingers hold two pads; letting go lets both go
+  const at2 = await mid('.pad', 2), at20 = await mid('.pad', 20);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at2.x, y: at2.y, id: 1 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at2.x, y: at2.y, id: 1 }, { x: at20.x, y: at20.y, id: 2 }] }); await p.waitForTimeout(200);
+  const two = await st(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(200); const none = await st();
+  if (two.down !== 2 || two.i !== 20 || two.key !== 'G#3' || none.down !== 0) bad('two fingers', two.down, two.i, two.key, none.down);
+  // NEW SOUND on the pad pressed last, and UNDO
+  await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(200); const b0 = await st();
+  await p.tap('#pv-dice'); await p.waitForTimeout(600); const b1 = await st();
+  await p.tap('#pv-undo'); await p.waitForTimeout(300); const b2 = await st();
+  if (!b0.kit || b1.kit === b0.kit || !b1.msg.includes(b1.kit) || !b1.undo || !b1.what.includes(b1.kit) || b2.kit !== b0.kit || !/undone/.test(b2.msg)) bad('new sound, undo', b0.kit, b1.kit, b1.msg, b2.kit, b2.msg);
+  // the sends: a touch on the bar sets it, a drag follows the finger
+  const e50 = await mid('#pv-echo .track', 0, 0.5); await p.touchscreen.tap(e50.x, e50.y); await p.waitForTimeout(150); const c1 = await st();
+  const r0 = await mid('#pv-reverb .track', 0, 0.2), r1 = await mid('#pv-reverb .track', 0, 1.2);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r0.x, y: r0.y, id: 1 }] }); await p.waitForTimeout(60); const c2 = await st();
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: r1.x, y: r1.y, id: 1 }] }); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(150); const c3 = await st();
+  if (Math.abs(c1.sends[0] - 64) > 3 || c1.outs[0] !== String(c1.sends[0]) || Math.abs(c2.sends[1] - 25) > 4 || c3.sends[1] !== 127 || c3.outs[1] !== '127' || c3.sends[0] !== c1.sends[0] || !/REVERB send 127/.test(c3.msg)) bad('sends', c1.sends, c1.outs, c2.sends, c3.sends, c3.outs, c3.msg);
+  // LOCK: the pad shows it, NEW SOUND and the sends leave it alone; INIT PATCH asks first
+  await p.tap('#pv-lock'); await p.waitForTimeout(200); const d1 = await st(), padLocked = await p.evaluate(() => document.querySelectorAll('.pad.locked').length);
+  await p.touchscreen.tap(e50.x - 40, e50.y); await p.waitForTimeout(150); const d2 = await st();
+  await p.tap('#pv-init'); await p.waitForTimeout(200); const ask = await p.textContent('#pv-init'), d3 = await st();
+  await p.tap('#pv-init'); await p.waitForTimeout(700); const d4 = await st(), initBtn = await p.textContent('#pv-init');
+  if (!d1.lock || padLocked !== 1 || !d1.dice || d1.lockBtn !== 'LOCKED' || d2.sends[0] !== c1.sends[0] || ask !== 'PRESS AGAIN' || d3.kit !== d1.kit || d4.kit === d1.kit || d4.lock || d4.name === d3.name || initBtn !== 'INIT PATCH' || d4.dice || !/new patch/.test(d4.msg))
+    bad('lock, init patch', d1.lock, padLocked, d1.dice, d1.lockBtn, d2.sends, ask, d3.kit, d4.kit, d4.lock, d4.name, initBtn, d4.msg);
+  await p.tap('#pv-random'); await p.waitForTimeout(600); const f1 = await st(); await p.tap('#pv-alter'); await p.waitForTimeout(400); const f2 = await st();
+  if (f1.kit === d4.kit || !/all three engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
+  const end = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight, Math.round(document.getElementById('pv-msg').getBoundingClientRect().bottom) <= innerHeight]);
+  if (end[0] > 0 || end[1] > 0 || !end[2]) bad('it scrolls after use', end);
+  if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });
+  // ?desktop: the big screen on the phone
+  if (h === 780) { await p.goto(url + '?desktop'); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
+    const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), getComputedStyle(document.getElementById('pv')).display, document.querySelector('.top').offsetParent !== null]);
+    if (dk[0] || dk[1] !== 'none' || !dk[2]) bad('?desktop', dk); }
+  await cx.close();
+}
+// ?phone on a computer: the phone view, unscaled; without it the computer never gets the phone view
+{ const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
+  await p.goto(url + '?phone'); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
+  const ph = await p.evaluate(() => [document.documentElement.classList.contains('phone'), document.getElementById('screen').getAttribute('style'), document.querySelectorAll('.pad').length, Math.round(document.getElementById('screen').getBoundingClientRect().width)]);
+  await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
+  const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), getComputedStyle(document.getElementById('pv')).display]);
+  if (!ph[0] || ph[1] || ph[2] !== 25 || ph[3] > 520 || dk[0] || dk[1] !== 'none') { errors++; console.log('?phone on a computer:', JSON.stringify([ph, dk])); }
+  await p.close(); }
 await b.close();
 console.log(errors ? `${errors} problems` : 'no errors');
 process.exit(errors ? 1 : 0);

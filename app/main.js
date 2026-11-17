@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkzygyc';
-import { presetName } from './names.js?v=mwkzygyc';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkzygyc';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkzygyc';
-import { KIT_FILES } from '../sound/kits.js?v=mwkzygyc';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkzygyc';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkzygyc';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwl0t5tp';
+import { presetName } from './names.js?v=mwl0t5tp';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwl0t5tp';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwl0t5tp';
+import { KIT_FILES } from '../sound/kits.js?v=mwl0t5tp';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwl0t5tp';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwl0t5tp';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -80,7 +80,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkzygyc', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwl0t5tp', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -339,7 +339,7 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
   pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals],
-  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS, locks: () => [...S.locks], setFx: (fx) => applyFx(fx) }; // a key's AUTO LEVEL correction, dB
+  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS, locks: () => [...S.locks], setFx: (fx) => applyFx(fx), sendPars: (v) => [sendPar(v, 0), sendPar(v, 1)] }; // a key's AUTO LEVEL correction, dB
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -486,17 +486,19 @@ diceBtn.title = 'NEW SOUND (K): a different kit sound on this key only. UNDO tak
 diceBtn.setAttribute('aria-label', 'New sound on this key');
 diceBtn.innerHTML = `<span class="die"><svg viewBox="0 0 28 28" aria-hidden="true">${Object.entries(DICE_PIPS).map(([k, [x, y]]) => `<rect class="pip" data-p="${k}" x="${x}" y="${y}" width="4" height="4"/>`).join('')}</svg></span>`;
 let diceFace = 0, diceT = 0;
-function showDice(n) { diceFace = n; diceBtn.dataset.face = n; for (const r of diceBtn.querySelectorAll('.pip')) r.classList.toggle('on', DICE_FACES[n].includes(r.dataset.p)); }
+$('pv-die').innerHTML = diceBtn.querySelector('.die').innerHTML; // the phone view's dice: the same face
+const dice = [diceBtn, $('pv-dice')];
+function showDice(n) { diceFace = n; diceBtn.dataset.face = n; for (const d of dice) for (const r of d.querySelectorAll('.pip')) r.classList.toggle('on', DICE_FACES[n].includes(r.dataset.p)); }
 function rollDice() {
   clearInterval(diceT);
   const next = () => { let n; do n = 1 + Math.floor(Math.random() * 6); while (n === diceFace); showDice(n); };
   next();
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; // no turning: the face just changes
-  diceBtn.classList.remove('roll'); void diceBtn.offsetWidth; diceBtn.classList.add('roll'); // (the turn starts again)
+  for (const d of dice) { d.classList.remove('roll'); void d.offsetWidth; d.classList.add('roll'); } // (the turn starts again)
   let left = 3; diceT = setInterval(() => { next(); if (!--left) clearInterval(diceT); }, 80);
 }
 showDice(5);
-diceBtn.addEventListener('animationend', () => diceBtn.classList.remove('roll'));
+for (const d of dice) d.addEventListener('animationend', () => d.classList.remove('roll'));
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
 const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'seq']];
@@ -898,7 +900,9 @@ function buildStrip() {
     box.append(g);
   });
 }
+let drawPhone = () => {}; // (the phone view's pads and controls: set where the phone view is built, below)
 function drawStrip() {
+  drawPhone();
   for (const { k, sound, note } of stripKeys) {
     const ed = S.keyEdits[sound][note];
     k.classList.toggle('sel', sound === S.sel && note === editKey[sound]);
@@ -1290,7 +1294,9 @@ document.addEventListener('keydown', (e) => {
 $('start-btn').addEventListener('click', async () => {
   $('start').hidden = true;
   await startAudio();
-  startMidi();
+  // on a phone the pads are the keys: it isn't asked for MIDI there (a keyboard still plays if MIDI was allowed before)
+  if (!phoneOn) startMidi();
+  else if (navigator.permissions) navigator.permissions.query({ name: 'midi' }).then((s) => { if (s.state === 'granted') startMidi(); }).catch(() => {});
 });
 // ---------------------------------------------------------------------------------------------------------------
 // PRESETS: the whole patch (every key's sound, edits, lock, sequence and sends, the engines' base, the effects, the
@@ -1506,6 +1512,80 @@ $('start-text').textContent = `MIDI channel 1: ${SOUNDS.map((s) => `${s.name.toL
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots
 
 // ---------------------------------------------------------------------------------------------------------------
+// PHONE: on a phone held upright (or with ?phone in the address) the page is a simpler instrument: a pad for each of
+// the 25 keys (pressed and held like a key), NEW SOUND (the dice) and ALTER for the pad pressed last, its ECHO and
+// REVERB sends, LOCK, INIT PATCH, RANDOM ALL and UNDO. The same patch, engine and rules as the big screen: its
+// buttons press the big screen's own. ?desktop keeps the big screen on a phone
+// ---------------------------------------------------------------------------------------------------------------
+const asked = new URLSearchParams(location.search);
+// (the phone's own size, not only the window's: a wide page makes a phone's browser zoom out and report it wider)
+const wantPhone = () => (asked.has('desktop') ? false : asked.has('phone') || ((Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700) && innerHeight > innerWidth));
+let phoneOn = false;
+const pads = [];
+SOUNDS.forEach((s, i) => {
+  for (let j = 0; j <= s.zone.hi - s.zone.lo; j++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pad e' + i;
+    b.innerHTML = `<b></b><span>${s.name}</span><svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>`;
+    let down; // the note this pad is holding
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (err) { /* the pointer is gone already */ }
+      const note = down = SOUNDS[i].zone.lo + j; b.classList.add('down');
+      startAudio().then(() => { if (down === note) keyDown(i, note, 100); });
+    });
+    const up = () => { if (down === undefined) return; noteOff(down); down = undefined; b.classList.remove('down'); };
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, up);
+    b.addEventListener('contextmenu', (e) => e.preventDefault()); // (a long press holds the key: no menu)
+    $('pv-pads').append(b); pads.push({ b, i, j });
+  }
+});
+// a send of the pad pressed last: the bar follows the finger
+const sendBars = [['pv-echo', 0, 'ECHO'], ['pv-reverb', 1, 'REVERB']].map(([id, k, name]) => {
+  const el = $(id), track = el.querySelector('.track'), fill = track.querySelector('i'), out = el.querySelector('output'), par = () => sendPar(selVoice(), k);
+  const at = (e) => { const r = track.getBoundingClientRect(); return clamp(Math.round((e.clientX - r.left - 4) / (r.width - 8) * 127), 0, 127); };
+  const put = (x) => {
+    if (x === valueNow(par())) return;
+    editValue(par(), x); draw();
+    if (!keyLocked(S.sel, editKey[S.sel])) detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${name} send <em>${x}</em>`);
+  };
+  let on = false;
+  track.addEventListener('pointerdown', (e) => { e.preventDefault(); try { track.setPointerCapture(e.pointerId); } catch (err) { /* gone */ } on = true; put(at(e)); });
+  track.addEventListener('pointermove', (e) => { if (on) put(at(e)); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) track.addEventListener(ev, () => { on = false; });
+  track.addEventListener('keydown', (e) => { const d = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key]; if (d) { e.preventDefault(); put(clamp(valueNow(par()) + d * (e.shiftKey ? 10 : 1), 0, 127)); } });
+  const draw = () => { const v = valueNow(par()) || 0; fill.style.width = `${v / 127 * 100}%`; out.textContent = v; track.setAttribute('aria-valuenow', v); };
+  return draw;
+});
+for (const [id, to] of [['pv-alter', 'alter-key'], ['pv-lock', 'lock-key'], ['pv-init', 'init-patch'], ['pv-random', 'kit-scatter'], ['pv-undo', 'undo']]) $(id).addEventListener('click', () => $(to).click());
+$('pv-dice').addEventListener('click', () => diceBtn.click());
+// what the big screen says and shows, said and shown here too: the message line, UNDO there to press, INIT PATCH asking
+const mirror = (el, opts, fn) => { new MutationObserver(fn).observe(el, opts); fn(); };
+mirror($('undo'), { attributes: true, attributeFilter: ['disabled'] }, () => { $('pv-undo').disabled = $('undo').disabled; });
+mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] }, () => { const a = $('init-patch').getAttribute('aria-pressed') === 'true'; $('pv-init').setAttribute('aria-pressed', a); $('pv-init').textContent = a ? 'PRESS AGAIN' : 'INIT PATCH'; });
+new MutationObserver(() => { $('pv-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
+drawPhone = () => {
+  if (!phoneOn) return;
+  for (const { b, i, j } of pads) {
+    const note = SOUNDS[i].zone.lo + j, ed = S.keyEdits[i][note];
+    b.firstChild.textContent = noteName(note); b.setAttribute('aria-label', `${SOUNDS[i].name} ${noteName(note)}`);
+    b.classList.toggle('sel', i === S.sel && note === editKey[i]); b.classList.toggle('locked', !!ed?._lock);
+    b.classList.toggle('run', !!keyPatch(i, note).vals.get(seqOnPar(SOUNDS[i].engineVoice))); // (a dashed foot: held, it plays a rhythm)
+  }
+  const note = editKey[S.sel], locked = keyLocked(S.sel, note), kit = S.keyEdits[S.sel][note]?._kit;
+  $('pv-key').textContent = noteName(note);
+  $('pv-what').textContent = `${SOUNDS[S.sel].name} · ${locked ? 'locked' + (kit && kit !== 'kept' ? ' · ' + kit : '') : kit && kit !== 'kept' ? kit : 'its own sound'}`;
+  $('pv-lock').setAttribute('aria-pressed', locked); $('pv-lock').textContent = locked ? 'LOCKED' : 'LOCK';
+  $('pv-dice').disabled = locked; $('pv-alter').disabled = locked;
+  $('pv-name').textContent = S.preset.name;
+  sendBars.forEach((d) => d());
+};
+function setPhone() {
+  const on = wantPhone(); if (on === phoneOn) return;
+  phoneOn = on; document.documentElement.classList.toggle('phone', on);
+  if (on && S.editAll) setEditAll(false); // (a pad's sends are its own)
+  drawPhone();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // fit the screen to small windows (a MacBook Air's browser with its toolbar and the dock): below 1264x784 inside the
 // bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
 // ---------------------------------------------------------------------------------------------------------------
@@ -1520,6 +1600,8 @@ function alignEngines() {
 }
 function fitScreen() {
   const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
+  setPhone();
+  if (phoneOn) { sc.removeAttribute('style'); drawKeymap(); return; } // (the phone view lays itself out)
   if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
   else sc.removeAttribute('style');
   drawKeymap(); alignEngines();

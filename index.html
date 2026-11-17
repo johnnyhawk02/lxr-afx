@@ -8,7 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwkzygyc">
+<link rel="stylesheet" href="css/lcd.css?v=mwl0t5tp">
+<script>
+// a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
+// (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
+(function () {
+  var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
+  if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
+})();
+</script>
 </head>
 <body>
 <main class="screen" id="screen">
@@ -118,9 +126,29 @@
     </aside>
   </div>
 
+  <!-- the phone view (a phone held upright, or ?phone): a pad for each of the 25 keys, and the few controls a hand needs -->
+  <div class="pv" id="pv">
+    <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b></div>
+    <div class="pv-pads" id="pv-pads" role="group" aria-label="The 25 keys"></div>
+    <div class="pv-key"><b id="pv-key"></b><span id="pv-what"></span></div>
+    <div class="pv-row">
+      <button class="btn two pvdice" id="pv-dice" aria-label="New sound on this key"><span class="die" id="pv-die"></span><span>NEW SOUND</span></button>
+      <button class="btn two" id="pv-alter">ALTER</button>
+      <button class="btn" id="pv-lock" aria-pressed="false">LOCK</button>
+    </div>
+    <div class="pv-send" id="pv-echo"><span>ECHO</span><div class="track" role="slider" tabindex="0" aria-label="This key's echo send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-send" id="pv-reverb"><span>REVERB</span><div class="track" role="slider" tabindex="0" aria-label="This key's reverb send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-row">
+      <button class="btn two" id="pv-init" aria-pressed="false">INIT PATCH</button>
+      <button class="btn two" id="pv-random">RANDOM ALL</button>
+      <button class="btn" id="pv-undo" disabled>UNDO</button>
+    </div>
+    <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
+  </div>
   <div class="start" id="start">
-    <button class="btn big" id="start-btn">START AUDIO + MIDI</button>
+    <button class="btn big" id="start-btn"><span class="dk">START AUDIO + MIDI</span><span class="ph">START</span></button>
     <p id="start-text"></p>
+    <p class="ph" id="start-phone">A pad for each of the 25 keys: drum, snare and metal. Press a pad to play it; hold it for its rhythm. NEW SOUND rolls the pad you pressed last.</p>
   </div>
 </main>
 <script>
@@ -135,6 +163,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwkzygyc"></script>
+<script type="module" src="app/main.js?v=mwl0t5tp"></script>
 </body>
 </html>
