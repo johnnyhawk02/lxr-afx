@@ -12,9 +12,10 @@ const run = (s, note, seed, amount) => morphKey({ schema: schemaOf(s), base, not
 const differs = (m) => m.params.filter(([p, v]) => v !== base[p]).length;
 const isMorph = (s, q) => schemaOf(s).some((e) => e.par === q && e.morph);
 let n = 0;
-// zones: C0-B1 drum, C2-B4 snare, C5-B7 metal (C3 = 60)
-assert.equal(soundOfNote(24), 0); assert.equal(soundOfNote(47), 0); assert.equal(soundOfNote(48), 1); assert.equal(soundOfNote(83), 1);
-assert.equal(soundOfNote(84), 2); assert.equal(soundOfNote(119), 2); assert.equal(soundOfNote(23), -1); assert.equal(soundOfNote(120), -1); n += 8;
+// zones: C0-B1 drum, C2-B3 snare, C4-B5 metal (C3 = 60), 24 keys each, no overlap
+assert.equal(soundOfNote(24), 0); assert.equal(soundOfNote(47), 0); assert.equal(soundOfNote(48), 1); assert.equal(soundOfNote(71), 1);
+assert.equal(soundOfNote(72), 2); assert.equal(soundOfNote(95), 2); assert.equal(soundOfNote(23), -1); assert.equal(soundOfNote(96), -1); n += 8;
+for (const s of SOUNDS) { assert.equal(s.zone.hi - s.zone.lo + 1, 24); assert.equal(s.zone.lo % 12, 0); assert.equal(s.zone.base, s.zone.lo + 12); n++; }
 for (let s = 0; s < SOUNDS.length; s++) {
   const z = SOUNDS[s].zone;
   for (const note of [z.lo, z.lo + 5, z.base - 1, z.base + 1, z.hi]) assert.deepEqual(run(s, note, 1234, full), run(s, note, 1234, full)), n++;

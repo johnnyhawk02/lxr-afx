@@ -130,7 +130,7 @@ function onMidi(e) {
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
   const sound = soundOfNote(note);
-  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (C0-B7)`); return; }
+  if (sound < 0) { showLastText(`${noteName(note)} · outside the zones (C0-B5)`); return; }
   play(sound, note, vel);
 }
 async function startMidi() {

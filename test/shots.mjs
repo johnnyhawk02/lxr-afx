@@ -13,7 +13,7 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.goto(url); await p.waitForTimeout(600);
   await p.screenshot({ path: `${out}/start-${w}x${h}.png` });
   await p.click('#start-btn'); await p.waitForTimeout(800);
-    for (const [ch, n] of [[1, 36], [1, 60], [1, 100], [1, 47]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
+    for (const [ch, n] of [[1, 36], [1, 60], [1, 88], [1, 47]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
   // an edit goes to the last drum key played (B1), not the base
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v2') || 'null'));
   await p.focus('.vtrack'); for (let i = 0; i < 6; i++) await p.keyboard.press('ArrowUp');

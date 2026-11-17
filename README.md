@@ -6,7 +6,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 ![LXR-AFX at 1440 × 900](docs/screenshot.png)
 
 - **Three zones on MIDI channel 1** (C3 = MIDI 60), one for each of the engine's three voice types, all three able to
-  sound at once: **drum** on C0-B1 (base key C1), **snare** on C2-B4 (base C3), **metal** on C5-B7 (base C6). Velocity is used.
+  sound at once: **drum** on C0-B1 (base key C1), **snare** on C2-B3 (base C3), **metal** on C4-B5 (base C5): two octaves each, no overlap, the base
+  key in the middle of each. Velocity is used.
 - **Key morph**: a zone's base key plays its sound as you made it. Every other key plays a variant, changing pitch and
   timbre, more the further it is from the base (each end of a zone is the full amount). Each key's variant is fixed by
   the sound's seed; **re-roll** for a new set. Depth, pitch and timbre sliders for all sounds and per sound; depth 0 plays

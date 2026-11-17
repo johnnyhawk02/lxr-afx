@@ -22,14 +22,14 @@ import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
 
-// AFX mode: three sounds, one per engine type, each on its own zone of the keyboard (MIDI channel 1), all three able to
-// sound at once. engineVoice: which of the engine's six voice instances makes it; trigger: the note-on index;
+// AFX mode: three sounds, one per engine type, each on its own two-octave zone of the keyboard (MIDI channel 1), no
+// overlap, all three able to sound at once. Each zone's base is its middle C. engineVoice: which of the engine's six voice instances makes it; trigger: the note-on index;
 // sources: the kit voices of the same engine type that the randomiser draws from; zone: its keys (C3 = MIDI 60) and the
 // key that plays its base sound
 export const SOUNDS = [
   { id: 'drum', name: 'DRUM', engineVoice: 0, trigger: 0, sources: [0, 1, 2], zone: { lo: 24, hi: 47, base: 36 } }, // C0-B1, base C1
-  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], zone: { lo: 48, hi: 83, base: 60 } }, // C2-B4, base C3
-  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], zone: { lo: 84, hi: 119, base: 96 } }, // C5-B7, base C6
+  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], zone: { lo: 48, hi: 71, base: 60 } }, // C2-B3, base C3
+  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], zone: { lo: 72, hi: 95, base: 84 } }, // C4-B5, base C5
 ];
 // the sound whose zone holds a note, or -1
 export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo && note <= s.zone.hi);
