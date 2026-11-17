@@ -15,9 +15,9 @@
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
+    <div class="chsel" id="chsel" role="radiogroup" aria-label="MIDI channel: ALL routes channels 1-7 to the seven sounds; a number plays that sound from any channel" title="ALL: channels 1-7 play the seven sounds. 1-7: every note, on any channel, plays that sound"><span class="dim">CH</span></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="kitrand" role="group" aria-label="Kit randomiser">
-      <span class="dim">KIT</span>
       <button class="btn" id="kit-rand" title="Every sound from a random built-in kit">RANDOM KIT</button>
       <button class="btn" id="kit-alter" title="Nudge every sound a little (10%)">ALTER ALL</button>
       <button class="btn" id="kit-init" title="Back to the firmware's init kit">INIT</button>

@@ -24,13 +24,14 @@ const S = {
   locks: defaultLocks(),
   rand: { amount: 30, wild: false },
   sel: 0, page: 0,
+  midiCh: 0, // 0: channels 1-7 play the seven sounds; 1-7: every note, on any channel, plays that sound
 };
 try {
   const d = JSON.parse(localStorage.getItem(STORE));
   if (d && d.values && d.values.length === NUM_PARAMS) {
     S.values = Uint8Array.from(d.values); S.defaults = Uint8Array.from(d.defaults || d.values);
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
-    S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
+    S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0; S.midiCh = d.midiCh | 0;
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -39,7 +40,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, midiCh: S.midiCh }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
@@ -98,6 +99,7 @@ function onMidi(e) {
   noteOn(ch, note, vel);
 }
 function noteOn(ch, note, vel) {
+  if (S.midiCh) ch = S.midiCh; // the channel setter: any channel plays the chosen sound
   if (ch < 1 || ch > 7) { showLastText(`CH ${ch} · ${noteName(note)} · not a sound channel (1-7)`); return; }
   if (note < LOW_NOTE || note > HIGH_NOTE) { showLastText(`CH ${ch} · ${noteName(note)} · outside C1-C5`); return; }
   play(ch - 1, note, vel);
@@ -114,6 +116,21 @@ async function startMidi() {
     midi.onstatechange = hook; hook();
   } catch (err) { midiStatus('MIDI: permission refused'); }
 }
+// the channel setter at the top: ALL, or one sound for every incoming note (choosing one also opens it in the editor)
+const chBtns = [0, 1, 2, 3, 4, 5, 6, 7].map((c) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (c ? '' : ' all');
+  b.textContent = c ? String(c) : 'ALL'; b.setAttribute('role', 'radio');
+  b.title = c ? `Every note, on any MIDI channel, plays ${SOUNDS[c - 1].name}` : 'MIDI channels 1-7 play the seven sounds';
+  b.addEventListener('click', () => setMidiCh(c));
+  $('chsel').append(b);
+  return b;
+});
+function setMidiCh(c) {
+  S.midiCh = c; save();
+  chBtns.forEach((b, i) => b.setAttribute('aria-pressed', i === c));
+  if (c) select(c - 1);
+  detail(c ? `MIDI: every channel plays <em>${SOUNDS[c - 1].name}</em>` : 'MIDI: channels 1-7 play the seven sounds');
+}
 // for testing without a controller: afx.noteOn(channel, note, velocity) from the console
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel) };
 
@@ -126,8 +143,8 @@ function showLastText(t) {
   const box = $('last'); box.classList.add('hit'); clearTimeout(lastT); lastT = setTimeout(() => box.classList.remove('hit'), 90);
 }
 function showLast(sound, note, vel, st) {
-  const p = note === BASE_NOTE ? 'BASE' : (st >= 0 ? '+' : '−') + Math.abs(st).toFixed(2) + ' ST';
-  showLastText(`CH ${sound + 1} · ${SOUNDS[sound].name} · ${noteName(note)} · VEL ${vel} · ${p}`);
+  const p = note === BASE_NOTE ? 'BASE' : (st >= 0 ? '+' : '−') + Math.abs(st).toFixed(1) + 'ST';
+  showLastText(`CH${sound + 1} ${SOUNDS[sound].name} · ${noteName(note)} · V${vel} · ${p}`);
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
@@ -446,4 +463,5 @@ $('start-btn').addEventListener('click', async () => {
   startMidi();
 });
 select(clamp(S.sel, 0, 6));
+chBtns.forEach((b, i) => b.setAttribute('aria-pressed', i === S.midiCh));
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots

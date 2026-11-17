@@ -13,6 +13,7 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.goto(url); await p.waitForTimeout(600);
   await p.screenshot({ path: `${out}/start-${w}x${h}.png` });
   await p.click('#start-btn'); await p.waitForTimeout(800);
+  await p.click('#chsel button:nth-child(5)'); await p.waitForTimeout(100);
   for (const [ch, n] of [[1, 60], [1, 84], [2, 43], [1, 79]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);

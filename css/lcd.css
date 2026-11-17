@@ -49,11 +49,15 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .logo { margin: 0; font-size: 40px; font-weight: 400; letter-spacing: .12em; line-height: 1; padding: 0 6px 0 2px; white-space: nowrap; }
 .logo span { color: var(--muted); }
 .lcdbox { border: 2px solid var(--ink); border-radius: 3px; padding: 4px 10px; min-height: 34px; display: flex; align-items: center; gap: 8px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 19px; }
-.midi { flex: 0 1 260px; min-width: 120px; display: block; line-height: 24px; }
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
+.midi { flex: 0 1 180px; min-width: 100px; display: block; line-height: 24px; }
 .midi.live::before { content: "● "; }
 .last { flex: 1 1 auto; min-width: 0; }
-.last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: .04em; }
+.chsel { display: flex; align-items: center; gap: 4px; }
+.chsel > .dim { margin-right: 2px; letter-spacing: .1em; }
+.chsel .btn { min-width: 30px; padding: 3px 5px; }
+.chsel .btn.all { padding: 3px 8px; }
+.last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .last.hit { background: var(--ink); color: var(--panel); text-shadow: none; }
 .last.hit .dim { color: var(--panel); opacity: .7; }
 .kitrand { display: flex; gap: 6px; align-items: center; }
@@ -148,6 +152,10 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
   .logo { font-size: 34px; }
   .btn { font-size: 17px; padding: 3px 9px; }
   .kitrand > .dim { display: none; }
+  .chsel .btn { min-width: 26px; padding: 3px 3px; }
+  .last > .dim, .chsel > .dim { display: none; }
+  .top { gap: 10px; }
+  .logo { font-size: 30px; letter-spacing: .08em; }
   .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }
   .snd { font-size: 20px; min-height: 42px; }
 }

@@ -6,6 +6,7 @@ A 7-voice MIDI drum instrument in the browser where every key plays a morphed va
 ![LXR-AFX at 1440 × 900](docs/screenshot.png)
 
 - **Seven sounds on seven MIDI channels**: Drum 1, Drum 2, Drum 3, Snare, Cymbal, Closed hat and Open hat on channels 1 to 7.
+  The CH setter at the top (ALL, 1-7) can send every note, on any channel, to one sound for testing.
   Keys C1 to C5 (C3 = MIDI 60), velocity used.
 - **Key morph**: C3 plays the sound as you made it. Every other key plays a variant, changing pitch and timbre, more the
   further it is from C3. Each key's variant is fixed by the sound's seed; **re-roll** for a new set. Depth, pitch and
