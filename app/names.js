@@ -1,8 +1,9 @@
 // LXR-AFX: preset names. New words jumbled out of pieces of real ones: the start of one word, sometimes the middle of
 // a second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud
-// ("QUANTROPY", "NEBUTRON", "PHOSAR FLUXON"). No UI here.
+// ("QUANDALF", "NEBULOKI", "ZORVATRON GIMLAR"). The start and the end always come from two different lists, so
+// every name is a mix of themes. No UI here.
 //
-// To add a theme, add a list to WORDS (lower case, letters only): every list is used.
+// To add a theme, add a list to WORDS (lower case, letters only, no word that another list has): every list is used.
 export const WORDS = {
   space: ['nebula', 'quasar', 'pulsar', 'galaxy', 'comet', 'meteor', 'asteroid', 'orbit', 'planet', 'cosmos', 'stellar', 'lunar', 'solar',
     'nova', 'supernova', 'eclipse', 'zenith', 'apogee', 'perigee', 'aphelion', 'perihelion', 'equinox', 'solstice', 'satellite', 'rocket',
@@ -29,6 +30,60 @@ export const WORDS = {
     'fractal', 'attractor', 'manifold', 'photonic', 'kinematic', 'ballistic', 'elastic', 'impulse', 'pendulum', 'gyroscope', 'cyclotron',
     'synchrotron', 'collider', 'calorimeter', 'interferometer', 'hologram', 'emission', 'absorption', 'ionization', 'valence', 'orbital',
     'eigenstate', 'hamiltonian', 'lagrangian', 'vacuum', 'ether', 'quintessence', 'antimatter', 'darkmatter', 'curvature', 'geodesic'],
+  tolkien: ['gandalf', 'aragorn', 'legolas', 'gimli', 'frodo', 'samwise', 'meriadoc', 'peregrin', 'boromir', 'faramir', 'denethor', 'theoden',
+    'eowyn', 'eomer', 'galadriel', 'celeborn', 'elrond', 'arwen', 'saruman', 'sauron', 'gollum', 'smeagol', 'bilbo', 'thorin', 'balin', 'dwalin',
+    'fili', 'kili', 'gloin', 'bifur', 'bofur', 'bombur', 'dori', 'nori', 'smaug', 'beorn', 'radagast', 'treebeard', 'bombadil', 'goldberry',
+    'glorfindel', 'isildur', 'elendil', 'anarion', 'earendil', 'luthien', 'beren', 'feanor', 'fingolfin', 'finrod', 'turin', 'hurin', 'morgoth',
+    'melkor', 'ungoliant', 'shelob', 'grima', 'haldir', 'thranduil', 'gothmog', 'shagrat', 'gorbag', 'ugluk', 'azog', 'elros', 'cirdan',
+    'celebrimbor', 'thingol', 'melian', 'tuor', 'idril', 'maeglin', 'turgon', 'fingon', 'maedhros', 'maglor', 'galdor', 'erestor', 'halbarad',
+    'imrahil', 'beregond', 'erkenbrand', 'gamling', 'theodred', 'shadowfax', 'lobelia', 'butterbur', 'elanor', 'manwe', 'varda', 'ulmo', 'yavanna',
+    'mandos', 'nienna', 'orome', 'tulkas', 'elbereth', 'ancalagon', 'glaurung', 'carcharoth', 'thorondor', 'gwaihir', 'quickbeam', 'fangorn',
+    'baggins', 'gamgee', 'brandybuck', 'tinuviel', 'undomiel', 'mithrandir', 'elessar', 'strider', 'amroth', 'nimrodel', 'finduilas', 'morwen',
+    'nienor', 'beleg', 'mablung', 'ecthelion', 'barliman', 'fredegar', 'durin', 'thrain', 'girion', 'elwing', 'celegorm', 'caranthir', 'curufin',
+    'finarfin', 'aredhel', 'orodreth', 'gwindor', 'voronwe', 'arathorn', 'gilraen', 'mordor', 'gondor', 'rohan', 'rivendell', 'lothlorien', 'moria',
+    'isengard', 'erebor', 'mirkwood', 'numenor', 'valinor', 'beleriand', 'gondolin', 'doriath', 'nargothrond', 'angband', 'orthanc', 'edoras',
+    'osgiliath', 'ithilien', 'anduin', 'tirith', 'morgul', 'eriador', 'arnor', 'harad', 'hobbiton', 'caradhras', 'mithril', 'palantir', 'silmaril',
+    'nazgul', 'balrog', 'istari', 'dunedain', 'rohirrim', 'noldor', 'sindar', 'teleri', 'valar', 'maiar', 'ainur', 'anduril', 'narsil', 'glamdring',
+    'orcrist', 'galadhrim', 'imladris'],
+  fantasy: ['dragon', 'wizard', 'sorcerer', 'warlock', 'goblin', 'griffin', 'phoenix', 'unicorn', 'basilisk', 'wyvern', 'chimera', 'kraken', 'golem',
+    'gargoyle', 'paladin', 'druid', 'ranger', 'necromancer', 'enchanter', 'conjurer', 'alchemist', 'talisman', 'amulet', 'grimoire', 'cauldron',
+    'potion', 'elixir', 'scepter', 'excalibur', 'avalon', 'camelot', 'merlin', 'morgana', 'lancelot', 'guinevere', 'percival', 'galahad', 'pendragon',
+    'tintagel', 'lyonesse', 'rune', 'sigil', 'spectre', 'wraith', 'banshee', 'ogre', 'troll', 'gnome', 'pixie', 'sprite', 'dryad', 'nymph', 'centaur',
+    'minotaur', 'cyclops', 'leviathan', 'behemoth', 'manticore', 'salamander', 'homunculus', 'citadel', 'dungeon', 'labyrinth', 'catacomb', 'bastion',
+    'rampart', 'gauntlet', 'halberd', 'scimitar', 'rapier', 'claymore', 'longbow', 'quiver', 'chalice', 'grail', 'oracle', 'prophecy', 'incantation',
+    'enchantment', 'sorcery', 'arcane', 'mystic', 'ethereal', 'eldritch', 'tempest', 'thunder', 'ember', 'obsidian', 'moonstone', 'changeling',
+    'werewolf', 'revenant', 'kobold', 'djinn', 'ifrit', 'valkyrie', 'berserker', 'barbarian', 'minstrel', 'bard', 'jester', 'squire', 'knight',
+    'baron', 'kingdom', 'realm', 'throne', 'scroll', 'codex', 'relic', 'portal', 'abyss', 'faerie', 'elven', 'dwarven', 'runic', 'hippogriff',
+    'selkie', 'kelpie', 'leprechaun', 'boggart', 'phantom', 'magus', 'shaman', 'enchantress', 'sorceress', 'elemental', 'treant', 'drake', 'wyrm',
+    'serpent', 'lindworm', 'thunderbird', 'simurgh', 'kitsune', 'tengu', 'mandrake', 'wolfsbane', 'nightshade', 'belladonna', 'starlight', 'twilight',
+    'emerald', 'sapphire', 'topaz', 'opal', 'amethyst', 'garnet', 'jasper', 'adamant', 'orichalcum', 'portcullis', 'battlement', 'turret', 'heraldry',
+    'bestiary', 'familiar', 'apprentice', 'sellsword', 'wayfarer', 'moonwell', 'spellbook', 'dragonfly', 'stormcaller', 'frostfell', 'ironwood',
+    'silverthorn'],
+  alien: ['zorvak', 'xelthar', 'vexlor', 'klytos', 'zyphon', 'thraxis', 'qelmar', 'vornax', 'xandrel', 'zuvika', 'kryvan', 'ulthex', 'ixolar',
+    'yzmora', 'drakzul', 'nexuvi', 'omkara', 'zentari', 'vulkora', 'kazimu', 'xiloten', 'azquil', 'thuvian', 'glixar', 'mokvar', 'zelnik', 'jaxuri',
+    'qivara', 'oxulon', 'blorvex', 'zintaru', 'kelvaxi', 'xathura', 'vyrkon', 'zabriko', 'zarnok', 'uvelix', 'ghorzan', 'plaxido', 'zemvolu',
+    'axitoru', 'vozhan', 'zogluma', 'xerphon', 'kitharu', 'nuvexa', 'orzaku', 'pyxolan', 'qotheru', 'raxmul', 'syzarin', 'tolvexi', 'ubrixa',
+    'varkuna', 'wexlion', 'xomari', 'yevlok', 'zhurani', 'aqvelon', 'bryzeth', 'ekthari', 'fluxano', 'hyxura', 'izvoran', 'jorquil', 'kavanthu',
+    'luxorim', 'nyktari', 'oqtavis', 'klaatu', 'barada', 'nikto', 'vogon', 'dalek', 'xenomorph', 'tribble', 'gallifrey', 'arrakis', 'solaris',
+    'xenon', 'krypton', 'zircon', 'axolotl', 'quetzal', 'zephyr', 'onyx', 'xylem', 'zygote', 'quixotic', 'xanadu', 'zanzibar', 'glimmox', 'quibblo',
+    'wobblix', 'zizzle', 'froonk', 'gloopo', 'meeblax', 'noodlix', 'plonkari', 'squonk', 'zwibble', 'yoblix', 'bopzul', 'doozan', 'fizzlot',
+    'grooblex', 'hoopzar', 'jibblon', 'kwazoo', 'loombix', 'zeeblo', 'glorpax', 'vrelliko', 'tazmuri', 'xinthea', 'ozkavi', 'mubaru', 'qwillon',
+    'skavoon', 'threlzu', 'ulquorra', 'velquin', 'yxandro', 'zomblit', 'krellix', 'pandoru', 'quazzit', 'rilkoon', 'snazgu', 'tivvax', 'umbloo',
+    'wizlar', 'xaboo', 'yorblit', 'zuzzle', 'bleepo', 'gorvash', 'hixxen', 'jazoon', 'klomper', 'lumzi', 'mixxul', 'nargle', 'orbizu',
+    'pluxxa', 'quorbi'],
+  myth: ['zeus', 'hera', 'athena', 'artemis', 'hermes', 'poseidon', 'hades', 'persephone', 'demeter', 'dionysus', 'hephaestus', 'ares', 'aphrodite',
+    'prometheus', 'atlas', 'hyperion', 'cronus', 'gaia', 'helios', 'selene', 'hecate', 'nemesis', 'morpheus', 'hypnos', 'thanatos', 'cerberus',
+    'medusa', 'perseus', 'theseus', 'achilles', 'odysseus', 'hercules', 'icarus', 'daedalus', 'orpheus', 'eurydice', 'pandora', 'odin', 'thor',
+    'loki', 'freya', 'frigg', 'baldur', 'heimdall', 'fenrir', 'yggdrasil', 'valhalla', 'asgard', 'midgard', 'ragnarok', 'bifrost',
+    'sleipnir', 'osiris', 'isis', 'anubis', 'horus', 'thoth', 'sekhmet', 'bastet', 'amun', 'gilgamesh', 'enkidu', 'ishtar', 'marduk', 'tiamat',
+    'quetzalcoatl', 'kukulkan', 'tlaloc', 'ixchel', 'viracocha', 'morrigan', 'dagda', 'brigid', 'cernunnos', 'taliesin', 'ceridwen', 'rhiannon',
+    'arawn', 'perun', 'veles', 'svarog', 'sphinx', 'harpy', 'gorgon', 'nereid', 'naiad', 'satyr', 'calypso', 'circe', 'penelope', 'telemachus',
+    'agamemnon', 'menelaus', 'hector', 'priam', 'cassandra', 'ajax', 'nestor', 'jason', 'medea', 'argonaut', 'olympus', 'elysium', 'tartarus', 'styx',
+    'lethe', 'acheron', 'arcadia', 'atlantis', 'delphi', 'ithaca', 'sparta', 'hesperides', 'chiron', 'echo', 'narcissus', 'midas', 'sisyphus',
+    'tantalus', 'bellerophon', 'ariadne', 'minos', 'pasiphae', 'electra', 'antigone', 'oedipus', 'tiresias', 'proteus', 'nereus', 'oceanus', 'tethys',
+    'rhea', 'themis', 'mnemosyne', 'calliope', 'clio', 'erato', 'euterpe', 'terpsichore', 'thalia', 'urania', 'selkath', 'skadi', 'idun',
+    'bragi', 'vidar', 'hermod', 'sif', 'nidhogg', 'huginn', 'muninn', 'jotunheim', 'muspelheim', 'vanaheim',
+    'sobek', 'khonsu', 'hathor', 'nephthys', 'anhur', 'enlil', 'enki', 'inanna', 'nergal', 'ereshkigal', 'utnapishtim'],
 };
 
 const isVowel = (w, i) => 'aeiouy'.includes(w[i]) && !(w[i] === 'y' && i === 0) && !(w[i] === 'u' && w[i - 1] === 'q');
@@ -57,27 +112,39 @@ export function pieces(word) {
   return { heads, mids, tails };
 }
 
-const BLOCKED = ['fuck', 'shit', 'cunt', 'cock', 'dick', 'piss', 'anus', 'rape', 'nazi', 'slut', 'whor', 'fag', 'nig', 'wank', 'twat', 'porn', 'sex', 'jiz', 'coon', 'spic', 'kike'];
+const BLOCKED = ['fuck', 'shit', 'cunt', 'cock', 'dick', 'piss', 'anus', 'rape', 'nazi', 'slut', 'whor', 'fag', 'nig', 'wank', 'twat', 'porn', 'sex', 'jiz', 'coon', 'spic', 'kike',
+  'crap', 'arse', 'turd', 'pedo', 'boob', 'tits', 'puke', 'scum', 'hitler', 'penis', 'vagin', 'homo', 'poop', 'bitch'];
 const sayable = (w) => !/(.)\1\1/.test(w) && !BLOCKED.some((b) => w.includes(b));
 const pick = (a, rng) => a[Math.floor(rng() * a.length)];
 let cache = null;
-// every list's words (one copy of each) with their pieces; built again if WORDS was given another theme
+// every list's words (one copy of each) as pieces, each piece with the list it came from; built again if WORDS was
+// given another theme
 function pool(lists) {
-  const all = [...new Set(Object.values(lists).flat().map((w) => String(w).toLowerCase().replace(/[^a-z]/g, '')).filter((w) => w.length >= 3))];
-  if (cache && cache.lists === lists && cache.n === all.length) return cache;
-  const ps = all.map(pieces);
-  return (cache = { lists, n: all.length, words: new Set(all), heads: ps.flatMap((p) => p.heads), mids: ps.flatMap((p) => p.mids), tails: ps.flatMap((p) => p.tails) });
+  const names = Object.keys(lists), n = names.reduce((a, k) => a + lists[k].length, 0);
+  if (cache && cache.lists === lists && cache.n === n && cache.themes === names.length) return cache;
+  const words = new Set(), heads = [], mids = [], tails = [];
+  names.forEach((k, t) => { for (const raw of lists[k]) {
+    const w = String(raw).toLowerCase().replace(/[^a-z]/g, '');
+    if (w.length < 3 || words.has(w)) continue;
+    words.add(w);
+    const p = pieces(w);
+    for (const x of p.heads) heads.push([x, t]); for (const x of p.mids) mids.push([x, t]); for (const x of p.tails) tails.push([x, t]);
+  } });
+  return (cache = { lists, n, themes: names.length, names, words, heads, mids, tails });
 }
-/** one new word of min..max letters: a head, now and then a middle, and a tail, each from a different pick; never a
- *  word of the lists themselves */
-export function jumble(rng = Math.random, min = 5, max = 10, lists = WORDS) {
+/** one new word of min..max letters and the lists its pieces came from, { word, from: [list of the start, (of the
+ *  middle,) of the end] }: a start, now and then a middle, and an end. The start and the end are from two different
+ *  lists (when there are two), and the word is never one of the lists' own */
+export function spliced(rng = Math.random, min = 5, max = 10, lists = WORDS) {
   const p = pool(lists);
-  for (let n = 0; n < 400; n++) {
-    const w = pick(p.heads, rng) + (rng() < 0.3 ? pick(p.mids, rng) : '') + pick(p.tails, rng);
-    if (w.length >= min && w.length <= max && !p.words.has(w) && sayable(w)) return w;
+  for (let n = 0; n < 600; n++) {
+    const h = pick(p.heads, rng), m = rng() < 0.3 ? pick(p.mids, rng) : null, t = pick(p.tails, rng), w = h[0] + (m ? m[0] : '') + t[0];
+    if ((p.themes < 2 || t[1] !== h[1]) && w.length >= min && w.length <= max && !p.words.has(w) && sayable(w)) return { word: w, from: [h, m, t].filter(Boolean).map((x) => p.names[x[1]]) };
   }
-  return 'nova' + pick(p.tails, rng); // (never reached with the lists as they are)
+  const t = pick(p.tails, rng); return { word: 'nova' + t[0], from: [p.names[0], p.names[t[1]]] }; // (never reached with the lists as they are)
 }
+/** one new word of min..max letters (see spliced) */
+export const jumble = (rng = Math.random, min = 5, max = 10, lists = WORDS) => spliced(rng, min, max, lists).word;
 /** a preset name in capitals: one word, or two shorter ones; not one of taken (a Set of names in use) */
 export function presetName(rng = Math.random, taken = new Set(), lists = WORDS) {
   for (let n = 0; n < 50; n++) {

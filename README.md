@@ -87,10 +87,13 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   in the layout, so a preset loads the same wherever LOW KEY is. Not part of a preset: the knob padlocks, the BS2
   knob map, LOW KEY and the RANDOM menu's settings.
 - **Auto names**: every new patch is named by jumbling real words: the start of one word, sometimes the middle of a
-  second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud (NEBUTRON,
-  QUASARIUS, FITRON PEDE). One word of 6 to 10 letters or two of 4 to 7, never a real word of the lists, never a name
-  already in use. **NEW NAME** rolls another. The words come from themed lists in `app/names.js` (space and physics,
-  about 145 words each); to add a theme, add a list to `WORDS` there.
+  second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud (JONDALF,
+  GRIMWISE, ENCHANDIL, PHOTORION, BOPZUFIN, DRYANA LUMEHIL). One word of 6 to 10 letters or two of 4 to 7, never a
+  real word of the lists, never a name already in use. **NEW NAME** rolls another. The words come from six themed
+  lists in `app/names.js`, about a thousand words in all: **space**, **physics**, **Tolkien** (people and places of
+  Middle-earth), **fantasy**, **alien** (made-up alien-sounding words and a few from old science fiction) and
+  **myth** (Greek, Norse, Egyptian and other old gods and heroes). Every word is a mix: its start and its end always
+  come from two different lists. To add a theme, add a list to `WORDS` there.
 - **RANDOM menu**: **RANDOM**, **ALTER** and **LEVEL** for the engine on screen, **RANDOM ALL**, **ALTER ALL** and
   **LEVEL ALL** for all three, each with a line under it saying what it does. RANDOM gives every key a new kit sound;
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
@@ -157,7 +160,7 @@ No build step: the page loads the ES modules directly.
 ```sh
 node test/morph.test.mjs                        # the morph and engine checks
 node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
-node test/names.test.mjs                        # the preset names: sayable, varied, never a list word
+node test/names.test.mjs                        # the preset names: sayable, varied, never a list word, always a mix of lists
 python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: laptop sizes and the phone (needs Playwright)
 ```
 

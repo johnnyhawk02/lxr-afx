@@ -1,6 +1,7 @@
 // node test/names.test.mjs: the preset names (app/names.js). New words spliced from pieces of the word lists: sayable
-// (consonants and vowels in turn at every join), never a word of the lists, varied, and not a name already taken.
-import { WORDS, runs, pieces, jumble, presetName } from '../app/names.js';
+// (consonants and vowels in turn at every join), never a word of the lists, varied, not a name already taken, and
+// always a mix of two lists.
+import { WORDS, runs, pieces, jumble, spliced, presetName } from '../app/names.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
 // a seeded generator, so a failure can be seen again
@@ -12,7 +13,9 @@ for (const [theme, list] of Object.entries(WORDS)) {
   ok(list.every((w) => /^[a-z]{3,}$/.test(w)), `${theme}: a word that isn't plain letters: ${list.filter((w) => !/^[a-z]{3,}$/.test(w))}`);
   ok(new Set(list).size === list.length, `${theme}: a word twice: ${list.filter((w, i) => list.indexOf(w) !== i)}`);
 }
-ok('space' in WORDS && 'physics' in WORDS, 'the space and physics lists');
+ok(['space', 'physics', 'tolkien', 'fantasy', 'alien', 'myth'].every((t) => t in WORDS), 'the six lists: ' + Object.keys(WORDS));
+{ const all = Object.values(WORDS).flat(), twice = all.filter((w, i) => all.indexOf(w) !== i);
+  ok(twice.length === 0, 'a word in two lists: ' + twice); }
 
 // a word as runs, and its pieces
 ok(runs('quasar').map((r) => r.text).join('|') === 'qu|a|s|a|r', 'quasar: ' + runs('quasar').map((r) => r.text).join('|'));
@@ -41,6 +44,17 @@ ok(runs('yoyo').map((r) => r.text).join('|') === 'y|oyo', 'a leading y is a cons
   ok(distinct > 2850, `only ${distinct} different names in 3000`);
   ok(two > 0.35 && two < 0.55, `two-word names: ${Math.round(two * 100)}%`);
   console.log('  e.g.', names.slice(0, 14).join(' · ')); }
+
+// every word is a mix: its start and its end come from two different lists, and every list is in the mix about as
+// much as it has words
+{ const rng = seeded(4242), themes = Object.keys(WORDS), starts = {}, ends = {}; let same = 0, wrong = 0, N = 6000;
+  for (let i = 0; i < N; i++) { const s = spliced(rng), a = s.from[0], z = s.from[s.from.length - 1];
+    if (a === z) same++; if (!themes.includes(a) || !themes.includes(z) || s.from.length < 2 || s.from.length > 3 || !/^[a-z]{5,10}$/.test(s.word)) wrong++;
+    starts[a] = (starts[a] || 0) + 1; ends[z] = (ends[z] || 0) + 1; }
+  ok(same === 0, `${same} words with the start and the end from one list`);
+  ok(wrong === 0, `${wrong} words of the wrong shape or from no list`);
+  for (const t of themes) ok(starts[t] > N / themes.length / 2 && ends[t] > N / themes.length / 2, `${t} starts ${starts[t]} and ends ${ends[t]} of ${N} words`);
+  ok(spliced(seeded(5), 5, 10, { one: WORDS.space }).from.every((f) => f === 'one'), 'one list alone still makes words'); }
 
 // a name in use isn't given again; the same seed gives the same names; another theme joins in
 { const first = presetName(seeded(7)), again = presetName(seeded(7)), other = presetName(seeded(7), new Set([first]));
