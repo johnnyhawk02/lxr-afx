@@ -691,3 +691,17 @@ drawZones();
 $('start-text').textContent = `MIDI channel 1: ${SOUNDS.map((s) => `${s.name.toLowerCase()} on ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`).join(', ')}, all three at once. `
   + `Each zone's base key (${SOUNDS.map((s) => noteName(s.zone.base)).join(', ')}) plays its sound as you made it; the other keys are variants of it.`;
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots
+
+// ---------------------------------------------------------------------------------------------------------------
+// fit the screen to small windows (a MacBook Air's browser with its toolbar and the dock): below 1264x784 inside the
+// bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
+// ---------------------------------------------------------------------------------------------------------------
+const FIT_W = 1264, FIT_H = 784;
+function fitScreen() {
+  const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
+  if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
+  else sc.removeAttribute('style');
+  drawKeymap();
+}
+window.addEventListener('resize', fitScreen);
+fitScreen();

@@ -6,7 +6,7 @@ const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
 let errors = 0;
-for (const [w, h] of [[1440, 900], [1280, 800]]) {
+for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
@@ -39,6 +39,8 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);
   if (scroll.some(Boolean)) { errors++; console.log(`${w}x${h}: page scrolls`, scroll); }
+  { const r = await p.evaluate(() => { const b = document.getElementById('screen').getBoundingClientRect(); return [b.right, b.bottom]; });
+    if (r[0] > w + 1 || r[1] > h + 1) { errors++; console.log(`${w}x${h}: screen overflows`, r); } }
   // every sound's knobs fit the editor (nothing cut off at the bottom or right)
   for (const k of ['1', '2', '3']) {
     await p.keyboard.press(k); await p.waitForTimeout(80);
