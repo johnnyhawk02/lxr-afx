@@ -64,7 +64,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .kitrand > .dim { margin-right: 2px; letter-spacing: .1em; }
 
 /* ---- the seven sounds ---- */
-.sounds { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 8px; align-items: center; }
+.sounds { display: grid; grid-template-columns: auto repeat(3, 1fr) minmax(0, .75fr); gap: 8px; align-items: center; }
 .sounds .tag { letter-spacing: .14em; font-size: 18px; padding-right: 4px; }
 .snd { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px; font-size: 21px; padding: 2px 8px; }
 .snd .ch { font-size: 16px; opacity: .7; }
@@ -261,3 +261,18 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
   .keystrip { gap: 6px; }
   .keyinfo { max-width: 11em; }
 }
+
+/* ---- the FX page ---- */
+.snd.fx { letter-spacing: .1em; }
+.fxview .editbar #edit-key, .fxview .editbar #edit-all, .fxview .editbar > .dim:first-child { visibility: hidden; }
+.fxview .lockveil { display: none; }
+.fxview .faders { opacity: 1; pointer-events: auto; }
+.fxnote { flex: 1 0 100%; margin: 14px 8px 0; font-size: 19px; color: var(--muted); }
+.fxnote em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 4px; text-shadow: none; }
+.faders .sect .row .vf { padding-bottom: 0; }
+
+/* the key row keeps still: the key's name, number and info have fixed widths (G#3 is as wide as C3) */
+.keyname b { min-width: 0; width: 4.2ch; }
+.keyname #kh-num { width: 4ch; }
+.keyinfo { width: 14em; max-width: none; }
+@media (max-width: 1340px) { .keyinfo { width: 11em; } }
