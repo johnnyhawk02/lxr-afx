@@ -10,8 +10,8 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, ALL_PARAMS } from './schema.js?v=mwkusucf';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkusucf';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS } from './schema.js?v=mwkva6ga';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwkva6ga';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -59,6 +59,9 @@ export class LxrInstrument {
     this.idx = 0; this.frac = 0;
     this.peak = new Float32Array(6); // each engine voice's peak since the last read
     this.sends = [0, 1].map(() => new Float32Array(6)); // [effect][voice], 0..1
+    // AUTO LEVEL's trim: each voice's gain (1 = none), and where it is now: a new hit starts at its key's trim, a
+    // change while a sound rings glides there over a block (no click)
+    this.trim = new Float32Array(6).fill(1); this.trimNow = new Float32Array(6).fill(1);
     this.echo = new FxBus(); this.echo.fxType = FX_DELAY; this.echo.forceWet = true;
     this.verb = new ReverbBus();
     this.fxRng = new Rng(0x2545f491);
@@ -76,6 +79,7 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
+    if (par >= TRIM_BASE) { if (par < ALL_PARAMS) this.trim[par - TRIM_BASE] = Math.pow(10, trimDb(value) / 20); return; }
     if (par >= SEQ_PAT_BASE) { this.seqPat[par - SEQ_PAT_BASE] = value; return; }
     if (par >= SEQ_ON_BASE) { this.seqOn[par - SEQ_ON_BASE] = value ? 1 : 0; return; }
     if (par >= REPEAT_BASE) return; // the dropped note repeat's slots
@@ -104,8 +108,10 @@ export class LxrInstrument {
     this.backs[sound] = null;
     if (hold && this.seqOn[v]) { this.held[sound] = { note, vel, at: Math.ceil(this.beat * 4 - 1e-6) / 4, step: 0, cur: -1 }; return; }
     this.held[sound] = null;
-    this.e.trigger(SOUNDS[sound].trigger, vel, note);
+    this._hit(sound, vel, note);
   }
+  // a hit of a sound's voice, at the trim it has now
+  _hit(sound, vel, note) { const d = SOUNDS[sound]; this.e.trigger(d.trigger, vel, note); this.trimNow[d.engineVoice] = this.trim[d.engineVoice]; }
   /** the zone's newest key let go while an earlier one is held: the newest's sequence stops, and the earlier key plays
    * again (held, so its own sequence starts over) at once or on the next RETURN step of the grid */
   back(sound, note, vel, params) {
@@ -130,7 +136,7 @@ export class LxrInstrument {
       const h = this.held[s]; if (!h) continue;
       const v = SOUNDS[s].engineVoice;
       while (h.at < this.beat + step) {
-        if (this.seqOn[v] && (this.seqPat[v] >> h.step) & 1) this.e.trigger(SOUNDS[s].trigger, h.vel, h.note);
+        if (this.seqOn[v] && (this.seqPat[v] >> h.step) & 1) this._hit(s, h.vel, h.note);
         h.cur = h.step; h.step = (h.step + 1) & 7; h.at += 0.25;
       }
     }
@@ -139,10 +145,17 @@ export class LxrInstrument {
     const pans = [e.drums[0], e.drums[1], e.drums[2], e.snare, e.cymbal, e.hat];
     const [L, R] = dst;
     L.fill(0); R.fill(0);
+    // each voice's trim, gliding across the block to where it's set (the sends hear the trimmed voice too)
+    const tr = this.trimBuf ||= [0, 1, 2, 3, 4, 5].map(() => new Float32Array(BLOCK));
     for (let n = 0; n < 6; n++) {
-      const o = out[n], pl = pans[n].triggeredPanL / 32768 * this.gain, pr = pans[n].triggeredPanR / 32768 * this.gain;
+      const t0 = this.trimNow[n], t1 = this.trim[n], d = (t1 - t0) / BLOCK, t = tr[n];
+      for (let i = 0; i < BLOCK; i++) t[i] = t0 + d * (i + 1);
+      this.trimNow[n] = t1;
+    }
+    for (let n = 0; n < 6; n++) {
+      const o = out[n], t = tr[n], pl = pans[n].triggeredPanL / 32768 * this.gain, pr = pans[n].triggeredPanR / 32768 * this.gain;
       let pk = this.peak[n];
-      for (let i = 0; i < BLOCK; i++) { const v = o[i]; L[i] += v * pl; R[i] += v * pr; const a = v < 0 ? -v : v; if (a > pk) pk = a; }
+      for (let i = 0; i < BLOCK; i++) { const v = o[i] * t[i]; L[i] += v * pl; R[i] += v * pr; const a = v < 0 ? -v : v; if (a > pk) pk = a; }
       this.peak[n] = pk;
     }
     // the sends: each effect's bus gets every voice panned in at its send, saturated to int16, and comes back all wet
@@ -151,8 +164,8 @@ export class LxrInstrument {
       const sends = this.sends[k], bus = buses[k], bi = this.busIn; bi.fill(0);
       for (let n = 0; n < 6; n++) {
         const g = sends[n]; if (!g) continue;
-        const o = out[n], pl = pans[n].triggeredPanL * g, pr = pans[n].triggeredPanR * g;
-        for (let i = 0; i < BLOCK; i++) { bi[2 * i] += o[i] * pl; bi[2 * i + 1] += o[i] * pr; }
+        const o = out[n], t = tr[n], pl = pans[n].triggeredPanL * g, pr = pans[n].triggeredPanR * g;
+        for (let i = 0; i < BLOCK; i++) { const v = o[i] * t[i]; bi[2 * i] += v * pl; bi[2 * i + 1] += v * pr; }
       }
       for (let i = 0; i < BLOCK * 2; i++) bus.input[i] = Math.max(-32768, Math.min(32767, Math.round(bi[i])));
       const bo = this.busOut; bo.fill(0);
@@ -170,7 +183,7 @@ export class LxrInstrument {
     const M = this.m, D = this.dirt;
     if (D.active) {
       const src = D.p.sc ? D.p.src | 0 : 0;
-      if (src >= 1 && src <= 3) { const o = voices[SOUNDS[src - 1].engineVoice], k = this.key, g = this.gain / 32768; for (let i = 0; i < BLOCK; i++) k[i] = o[i] * g; }
+      if (src >= 1 && src <= 3) { const n = SOUNDS[src - 1].engineVoice, o = voices[n], t = this.trimBuf[n], k = this.key, g = this.gain / 32768; for (let i = 0; i < BLOCK; i++) k[i] = o[i] * t[i] * g; }
       D.process(L, R, src >= 1 && src <= 3 ? this.key : null);
     } else D.readEnv();
     const T = -M.thresh, ratio = Math.max(1, M.ratio / 10), W = M.knee, slope = 1 / ratio - 1;

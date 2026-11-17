@@ -58,10 +58,16 @@ export const sendPar = (voice, k) => SEND_BASE + voice * 3 + k;
 export const REPEAT_BASE = NUM_PARAMS + 18;
 export const SEQ_ON_BASE = NUM_PARAMS + 24, SEQ_PAT_BASE = NUM_PARAMS + 30;
 export const seqOnPar = (voice) => SEQ_ON_BASE + voice, seqPatPar = (voice) => SEQ_PAT_BASE + voice;
-export const ALL_PARAMS = NUM_PARAMS + 36;
+// then each voice's TRIM: AUTO LEVEL's correction of a key's loudness (sound/level.js), a gain of its own beside the
+// LEVEL knob: quarter-dB steps around TRIM_ZERO (no correction), so 0..127 is -16 .. +15.75 dB
+export const TRIM_BASE = NUM_PARAMS + 36, TRIM_ZERO = 64, TRIM_STEP_DB = 0.25;
+export const trimPar = (voice) => TRIM_BASE + voice;
+export const trimDb = (v) => (v - TRIM_ZERO) * TRIM_STEP_DB;
+export const ALL_PARAMS = NUM_PARAMS + 42;
 export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
 for (let i = 8; i < NUM_PARAMS; i++) INIT_VALUES[i - 8] = INIT_KIT[i];
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
+for (let v = 0; v < 6; v++) INIT_VALUES[trimPar(v)] = TRIM_ZERO;
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
   'tom', 'snap 2', ...EXTRA_CLICK_NAMES];
@@ -183,6 +189,9 @@ function buildSchema(voice) {
     def: 0, display: { type: 'menu', names: ['off', 'on'] }, morph: null, weight: 0, rand: 'seq', seq: true });
   out.push({ key: 'SEQ_PAT' + (voice + 1), par: seqPatPar(voice), label: 'steps', text: 'SEQ_PAT', page: 'mix', section: 'seq', min: 0, max: 255,
     def: 0b00010001, display: { type: 'num' }, morph: null, weight: 0, rand: 'seq', seq: true });
+  // AUTO LEVEL's trim (shown beside the LEVEL knob, set by the randomisers when they deal a sound; never randomised)
+  out.push({ key: 'TRIM' + (voice + 1), par: trimPar(voice), label: 'auto level', text: 'TRIM', page: 'mix', section: 'auto', min: 0, max: 127,
+    def: TRIM_ZERO, display: { type: 'num' }, morph: null, weight: 0, rand: 'seq', seq: true });
   return out;
 }
 

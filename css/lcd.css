@@ -439,14 +439,18 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 @media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
 
 /* ---- the RANDOM menu on an even grid: two equal buttons a row, the sliders and WILD under HOW MUCH ---- */
-.menupanel { width: 400px; }
-.menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.menupanel { width: 470px; }
+.menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
 .menupanel .randrow .btn { padding: 5px 6px; min-width: 0; }
 .menupanel .bars + .bars { margin-top: 6px; }
-.menupanel .chk.wild { margin-top: 8px; font-size: 18px; }
-.menupanel .chk.wild .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
+.menupanel .chk.lvl { margin-top: 6px; }
+.menupanel .chk.wild .dim, .menupanel .chk.lvl .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- the keys that work a button, shown on it ---- */
 .btn kbd { font: inherit; font-size: 13px; line-height: 1; margin-left: 6px; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
 .btn:disabled kbd { opacity: .4; }
 .status #detail .dim { margin-left: 10px; }
+
+/* AUTO LEVEL's correction on the key: a chip at the head of the LEVEL cell, on the line of the row's headings */
+.faders .vf.big .auto { position: absolute; top: 0; left: 8px; min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }

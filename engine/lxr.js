@@ -1496,12 +1496,23 @@ export class LxrEngine {
 
   /**
    * mixer_calcNextSampleBlock(), up to the per-voice outputs: renders the next 64 samples
-   * of each voice into this.out[0..5] (int16, mono, before panning and the FX bus)
+   * of each voice into this.out[0..5] (int16, mono, before panning and the FX bus).
+   * only (not in the firmware): one voice's index, to render that voice alone (every modulator still runs; the other
+   * voices' buffers are left as they were). Six times quicker, for measuring one sound offline (sound/level.js)
    */
-  renderBlock() {
+  renderBlock(only = -1) {
     this._resetTargets();
     for (const vm of this.velocityModulators) this._modUpdate(vm, vm.lastVal);
     for (const lfo of this.lfos) this._modUpdate(lfo.modTarget, lfo_calc(lfo, this.rng));
+    if (only >= 0 && !this.xmod) {
+      const o = this.out, b = o[only];
+      if (only < 3) { const d = this.drums[only]; SVF_recalcFreq(d.filter); this._drumAsync(d); this._drumSync(only, b); }
+      else if (only === 3) { SVF_recalcFreq(this.snare.filter); this._snareAsync(this.snare); this._snareSync(b); }
+      else if (only === 4) { SVF_recalcFreq(this.cymbal.filter); this._metalAsync(this.cymbal); this._metalSync(this.cymbal, 1, 4, b); }
+      else { SVF_recalcFreq(this.hat.filter); this._metalAsync(this.hat); this._metalSync(this.hat, f(0.5), 5, b); }
+      this._decimate(only, b);
+      return o;
+    }
     SVF_recalcFreq(this.drums[0].filter);
     SVF_recalcFreq(this.drums[1].filter);
     SVF_recalcFreq(this.drums[2].filter);

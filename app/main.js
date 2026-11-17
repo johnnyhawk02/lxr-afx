@@ -1,11 +1,12 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkusucf';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkusucf';
-import { KIT_FILES } from '../sound/kits.js?v=mwkusucf';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkusucf';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkusucf';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO } from '../sound/schema.js?v=mwkva6ga';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkva6ga';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkva6ga';
+import { KIT_FILES } from '../sound/kits.js?v=mwkva6ga';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkva6ga';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkva6ga';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -29,7 +30,9 @@ const S = {
   global: { depth: 100, pitch: 100, timbre: 100 },
   sounds: SOUNDS.map(() => ({ depth: 50, pitch: 50, timbre: 50, seed: newSeed() })),
   locks: defaultLocks(),
-  rand: { alter: 10, wild: false, rhythms: 50 }, // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence
+  // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence; autoLevel:
+  // the randomisers level each sound they deal or alter
+  rand: { alter: 10, wild: false, rhythms: 50, autoLevel: true },
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
@@ -74,7 +77,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkusucf', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkva6ga', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -332,7 +335,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) s
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val),
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
-  pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals] };
+  pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals],
+  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))) }; // a key's AUTO LEVEL correction, dB
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -428,6 +432,9 @@ const randDraws = [
 ];
 $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
+$('auto-on').checked = S.rand.autoLevel;
+$('auto-on').addEventListener('change', () => { S.rand.autoLevel = $('auto-on').checked; save();
+  detail(S.rand.autoLevel ? 'AUTO LEVEL <em>on</em>: NEW SOUND, SCATTER and ALTER bring each key to its engine\'s level' : 'AUTO LEVEL <em>off</em>: a dealt sound plays as loud as its kit made it'); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // the zone's keys, one row each: its note, the sound it plays, and whether it's locked or edited. A click picks the key
@@ -502,6 +509,11 @@ function buildFaders() {
   box.append(el);
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
+  // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press levels the
+  // key now, or takes its correction off; editing ALL KEYS it does the whole zone and counts the keys that have one
+  const auto = document.createElement('button'); auto.type = 'button'; auto.className = 'btn sm hdb auto'; auto.id = 'auto-level';
+  auto.addEventListener('click', autoPress); big.append(auto);
+  faderDraws.push(() => drawAuto(auto));
   // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
   drawFaders();
@@ -826,7 +838,7 @@ function pasteKey() {
   const ed = { _kit: clip.voice !== v && !/\(as \w+\)$/.test(clip.label) ? `${clip.label} (as ${SOUNDS[sound].name.toLowerCase()})` : clip.label, _st: clip.st };
   for (const [p, x] of now) if (p !== level) ed[p] = x;
   for (const [p, x] of pairs) if (p !== level && now.has(p)) ed[p] = x;
-  randChange(() => { S.keyEdits[sound][note] = ed; if (S.editAll) setEditAll(false); },
+  randChange(() => { S.keyEdits[sound][note] = ed; if (clip.voice !== v) levelKey(sound, note, true); if (S.editAll) setEditAll(false); },
     `pasted <em>${clip.label}</em> onto ${SOUNDS[sound].name} ${noteName(note)}${clip.voice !== v ? ' (mapped to ' + SOUNDS[sound].name.toLowerCase() + ')' : ''} · UNDO takes it back`)
     .then(() => { drawKeymap(); play(sound, note, 100); });
 }
@@ -914,6 +926,7 @@ function alterKeys(sound, depth) {
       const v = vary(e, now.get(e.par), depth, S.rand.wild);
       if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
     }
+    levelKey(sound, note);
   }
 }
 // ALTER: every key of the zone nudged around what it plays now by the ALTER amount (the RANDOM menu's slider, 10% as it
@@ -929,6 +942,7 @@ function alterOne(sound, note, depth) {
     if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
   }
   if (editCount(ed)) S.keyEdits[sound][note] = ed;
+  levelKey(sound, note);
 }
 function alterKey() {
   const sound = S.sel, note = editKey[sound];
@@ -946,6 +960,72 @@ async function randChange(fn, what) {
   detail(what);
 }
 const selVoice = () => SOUNDS[S.sel].engineVoice;
+
+// ---- AUTO LEVEL: the kits' sounds are of very different loudness, so each sound a randomiser deals or alters is
+// played offline and measured (sound/level.js), and its key gets a TRIM: a gain of its own, beside LEVEL, that brings
+// it to its engine's target (LEVEL_TARGET_DB: the middle loudness of that engine's kit sounds). The LEVEL knob and the
+// zone levels stay yours, and LEVEL's lock has no say here: AUTO LEVEL in the RANDOM menu switches it. Off, a newly
+// dealt sound (fresh) plays as its kit made it and an altered one keeps the trim it had. Locked keys are left alone ----
+function levelKey(sound, note, fresh) {
+  const ed = S.keyEdits[sound][note];
+  if (!ed || ed._lock) return;
+  const t = trimPar(SOUNDS[sound].engineVoice);
+  if (S.rand.autoLevel) { const m = keyPatch(sound, note); ed[t] = autoTrim(sound, S.values, m.vals, m.note); }
+  else if (fresh) ed[t] = TRIM_ZERO;
+}
+const trimText = (x) => { const db = trimDb(x); return `${db > 0 ? '+' : ''}${db.toFixed(1)}dB`; };
+// the zone's keys that aren't locked, and those of them with a correction
+function autoKeys(sound) {
+  const z = SOUNDS[sound].zone, t = trimPar(SOUNDS[sound].engineVoice), keys = [];
+  for (let n = z.lo; n <= z.hi; n++) if (!keyLocked(sound, n)) keys.push(n);
+  return { keys, on: keys.filter((n) => keyPatch(sound, n).vals.get(t) !== TRIM_ZERO) };
+}
+// the AUTO chip at the head of the LEVEL cell
+function drawAuto(b) {
+  const sound = S.sel, name = SOUNDS[sound].name, t = trimPar(SOUNDS[sound].engineVoice), target = `the ${name} level (${LEVEL_TARGET_DB[sound]} dB)`;
+  if (editing()) {
+    const x = valueNow(t), on = x !== TRIM_ZERO, db = trimDb(x);
+    b.textContent = `AUTO ${on ? trimText(x) : '0dB'}`; b.setAttribute('aria-pressed', on);
+    b.title = on ? `AUTO LEVEL turned this key ${db > 0 ? 'up' : 'down'} ${Math.abs(db).toFixed(1)} dB, to ${target}. Press to take the correction off`
+      : `This key plays as loud as its sound is. Press to bring it to ${target}`;
+  } else {
+    const { keys, on } = autoKeys(sound);
+    b.textContent = `AUTO ${on.length}/${keys.length}`; b.setAttribute('aria-pressed', on.length > 0);
+    b.title = on.length ? `${on.length} of the zone's ${keys.length} keys are levelled to ${target}. Press to take the corrections off`
+      : `No key of the zone is levelled. Press to bring every key to ${target}`;
+  }
+}
+// LEVEL and LEVEL ALL (the RANDOM menu): every key of a zone measured as it plays now and brought to its engine's
+// target, its sound untouched, whether AUTO LEVEL is on or not (locked keys stay)
+function levelZone(sound) {
+  const t = trimPar(SOUNDS[sound].engineVoice);
+  for (const note of autoKeys(sound).keys) { const m = keyPatch(sound, note); (S.keyEdits[sound][note] ||= {})[t] = autoTrim(sound, S.values, m.vals, m.note); }
+}
+// the trim of the key on screen, to what's still ringing
+const sendTrim = () => { const t = trimPar(selVoice()); send({ type: 'param', par: t, value: keyPatch(S.sel, editKey[S.sel]).vals.get(t) }); };
+function autoPress() {
+  const sound = S.sel, name = SOUNDS[sound].name, t = trimPar(SOUNDS[sound].engineVoice);
+  // level a key (measured as it plays now), or take its correction off
+  const set = (note, on) => {
+    if (!on && !S.keyEdits[sound][note]) return TRIM_ZERO;
+    const m = keyPatch(sound, note), ed = (S.keyEdits[sound][note] ||= {});
+    return (ed[t] = on ? autoTrim(sound, S.values, m.vals, m.note) : TRIM_ZERO);
+  };
+  if (editing()) {
+    const note = editKey[sound], key = `${name} ${noteName(note)}`;
+    if (keyLocked(sound, note)) { lockedMsg(); return; }
+    snapshot(`${key} AUTO LEVEL`);
+    const on = valueNow(t) === TRIM_ZERO, x = set(note, on);
+    detail(!on ? `${key}: no auto level, it plays as loud as its sound is` : x === TRIM_ZERO ? `${key} is at the ${name} level already` : `${key} levelled: <em>${trimText(x)}</em>`);
+  } else {
+    const { keys, on } = autoKeys(sound);
+    snapshot(`${name} ALL KEYS AUTO LEVEL`);
+    for (const n of keys) set(n, !on.length);
+    detail(on.length ? `${name}: no auto level on any key (locked keys stay)` : `${name}: every key levelled to <em>${LEVEL_TARGET_DB[sound]} dB</em> (locked keys stay)`);
+  }
+  sendTrim();
+  save(); drawFaders(); drawKeymap(); drawEditKey();
+}
 
 // ---- scatter: every voice of a sound's type from all the kits (every drum 1-3 for the drum, every snare, every cymbal
 // and hi-hat for the metal), the same sound only once, dealt at random one per key across the sound's zone. Each key
@@ -974,6 +1054,7 @@ function scatter(sound) {
     const v = SOUNDS[sound].engineVoice;
     ed._r = rnd(); ed[seqPatPar(v)] = randomPattern();
     if (!S.locks.has(panPar(v))) ed[panPar(v)] = randPan(v);
+    levelKey(sound, note, true);
   }
   applyRhythms(sound); // and rhythms on the slider's share of the keys
 }
@@ -1031,16 +1112,20 @@ function randKey() {
     ed[panPar(SOUNDS[sound].engineVoice)] = randPan(SOUNDS[sound].engineVoice); // and a pan in its range (a lock keeps the old one)
     for (const par of S.locks) if (par in ed) ed[par] = now.get(par);
     S.keyEdits[sound][note] = ed;
+    levelKey(sound, note, true);
     if (S.editAll) setEditAll(false);
   }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${s.label}</em> (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
 }
 $('rand-key').addEventListener('click', () => { if (!learn) randKey(); });
 $('rand-key').dataset.learn = JSON.stringify({ t: 'randkey' });
-$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})`));
-$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), 'all three zones: a kit sound on every key'));
+const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})${levelled()}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three zones: a kit sound on every key${levelled()}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
-$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>`));
-$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three zones: every key altered <em>${S.rand.alter}%${wildly()}</em>`));
+$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}`));
+$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three zones: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}`));
+$('level').addEventListener('click', () => randChange(() => levelZone(S.sel), `${SOUNDS[S.sel].name}: every key levelled to <em>${LEVEL_TARGET_DB[S.sel]} dB</em> (locked keys stay)`).then(sendTrim));
+$('kit-level').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => levelZone(i)), 'all three zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
 function undo() {
   const u = undoStack.pop();
   if (!u) { detail('nothing to undo'); return; }

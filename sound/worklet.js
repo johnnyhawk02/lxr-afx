@@ -6,7 +6,7 @@
 //   { type: 'back', sound, note, vel, params }  the zone back to an earlier held key, on the next RETURN step
 //   { type: 'release', sound }                  every key of the zone let go
 // It posts { type: 'peaks', peaks } about 30 times a second for the level lights.
-import { LxrInstrument } from './instrument.js?v=mwkusucf';
+import { LxrInstrument } from './instrument.js?v=mwkva6ga';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwkusucf">
+<link rel="stylesheet" href="css/lcd.css?v=mwkva6ga">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -20,22 +20,25 @@
     <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="menu" id="menu">
-      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds or a nudge for a whole engine or all three, and how much">RANDOM ▾</button>
+      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all three, and how much">RANDOM ▾</button>
       <div class="menupanel" id="menu-panel" hidden>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">
           <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
           <button class="btn" id="alter" title="Nudge every key of this zone by the ALTER amount (locked keys and locked controls stay)">ALTER</button>
+          <button class="btn" id="level" title="Even out this zone as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">LEVEL</button>
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="randrow">
           <button class="btn" id="kit-scatter" title="Every key of all three zones: a sound of its type from the built-in kits (locked keys stay)">SCATTER ALL</button>
           <button class="btn" id="kit-alter" title="Nudge every key of all three zones by the ALTER amount (locked keys and locked controls stay)">ALTER ALL</button>
+          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all three zones is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
         </div>
         <h3>HOW MUCH</h3>
         <div class="bars" id="rand-bars" title="How far ALTER, ALTER ALL and ALTER KEY move each control"></div>
         <div class="bars" id="rhythm-bars" title="How many keys play a running rhythm (their sequencer ACTIVE): 0% none, 100% every key. Moving it switches keys on and off at once; NEW SOUND and SCATTER deal rhythms at this share"></div>
         <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER MAY LEAVE THE DRUM RANGES</span></label>
+        <label class="chk lvl" title="NEW SOUND, SCATTER and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
         <h3>CONTROL LOCKS <span class="dim" id="lock-count">0 LOCKED</span></h3>
         <div class="randrow">
           <button class="btn sm" id="lock-default">DEFAULT LOCKS</button><button class="btn sm" id="lock-none">UNLOCK ALL</button>
@@ -102,6 +105,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwkusucf"></script>
+<script type="module" src="app/main.js?v=mwkva6ga"></script>
 </body>
 </html>

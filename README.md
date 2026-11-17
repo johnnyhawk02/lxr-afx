@@ -16,7 +16,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L), **NEW SOUND** (K),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
-  whole engine or all three (scatter, alter, the ALTER amount, RHYTHMS, control locks) is in the **RANDOM** menu.
+  whole engine or all three (scatter, alter, level, the ALTER amount, RHYTHMS, AUTO LEVEL, control locks) is in the
+  **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
@@ -68,11 +69,24 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
   randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
   plays a rhythm has a dashed foot, a key you edited by hand a dot.
-- **RANDOM menu**: **SCATTER** and **ALTER** for the engine on screen, **SCATTER ALL** and **ALTER ALL** for all three.
+- **RANDOM menu**: **SCATTER**, **ALTER** and **LEVEL** for the engine on screen, **SCATTER ALL**, **ALTER ALL** and
+  **LEVEL ALL** for all three.
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
   uses it too); **WILD** lets it take a control outside the ranges drums usually sit in. Locked keys and locked
   controls stay. (RANDOMISE, VARY, RANDOM KIT and INIT are gone: they changed the engine's base sound, which no key
   plays since every key got a sound of its own.)
+- **Auto level**: the kits' sounds are of very different loudness (the loudest drum is 50 dB above the quietest), so
+  every sound a randomiser deals or alters (NEW SOUND, SCATTER, ALTER, ALTER KEY, a paste onto another engine) is
+  played offline, measured, and its key gets a **trim** that brings it to its engine's level: **drum -17 dB, snare
+  -11.5 dB, metal -16 dB** (the loudest 100 ms of a hit, K-weighted, below full scale). Those are the middle loudness of
+  each engine's kit sounds, so a typical sound plays as it always did, loud ones come down and quiet ones come up
+  (never past full scale, at most 12 dB up or 16 dB down). The trim is a gain of its own: the **LEVEL** knob and the
+  zone levels stay yours, and LEVEL's padlock has no say in it. The **AUTO** button at the head of the LEVEL cell
+  shows the key's trim ("AUTO -3.5dB"); press it to take the trim off, press again to measure and level the key as it
+  is now (editing ALL KEYS it does the whole zone and counts the keys, "AUTO 6/8"). **LEVEL** and **LEVEL ALL** in the
+  RANDOM menu even out the keys you have now without changing their sounds. **AUTO LEVEL** in the RANDOM menu (on as
+  it comes) switches the automatic part off: a newly dealt sound then plays as loud as its kit made it. Locked keys
+  are left alone; UNDO takes any of it back.
 - **Computer keys**: **[** and **]** (or the left and right arrows) step to the key before or after and play it, **Space**
   plays the key again, **K** new sound, **A** alter key, **L** lock key, **Z** undo, **1-3** pick an engine, Cmd/Ctrl+C
   and V copy and paste a key. The buttons show their keys.
@@ -88,11 +102,12 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 
 | Path | What it is |
 |---|---|
-| `engine/` | the LXR-02 firmware's drum engine in JavaScript, copied unchanged from [elixir-desktop](https://github.com/johnnyhawk02/elixir-desktop) |
+| `engine/` | the LXR-02 firmware's drum engine in JavaScript, copied from [elixir-desktop](https://github.com/johnnyhawk02/elixir-desktop) (one addition: `renderBlock(only)` renders a single voice, for AUTO LEVEL's measurement) |
 | `sound/schema.js` | the seven sounds and each one's parameter schema (range, default, display, morph and randomiser rules) |
 | `sound/morph.js` | the old key morph (no longer used by the page; kept with its tests) |
 | `sound/instrument.js` | the engine as an instrument: `voices[i].play(note, velocity, params)` and `render(left, right)`, no UI |
 | `sound/worklet.js` | the instrument in an AudioWorklet |
+| `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every kit sound and prints each engine's median) |
 | `app/main.js`, `css/lcd.css` | the page |
 | `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from (`node tools/build-kits.mjs` rebuilds `kits.js`) |
 
@@ -100,6 +115,7 @@ No build step: the page loads the ES modules directly.
 
 ```sh
 node test/morph.test.mjs                        # the morph and engine checks
+node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
 python3 -m http.server 8123 & node test/shots.mjs   # screenshots at 1440x900 and 1280x800 (needs Playwright)
 ```
 

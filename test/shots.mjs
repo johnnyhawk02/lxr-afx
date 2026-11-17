@@ -218,6 +218,49 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
+  // AUTO LEVEL: SCATTER ALL and ALTER ALL trim every key they deal (a locked key keeps its own), the AUTO chip at the
+  // head of LEVEL takes a key's trim off and puts it back (ALL KEYS: the zone's), UNDO takes that back, and with AUTO
+  // LEVEL off in the RANDOM menu a new sound plays untrimmed
+  { const trims = () => p.evaluate(() => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.trim(i, k)); return o; }));
+    const tap = (sound, i) => p.evaluate(async ([sound, i]) => { const n = afx.sounds[sound].zone.lo + i; afx.cc(123, 0); afx.noteOn(1, n, 100); await new Promise((r) => setTimeout(r, 60)); afx.noteOff(n); }, [sound, i]);
+    const chip = async () => [await p.textContent('#auto-level'), await p.getAttribute('#auto-level', 'aria-pressed')];
+    const menu = (id) => p.evaluate((id) => document.getElementById(id).click(), id);
+    await tap(0, 2); await p.waitForTimeout(150); await p.click('#lock-key'); await p.waitForTimeout(100);
+    const t0 = await trims();
+    await menu('kit-scatter'); await p.waitForTimeout(500); const t1 = await trims();
+    await menu('kit-alter'); await p.waitForTimeout(500); const t2 = await trims();
+    const nz = (t) => t.flat().filter((x) => x !== 0).length, moved = (a, b) => a.flat().filter((x, i) => x !== b.flat()[i]).length;
+    if (nz(t1) < 18 || nz(t2) < 18 || moved(t0, t1) < 15 || t1[0][2] !== t0[0][2] || t2[0][2] !== t0[0][2] || t2.flat().some((x) => x < -16 || x > 12 || (x * 4) % 1))
+      { errors++; console.log('auto level:', JSON.stringify([t0, t1, t2])); }
+    await p.click('#lock-key'); await p.waitForTimeout(100);
+    // a snare key that has a trim: the chip shows it, a press takes it off, another puts the same one back
+    const i = t2[1].findIndex((x) => x !== 0); await tap(1, i); await p.waitForTimeout(200);
+    const c0 = await chip(); await p.click('#auto-level'); const c1 = await chip(), off = (await trims())[1][i];
+    await p.click('#auto-level'); const c2 = await chip();
+    if (c0[1] !== 'true' || !/^AUTO [+-]\d+\.\ddB$/.test(c0[0]) || c1[0] !== 'AUTO 0dB' || c1[1] !== 'false' || off !== 0 || c2[0] !== c0[0])
+      { errors++; console.log('auto chip:', JSON.stringify([c0, c1, off, c2])); }
+    // ALL KEYS: the zone's count; a press takes every correction off, another levels every key; UNDO goes back a step
+    await p.click('#edit-all'); const a0 = await chip(); await p.waitForTimeout(100); await p.click('#auto-level'); const a1 = await chip(), z1 = (await trims())[1];
+    await p.waitForTimeout(100); await p.click('#auto-level'); const a2 = await chip(), z2 = (await trims())[1];
+    await p.click('#undo'); await p.waitForTimeout(100); const z3 = (await trims())[1]; await p.click('#edit-key');
+    if (!/^AUTO [1-8]\/8$/.test(a0[0]) || a1[0] !== 'AUTO 0/8' || a1[1] !== 'false' || z1.some((x) => x !== 0) || !/^AUTO [5-8]\/8$/.test(a2[0]) || z3.some((x) => x !== 0))
+      { errors++; console.log('auto chip, all keys:', JSON.stringify([a0, a1, z1, a2, z2, z3])); }
+    // off: NEW SOUND deals the key its sound as the kit made it
+    await menu('auto-on'); await tap(1, i); await p.waitForTimeout(150); await p.click('#rand-key'); await p.waitForTimeout(400);
+    const offTrim = (await trims())[1][i], offChip = await chip();
+    await menu('auto-on');
+    if (offTrim !== 0 || offChip[0] !== 'AUTO 0dB') { errors++; console.log('auto level off:', offTrim, offChip); }
+    // LEVEL (this engine) and LEVEL ALL even out the keys as they are, their sounds untouched; UNDO takes it back
+    await p.click('#edit-all'); await p.waitForTimeout(100); if ((await chip())[1] === 'true') await p.click('#auto-level'); await p.click('#edit-key'); await p.waitForTimeout(100);
+    const snd = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k).filter(([par]) => par < 247)); return o; })));
+    const s0 = await snd(), l0 = await trims();
+    await menu('level'); await p.waitForTimeout(400); const l1 = await trims();
+    await menu('kit-level'); await p.waitForTimeout(500); const l2 = await trims(), s2 = await snd();
+    await p.click('#undo'); await p.waitForTimeout(100); const l3 = await trims();
+    const J = JSON.stringify;
+    if (l0[1].some((x) => x !== 0) || nz([l1[1]]) < 5 || J(l1[0]) !== J(l0[0]) || J(l1[2]) !== J(l0[2]) || nz(l2) < 18 || J(l2[1]) !== J(l1[1]) || s2 !== s0 || J(l3) !== J(l1))
+      { errors++; console.log('level keys:', J([l0, l1, l2, l3]), s2 === s0); }
+    await p.evaluate(() => afx.cc(123, 0)); }
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
