@@ -1,13 +1,13 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkxw90o';
-import { presetName } from './names.js?v=mwkxw90o';
-import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkxw90o';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkxw90o';
-import { KIT_FILES } from '../sound/kits.js?v=mwkxw90o';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkxw90o';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkxw90o';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwkybe71';
+import { presetName } from './names.js?v=mwkybe71';
+import { autoTrim, LEVEL_TARGET_DB } from '../sound/level.js?v=mwkybe71';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkybe71';
+import { KIT_FILES } from '../sound/kits.js?v=mwkybe71';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkybe71';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkybe71';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -81,7 +81,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkxw90o', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkybe71', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -340,7 +340,7 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
   pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals],
-  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))) }; // a key's AUTO LEVEL correction, dB
+  trim: (sound, note) => trimDb(keyPatch(sound, note).vals.get(trimPar(SOUNDS[sound].engineVoice))), fx: () => S.fx, fxDefaults: FX_DEFAULTS }; // a key's AUTO LEVEL correction, dB
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -1177,12 +1177,15 @@ function initPatch() {
   }
   return { keys: keys.length, reverb: rev.size, echo: ech.size };
 }
+// a new patch starts from the effects as they come: BPM, the echo, the reverb, the distortion, the compressor and the
+// output level back to their starting settings (RETURN is how the keys play, not part of the sound: it stays)
+function resetFx() { const d = structuredClone(FX_DEFAULTS); applyFx({ ...d, tempo: { bpm: d.tempo.bpm } }); }
 let initArmed = 0;
 const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filter((e) => e._lock).length, 0);
 function drawInit() {
   const nl = lockedKeys();
   $('init-patch').setAttribute('aria-pressed', !!initArmed);
-  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH KIT SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO`;
+  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH KIT SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO<br>BPM, FX + MASTER RESET`;
 }
 function disarmInit() { clearTimeout(initArmed); initArmed = 0; drawInit(); }
 $('init-patch').addEventListener('click', () => {
@@ -1193,9 +1196,9 @@ $('init-patch').addEventListener('click', () => {
   }
   disarmInit();
   let n;
-  randChange(() => { n = initPatch(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
+  randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
     drawKeymap(); sendTrim(); drawPreset();
-    detail(`new patch <em>${S.preset.name}</em>: a kit sound on all ${n.keys} keys · ${n.reverb} with reverb, ${n.echo} with echo${levelled()} (UNDO takes it back)`);
+    detail(`new patch <em>${S.preset.name}</em>: ${n.keys} kit sounds · ${n.reverb} with reverb, ${n.echo} with echo${levelled()} · BPM, FX and master reset (UNDO takes it back)`);
   });
 });
 drawInit();

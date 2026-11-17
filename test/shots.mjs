@@ -278,16 +278,24 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => afx.cc(123, 0)); }
   // INIT PATCH: a new patch. With a locked key it asks first (the first press changes nothing); then every key has a
   // fresh kit sound and no lock, 8 of the 25 keys a reverb send and 5 an echo send (30% and 20%), the rest none, the
-  // pans and rhythms as SCATTER ALL deals them, levelled; UNDO brings the old patch back, its lock too
+  // pans and rhythms as SCATTER ALL deals them, levelled; BPM, the effects and the master are back at their starting
+  // settings (RETURN stays); UNDO brings the old patch back, its lock, its effects and its tempo too
   { const state = () => p.evaluate(([e, r]) => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) { const m = new Map(afx.patch(i, k)), ed = afx.keyEdits()[i][k] || {};
       o.push({ echo: m.get(e[s.engineVoice]), rev: m.get(r[s.engineVoice]), kit: ed._kit || '', lock: !!ed._lock, pan: afx.pan(i, k), on: afx.active(i, k), trim: afx.trim(i, k) }); } return o; }),
       [[0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 0)), [0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 1))]);
     const press = () => p.evaluate(() => document.getElementById('init-patch').click()), J = JSON.stringify;
     await p.evaluate(() => { afx.cc(123, 0); const n = afx.sounds[2].zone.lo + 4; afx.noteOn(1, n, 100); afx.noteOff(n); }); await p.waitForTimeout(150);
     await p.click('#lock-key'); await p.waitForTimeout(100);
+    const fxNow = () => p.evaluate(() => [JSON.stringify(afx.fx()), document.getElementById('bpm').textContent, document.getElementById('ret').textContent]);
+    const fx0 = await fxNow(); // (set off the defaults: three presses of BPM +, one of RETURN, and a control of each effect)
+    await p.evaluate(() => { const f = afx.fx(); f.echo.feedback = 99; f.reverb.size = 10; f.dirt.on = 1; f.master.thresh = 30; f.master.level = 50; });
+    for (let i = 0; i < 3; i++) await p.click('#bpm-up'); await p.click('#ret'); const fx1 = await fxNow();
     const before = await state(); await press(); await p.waitForTimeout(150);
     const asked = await state(), armed = await p.getAttribute('#init-patch', 'aria-pressed'), info = await p.textContent('#init-info');
-    await press(); await p.waitForTimeout(600); const st = await state(), all = st.flat();
+    await press(); await p.waitForTimeout(600); const st = await state(), all = st.flat(), fx2 = await fxNow();
+    { const want = await p.evaluate(() => { const d = structuredClone(afx.fxDefaults); d.tempo.ret = afx.fx().tempo.ret; return JSON.stringify(d); }), got = JSON.parse(fx2[0]), w = JSON.parse(want);
+      const same = Object.keys(w).every((k) => Object.keys(w[k]).every((f) => got[k][f] === w[k][f]));
+      if (fx1[1] !== '123' || fx1[2] === fx0[2] || !same || fx2[1] !== '120' || fx2[2] !== fx1[2]) { errors++; console.log('init patch, effects:', fx1[1], fx1[2], fx2[1], fx2[2], same, fx2[0]); } }
     const rev = all.filter((k) => k.rev > 0), ech = all.filter((k) => k.echo > 0), ons = st.map((z) => z.filter((k) => k.on).length);
     if (J(asked) !== J(before) || armed !== 'true' || !/1 LOCKED KEY/.test(info)) { errors++; console.log('init patch, asking:', armed, info, J(asked) === J(before)); }
     if (all.length !== 25 || all.some((k) => !k.kit || k.lock) || rev.length !== 8 || ech.length !== 5 || rev.some((k) => k.rev < 45 || k.rev > 95) || ech.some((k) => k.echo < 40 || k.echo > 85)
@@ -297,6 +305,10 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (J(again.flat().map((k) => k.kit)) === J(all.map((k) => k.kit)) || again.flat().filter((k) => k.rev > 0).length !== 8) { errors++; console.log('init patch, second: the same patch again'); }
     await p.click('#undo'); await p.waitForTimeout(100); await p.click('#undo'); await p.waitForTimeout(150); const back = await state();
     if (J(back) !== J(before)) { errors++; console.log('init patch, undo:', J(back.flat().map((k) => [k.kit, k.lock])), J(before.flat().map((k) => [k.kit, k.lock]))); }
+    const fx3 = await fxNow(); if (J(fx3) !== J(fx1)) { errors++; console.log('init patch, undo, effects:', J(fx3), J(fx1)); }
+    await p.evaluate((was) => { const f = afx.fx(), w = JSON.parse(was); for (const k in w) Object.assign(f[k], w[k], k === 'tempo' ? { bpm: f.tempo.bpm, ret: f.tempo.ret } : {}); }, fx0[0]); // (and back as they were, for the checks below)
+    for (let i = 0; i < 3; i++) await p.click('#bpm-down'); await p.click('#ret', { modifiers: ['Shift'] });
+    const fx4 = await fxNow(); if (J(fx4) !== J(fx0)) { errors++; console.log('init patch, effects put back:', J(fx4), J(fx0)); }
     await p.click('#lock-key'); await p.waitForTimeout(100); }
   // PRESETS: the patch's name in the top bar (made up, marked * until saved). SAVE keeps it; a change marks it again,
   // REVERT goes back and UNDO brings the change back; INIT PATCH starts a new unsaved one; a saved preset loads with its

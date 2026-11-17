@@ -72,9 +72,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit
   sound, levelled, panned and given rhythms as SCATTER ALL deals them; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
-  edits are replaced, so with locked keys it asks first (press again within four seconds). BPM, the effects' own
-  settings, the master, the zone levels and the control locks stay. The new patch gets a new name and is not saved
-  yet. UNDO brings the old patch back, locks, name and all.
+  edits are replaced, so with locked keys it asks first (press again within four seconds). **BPM goes back to 120 and
+  the echo, the reverb, the distortion, the compressor and the output level to their starting settings**; RETURN, the
+  zone levels and the control locks stay. The new patch gets a new name and is not saved yet. UNDO brings the old
+  patch back: locks, effects, tempo, name and all.
 - **PRESETS** (the patch's name, beside the logo): the whole patch under a name. A preset holds every key's sound,
   edits, lock, rhythm and sends, the three engines' settings, the effects, the master and the BPM. **SAVE** keeps the
   patch under its name (a `*` after the name means it has changed since, or was never saved), **SAVE AS NEW** keeps it
