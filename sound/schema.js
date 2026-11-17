@@ -46,7 +46,12 @@ export function setZoneStart(start) { zonesFrom(start).forEach((z, i) => Object.
 export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo && note <= s.zone.hi);
 
 // the firmware's init kit as parameter values
-export const INIT_VALUES = new Uint8Array(NUM_PARAMS);
+// after the firmware's parameters, three of LXR-AFX's own per voice: its sends to the echo, the reverb and the distortion
+// (not engine parameters: the instrument keeps them, see instrument.js). A key keeps them like any other parameter
+export const SEND_BASE = NUM_PARAMS, SEND_FX = ['echo', 'reverb', 'dist'];
+export const sendPar = (voice, k) => SEND_BASE + voice * 3 + k;
+export const ALL_PARAMS = NUM_PARAMS + 18;
+export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
 for (let i = 8; i < NUM_PARAMS; i++) INIT_VALUES[i - 8] = INIT_KIT[i];
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
@@ -157,6 +162,8 @@ function buildSchema(voice) {
   // two waves on the cymbal's and hi-hat's fm: one for each mod oscillator
   if (fmWaves.length === 2) { fmWaves[0].label = 'mod1 wave'; fmWaves[1].label = 'mod2 wave'; }
   for (const e of out) if (e.display.type === 'target' && !e.display.anyVoice) e.display.voices = [voice];
+  SEND_FX.forEach((name, k) => out.push({ key: 'SEND_' + name.toUpperCase() + (voice + 1), par: sendPar(voice, k), label: name, text: 'SEND_' + name.toUpperCase(),
+    page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'lock' }));
   return out;
 }
 
@@ -222,6 +229,7 @@ export function mapVoice(kit, src, dst) {
   const out = [];
   for (const [p, q] of parMap) {
     const e = S.find((x) => x.par === p);
+    if (kit[p] === undefined) continue; // a kit file has no sends
     out.push([q, e.display.type === 'target' ? target(kit[p]) : kit[p]]);
   }
   out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(kit[PAR.TARGET_LFO1 + src]) === src ? dst + 1 : kit[PAR.VOICE_LFO1 + src]]);

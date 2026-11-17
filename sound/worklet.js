@@ -14,6 +14,7 @@ registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
       const m = e.data;
       if (m.type === 'kit') this.inst.loadKit(m.values);
       else if (m.type === 'param') this.inst.setParam(m.par, m.value);
+      else if (m.type === 'fx') this.inst.setFx(m.fx);
       else if (m.type === 'play') this.inst.play(m.sound, m.note, m.vel, m.params);
     };
   }

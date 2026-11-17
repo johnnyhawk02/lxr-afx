@@ -96,6 +96,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     await p.click('#undo'); await p.waitForTimeout(400);
     if (JSON.stringify((await ke())[1]['58']) !== JSON.stringify(before)) { errors++; console.log('paste: undo did not restore'); }
   }
+  // FX: the FX tab shows the three effects; a key's sends are knobs on its engine page
+  { await p.click('.snd.fx'); await p.waitForTimeout(150);
+    const secs = await p.$$eval('#faders .sect h3', (h) => h.map((x) => x.textContent));
+    if (secs.join() !== 'ECHO,REVERB,DISTORTION') { errors++; console.log('fx page:', secs); }
+    await p.screenshot({ path: `${out}/fx-${w}x${h}.png` });
+    await p.click('.snd.fx'); await p.waitForTimeout(150);
+    const sends = await p.$$eval('#faders .sect h3', (h) => h.map((x) => x.textContent));
+    if (!sends.includes('fx sends')) { errors++; console.log('no fx sends section', sends); }
+  }
   await p.close();
 }
 await b.close();
