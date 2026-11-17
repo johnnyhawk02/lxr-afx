@@ -857,11 +857,21 @@ if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = tru
 // bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
 // ---------------------------------------------------------------------------------------------------------------
 const FIT_W = 1264, FIT_H = 850;
+// the engine buttons sit right under their key groups in the strip above, FX under the key's buttons
+function alignEngines() {
+  const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;
+  const base = row.getBoundingClientRect().left;
+  const place = (b, el) => { const r = el.getBoundingClientRect(); Object.assign(b.style, { left: `${(r.left - base) / k}px`, width: `${r.width / k}px` }); };
+  document.querySelectorAll('#keystrip .kgroup').forEach((g, i) => place(soundBtns[i], g));
+  place(fxBtn, document.querySelector('.keyacts'));
+  const tag = row.querySelector('.tag'); tag.style.left = `${parseFloat(soundBtns[0].style.left) - tag.offsetWidth - 12}px`;
+}
 function fitScreen() {
   const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
   if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
   else sc.removeAttribute('style');
-  drawKeymap();
+  drawKeymap(); alignEngines();
 }
 window.addEventListener('resize', fitScreen);
 fitScreen();
+document.fonts?.ready.then(alignEngines);
