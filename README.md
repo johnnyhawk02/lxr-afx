@@ -3,18 +3,8 @@
 An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key its own sound.
 **Play it: https://johnnyhawk02.github.io/lxr-afx/** (Chrome or Edge, for Web MIDI)
 
-![LXR-AFX at 1440 × 900](docs/screenshot-3d.png)
+![LXR-AFX at 1440 × 900](docs/screenshot.png)
 
-- **It opens as a 3D panel**, a piece of hardware seen straight on against black, drawn with three.js (WebGL): a bevelled metal panel with
-  everything printed on it, real knobs with pointer marks, buttons that go down when pressed and light up when on,
-  faders, displays and LEDs that glow, soft shadows. Every control works as on the flat screen: drag a knob up or down,
-  slide a fader, press a button, double-click to reset; by mouse or touch, several fingers at once on a phone. It draws
-  only when something changes. **LOOK** (beside BS2 MAP, and on the phone's MENU) sets the panel's colour and finish,
-  the knob style (ribbed, smooth, skirt, or an STL model of your own), the knob colour and size, the light colour, wear
-  and brightness, with three slots to keep looks in, and **2D VIEW** goes back to the flat screen (whose **3D VIEW**
-  brings the panel back); the choice is kept in the browser. `?2d` or `?3d` in the address chooses for one visit. The 3D
-  panel is built from the flat screen itself, which stays in the page underneath at a fixed size: the same controls,
-  state, presets, MIDI and saving, so the two can't drift apart. Where WebGL can't start, it's the flat screen.
 - **Three zones on MIDI channel 1**, laid out for the 25 keys of a Bass Station 2 at its default octave (lowest key MIDI
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
@@ -157,9 +147,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   engine of the pad pressed last, and **ALTER ALL** on all 25 keys. A press does its thing and closes the menu; UNDO
   takes any of them back. The patch is the same one the big screen plays and stores. Presets, the knobs and the effects are on the big
   screen only, and the phone doesn't ask for MIDI. Add `?desktop` to the address for the big screen on a phone, or
-  `?phone` for the phone screen on a computer. The phone gets the 3D panel too, laid out as its screen.
-
-![The 3D panel on a phone](docs/screenshot-3d-phone.png) ![The flat screen (2D VIEW)](docs/screenshot.png)
+  `?phone` for the phone screen on a computer.
 
 ## Code
 
@@ -171,9 +159,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 | `sound/instrument.js` | the engine as an instrument: `voices[i].play(note, velocity, params)` and `render(left, right)`, no UI |
 | `sound/worklet.js` | the instrument in an AudioWorklet |
 | `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every kit sound and prints each engine's median) |
-| `app/main.js`, `css/lcd.css` | the page (the flat screen) |
-| `app/view3d.js` | the 3D panel: reads the flat screen's layout and paints it onto the panel, builds a 3D part for each knob, button and fader, and hands a press on the panel to the flat screen's own control |
-| `vendor/` | three.js r170 (MIT, unchanged); see `SOURCES.txt` |
+| `app/main.js`, `css/lcd.css` | the page |
 | `app/names.js` | the preset names: the themed word lists (`WORDS`) and the jumbler, no UI |
 | `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from (`node tools/build-kits.mjs` rebuilds `kits.js`) |
 
@@ -184,8 +170,7 @@ node test/morph.test.mjs                        # the morph and engine checks
 node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
 node test/reverb.test.mjs                       # the stereo reverb: left as the firmware's, right as loud and unlike it
 node test/names.test.mjs                        # the preset names: sayable, varied, never a list word, always a mix of lists
-python3 -m http.server 8123 & node test/shots.mjs   # the flat screen in a browser: laptop sizes and the phone (needs Playwright)
-node test/view3d.mjs                            # the 3D panel in a browser: every control pressed through the canvas, laptop sizes and the phone
+python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: laptop sizes and the phone (needs Playwright)
 ```
 
 ## Licence
