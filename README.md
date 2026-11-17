@@ -13,6 +13,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   timbre, more the further it is from the base (each end of a zone is the full amount). Each key's variant is fixed by
   the sound's seed; **re-roll** for a new set. Depth, pitch and timbre sliders for all sounds and per sound; depth 0 plays
   the base sound on every key.
+- **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
+  (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L), **NEW SOUND** (K),
+  **ALTER KEY** (A) and **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
+  whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
   pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and

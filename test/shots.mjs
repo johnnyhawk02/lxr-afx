@@ -8,6 +8,8 @@ const b = await chromium.launch();
 let errors = 0;
 for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  // a click on a control, opening the RANDOM menu first if it lives there
+  p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
   await p.goto(url); await p.waitForTimeout(600);
@@ -22,7 +24,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
   const edits = after.keyEdits[0]['55'];
   if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on G2', edits); }
   // the randomisers pull variants from the kits without errors
-  for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.click(id); await p.waitForTimeout(80); }
+  for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.mclick(id); await p.waitForTimeout(80); }
   await p.evaluate(() => window.afx.noteOn(1, 55, 110));
   await p.waitForTimeout(400);
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
@@ -67,9 +69,9 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     await p.evaluate(() => afx.noteOn(1, 51, 100)); await p.waitForTimeout(50);
     await p.click('#lock-key'); await p.waitForTimeout(400);
     const snap = await k();
-    await p.click('#scatter'); await p.waitForTimeout(600);
+    await p.mclick('#scatter'); await p.waitForTimeout(600);
     await p.keyboard.press('r'); await p.waitForTimeout(50);
-    await p.click('#rand'); await p.waitForTimeout(600);
+    await p.mclick('#rand'); await p.waitForTimeout(600);
     await p.keyboard.press('k'); await p.waitForTimeout(300);
     if (!snap?._lock || JSON.stringify(await k()) !== JSON.stringify(snap)) { errors++; console.log('lock key: changed', snap?._lock); }
     if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/lockkey-${w}x${h}.png` });

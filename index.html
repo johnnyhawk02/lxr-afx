@@ -17,65 +17,84 @@
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
     <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
-    <div class="kitrand" role="group" aria-label="Kit randomiser">
-      <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
-      <button class="btn" id="kit-scatter" title="Every key of all three zones: a sound of its type from the built-in kits">SCATTER ALL</button>
-      <button class="btn" id="kit-alter" title="Nudge all three sounds a little (10%), and each key with its own sound">ALTER ALL</button>
-      <button class="btn" id="kit-init" title="Back to the firmware's init kit">INIT</button>
-      <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
+    <div class="menu" id="menu">
+      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="Randomisers for a whole engine or all three">RANDOM ▾</button>
+      <div class="menupanel" id="menu-panel" hidden>
+        <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
+        <div class="bars" id="rand-bars"></div>
+        <div class="randrow">
+          <label class="chk"><input type="checkbox" id="wild"><i></i>WILD</label>
+          <button class="btn" id="rand" title="A variant of this engine's sound from the built-in kits, varied by the amount (locked controls stay)">RANDOMISE</button>
+          <button class="btn" id="vary" title="Vary this engine's sound around its home by the amount (unlocked controls only)">VARY</button>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="alter" title="Nudge this engine's sound a little (10%), and each key with its own sound">ALTER</button>
+          <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits (locked keys stay)">SCATTER</button>
+          <button class="btn" id="clear-keys" title="Every key of this zone back to its plain morph (locked keys stay)">CLEAR KEYS</button>
+        </div>
+        <h3>ALL THREE ENGINES</h3>
+        <div class="randrow">
+          <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
+          <button class="btn" id="kit-scatter" title="Every key of all three zones: a sound of its type from the built-in kits">SCATTER ALL</button>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="kit-alter" title="Nudge all three sounds a little (10%), and each key with its own sound">ALTER ALL</button>
+          <button class="btn" id="kit-init" title="Back to the firmware's init kit">INIT</button>
+        </div>
+        <h3>CONTROL LOCKS <span class="dim" id="lock-count">0 LOCKED</span></h3>
+        <div class="randrow">
+          <button class="btn sm" id="lock-default">DEFAULT LOCKS</button><button class="btn sm" id="lock-none">UNLOCK ALL</button>
+        </div>
+      </div>
     </div>
+    <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
   </header>
 
-  <nav class="sounds" id="sounds" role="tablist" aria-label="Sounds"></nav>
+  <section class="keyhead" id="keyhead" aria-label="The key">
+    <div class="keyname"><span class="dim">KEY</span><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
+    <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
+    <div class="keystrip" id="keystrip" title="Click a key to pick it (and hear it)"></div>
+    <div class="keyacts">
+      <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span></button>
+      <button class="btn" id="rand-key" title="A new kit sound on this key only (K; UNDO takes it back; LEARN can put it on a button)">NEW SOUND</button>
+      <button class="btn" id="alter-key" title="Nudge this key's sound a little (A; UNDO takes it back)">ALTER KEY</button>
+      <button class="btn sm" id="clear-key" title="This key back to its plain morph">CLEAR</button>
+    </div>
+  </section>
+
+  <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span></nav>
 
   <div class="body">
     <aside class="side">
       <section class="card">
-        <h2>MORPH <span class="dim">ALL SOUNDS</span></h2>
+        <h2>MORPH <span class="dim">ALL ENGINES</span></h2>
         <div class="bars" id="global-bars"></div>
       </section>
       <section class="card grow">
-        <h2><span id="side-name">DRUM 1</span> <span class="dim" id="side-ch">CH 1</span></h2>
+        <h2><span id="side-name">DRUM</span> <span class="dim" id="side-ch">CH 1</span></h2>
         <div class="bars" id="sound-bars"></div>
         <div class="seedrow">
           <span class="dim">SEED</span><b class="seed" id="seed">0000</b>
           <button class="btn" id="reroll" title="A new seed: every key gets a new variant (R)">RE-ROLL</button>
         </div>
         <div class="keymap">
-          <canvas id="keymap" aria-label="Key map: each key's pitch and timbre morph, C1 to C5"></canvas>
+          <canvas id="keymap" aria-label="Key map: each key's pitch and timbre morph"></canvas>
           <div class="keylabels" id="keylabels"></div>
         </div>
-      </section>
-      <section class="card">
-        <h2>RANDOMISE <span class="dim" id="rand-name">DRUM 1</span></h2>
-        <div class="bars" id="rand-bars"></div>
-        <div class="randrow">
-          <label class="chk"><input type="checkbox" id="wild"><i></i>WILD</label>
-          <button class="btn" id="rand" title="A variant of this sound from the built-in kits: a matching voice from a random kit, varied by the amount (locked controls stay)">RANDOMISE</button>
-          <button class="btn" id="vary" title="Vary this sound around its home by the amount (unlocked controls only)">VARY</button>
-          <button class="btn" id="alter" title="Nudge this sound a little (10%), and each key with its own sound (scattered or edited)">ALTER</button>
-          <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits, played as it is">SCATTER</button>
-        </div>
-        <div class="randrow small"><span class="dim" id="lock-count">0 LOCKED</span>
-          <button class="btn sm" id="lock-default">DEFAULT LOCKS</button><button class="btn sm" id="lock-none">UNLOCK ALL</button></div>
       </section>
     </aside>
 
     <section class="editor">
-      <div class="pages" id="pages" role="tablist" aria-label="Editor pages" hidden></div>
       <div class="editbar">
-        <span class="dim">EDIT</span>
-        <button class="btn" id="edit-key" title="Edits change only the last key pressed (or the key picked on the key map)">KEY C3</button>
-        <button class="btn" id="edit-all" title="Edits change the base sound: every key's morph follows">ALL KEYS</button>
-        <button class="btn" id="rand-key" title="A new kit sound on this key only, every other key stays (K; undo takes it back; LEARN can put it on a button)">NEW SOUND</button>
-        <button class="btn" id="lock-key" title="Freeze this key: nothing changes its sound (randomisers, scatter, morph, re-roll, base edits) until it's unlocked (L)">LOCK KEY</button>
+        <span class="dim">KNOBS EDIT</span>
+        <button class="btn" id="edit-key" title="Edits change only this key">THIS KEY</button>
+        <button class="btn" id="edit-all" title="Edits change the engine's base sound: every key's morph follows">ALL KEYS</button>
         <span id="edit-info" class="info"></span>
-        <button class="btn sm" id="clear-key" title="This key back to its plain morph">CLEAR KEY</button>
-        <button class="btn sm" id="clear-keys" title="Every key of this sound back to its plain morph">CLEAR ALL KEYS</button>
         <button class="btn sm" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
         <button class="btn sm" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
       </div>
       <div class="faders" id="faders"></div>
+      <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
       <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS edits the base, and every key follows.</span>
         <span class="dim" id="zones"></span></footer>
     </section>

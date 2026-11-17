@@ -337,7 +337,7 @@ function reroll() { S.sounds[S.sel].seed = newSeed(); lastMorph[S.sel] = null; s
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
 const randDraws = [
   hbar($('rand-bars'), 'AMOUNT', { min: 0, max: 100, get: () => S.rand.amount, set: (v) => { S.rand.amount = v; save(); }, show: P, dflt: 30 }),
-  hbar($('rand-bars'), 'LEVEL', { min: 0, max: 127, get: () => S.values[levelPar()], set: (v) => { setValue(levelPar(), v); drawFaders(); }, show: String, dflt: () => S.defaults[levelPar()], learn: { t: 'zlevel', s: 0 } }),
+  hbar($('sound-bars'), 'LEVEL', { min: 0, max: 127, get: () => S.values[levelPar()], set: (v) => { setValue(levelPar(), v); drawFaders(); }, show: String, dflt: () => S.defaults[levelPar()], learn: { t: 'zlevel', s: 0 } }),
 ];
 $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
@@ -436,12 +436,6 @@ function drawSide() {
 // ---------------------------------------------------------------------------------------------------------------
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
-const pageBtns = PAGES.map((p, i) => {
-  const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = p.toUpperCase();
-  b.addEventListener('click', () => { S.page = i; save(); buildFaders(); });
-  $('pages').append(b);
-  return b;
-});
 let faderDraws = [];
 function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
@@ -553,18 +547,58 @@ function drawEditKey() {
   const note = editKey[S.sel], edits = S.keyEdits[S.sel], n = Object.keys(edits).length;
   const here = editCount(edits[note]), from = edits[note] && edits[note]._kit;
   $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
-  $('edit-key').textContent = 'KEY ' + noteName(note);
-  $('edit-info').textContent = S.editAll ? 'editing the base: every key follows' : (from ? `${noteName(note)}: ${from} · ` : `${here} edit${here === 1 ? '' : 's'} on ${noteName(note)} · `) + `${n} key${n === 1 ? '' : 's'} edited`;
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
+  $('edit-key').textContent = 'THIS KEY';
+  $('edit-info').textContent = locked ? `${noteName(note)} is locked` : S.editAll ? 'the base: every key follows' : `${noteName(note)} only`;
   $('clear-key').disabled = !here || locked; $('clear-keys').disabled = n === nl;
-  $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').textContent = locked ? 'LOCKED' : 'LOCK KEY';
-  if (locked) $('edit-info').textContent = `${noteName(note)} locked${from && from !== 'kept' ? ` (${from})` : ''} · ${nl} locked`;
-  $('rand-key').disabled = locked;
+  $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
+  $('rand-key').disabled = locked; $('alter-key').disabled = locked;
+  // the key header: the key, its engine, and what it plays
+  const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) :
+    note === SOUNDS[S.sel].zone.base ? 'the base sound' : here ? `morph + ${here} edit${here === 1 ? '' : 's'}` : 'a morph of the base';
+  $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
+  $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what;
+  $('screen').classList.toggle('keylocked', locked);
+  drawStrip();
 }
 $('edit-key').addEventListener('click', () => setEditAll(false));
 $('edit-all').addEventListener('click', () => setEditAll(true));
 $('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to its morph`); });
 $('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
+$('alter-key').addEventListener('click', () => alterKey());
+
+// ---- the key strip: every key of the layout, grouped by engine; click picks the key and plays it ----
+const stripKeys = [];
+function buildStrip() {
+  const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
+  SOUNDS.forEach((s, i) => {
+    const g = document.createElement('div'); g.className = 'kgroup';
+    g.innerHTML = `<span class="kz">${s.name}</span><div class="keys"></div>`;
+    for (let note = s.zone.lo; note <= s.zone.hi; note++) {
+      const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + ([1, 3, 6, 8, 10].includes(note % 12) ? ' blk' : '');
+      k.title = `${s.name} ${noteName(note)} #${note}`;
+      k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
+      k.addEventListener('click', () => { startAudio().then(() => play(i, note, 100)); });
+      g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
+    }
+    box.append(g);
+  });
+}
+function drawStrip() {
+  for (const { k, sound, note } of stripKeys) {
+    const ed = S.keyEdits[sound][note];
+    k.classList.toggle('sel', sound === S.sel && note === editKey[sound]);
+    k.classList.toggle('locked', !!ed?._lock);
+    k.classList.toggle('own', !!ed && !ed._lock);
+    k.classList.toggle('base', note === SOUNDS[sound].zone.base);
+  }
+}
+
+// ---- the RANDOM menu ----
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); }
+$('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
+document.addEventListener('pointerdown', (e) => { if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openMenu(false); });
 $('clear-keys').addEventListener('click', () => { const e = S.keyEdits[S.sel]; for (const k in e) if (!e[k]._lock) delete e[k]; save(); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name}: every key back to its morph`); });
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -623,6 +657,22 @@ function pickVoice(sound, vary) {
 }
 const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, 0.1, false); delete homes[v]; };
 // ALTER: the sound's base and every key with its own sound
+// ALTER KEY: this key's sound nudged a little (10%) around what it plays now, kept as its own edits
+function alterOne(sound, note, depth) {
+  const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice], now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][note] || {};
+  for (const e of sc) {
+    if (S.locks.has(e.par) || e.display.type === 'target') continue;
+    const v = vary(e, now.get(e.par), depth, false);
+    if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
+  }
+  if (editCount(ed)) S.keyEdits[sound][note] = ed;
+}
+function alterKey() {
+  const sound = S.sel, note = editKey[sound];
+  if (keyLocked(sound, note)) { lockedMsg(); return; }
+  randChange(() => { alterOne(sound, note, 0.1); if (S.editAll) setEditAll(false); }, `${SOUNDS[sound].name} ${noteName(note)} altered <em>10%</em> (UNDO takes it back)`)
+    .then(() => { drawKeymap(); play(sound, note, 100); });
+}
 const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, 0.1); };
 async function randChange(fn, what) {
   await startAudio();
@@ -721,6 +771,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'r' || e.key === 'R') reroll();
   else if (e.key === 'k' || e.key === 'K') randKey();
+  else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
 });
 
@@ -732,6 +783,7 @@ $('start-btn').addEventListener('click', async () => {
   await startAudio();
   startMidi();
 });
+buildStrip();
 select(clamp(S.sel, 0, SOUNDS.length - 1));
 // the layout: three zones up from the lowest key, moved by octaves with LOW KEY (the keys' edits move with them)
 function drawZones() {
@@ -747,7 +799,7 @@ function moveZones(by) {
   S.zoneStart = to; setZoneStart(to);
   S.keyEdits = S.keyEdits.map((k) => Object.fromEntries(Object.entries(k).map(([n, e]) => [Number(n) + by, e])));
   SOUNDS.forEach((s, i) => { editKey[i] += by; lastMorph[i] = null; });
-  save(); drawZones(); drawSide(); drawFaders(); drawEditKey();
+  save(); buildStrip(); drawZones(); drawSide(); drawFaders(); drawEditKey();
   detail(`lowest key <em>${noteName(to)} #${to}</em>`);
 }
 $('low-down').addEventListener('click', () => moveZones(-12));
@@ -761,7 +813,7 @@ if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = tru
 // fit the screen to small windows (a MacBook Air's browser with its toolbar and the dock): below 1264x784 inside the
 // bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
 // ---------------------------------------------------------------------------------------------------------------
-const FIT_W = 1264, FIT_H = 784;
+const FIT_W = 1264, FIT_H = 850;
 function fitScreen() {
   const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
   if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
