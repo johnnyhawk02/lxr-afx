@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkt186m';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkt186m';
-import { KIT_FILES } from '../sound/kits.js?v=mwkt186m';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkt186m';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkt186m';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwktbism';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwktbism';
+import { KIT_FILES } from '../sound/kits.js?v=mwktbism';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwktbism';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwktbism';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkt186m', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwktbism', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -151,22 +151,33 @@ const parLabel = (par) => VOICE_SCHEMAS[SOUNDS[S.sel].engineVoice].find((e) => e
 // an edit in the editor: to the last key pressed (kept as that key's own value), or to the base of every key
 const editing = () => !S.editAll;
 function valueNow(par) { return editing() ? keyPatch(S.sel, editKey[S.sel]).vals.get(par) : S.values[par]; }
+// a control changed by hand on a key: the value it had as dealt is kept (ed._o), so its label lights, the notch
+// outside its ring shows where it was, and a double-click puts it back. Turned back to that value, it's no longer
+// an edit. A new sound on the key (NEW SOUND, SCATTER, PASTE) starts again with none
+function handEdit(ed, par, was, v) {
+  const o = (ed._o ||= {});
+  if (!(par in o)) o[par] = was;
+  if (o[par] === v) delete o[par];
+  if (!Object.keys(o).length) delete ed._o;
+}
 function editValue(par, v) {
   if (!editing()) { // ALL KEYS: the engine's base and every key of the zone that has its own sound (locked keys stay)
     snapshot(`${SOUNDS[S.sel].name} ALL KEYS ${parLabel(par)}`, `all/${S.sel}/${par}`);
+    const k = S.keyEdits[S.sel], base = S.values[par];
     setValue(par, v);
-    const k = S.keyEdits[S.sel];
-    for (const n in k) if (!k[n]._lock) k[n][par] = v;
+    for (const n in k) if (!k[n]._lock) { handEdit(k[n], par, k[n][par] ?? base, v); k[n][par] = v; }
     send({ type: 'param', par, value: v }); save(); drawKeymap(); return;
   }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
   if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
   snapshot(`${SOUNDS[S.sel].name} ${noteName(note)} ${parLabel(par)}`, `key/${S.sel}/${note}/${par}`);
-  (k[note] ||= {})[par] = v;
+  const was = keyPatch(S.sel, note).vals.get(par);
+  handEdit(k[note] ||= {}, par, was, v); k[note][par] = v;
   send({ type: 'param', par, value: v }); // heard on what's still ringing
   save(); drawKeymap(); drawEditKey();
 }
-const keyEdited = (par) => { const ed = S.keyEdits[S.sel][editKey[S.sel]]; return !!ed && ed[par] !== undefined; };
+const keyEdited = (par) => { const o = S.keyEdits[S.sel][editKey[S.sel]]?._o; return !!o && par in o; };
+const handEdits = (ed) => (ed?._o ? Object.keys(ed._o).length : 0);
 function clearKey(sound, note) { if (keyLocked(sound, note)) return; delete S.keyEdits[sound][note]; save(); }
 // ---- key locks: a locked key keeps exactly the sound it had when locked. Its whole sound (and its pitch) is kept
 // as its edits, so nothing (randomisers, scatter, morph, seed, base edits, clear) reaches it until it's unlocked ----
@@ -177,6 +188,7 @@ function lockKey(sound, note) {
   else {
     const m = keyPatch(sound, note), level = PAR.VOL1 + SOUNDS[sound].engineVoice, snap = { _lock: true, _st: m.semitones };
     if (ed && ed._kit) snap._kit = ed._kit;
+    if (ed && ed._o) snap._o = ed._o;
     for (const [p, x] of m.vals) if (p !== level) snap[p] = x;
     S.keyEdits[sound][note] = snap;
     if (S.editAll) S.editAll = false;
@@ -503,13 +515,14 @@ const randomPattern = () => { let p = 1; for (let i = 1; i < 8; i++) if (rnd() <
 let seqSteps = [];
 function seqPanel(el, voice) {
   const on = seqOnPar(voice), pat = seqPatPar(voice);
-  el.innerHTML = '<h3><span class="t">seq</span></h3><div class="steps"></div><button class="lock" type="button">LOCK</button>';
+  el.innerHTML = `<h3><span class="t">seq</span></h3><div class="steps"></div><button class="lock" type="button" aria-label="Lock the sequencer">${LOCK_SVG}</button>`;
   const h = el.querySelector('h3'), steps = el.querySelector('.steps'), lock = el.querySelector('.lock');
   const hb = (text, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb'; b.textContent = text; b.title = title; b.addEventListener('click', fn); h.append(b); return b; };
   const act = hb('ACTIVE', 'Play the steps while the key is held (off: the key plays once)', () => {
     editValue(on, valueNow(on) ? 0 : 1); drawFaders(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} SEQ <em>${valueNow(on) ? 'ACTIVE' : 'OFF'}</em>`); });
   hb('RANDOM', 'A new random pattern for this key, switched on', () => {
     editValue(pat, randomPattern()); editValue(on, 1); drawFaders(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} SEQ <em>a new pattern</em>`); });
+  h.append(lock); // at the end of the heading, after ACTIVE and RANDOM
   seqSteps = [];
   for (let i = 0; i < 8; i++) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (i % 4 === 0 ? ' beat' : ''); b.textContent = i + 1;
@@ -683,31 +696,35 @@ function lightRing(ticks, v, max, c) {
   if (c === undefined) ticks.forEach((t, i) => t.classList.toggle('on', i <= lit && (v > 0 || i === 0)));
   else { const a = Math.min(lit, mid), b = Math.max(lit, mid); ticks.forEach((t, i) => t.classList.toggle('on', i >= a && i <= b)); }
 }
+// a control's lock: a small padlock beside it (faint: open to the randomisers; solid: locked)
+const LOCK_SVG = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
 // a pan knob's L and R, at the two ends of its ring
 const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
 function vfader(e) {
   const el = document.createElement('div'); el.className = 'vf';
-  el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button">LOCK</button>`;
+  el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
   if (e.display.lr) tr.querySelector('svg').insertAdjacentHTML('beforeend', LR_SVG);
-  lock.title = `Lock ${e.label}: the randomisers leave it alone`;
   const draw = () => {
     const v = valueNow(e.par);
     lightRing(ticks, v, e.max, c);
     ptr.setAttribute('transform', `rotate(${knobDeg(v, e.max, c)} 32 32)`);
     out.textContent = showValue(e, v);
     tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', showValue(e, v));
-    // the notch: editing a key, where the base is; editing every key, where the last key played moved it
-    const lm = lastMorph[S.sel], mv = editing() ? S.values[e.par] : lm && lm.values.get(e.par);
+    // the notch: editing a key, where the control was before you changed it; editing every key, where the last key
+    // played has it
+    const lm = lastMorph[S.sel], mv = editing() ? S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par] : lm && lm.values.get(e.par);
     tr.classList.toggle('morphed', mv !== undefined && mv !== v);
     if (mv !== undefined) notch.setAttribute('transform', `rotate(${knobDeg(mv, e.max, c)} 32 32)`);
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
-    lock.setAttribute('aria-pressed', S.locks.has(e.par));
+    const locked = S.locks.has(e.par);
+    lock.setAttribute('aria-pressed', locked);
+    lock.title = locked ? `${e.label.toUpperCase()} is locked: the randomisers leave it alone. Click to unlock` : `Lock ${e.label.toUpperCase()}: the randomisers leave it alone`;
   };
   const put = (x) => {
     x = clamp(Math.round(x), 0, e.max);
@@ -717,10 +734,11 @@ function vfader(e) {
     detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
   };
   dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
-  // double-click: a key's edit goes (back to its morph); on every key, back to the kit's value
+  // double-click: on a key, the control goes back to where it was before you changed it; on every key, back to the
+  // kit's value
   const reset = () => {
     if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
-    if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { snapshot(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${e.label.toUpperCase()} reset`); delete ed[e.par]; if (!editCount(ed)) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
+    if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
     else put(S.defaults[e.par]);
   };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
@@ -772,8 +790,9 @@ function drawEditKey() {
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
   $('rand-key').disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
-  const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) :
-    here ? `base + ${here} edit${here === 1 ? '' : 's'}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
+  const he = handEdits(edits[note]), hand = he ? ` · ${he} edit${he === 1 ? '' : 's'}` : '';
+  const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) + hand :
+    here ? `its own sound${hand}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
   $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
   $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what;
   $('screen').classList.toggle('keylocked', locked);
@@ -837,8 +856,10 @@ function drawStrip() {
     const ed = S.keyEdits[sound][note];
     k.classList.toggle('sel', sound === S.sel && note === editKey[sound]);
     k.classList.toggle('locked', !!ed?._lock);
-    k.classList.toggle('own', !!ed && !ed._lock);
-    k.classList.toggle('base', note === SOUNDS[sound].zone.base);
+    const run = !!keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice));
+    k.classList.toggle('own', handEdits(ed) > 0 && !ed._lock); // a dot: you changed this key by hand
+    k.classList.toggle('run', run); // a dashed foot: it plays a rhythm while held
+    k.title = `${SOUNDS[sound].name} ${noteName(note)} #${note}${ed?._kit && ed._kit !== 'kept' ? ' · ' + ed._kit : ''}${ed?._lock ? ' · locked' : ''}${run ? ' · plays a rhythm' : ''}${handEdits(ed) ? ' · edited' : ''}`;
   }
 }
 

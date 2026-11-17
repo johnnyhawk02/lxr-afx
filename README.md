@@ -39,7 +39,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   on it plays its lit steps in 1/16s on the BPM grid, starting on the next 1/16 after the press, round and round; with
   ACTIVE off the key plays once as usual. RANDOM deals a new pattern (and switches it on); editing steps while the key
   is held is heard at once. **NEW SOUND** gives the key a random pattern, switched on, at the RHYTHMS share (and switches it
-  off otherwise); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
+  off otherwise); its padlock keeps NEW SOUND off it. The other randomisers never touch it.
 - **RHYTHMS** (RANDOM menu, 50% by default): the share of keys that play a running rhythm. Moving it switches keys on
   or off at once across all three zones (always the same keys in the same order, each keeping its pattern or dealt a
   random one); SCATTER and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
@@ -49,8 +49,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
-- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
-  resets; a notch outside the ring marks the base). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
+- **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys). A control you
+  change by hand on a key gets a **lit label**, a notch outside its ring shows where it was, and a **double-click puts
+  it back**; the key header counts the edits ("Brownie snare · 2 edits") and the key gets a dot on the strip. The
+  small **padlock** at a knob's top right locks that control against the randomisers (faint: open, solid: locked). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
   the distortion's PREGAIN, BASS and TONE) have their centre at the top and light from there out to either side; PAN
   reads **L100 … C … R100**, with L and R at the ends of its ring. By default an edit changes only the last key
   pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
@@ -63,7 +65,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
-  randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
+  randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
+  plays a rhythm has a dashed foot, a key you edited by hand a dot. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
   **ALTER ALL** do all three sounds.
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
@@ -71,7 +74,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
 - **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, RANDOMISE,
   RANDOM KIT, VARY, ALTER, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
-  **metal anywhere**, left to right. Set by hand, any pan goes anywhere; LOCK on the pan knob keeps it out of the
+  **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
   randomisers.
 
 ## Code

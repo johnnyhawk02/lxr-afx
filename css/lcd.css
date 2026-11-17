@@ -229,7 +229,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .kgroup .keys { display: flex; gap: 2px; }
 .k { position: relative; width: 22px; height: 34px; padding: 0; border: 2px solid var(--ink); border-radius: 2px; background: transparent; cursor: pointer; color: var(--ink); }
 .k.blk { background: rgba(23, 32, 14, .3); }
-.k.base { border-bottom-width: 6px; }
+.k.run::before { content: ""; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 4px;
+  background: repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 6px); }
 .k.own::after { content: ""; position: absolute; left: 50%; top: 4px; width: 6px; height: 6px; margin-left: -3px; background: var(--ink); }
 .k svg { display: none; position: absolute; left: 50%; top: 50%; width: 12px; height: 14px; margin: -8px 0 0 -6px; fill: currentColor; stroke: currentColor; stroke-width: 2.4; }
 .k svg path { fill: none; }
@@ -412,3 +413,27 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .sect.seq .st:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .faders .sect.seq.off .steps { opacity: .42; }
 .faders .sect.seq > .lock { align-self: center; margin: 19px 0 0 8px; }
+
+/* ---- calmer knobs: each control's lock is a small padlock at the knob's top right (faint: open to the randomisers;
+   solid: locked) instead of a LOCK button under it, so the knobs get the room; a label is plain until you change
+   the control by hand on this key, then it's lit ---- */
+.vf { position: relative; }
+.lock { position: absolute; border: 0; background: transparent; padding: 1px; width: 14px; height: 16px; line-height: 0; cursor: pointer;
+  color: var(--ink); opacity: .26; left: calc(50% + var(--ks) / 2 - 3px); top: 19px; }
+.lock svg { display: block; width: 12px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.lock:hover { opacity: .7; background: transparent; }
+.lock[aria-pressed="true"] { opacity: 1; background: transparent; color: var(--ink); }
+.lock[aria-pressed="true"] svg rect { fill: currentColor; }
+.faders .vf.big .lock { top: auto; bottom: 9px; left: calc(50% + 50px); width: 18px; height: 20px; }
+.faders .vf.big .lock svg { width: 16px; height: 18px; }
+.faders .sect.seq > .lock, .faders .sect.seq h3 .lock { position: static; margin: 0 0 0 auto; align-self: center; }
+.faders .sect.seq h3 { padding-right: 0; }
+.faders { --ks: 58px; }
+.faders .vf.big .knob { width: 108px; height: 108px; }
+.faders .sect .vf .lab { font-size: 15px; }
+.faders .sect .vf output { font-size: 18px; }
+.faders .sect.seq .steps { padding-top: 20px; }
+.faders .sect .vsel { padding-left: 18px; }
+@media (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: 14px; } }
+@media (max-height: 820px) { .faders { --ks: 54px; } .faders .vf.big .knob { width: 96px; height: 96px; } }
+@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
