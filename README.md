@@ -48,7 +48,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
-  resets; a notch outside the ring marks the base). By default an edit changes only the last key
+  resets; a notch outside the ring marks the base). Plus-minus knobs (PAN, COARSE, FINE, the FM and mod frequencies,
+  the distortion's PREGAIN, BASS and TONE) have their centre at the top and light from there out to either side; PAN
+  reads **L100 … C … R100**, with L and R at the ends of its ring. By default an edit changes only the last key
   pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys
   stay). **CLEAR** puts a key back to the engine's base sound.
 - **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which

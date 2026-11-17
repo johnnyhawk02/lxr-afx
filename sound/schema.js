@@ -9,7 +9,8 @@
 //   section  the firmware menu section it comes from
 //   min,max  integer range (min is always 0)
 //   def      default value (the firmware's init kit)
-//   display  { type: 'num' } | { type: 'pm', centre } (shown signed around centre) | { type: 'menu', names }
+//   display  { type: 'num' } | { type: 'pm', centre, lr? } (shown signed around centre, or as L/C/R for a pan; its knob
+//            has the centre at the top) | { type: 'menu', names }
 //            | { type: 'target', voices } (a modulation target menu)
 //   morph    how the key morph treats it: 'timbre' (moved around the base), or null (never morphed)
 //   weight   timbre morph: how far it may move, as a fraction of its rand range at full depth
@@ -73,7 +74,7 @@ function displayOf(key) {
   const t = PARAM_DTYPES[PAR[key]] || '0B127';
   const menu = (names) => ({ max: names.length - 1, display: { type: 'menu', names } });
   switch (t) {
-    case 'PM63': return { max: 127, display: { type: 'pm', centre: AROUND_60.has(key) ? 60 : 63 } };
+    case 'PM63': return { max: 127, display: { type: 'pm', centre: AROUND_60.has(key) ? 60 : 63, ...(key.startsWith('PAN') ? { lr: true } : {}) } };
     case 'ON_OFF': case '0b1': return menu(['off', 'on']);
     case 'menu:WAVEFORM': return menu(OSC_WAVE_NAMES.map((s) => s.toLowerCase()));
     case 'menu:FILTER': return menu(FILTER_TYPE_NAMES.map((s) => s.toLowerCase()));
@@ -102,7 +103,7 @@ const SAFE = {
 const DECAY = { 0: [3, 55], 1: [3, 55], 2: [3, 55], 3: [3, 50], 4: [20, 110] };
 // where the randomisers may put a sound's pan (63 is the centre): the drums always centre, the snare up to 20% left or
 // right, the metal anywhere. Strict: a randomiser always lands inside it, even WILD (a hand-set pan can go anywhere)
-export const PAN_RANGE = { 0: [63, 63], 1: [63, 63], 2: [63, 63], 3: [50, 76], 4: [0, 127], 5: [0, 127] };
+export const PAN_RANGE = { 0: [63, 63], 1: [63, 63], 2: [63, 63], 3: [51, 76], 4: [0, 127], 5: [0, 127] }; // snare: L19 .. R20
 function randRange(text, voice, key) {
   if (text === 'PAN') return PAN_RANGE[voice];
   if (key.startsWith('PITCH_SLOPE')) return [0, 90]; // steep pitch curves end up inaudible
@@ -202,6 +203,7 @@ export const voiceOfTarget = (i) => Math.max(0, MOD_TARGET_VOICE_RANGES.findInde
 // text for a value of a parameter entry
 export function showValue(e, v) {
   const d = e.display;
+  if (d.type === 'pm' && d.lr) { const x = v - d.centre; return x ? (x < 0 ? 'L' + Math.round(-x / d.centre * 100) : 'R' + Math.round(x / (127 - d.centre) * 100)) : 'C'; } // pan: L100 .. C .. R100
   if (d.type === 'pm') { const x = v - d.centre; return (x > 0 ? '+' : '') + x; }
   if (d.type === 'menu') return d.names[v] ?? String(v);
   if (d.type === 'target') { const t = MOD_TARGETS[v]; return t && v ? t[0].toLowerCase().replace(/_/g, ' ') : 'none'; }

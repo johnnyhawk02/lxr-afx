@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwksa6ou';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwksa6ou';
-import { KIT_FILES } from '../sound/kits.js?v=mwksa6ou';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwksa6ou';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwksa6ou';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwksf1ix';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwksf1ix';
+import { KIT_FILES } from '../sound/kits.js?v=mwksf1ix';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwksf1ix';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwksf1ix';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwksa6ou', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwksf1ix', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -523,9 +523,9 @@ function gknob(label, o) {
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr');
   tr.setAttribute('aria-label', label);
   const draw = () => {
-    const v = o.get(), f = v / o.max, lit = Math.round(f * (KNOB_N - 1));
-    ticks.forEach((t, i) => t.classList.toggle('on', i <= lit && (v > 0 || i === 0)));
-    ptr.setAttribute('transform', `rotate(${(KNOB_A0 + f * KNOB_SWEEP) * 180 / Math.PI} 32 32)`);
+    const v = o.get();
+    lightRing(ticks, v, o.max, o.centre);
+    ptr.setAttribute('transform', `rotate(${knobDeg(v, o.max, o.centre)} 32 32)`);
     out.textContent = o.show ? o.show(v) : String(v); tr.setAttribute('aria-valuenow', v);
   };
   const put = (v) => { v = clamp(Math.round(v), 0, o.max); if (v !== o.get()) { o.set(v); draw(); } };
@@ -572,7 +572,7 @@ let dirtSects = [];
 function drawDirt() { dirtSects.forEach(([el, k]) => el.classList.toggle('off', !S.fx.dirt[k])); }
 function buildDirt() {
   const D = S.fx.dirt, say = (what) => detail(`MASTER DISTORTION ${what}`);
-  const knob = (k, label, max, show) => gknob(label, { max, show, get: () => D[k], dflt: DIRT_DEFAULTS[k],
+  const knob = (k, label, max, show, centre) => gknob(label, { max, show, centre, get: () => D[k], dflt: DIRT_DEFAULTS[k],
     set: (v) => { D[k] = v; sendFx(); say(`${label.toUpperCase()} <em>${show ? show(v) : v}</em>`); } });
   // a switch: a button that steps through its settings, named on the button
   // (lit when it's away from its first setting, like the pedal's switch lights; a choice in the header isn't lit)
@@ -596,11 +596,11 @@ function buildDirt() {
     return el;
   };
   const dist = sect(6, [
-    [knob('pregain', 'pregain', 48, (v) => sdb(pregainDb(v))), knob('cutoff', 'cutoff', 127, (v) => hz(dirtHz(v))),
+    [knob('pregain', 'pregain', 48, (v) => sdb(pregainDb(v)), 24), knob('cutoff', 'cutoff', 127, (v) => hz(dirtHz(v))),
       sw('swap', 'filter', ['HP', 'LP'], 'The filter before the distortion: high-pass (the lows stay out of it) or low-pass'),
       sw('xover', 'xover', ['OFF', 'ON'], 'Crossover: the half the filter takes away goes to the clean path (HP: distorted highs, clean lows; LP: the other way round)'),
       knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open')],
-    [knob('bass', 'bass', 24, (v) => sdb(bassDb(v))), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64))),
+    [knob('bass', 'bass', 24, (v) => sdb(bassDb(v)), 12), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64)), 64),
       knob('dirty', 'dirty', 127, (v) => (v ? sdb(volDb(v)) : 'off')), knob('clean', 'clean', 127, (v) => (v ? sdb(volDb(v)) : 'off'))],
   ]);
   dist.querySelector('h3').append(Object.assign(document.createElement('span'), { className: 't', textContent: 'DISTORTION' }),
@@ -631,6 +631,17 @@ const KNOB_SVG = (() => {
   }
   return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/></svg>`;
 })();
+// a plus-minus knob (centre given: pan, coarse, fine, pregain, bass, tone) has its centre at the top, each half of its
+// range on its own side, and its ring lit from the top out to the value; any other knob lights from the bottom left
+const knobF = (v, max, c) => (c === undefined ? (max ? v / max : 0) : v <= c ? 0.5 * v / (c || 1) : 0.5 + 0.5 * (v - c) / ((max - c) || 1));
+const knobDeg = (v, max, c) => (KNOB_A0 + knobF(v, max, c) * KNOB_SWEEP) * 180 / Math.PI;
+function lightRing(ticks, v, max, c) {
+  const lit = Math.round(knobF(v, max, c) * (KNOB_N - 1)), mid = (KNOB_N - 1) / 2;
+  if (c === undefined) ticks.forEach((t, i) => t.classList.toggle('on', i <= lit && (v > 0 || i === 0)));
+  else { const a = Math.min(lit, mid), b = Math.max(lit, mid); ticks.forEach((t, i) => t.classList.toggle('on', i >= a && i <= b)); }
+}
+// a pan knob's L and R, at the two ends of its ring
+const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
 function vfader(e) {
   const el = document.createElement('div'); el.className = 'vf';
   el.innerHTML = `<output></output><div class="knob" role="slider" tabindex="0">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button">LOCK</button>`;
@@ -638,18 +649,19 @@ function vfader(e) {
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
+  const c = e.display.type === 'pm' ? e.display.centre : undefined;
+  if (e.display.lr) tr.querySelector('svg').insertAdjacentHTML('beforeend', LR_SVG);
   lock.title = `Lock ${e.label}: the randomisers leave it alone`;
   const draw = () => {
     const v = valueNow(e.par);
-    const f = e.max ? v / e.max : 0, lit = Math.round(f * (KNOB_N - 1));
-    ticks.forEach((t, i) => t.classList.toggle('on', i <= lit && (v > 0 || i === 0)));
-    ptr.setAttribute('transform', `rotate(${(KNOB_A0 + f * KNOB_SWEEP) * 180 / Math.PI} 32 32)`);
+    lightRing(ticks, v, e.max, c);
+    ptr.setAttribute('transform', `rotate(${knobDeg(v, e.max, c)} 32 32)`);
     out.textContent = showValue(e, v);
     tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', showValue(e, v));
     // the notch: editing a key, where the base is; editing every key, where the last key played moved it
     const lm = lastMorph[S.sel], mv = editing() ? S.values[e.par] : lm && lm.values.get(e.par);
     tr.classList.toggle('morphed', mv !== undefined && mv !== v);
-    if (mv !== undefined) notch.setAttribute('transform', `rotate(${(KNOB_A0 + mv / (e.max || 1) * KNOB_SWEEP) * 180 / Math.PI} 32 32)`);
+    if (mv !== undefined) notch.setAttribute('transform', `rotate(${knobDeg(mv, e.max, c)} 32 32)`);
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
     lock.setAttribute('aria-pressed', S.locks.has(e.par));

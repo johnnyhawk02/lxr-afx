@@ -163,7 +163,10 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => document.getElementById('kit-scatter').click()); await p.waitForTimeout(400);
     const pans = await p.evaluate(() => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.pan(i, k)); return o; }));
     const [dr, sn, me] = pans;
-    if (!dr.every((x) => x === 63) || !sn.every((x) => x >= 50 && x <= 76) || new Set(sn).size < 2 || !me.some((x) => x < 50 || x > 76)) { errors++; console.log('pans:', JSON.stringify(pans)); }
+    if (!dr.every((x) => x === 63) || !sn.every((x) => x >= 51 && x <= 76) || new Set(sn).size < 2 || !me.some((x) => x < 50 || x > 76)) { errors++; console.log('pans:', JSON.stringify(pans)); }
+    // the pan knob reads L/C/R, its ring lit from the top
+    const panOut = await p.$$eval('#faders .vf', (els) => els.filter((e) => e.querySelector('.lab')?.textContent === 'pan').map((e) => [e.querySelector('output').textContent, e.querySelectorAll('.tk.on').length, !!e.querySelector('.lr')]));
+    if (panOut.length !== 1 || !/^(C|[LR]\d{1,3})$/.test(panOut[0][0]) || (panOut[0][0] === 'C') !== (panOut[0][1] === 1) || !panOut[0][2]) { errors++; console.log('pan knob:', JSON.stringify(panOut)); }
     await p.evaluate(() => document.getElementById('undo').click()); await p.waitForTimeout(100);
   }
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));

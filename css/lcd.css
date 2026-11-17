@@ -191,6 +191,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .knob .ptr { stroke: var(--ink); stroke-width: 3.5; stroke-linecap: square; }
 .knob .notch { stroke: var(--ink); stroke-width: 4; display: none; }
 .knob.morphed .notch { display: inline; }
+.knob .lr { fill: var(--ink); font: 700 18px/1 var(--font); text-anchor: middle; }
 .vf.held .knob { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 50%; }
 .knob:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; border-radius: 50%; }
 .sect .vsel { grid-column: span 2; justify-content: flex-start; padding: 18px 6px 0; }
