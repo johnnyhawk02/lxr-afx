@@ -21,12 +21,6 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through a
   distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
   gain-reduction meter, then the level. Each key's ECHO / REVERB sends are FX SENDS knobs with its synth knobs.
-- **3D view** (the **3D** button, top right; **2D VIEW** brings the screen back): the same instrument as a piece of
-  hardware, drawn with three.js (`app/view3d.js`, three.js itself in `vendor/`). A dark panel between wooden cheeks, the
-  LCD sunk behind glass, a machined knob for every control of the engine (drag up and down, Shift for fine, wheel for a
-  step, double-click to reset), the 25 keys with an LED each (lit: the key being edited, green: a key with its own
-  sound, red: locked) and the three engine buttons. It reads and changes the same state as the 2D screen, so you can
-  switch at any time. The FX, the master and the key's buttons (lock, new sound, copy, paste) are still 2D only.
 - **Note repeat**: each key's RATE knob (NOTE REPEAT: off, 1/64, 1/32, 1/16, 1/8; off by default) retriggers it while
   it's held, at the BPM in the top bar (120 by default), with the velocity it was played with.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,

@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkp047y';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkp047y';
-import { KIT_FILES } from '../sound/kits.js?v=mwkp047y';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkp047y';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkpai33';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkpai33';
+import { KIT_FILES } from '../sound/kits.js?v=mwkpai33';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkpai33';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,7 +67,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkp047y', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkpai33', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
   node.connect(ctx.destination);
@@ -278,7 +278,6 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
 // ---------------------------------------------------------------------------------------------------------------
 let lastT = 0;
 function showLastText(t) {
-  viewRev++;
   $('last-text').textContent = t;
   const box = $('last'); box.classList.add('hit'); clearTimeout(lastT); lastT = setTimeout(() => box.classList.remove('hit'), 90);
 }
@@ -305,7 +304,7 @@ function showPeaks(peaks) {
 // controls: horizontal bars (morph, amount, level) and vertical faders (the editor)
 // ---------------------------------------------------------------------------------------------------------------
 let detailT = 0;
-const detail = (html) => { $('detail').innerHTML = html; viewRev++; };
+const detail = (html) => { $('detail').innerHTML = html; };
 // a drag changes a value from where it was; Shift is fine
 function dragger(track, axis, o) {
   let d = null;
@@ -398,8 +397,6 @@ function drawSide() {
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
-const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'note repeat']];
-let viewRev = 0; // counts every redraw: the 3D view (app/view3d.js) redraws itself when it moves
 function buildFaders() {
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === S.sel));
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
@@ -409,6 +406,7 @@ function buildFaders() {
   const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl));
   // four rows of sections, each row stretched across the panel (a section as wide as its knobs need), and the big LEVEL
   // in a column of its own on the right, at the bottom
+  const ROWS = [['osc', 'fm'], ['amp', 'pitch', 'click'], ['filter', 'velocity', 'mix'], ['lfo', 'note repeat']];
   const grid = document.createElement('div'); grid.className = 'rows'; box.append(grid);
   for (const secs of ROWS) {
     const r = document.createElement('div'); r.className = 'srow';
@@ -439,7 +437,7 @@ function buildFaders() {
   buildFx();
   drawFaders();
 }
-function drawFaders() { viewRev++; faderDraws.forEach((d) => d()); }
+function drawFaders() { faderDraws.forEach((d) => d()); }
 
 // ---- the FX page: the three send effects every key feeds (each key's sends are its FX SENDS knobs) ----
 function gknob(label, o) {
@@ -646,7 +644,6 @@ function buildStrip() {
   });
 }
 function drawStrip() {
-  viewRev++;
   for (const { k, sound, note } of stripKeys) {
     const ed = S.keyEdits[sound][note];
     k.classList.toggle('sel', sound === S.sel && note === editKey[sound]);
@@ -907,77 +904,4 @@ function fitScreen() {
 window.addEventListener('resize', fitScreen);
 fitScreen();
 document.fonts?.ready.then(alignEngines);
-// ---------------------------------------------------------------------------------------------------------------
-// the 3D view (three.js, app/view3d.js): another face on the same state and the same actions. It's loaded only when
-// it's switched on, so the 2D screen never waits for it (or breaks with it)
-// ---------------------------------------------------------------------------------------------------------------
-const targetOpts = {};
-function targetOptions(e, voice) {
-  const id = e.par + ':' + voice; if (targetOpts[id]) return targetOpts[id];
-  const out = [{ value: 0, text: 'none' }], vnames = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
-  for (const v of e.display.anyVoice ? [0, 1, 2, 3, 4, 5] : [voice]) {
-    const [a, b] = MOD_TARGET_VOICE_RANGES[v];
-    for (let i = a; i <= b; i++) {
-      const [t, p] = MOD_TARGETS[i];
-      if (t.startsWith('FX_') || t === 'VEL_DEST') continue;
-      const pe = VOICE_SCHEMAS[v].find((x) => x.par === p);
-      out.push({ value: i, text: (e.display.anyVoice ? vnames[v] + ' ' : '') + (pe ? `${pe.section} ${pe.label}` : t.toLowerCase().replace(/_/g, ' ')) });
-    }
-  }
-  return (targetOpts[id] = out);
-}
-const ctlText = (e, v) => (e.display.type === 'target' ? (targetOptions(e, selVoice()).find((o) => o.value === v) || { text: '?' }).text : showValue(e, v));
-Object.assign(window.afx, {
-  rev: () => viewRev, sounds: SOUNDS, noteName,
-  sel: () => S.sel, select: (i) => select(i, 'synth'),
-  editNote: () => editKey[S.sel], editAll: () => S.editAll,
-  // the selected engine's controls as the 2D screen lays them out: rows of sections, the sends, the level
-  controls() {
-    const voice = selVoice(), lvl = PAR.VOL1 + voice, sc = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg));
-    const item = (e) => ({ e, par: e.par, label: e.label, max: e.max, steps: e.display.type === 'target' ? targetOptions(e, voice).map((o) => o.value) : null });
-    return {
-      voice,
-      rows: ROWS.map((secs) => secs.map((sec) => ({ name: sec === 'note repeat' ? 'repeat' : sec, items: sc.filter((e) => e.section === sec && e.par !== lvl).map(item) })).filter((x) => x.items.length)),
-      sends: sc.filter((e) => e.section === 'fx sends').map(item), level: item(sc.find((e) => e.par === lvl)),
-    };
-  },
-  value: (c) => valueNow(c.par), text: (c) => ctlText(c.e, valueNow(c.par)),
-  keyed: (c) => editing() && keyEdited(c.par),
-  set(c, x) {
-    const e = c.e; x = clamp(Math.round(x), 0, e.max);
-    if (x === valueNow(e.par)) return;
-    editValue(e.par, x);
-    if (e.display.type === 'target' && e.display.anyVoice) editValue(PAR.VOICE_LFO1 + selVoice(), voiceOfTarget(x) + 1);
-    drawFaders();
-    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${ctlText(e, x)}</em>`);
-  },
-  // a double-click: a key's edit goes; on every key, back to the kit's value
-  reset(c) {
-    const e = c.e;
-    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
-    if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!editCount(ed)) clearKey(S.sel, editKey[S.sel]); save(); drawFaders(); drawKeymap(); drawEditKey(); } }
-    else this.set(c, S.defaults[e.par]);
-  },
-  key: (sound, note) => { const ed = S.keyEdits[sound][note]; return { sel: sound === S.sel && note === editKey[sound], locked: !!ed?._lock, own: !!ed && !ed._lock }; },
-  // the first touch in 3D does what the START button does (audio and MIDI need a click)
-  wake() { if (!$('start').hidden) $('start-btn').click(); },
-  press(sound, note, vel = 100) { this.wake(); return startAudio().then(() => play(sound, note, vel)); },
-  release: (note) => noteOff(note),
-  lcd: () => ({ note: $('kh-note').textContent, num: $('kh-num').textContent, engine: $('kh-engine').textContent, info: $('kh-info').textContent, last: $('last-text').textContent, detail: $('detail').textContent, locked: keyLocked(S.sel, editKey[S.sel]) }),
-});
-let view3d = null;
-async function set3d(on) {
-  try { localStorage.setItem('lxr-afx-3d', on ? '1' : ''); } catch (e) { /* storage blocked */ }
-  if (on && !view3d) {
-    $('view3d-btn').textContent = '…';
-    try { view3d = (await import('./view3d.js?v=mwkp047y')).start(window.afx, () => set3d(false)); }
-    catch (err) { $('view3d-btn').textContent = '3D'; detail('the 3D view failed to load: ' + err.message); return; }
-    $('view3d-btn').textContent = '3D';
-  }
-  window.afx.view3d = view3d;
-  document.body.classList.toggle('is3d', on);
-  if (view3d) view3d.show(on);
-}
-$('view3d-btn').addEventListener('click', () => set3d(true));
-try { if (localStorage.getItem('lxr-afx-3d')) set3d(true); } catch (e) { /* storage blocked */ }
 window.afxReady = true; // index.html's load check
