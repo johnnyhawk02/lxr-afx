@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwlaqwn0">
+<link rel="stylesheet" href="css/lcd.css?v=mwlb0ple">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -71,7 +71,7 @@
       <div class="menupanel" id="menu-panel" hidden>
         <h3>NEW PATCH</h3>
         <div class="randrow">
-          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled, panned and given rhythms as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
+          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
           <span class="dim note" id="init-info"></span>
         </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
@@ -90,7 +90,6 @@
         </div>
         <h3>HOW MUCH</h3>
         <div class="bars" id="rand-bars" title="How far ALTER, ALTER ALL and ALTER KEY move each control"></div>
-        <div class="bars" id="rhythm-bars" title="How many keys play a running rhythm (their sequencer ACTIVE): 0% none, 100% every key. Moving it switches keys on and off at once; NEW SOUND and RANDOM deal rhythms at this share"></div>
         <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit, and may change the waveforms, modes, LFO, velocity and sample rate settings a kit sound came with (it leaves those alone otherwise)"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER GOES ANYWHERE, SWITCHES TOO</span></label>
         <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
         <h3>KNOB PADLOCKS <span class="dim" id="lock-count">NONE LOCKED</span></h3>
@@ -138,8 +137,6 @@
   <div class="pv" id="pv">
     <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b><button class="btn" id="pv-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="pv-menu">MENU</button></div>
     <div class="pv-menu" id="pv-menu" hidden>
-      <button class="btn" id="pv-norhythm">REMOVE ALL RHYTHMS</button><span class="cap" id="pv-norhythm-cap"></span>
-      <button class="btn" id="pv-rhythm">RHYTHMS ON HALF THE KEYS</button><span class="cap">ABOUT HALF THE KEYS RUN A RHYTHM WHILE HELD</span>
       <button class="btn" id="pv-rand-eng">RANDOM: DRUM KEYS</button><span class="cap" id="pv-rand-eng-cap"></span>
       <button class="btn" id="pv-alter-eng">ALTER: DRUM KEYS</button><span class="cap" id="pv-alter-eng-cap"></span>
       <button class="btn" id="pv-alter-all">ALTER ALL</button><span class="cap">NUDGE THE SOUNDS OF ALL 25 KEYS</span>
@@ -163,7 +160,7 @@
   <div class="start" id="start">
     <button class="btn big" id="start-btn"><span class="dk">START AUDIO + MIDI</span><span class="ph">START</span></button>
     <p id="start-text"></p>
-    <p class="ph" id="start-phone">A pad for each of the 25 keys: drum, snare and metal. Press a pad to play it; hold it for its rhythm. NEW SOUND rolls the pad you pressed last.</p>
+    <p class="ph" id="start-phone">A pad for each of the 25 keys: drum, snare and metal. Press a pad to play it. NEW SOUND rolls the pad you pressed last.</p>
   </div>
 </main>
 <script>
@@ -178,6 +175,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwlaqwn0"></script>
+<script type="module" src="app/main.js?v=mwlb0ple"></script>
 </body>
 </html>

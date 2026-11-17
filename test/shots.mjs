@@ -178,52 +178,16 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => afx.noteOff(50));
     await p.click('#ret'); const r1 = await p.textContent('#ret'); await p.click('#ret', { modifiers: ['Shift'] }); const r0 = await p.textContent('#ret');
     if (a !== 'E2' || b !== 'D2' || r1 !== '1/8' || r0 !== '1/16') { errors++; console.log('legato:', a, b, r1, r0); } }
-  // the sequencer: a step, ACTIVE and RANDOM change this key's own pattern; NEW SOUND switches a random pattern on
-  // about half the time (and off the rest)
+  // no sequencer (Johnny, 2026-11-17): no SEQ section, no RHYTHMS slider, and no key runs a rhythm, whatever NEW SOUND deals
   if (w === 1440 && h === 900) {
+    const count = () => p.evaluate(() => { let n = 0; afx.sounds.forEach((s, i) => { for (let k = s.zone.lo; k <= s.zone.hi; k++) if (afx.active(i, k)) n++; }); return n; });
     await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 50, 100); afx.noteOff(50); }); await p.waitForTimeout(50);
-    const [on, pat] = await p.evaluate(() => afx.seqPars(0)), ed = () => p.evaluate(() => afx.keyEdits()[0][50] || {});
-    const val = async (par) => { const e = await ed(); return e[par] ?? (await p.evaluate((x) => afx.base(x), par)); };
-    const a0 = await val(on); await p.click('.sect.seq .hdb >> nth=0'); const a1 = await val(on);
-    const p0 = await val(pat); await p.click('.sect.seq .st >> nth=2'); const p1 = await val(pat);
-    await p.click('.sect.seq .hdb >> nth=1'); const r = await ed();
-    if (a1 !== 1 - a0 || p1 !== (p0 ^ 4) || r[on] !== 1 || !(r[pat] & 1)) { errors++; console.log('seq edits:', a0, a1, p0, p1, r[on], r[pat]); }
-    let ons = 0;
-    for (let i = 0; i < 24; i++) { await p.click('#rand-key'); await p.waitForTimeout(30); if ((await ed())[on] === 1) ons++; }
-    if (ons < 3 || ons > 21) { errors++; console.log('NEW SOUND turned the sequence on', ons, 'of 24 times'); }
+    for (let i = 0; i < 8; i++) { await p.click('#rand-key'); await p.waitForTimeout(30); }
+    const n = await count(), seq = await p.$$eval('.sect.seq, #rhythm-bars, .k.run', (e) => e.length);
+    if (n || seq) { errors++; console.log('no sequencer:', n, 'keys run a rhythm,', seq, 'sequencer parts on screen'); }
   }
-  // RHYTHMS: 0% no key plays a rhythm, 100% every unlocked key does, 40% somewhere between; moving back down to 40%
-  // gives the same keys as before; one UNDO takes the drag back
-  if (w === 1440 && h === 900) {
-    const count = () => p.evaluate(() => { let n = 0, all = 0; afx.sounds.forEach((s, i) => { for (let k = s.zone.lo; k <= s.zone.hi; k++) { all++; if (afx.active(i, k)) n++; } }); return [n, all]; });
-    await p.evaluate(() => afx.rhythms(0)); const [n0] = await count();
-    await p.evaluate(() => afx.rhythms(40)); const [n40, all] = await count(); const keys40 = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
-    await p.evaluate(() => afx.rhythms(100)); const [n100] = await count();
-    await p.evaluate(() => afx.rhythms(40)); const keys40b = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
-    if (n0 !== 0 || n100 < all - 1 || Math.abs(n40 - 10) > 1 || keys40 !== keys40b) { errors++; console.log('rhythms:', n0, n40, n100, all, keys40 === keys40b); }
-    await p.evaluate(() => afx.rhythms(50));
-    await p.click('#menu-btn'); const bar = await p.isVisible('#rhythm-bars .htrack'); await p.click('#menu-btn');
-    if (!bar) { errors++; console.log('no RHYTHMS slider in the RANDOM menu'); }
-    // the echo's SYNC: TIME reads a note length, unchanged by the BPM; off again, back to its milliseconds
-    { const echoTime = () => p.$$eval('.fxside .vf', (els) => els.find((e) => e.querySelector('.lab')?.textContent === 'time')?.querySelector('output').textContent);
-      let sb = null;
-      for (const e of await p.$$('.fxside .vsw')) if ((await e.$eval('.lab', (x) => x.textContent)) === 'sync') sb = await e.$('.swb');
-      const t0 = await echoTime(); await sb.click(); const t1 = await echoTime(); await p.click('#bpm-up'); const t2 = await echoTime(); await p.click('#bpm-down');
-      await sb.click(); const t3 = await echoTime();
-      if (!/ms$/.test(t0) || t1 !== '1/8D' || t2 !== '1/8D' || t3 !== t0) { errors++; console.log('echo sync:', t0, t1, t2, t3); } }
-    // randomised pans: SCATTER ALL puts every drum key in the centre, the snare's within 20%, the metal's anywhere
-    await p.evaluate(() => document.getElementById('kit-scatter').click()); await p.waitForTimeout(400);
-    const pans = await p.evaluate(() => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.pan(i, k)); return o; }));
-    const [dr, sn, me] = pans;
-    if (!dr.every((x) => x === 63) || !sn.every((x) => x >= 51 && x <= 76) || new Set(sn).size < 2 || !me.some((x) => x < 50 || x > 76)) { errors++; console.log('pans:', JSON.stringify(pans)); }
-    // the pan knob reads L/C/R, its ring lit from the top
-    const panOut = await p.$$eval('#faders .vf', (els) => els.filter((e) => e.querySelector('.lab')?.textContent === 'pan').map((e) => [e.querySelector('output').textContent, e.querySelectorAll('.tk.on').length, !!e.querySelector('.lr')]));
-    if (panOut.length !== 1 || !/^(C|[LR]\d{1,3})$/.test(panOut[0][0]) || (panOut[0][0] === 'C') !== (panOut[0][1] === 1) || !panOut[0][2]) { errors++; console.log('pan knob:', JSON.stringify(panOut)); }
-    await p.evaluate(() => document.getElementById('undo').click()); await p.waitForTimeout(100);
-  }
-  { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
-    await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
-    if (!has || bpm !== '121') { errors++; console.log('repeat:', has, 'bpm', bpm); } }
+  { await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
+    if (bpm !== '121') { errors++; console.log('bpm', bpm); } }
   // NEW SOUND is the dice at the top right of the synth block (not in the key header any more): its cell is the last
   // two columns of the first row, above FX SENDS; a press deals the key a new sound, changes the face and rolls; K too
   { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
@@ -298,7 +262,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const rev = all.filter((k) => k.rev > 0), ech = all.filter((k) => k.echo > 0), ons = st.map((z) => z.filter((k) => k.on).length);
     if (J(asked) !== J(before) || armed !== 'true' || !/1 LOCKED KEY/.test(info)) { errors++; console.log('init patch, asking:', armed, info, J(asked) === J(before)); }
     if (all.length !== 25 || all.some((k) => !k.kit || k.lock) || rev.length !== 8 || ech.length !== 5 || rev.some((k) => k.rev < 45 || k.rev > 95) || ech.some((k) => k.echo < 40 || k.echo > 85)
-      || !st[0].every((k) => k.pan === 63) || !st[1].every((k) => k.pan >= 51 && k.pan <= 76) || J(ons) !== J([4, 4, 5]) || all.filter((k) => k.trim !== 0).length < 18)
+      || !st[0].every((k) => k.pan === 63) || !st[1].every((k) => k.pan >= 51 && k.pan <= 76) || J(ons) !== J([0, 0, 0]) || all.filter((k) => k.trim !== 0).length < 18)
       { errors++; console.log('init patch:', 'reverb', rev.length, 'echo', ech.length, 'rhythms', J(ons), J(all.map((k) => [k.kit, k.lock, k.echo, k.rev, k.pan, k.trim]))); }
     await p.waitForTimeout(100); await press(); await p.waitForTimeout(600); const again = await state(); // nothing locked now: one press
     if (J(again.flat().map((k) => k.kit)) === J(all.map((k) => k.kit)) || again.flat().filter((k) => k.rev > 0).length !== 8) { errors++; console.log('init patch, second: the same patch again'); }
@@ -427,7 +391,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
 // 360 x 640) gets 25 pads on a five-column grid and nothing scrolls; a pad plays and picks its key, held like a key,
 // several at once; NEW SOUND rolls the pad pressed last, UNDO takes it back; the ECHO and REVERB bars set that key's
 // sends; LOCK locks the key; INIT PATCH and RANDOM ALL deal new sounds; the message line says what happened. MENU (top
-// right) opens a menu whose first item is REMOVE ALL RHYTHMS. ?desktop keeps the big screen on a phone and ?phone
+// right) opens a menu of the RANDOM menu's presses. ?desktop keeps the big screen on a phone and ?phone
 // gives the phone view anywhere
 for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   const cx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2.625, hasTouch: true, isMobile: true });
@@ -479,11 +443,10 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
     bad('lock, init patch', d1.lock, padLocked, d1.dice, d1.lockBtn, d2.sends, ask, d3.kit, d4.kit, d4.lock, d4.name, initBtn, d4.msg);
   await p.tap('#pv-random'); await p.waitForTimeout(600); const f1 = await st(); await p.tap('#pv-alter'); await p.waitForTimeout(400); const f2 = await st();
   if (f1.kit === d4.kit || !/all three engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
-  // MENU, on the fifth column: the first thing on it is REMOVE ALL RHYTHMS. It covers the pads and the buttons down to
-  // the message line; a press does its thing and closes it. With the rhythms gone no pad has a dashed foot and new
-  // sounds come without one; UNDO brings them back, and RHYTHMS ON HALF THE KEYS deals them again
+  // MENU, on the fifth column. It covers the pads and the buttons down to the message line; a press does its thing
+  // and closes it. No pad runs a rhythm (the sequencer is gone)
   const menu = () => p.evaluate(() => ({ run: document.querySelectorAll('.pad.run').length, share: afx.rand().rhythms, open: !document.getElementById('pv-menu').hidden, btn: document.getElementById('pv-menu-btn').textContent,
-    off: document.getElementById('pv-norhythm').disabled, cap: document.getElementById('pv-norhythm-cap').textContent, msg: document.getElementById('pv-msg').textContent,
+    msg: document.getElementById('pv-msg').textContent,
     kits: [0, 1, 2].map((s) => Object.values(afx.keyEdits()[s]).map((e) => e._kit).join()), eng: [document.getElementById('pv-rand-eng').textContent, document.getElementById('pv-alter-eng').textContent, document.getElementById('pv-rand-eng-cap').textContent] }));
   const press = async (id) => { await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); await p.tap(id); await p.waitForTimeout(450); return menu(); };
   const m0 = await menu(); await p.tap('#pv-menu-btn'); await p.waitForTimeout(200); const m1 = await menu();
@@ -493,16 +456,9 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
       covers: [document.querySelectorAll('.pad')[12], document.querySelectorAll('.pad')[24], document.getElementById('pv-init'), document.getElementById('pv-undo'), document.querySelector('#pv-echo .track')].every((e) => m.contains(mid(e))),
       msgSeen: mid(msg) === msg || msg.contains(mid(msg)), onGrid: xs.includes(Math.round(r(document.getElementById('pv-menu-btn')).left)), btnH: Math.round(r(document.getElementById('pv-menu-btn')).height) }; });
   if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-menu.png` });
-  if (m0.run !== 13 || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || ml.first !== 'REMOVE ALL RHYTHMS' || ml.n !== 5 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40 || m1.off
-    || m1.cap !== '13 OF 25 KEYS RUN A RHYTHM WHILE HELD') bad('the menu', m0.run, m0.open, m0.btn, m1.open, m1.btn, ml, m1.off, m1.cap);
-  await p.tap('#pv-norhythm'); await p.waitForTimeout(350); const m2 = await menu();
-  await p.tap('#pv-random'); await p.waitForTimeout(500); const m3 = await menu(); // (new sounds, and still no rhythm)
-  await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m4 = await menu(); await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m5 = await menu(); // (opened and closed: nothing changes)
-  await p.tap('#pv-undo'); await p.waitForTimeout(300); await p.tap('#pv-undo'); await p.waitForTimeout(300); const m6 = await menu();
-  if (m2.run || m2.open || m2.share !== 0 || !/^all rhythms removed/.test(m2.msg) || m3.run || m3.kits[0] === m0.kits[0] || !m4.open || !m4.off || m4.cap !== 'NO KEY RUNS A RHYTHM NOW' || m5.open || J(m5.kits) !== J(m3.kits)
-    || m6.run !== 13 || m6.share !== 50 || J(m6.kits) !== J(m0.kits)) bad('remove all rhythms', m2.run, m2.open, m2.share, m2.msg, m3.run, m4.open, m4.off, m4.cap, m5.open, m6.run, m6.share, J(m6.kits) === J(m0.kits));
-  await press('#pv-norhythm'); const m7 = await press('#pv-rhythm');
-  if (m7.run !== 13 || m7.share !== 50 || m7.open || !/^rhythms on 13 of 25 keys/.test(m7.msg)) bad('rhythms on half the keys', m7.run, m7.share, m7.open, m7.msg);
+  if (m0.run || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || !/^RANDOM: /.test(ml.first) || ml.n !== 3 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40)
+    bad('the menu', m0.run, m0.open, m0.btn, m1.open, m1.btn, ml);
+  await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m7 = await menu();
   // RANDOM and ALTER for the engine of the pad pressed last, and ALTER ALL
   await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250);
   const m8 = await press('#pv-rand-eng'), m9 = await press('#pv-alter-eng'), m10 = await press('#pv-alter-all');
