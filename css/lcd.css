@@ -131,11 +131,12 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .vf.held .vtrack { outline: 2px solid var(--ink); outline-offset: 3px; }
 .vf.changed .lab::after { content: "*"; }
 .vf.keyed .lab, .vsel.keyed label { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
-.editbar { display: flex; align-items: center; gap: 8px; font-size: 19px; }
+.editbar { display: flex; align-items: center; gap: 6px; font-size: 19px; min-width: 0; }
 .editbar > .dim { letter-spacing: .1em; }
 .editbar #edit-key { min-width: 6.5em; }
-.editbar .info { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; }
+.editbar .info { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 6px; }
 .keymap canvas { cursor: pointer; }
+body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px; cursor: crosshair; }
 .lock { border: 2px solid var(--ink); border-radius: 2px; background: transparent; font-size: 14px; line-height: 1; padding: 1px 4px 0; cursor: pointer;
   letter-spacing: .06em; color: var(--muted); border-color: rgba(23, 32, 14, .4); text-shadow: none; }
 .lock[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }

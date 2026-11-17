@@ -27,6 +27,7 @@ const S = {
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
   editAll: false,
+  ccMap: null, // knob map, CC number -> target; null: the Bass Station 2 default
   zoneStart: DEFAULT_ZONE_START, // the layout's lowest key (moved by octaves with LOW KEY) // the editor edits the last key pressed (false) or the base of every key (true)
 };
 try {
@@ -35,7 +36,7 @@ try {
     S.values = Uint8Array.from(d.values); S.defaults = Uint8Array.from(d.defaults || d.values);
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
-    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -44,7 +45,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
@@ -95,7 +96,8 @@ function play(sound, note, vel) {
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
   editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
-  if (sound === S.sel) { drawFaders(); drawKeymap(); drawEditKey(); }
+  // the editor follows the sound you play, so the knobs and the screen are always on the key you just pressed
+  if (sound !== S.sel) select(sound); else { drawFaders(); drawKeymap(); drawEditKey(); }
 }
 const pct = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, k === 'seed' ? v : v / 100]));
 
@@ -129,8 +131,9 @@ let midi = null;
 function midiStatus(text, live) { const el = $('midi-status'); el.textContent = text; el.classList.toggle('live', !!live); el.title = text; }
 function onMidi(e) {
   const [st, note, vel] = e.data;
-  if ((st & 0xf0) !== 0x90 || !vel) return; // note-ons only (a note-on at velocity 0 is a note-off)
   const ch = (st & 0x0f) + 1;
+  if ((st & 0xf0) === 0xb0) { if (ch === 1) onCC(note, vel); return; } // a knob or slider (control change)
+  if ((st & 0xf0) !== 0x90 || !vel) return; // note-ons only (a note-on at velocity 0 is a note-off)
   noteOn(ch, note, vel);
 }
 function noteOn(ch, note, vel) {
@@ -151,8 +154,77 @@ async function startMidi() {
     midi.onstatechange = hook; hook();
   } catch (err) { midiStatus('MIDI: permission refused'); }
 }
-// for testing without a controller: afx.noteOn(channel, note, velocity) from the console
-window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel) };
+// ---------------------------------------------------------------------------------------------------------------
+// knobs: MIDI CCs on channel 1. Sound controls act like the editor: on the last key played (or every key with ALL
+// KEYS), of the sound last played. The default map suits a Bass Station 2 (its CC numbers); LEARN maps any knob
+// ---------------------------------------------------------------------------------------------------------------
+// a target: { t: 'par', label: [labels to try, in order] } | { t: 'global', k } | { t: 'sound', k } | { t: 'zlevel', s }
+const CC_DEFAULT = {
+  16: { t: 'par', label: ['cutoff'], name: 'filter freq' }, 82: { t: 'par', label: ['reso'], name: 'resonance' },
+  114: { t: 'par', label: ['drive'], name: 'overdrive' }, 85: { t: 'par', label: ['pitch amt', 'mod2 gain'], name: 'mod env depth' },
+  90: { t: 'par', label: ['attack'], name: 'amp attack' }, 91: { t: 'par', label: ['decay'], name: 'amp decay' },
+  103: { t: 'par', label: ['pitch dec', 'mod1 freq'], name: 'mod env decay' }, 94: { t: 'par', label: ['fm amt', 'mod1 gain'], name: 'distortion' },
+  27: { t: 'par', label: ['coarse'], name: 'osc 1 coarse' }, 26: { t: 'par', label: ['fine'], name: 'osc 1 fine' },
+  18: { t: 'global', k: 'depth', name: 'lfo 1 speed' }, 5: { t: 'global', k: 'pitch', name: 'portamento' }, 19: { t: 'global', k: 'timbre', name: 'lfo 2 speed' },
+  20: { t: 'zlevel', s: 0, name: 'osc 1 level' }, 21: { t: 'zlevel', s: 1, name: 'osc 2 level' }, 22: { t: 'zlevel', s: 2, name: 'sub osc level' },
+};
+const ccMap = () => S.ccMap || CC_DEFAULT;
+function ccTargetName(t) {
+  if (t.t === 'par') return t.label[0];
+  if (t.t === 'global') return 'morph ' + t.k + ' (all)';
+  if (t.t === 'sound') return 'morph ' + t.k;
+  return SOUNDS[t.s].name.toLowerCase() + ' level';
+}
+let learn = null; // null, { armed: true } waiting for a control, then { target } waiting for a knob
+let ccDraw = 0;
+function onCC(cc, val) {
+  if (learn && learn.target) {
+    S.ccMap = { ...ccMap() };
+    for (const k in S.ccMap) if (JSON.stringify(S.ccMap[k]) === JSON.stringify(learn.target)) delete S.ccMap[k]; // one knob per control
+    S.ccMap[cc] = learn.target; save();
+    showLastText(`CC${cc} → ${ccTargetName(learn.target).toUpperCase()}`);
+    setLearn(null); return;
+  }
+  const t = ccMap()[cc];
+  if (!t) { showLastText(`CC${cc} ${val} · not mapped (LEARN maps it)`); return; }
+  let text;
+  if (t.t === 'global') { S.global[t.k] = Math.round(val / 127 * 100); text = `${ccTargetName(t)} ${S.global[t.k]}%`; }
+  else if (t.t === 'sound') { S.sounds[S.sel][t.k] = Math.round(val / 127 * 100); text = `${SOUNDS[S.sel].name} ${ccTargetName(t)} ${S.sounds[S.sel][t.k]}%`; }
+  else if (t.t === 'zlevel') { setValue(PAR.VOL1 + SOUNDS[t.s].engineVoice, val); text = `${ccTargetName(t)} ${val}`; }
+  else {
+    const sc = VOICE_SCHEMAS[SOUNDS[S.sel].engineVoice];
+    const e = t.label.map((l) => sc.find((x) => x.label === l)).find(Boolean);
+    if (!e) { showLastText(`CC${cc} · ${SOUNDS[S.sel].name} has no ${t.label[0]}`); return; }
+    const v = Math.round(val / 127 * e.max);
+    editValue(e.par, v);
+    text = `${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) : 'ALL'} ${e.label} ${showValue(e, v)}`;
+  }
+  save();
+  showLastText(`CC${cc} · ${text.toUpperCase()}`);
+  if (!ccDraw) ccDraw = requestAnimationFrame(() => { ccDraw = 0; drawFaders(); drawSide(); });
+}
+// LEARN: press it, touch a control on screen, turn a knob
+function setLearn(l) {
+  learn = l;
+  $('learn').setAttribute('aria-pressed', !!l);
+  document.body.classList.toggle('learning', !!l);
+  if (l && !l.target) detail('LEARN: click a control on screen, then turn a knob (Esc cancels)');
+  else if (l) detail(`LEARN: now turn a knob for <em>${ccTargetName(l.target)}</em>`);
+}
+$('learn').addEventListener('click', () => setLearn(learn ? null : { armed: true }));
+$('cc-reset').addEventListener('click', () => { S.ccMap = null; save(); setLearn(null); detail('knobs: back to the Bass Station 2 map'); });
+document.addEventListener('pointerdown', (e) => {
+  if (!learn) return;
+  const el = e.target.closest('[data-learn]');
+  if (!el) return;
+  const t = JSON.parse(el.dataset.learn);
+  if (t.t === 'zlevel') t.s = S.sel;
+  setLearn({ target: t });
+}, true);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) setLearn(null); });
+
+// for testing without a controller: afx.noteOn(channel, note, velocity) and afx.cc(number, value) from the console
+window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), cc: (cc, val) => onCC(cc, val) };
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -213,6 +285,7 @@ function hbar(box, label, o) {
   el.querySelector('.lab').textContent = label;
   const tr = el.querySelector('.htrack'), out = el.querySelector('output');
   tr.setAttribute('aria-label', label); tr.setAttribute('aria-valuemin', o.min); tr.setAttribute('aria-valuemax', o.max);
+  if (o.learn) el.dataset.learn = JSON.stringify(o.learn);
   const draw = () => { const v = o.get(); tr.style.setProperty('--f', (v - o.min) / (o.max - o.min)); out.textContent = o.show(v); tr.setAttribute('aria-valuenow', v); };
   const put = (v) => { v = clamp(Math.round(v), o.min, o.max); if (v !== o.get()) { o.set(v); draw(); } };
   dragger(tr, 'x', { ...o, put });
@@ -225,9 +298,9 @@ function hbar(box, label, o) {
 // ---- the morph bars ----
 const P = (v) => v + '%';
 const globalDraws = ['depth', 'pitch', 'timbre'].map((k) => hbar($('global-bars'), k.toUpperCase(), {
-  min: 0, max: 100, get: () => S.global[k], set: (v) => { S.global[k] = v; save(); drawKeymap(); }, show: P, dflt: 100 }));
+  min: 0, max: 100, get: () => S.global[k], set: (v) => { S.global[k] = v; save(); drawKeymap(); }, show: P, dflt: 100, learn: { t: 'global', k } }));
 const soundDraws = ['depth', 'pitch', 'timbre'].map((k) => hbar($('sound-bars'), k.toUpperCase(), {
-  min: 0, max: 100, get: () => S.sounds[S.sel][k], set: (v) => { S.sounds[S.sel][k] = v; save(); drawKeymap(); }, show: P, dflt: 50 }));
+  min: 0, max: 100, get: () => S.sounds[S.sel][k], set: (v) => { S.sounds[S.sel][k] = v; save(); drawKeymap(); }, show: P, dflt: 50, learn: { t: 'sound', k } }));
 $('reroll').addEventListener('click', () => reroll());
 function reroll() { S.sounds[S.sel].seed = newSeed(); lastMorph[S.sel] = null; save(); drawSide(); drawFaders(); detail(`${SOUNDS[S.sel].name}: new seed <em>${hex(S.sounds[S.sel].seed)}</em>`); }
 
@@ -235,7 +308,7 @@ function reroll() { S.sounds[S.sel].seed = newSeed(); lastMorph[S.sel] = null; s
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
 const randDraws = [
   hbar($('rand-bars'), 'AMOUNT', { min: 0, max: 100, get: () => S.rand.amount, set: (v) => { S.rand.amount = v; save(); }, show: P, dflt: 30 }),
-  hbar($('rand-bars'), 'LEVEL', { min: 0, max: 127, get: () => S.values[levelPar()], set: (v) => { setValue(levelPar(), v); drawFaders(); }, show: String, dflt: () => S.defaults[levelPar()] }),
+  hbar($('rand-bars'), 'LEVEL', { min: 0, max: 127, get: () => S.values[levelPar()], set: (v) => { setValue(levelPar(), v); drawFaders(); }, show: String, dflt: () => S.defaults[levelPar()], learn: { t: 'zlevel', s: 0 } }),
 ];
 $('wild').checked = S.rand.wild;
 $('wild').addEventListener('change', () => { S.rand.wild = $('wild').checked; save(); });
@@ -386,6 +459,7 @@ function vfader(e) {
     else put(S.defaults[e.par]);
   };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
+  el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
   tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, valueNow(e.par))}</em>`));
   lock.addEventListener('click', () => { if (S.locks.has(e.par)) S.locks.delete(e.par); else S.locks.add(e.par); save(); draw(); drawLocks(); });
   faderDraws.push(draw);

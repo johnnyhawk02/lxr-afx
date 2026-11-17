@@ -16,7 +16,12 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Editor**: every parameter of each sound (tone, shape, filter, mod, mix). By default an edit changes only the last key
   pressed (or the key picked on the key map), kept on top of that key's morph; **ALL KEYS** edits the base instead, and
   every key's morph follows. **CLEAR KEY** / **CLEAR ALL KEYS** take a sound's key edits away.
-- **Randomisers**: **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
+- **Knobs** (MIDI CC on channel 1), mapped for a Bass Station 2: they act on the last key played, like the editor (which
+  follows the sound you play). Filter freq → cutoff, resonance → reso, overdrive → drive, amp attack/decay → attack/decay,
+  mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
+  LFO 1 speed / portamento / LFO 2 speed → morph depth / pitch / timbre (all sounds), osc 1 / osc 2 / sub levels → the
+  drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
+- **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
   **ALTER ALL** do all three sounds, with undo.
 
