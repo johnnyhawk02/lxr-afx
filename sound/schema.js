@@ -89,7 +89,7 @@ function displayOf(key) {
 
 // the randomiser's drum-safe ranges (elixir-desktop app/randomise.js), by front-panel name
 const SAFE = {
-  WAVEFORM: 'lock', PWM: 'lock', REPEAT: 'lock', MODE: 'lock', FILTER_TYPE: 'lock', PAN: 'lock', SAMPLE_RATE: 'lock',
+  WAVEFORM: 'lock', PWM: 'lock', REPEAT: 'lock', MODE: 'lock', FILTER_TYPE: 'lock', SAMPLE_RATE: 'lock',
   VEL_AMT: 'lock', VEL_MOD_VOL: 'lock', VEL_DEST: 'lock', VOLUME: 'lock',
   FREQ_LFO: 'lock', SYNC_LFO: 'lock', MOD_LFO: 'lock', WAVE_LFO: 'lock', RETRIGGER_LFO: 'lock', OFFSET_LFO: 'lock', TARGET_LFO: 'lock',
   COARSE: 'pitch', FINE: [48, 78], ATTACK: [0, 6], EG_SLOPE: [0, 127], NOISE: [0, 127], MIX: [0, 127],
@@ -100,7 +100,11 @@ const SAFE = {
 };
 // decay ranges differ per voice: kick/tom/snare, cymbal
 const DECAY = { 0: [3, 55], 1: [3, 55], 2: [3, 55], 3: [3, 50], 4: [20, 110] };
+// where the randomisers may put a sound's pan (63 is the centre): the drums always centre, the snare up to 20% left or
+// right, the metal anywhere. Strict: a randomiser always lands inside it, even WILD (a hand-set pan can go anywhere)
+export const PAN_RANGE = { 0: [63, 63], 1: [63, 63], 2: [63, 63], 3: [50, 76], 4: [0, 127], 5: [0, 127] };
 function randRange(text, voice, key) {
+  if (text === 'PAN') return PAN_RANGE[voice];
   if (key.startsWith('PITCH_SLOPE')) return [0, 90]; // steep pitch curves end up inaudible
   if (key.startsWith('VOL_SLOPE')) return [0, 80]; // very slow amp slopes ring on
   if (text === 'DECAY') return DECAY[voice] || [3, 70];
@@ -140,6 +144,7 @@ function entry(text, key, voice, page, section) {
   return {
     key, par: PAR[key], label: LABELS[text] || text.toLowerCase().replace(/_/g, ' '), text, page, section, min: 0, max,
     def: INIT_VALUES[PAR[key]], display, morph: TIMBRE[text] !== undefined ? 'timbre' : null, weight: TIMBRE[text] || 0, rand,
+    ...(text === 'PAN' ? { strict: true } : {}),
   };
 }
 

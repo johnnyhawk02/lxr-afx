@@ -40,8 +40,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   off otherwise); its LOCK keeps NEW SOUND off it. The other randomisers never touch it.
 - **RHYTHMS** (RANDOM menu, 50% by default): the share of keys that play a running rhythm. Moving it switches keys on
   or off at once across all three zones (always the same keys in the same order, each keeping its pattern or dealt a
-  random one); NEW SOUND, SCATTER, RESET KEYS and SCATTER ALL deal rhythms at that share. 0%: no key, 100%: every
-  key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
+  random one); SCATTER, RESET KEYS and SCATTER ALL deal rhythms to exactly that share of each zone's keys, NEW SOUND
+  at that chance. 0%: no key, 100%: every key. Locked keys, and a zone whose SEQ is locked, stay as they are; UNDO takes back a whole drag.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo, seq), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
   right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
@@ -62,6 +62,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
   **ALTER ALL** do all three sounds, with undo.
+- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, RESET KEYS, RANDOMISE,
+  RANDOM KIT, VARY, ALTER, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
+  **metal anywhere**, left to right. Set by hand, any pan goes anywhere; LOCK on the pan knob keeps it out of the
+  randomisers.
 
 ## Code
 

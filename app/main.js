@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
-import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkryfcl';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkryfcl';
-import { KIT_FILES } from '../sound/kits.js?v=mwkryfcl';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkryfcl';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkryfcl';
+import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwksa6ou';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwksa6ou';
+import { KIT_FILES } from '../sound/kits.js?v=mwksa6ou';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwksa6ou';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwksa6ou';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -17,6 +17,11 @@ const hex = (s) => (s >>> 0).toString(16).toUpperCase().padStart(8, '0');
 // state, kept in this browser
 // ---------------------------------------------------------------------------------------------------------------
 const STORE = 'lxr-afx-v3'; // v3: AFX mode, three zones on the Bass Station 2's 25 keys
+// an engine voice's pan (not PAN1 + voice: the firmware's pans 4-6 sit two further on)
+const panPar = (v) => PAR['PAN' + (v + 1)], PAN_PARS = new Set([0, 1, 2, 3, 4, 5].map(panPar));
+// a pan for a randomised sound of an engine voice, anywhere in its range (PAN_RANGE: the drum centred, the snare within
+// 20%, the metal anywhere)
+const randPan = (v) => { const [lo, hi] = PAN_RANGE[v]; return lo + Math.floor(rnd() * (hi - lo + 1)); };
 const defaultLocks = () => { const s = new Set(); for (const sc of VOICE_SCHEMAS) for (const e of sc) if (e.rand === 'lock') s.add(e.par); return s; };
 const S = {
   values: INIT_VALUES.slice(), // the kit: every sound's base
@@ -42,6 +47,7 @@ try {
     if (d.fx) for (const k in S.fx) Object.assign(S.fx[k], d.fx[k]);
     if (d.values.length < ALL_PARAMS) d.locks = [...d.locks, ...[...defaultLocks()].filter((p) => p >= d.values.length)]; // new controls (sends, repeat): locked
     Object.assign(S.global, d.global); d.sounds.forEach((s, i) => Object.assign(S.sounds[i], s));
+    if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = !!d.editAll; if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
   }
@@ -52,7 +58,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1 }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
   }, 300);
 };
@@ -68,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkryfcl', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwksa6ou', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -294,7 +300,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) s
 // for testing without a controller: afx.noteOn(channel, note, velocity) and afx.cc(number, value) from the console
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val),
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
-  active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS };
+  active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
+  pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)) };
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -806,6 +813,7 @@ function randomiseVoice(voice, depth, wild) {
 }
 // one control's value moved around h by depth: within its drum-safe range, or its whole range when wild
 function vary(e, h, depth, wild) {
+  if (e.strict) { const [lo, hi] = e.rand; return clamp(Math.round(clamp(h, lo, hi) + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi); } // pan: always inside its range
   const range = wild || e.rand === 'lock' ? [0, e.max] : e.rand; // an unlocked 'lock' control moves over its whole range
   let v = h;
   if (range === 'pitch') v = Math.round(h + (rnd() * 2 - 1) * depth * 12); // up to an octave either way
@@ -831,13 +839,14 @@ function alterKeys(sound, depth) {
   }
 }
 // a sound from a random built-in kit: one of the kit's voices of the same engine type (any of its three drums; its cymbal
-// or its hi-hat), mapped onto this sound. Its level and pan and any locked control stay. Then, if vary, randomised
+// or its hi-hat), mapped onto this sound, with a pan in its range. Its level and any locked control stay. Then, if vary, randomised
 // around that by the amount
 function pickVoice(sound, vary) {
   const def = SOUNDS[sound], v = def.engineVoice;
   const k = kits[Math.floor(rnd() * kits.length)].kit, src = def.sources[Math.floor(rnd() * def.sources.length)];
-  const keep = new Set([PAR.VOL1 + v, PAR.PAN1 + v]);
+  const keep = new Set([PAR.VOL1 + v, panPar(v)]);
   for (const [par, x] of mapVoice(k, src, v)) if (!keep.has(par) && !S.locks.has(par)) { setValue(par, x, { quiet: true }); S.defaults[par] = x; }
+  if (!S.locks.has(panPar(v))) setValue(panPar(v), randPan(v), { quiet: true }); // and a pan in its range
   delete homes[v];
   if (vary) { randomiseVoice(v, vary, S.rand.wild); delete homes[v]; }
 }
@@ -874,11 +883,12 @@ let undoKeys = null;
 // ---- scatter: every voice of a sound's type from all the kits (every drum 1-3 for the drum, every snare, every cymbal
 // and hi-hat for the metal), the same sound only once, dealt at random one per key across the sound's zone. Each key
 // then plays its kit sound as it is (no morph), kept as that key's edits, so it can still be edited or cleared. The
-// level and pan stay the sound's own. Repeats only if a type has fewer distinct sounds than the zone has keys ----
+// level stays the sound's own; each key gets a pan in its range (unless pan is locked). Repeats only if a type has
+// fewer distinct sounds than the zone has keys ----
 const pools = SOUNDS.map(() => null);
 function pool(sound) {
   if (pools[sound]) return pools[sound];
-  const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, PAR.PAN1 + v]), seen = new Set(), out = [];
+  const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, panPar(v)]), seen = new Set(), out = [];
   for (const { name, kit } of kits) for (const src of def.sources) {
     const vals = mapVoice(kit, src, v).filter(([p]) => !skip.has(p));
     const sig = vals.map(([p, x]) => x).join(',');
@@ -893,22 +903,40 @@ function scatter(sound) {
   for (let note = z.lo; note <= z.hi; note++) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note)) continue;
-    const s = p[order.pop()];
-    dealRhythm(sound, S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) }, true);
+    const s = p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    const v = SOUNDS[sound].engineVoice;
+    ed._r = rnd(); ed[seqPatPar(v)] = randomPattern();
+    if (!S.locks.has(panPar(v))) ed[panPar(v)] = randPan(v);
   }
+  applyRhythms(sound); // and rhythms on the slider's share of the keys
 }
 // ---- RHYTHMS (in the RANDOM menu): the share of keys that play a running sequence. Each key draws a number (kept
-// with its edits as _r) and plays a rhythm when that's under the slider, so moving the slider up switches more keys
-// on (each keeping its pattern, or dealt a random one) and down switches them off, always the same keys in the same
-// order. Dealing a key a sound (NEW SOUND, SCATTER, RESET KEYS, SCATTER ALL) draws it a new number and a new pattern.
-// Locked keys, and a zone whose SEQ is locked, are left alone ----
-function dealRhythm(sound, ed, fresh) {
+// with its edits as _r); in each zone the keys with the lowest numbers, as many as the slider's share, play a rhythm.
+// Moving the slider up switches more keys on (each keeping its pattern, or dealt a random one), down switches them
+// off, always the same keys in the same order. SCATTER, RESET KEYS and SCATTER ALL deal every key a new number and
+// pattern; NEW SOUND deals its one key a rhythm at the slider's chance. Locked keys, and a zone whose SEQ is locked,
+// are left alone ----
+const blankRank = (sound, note) => { const r = (Math.sin(note * 12.9898 + sound * 78.233) * 43758.5453) % 1; return r < 0 ? r + 1 : r; };
+function dealRhythm(sound, ed, fresh) { // one key, at the slider's chance (NEW SOUND)
   const v = SOUNDS[sound].engineVoice, on = seqOnPar(v), pat = seqPatPar(v);
   if (!ed || ed._lock || S.locks.has(pat)) return;
-  if (fresh || ed._r === undefined) ed._r = rnd();
-  const want = ed._r < S.rand.rhythms / 100 ? 1 : 0;
-  ed[on] = want;
-  if (want && (fresh || ed[pat] === undefined)) ed[pat] = randomPattern();
+  if (fresh) { ed._r = rnd(); ed[pat] = randomPattern(); }
+  ed[on] = ed._r < S.rand.rhythms / 100 ? 1 : 0;
+}
+function applyRhythms(sound) { // a whole zone, at exactly the slider's share
+  const def = SOUNDS[sound], v = def.engineVoice, on = seqOnPar(v), pat = seqPatPar(v), eds = S.keyEdits[sound];
+  if (S.locks.has(pat)) return;
+  const keys = [];
+  for (let note = def.zone.lo; note <= def.zone.hi; note++) { const ed = eds[note]; if (!ed?._lock) keys.push({ note, ed, r: ed?._r ?? blankRank(sound, note) }); }
+  keys.sort((a, b) => a.r - b.r);
+  const n = Math.round(S.rand.rhythms / 100 * keys.length);
+  keys.forEach(({ note, ed, r }, i) => {
+    const want = i < n ? 1 : 0;
+    if (!ed) { if (!want && !S.values[on]) return; ed = eds[note] = { _r: r }; } // a key with no sound of its own gets edits only to switch on
+    if (ed._r === undefined) ed._r = r;
+    ed[on] = want;
+    if (want && ed[pat] === undefined) ed[pat] = randomPattern();
+  });
 }
 let rhythmUndo = 0;
 function setRhythms(pc) {
@@ -918,17 +946,9 @@ function setRhythms(pc) {
   S.rand.rhythms = pc;
   let n = 0, all = 0;
   SOUNDS.forEach((def, sound) => {
+    applyRhythms(sound);
     const on = seqOnPar(def.engineVoice);
-    for (let note = def.zone.lo; note <= def.zone.hi; note++) {
-      let ed = S.keyEdits[sound][note];
-      if (!ed) { // a key with no sound of its own: its number from where it is, and it only gets edits to switch on
-        const r = (Math.sin(note * 12.9898 + sound * 78.233) * 43758.5453) % 1, rr = r < 0 ? r + 1 : r;
-        if (rr >= pc / 100 && !S.values[on]) { all++; continue; }
-        ed = S.keyEdits[sound][note] = { _r: rr };
-      }
-      dealRhythm(sound, ed, false);
-      all++; if (keyPatch(sound, note).vals.get(on)) n++;
-    }
+    for (let note = def.zone.lo; note <= def.zone.hi; note++) { all++; if (keyPatch(sound, note).vals.get(on)) n++; }
   });
   save(); drawFaders(); drawKeymap(); drawEditKey(); randDraws.forEach((d) => d());
   detail(`RHYTHMS <em>${pc}%</em>: ${n} of ${all} keys play a rhythm (locked keys stay as they are)`);
@@ -944,6 +964,7 @@ function randKey() {
     const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
     for (const [p, x] of now) if (p >= NUM_PARAMS) ed[p] = x; // the key keeps its sends
     dealRhythm(sound, ed, true); // and a rhythm, or none, as the RHYTHMS slider deals them
+    ed[panPar(SOUNDS[sound].engineVoice)] = randPan(SOUNDS[sound].engineVoice); // and a pan in its range (a lock keeps the old one)
     for (const par of S.locks) if (par in ed) ed[par] = now.get(par);
     S.keyEdits[sound][note] = ed;
     if (S.editAll) setEditAll(false);

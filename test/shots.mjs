@@ -155,10 +155,16 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => afx.rhythms(40)); const [n40, all] = await count(); const keys40 = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
     await p.evaluate(() => afx.rhythms(100)); const [n100] = await count();
     await p.evaluate(() => afx.rhythms(40)); const keys40b = await p.evaluate(() => JSON.stringify(afx.keyEdits().map((z) => Object.keys(z).filter((k) => z[k]._r !== undefined && z[k]._r < 0.4))));
-    if (n0 !== 0 || n100 < all - 1 || n40 <= 0 || n40 >= all || keys40 !== keys40b) { errors++; console.log('rhythms:', n0, n40, n100, all, keys40 === keys40b); }
+    if (n0 !== 0 || n100 < all - 1 || Math.abs(n40 - 10) > 1 || keys40 !== keys40b) { errors++; console.log('rhythms:', n0, n40, n100, all, keys40 === keys40b); }
     await p.evaluate(() => afx.rhythms(50));
     await p.click('#menu-btn'); const bar = await p.isVisible('#rhythm-bars .htrack'); await p.click('#menu-btn');
     if (!bar) { errors++; console.log('no RHYTHMS slider in the RANDOM menu'); }
+    // randomised pans: SCATTER ALL puts every drum key in the centre, the snare's within 20%, the metal's anywhere
+    await p.evaluate(() => document.getElementById('kit-scatter').click()); await p.waitForTimeout(400);
+    const pans = await p.evaluate(() => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.pan(i, k)); return o; }));
+    const [dr, sn, me] = pans;
+    if (!dr.every((x) => x === 63) || !sn.every((x) => x >= 50 && x <= 76) || new Set(sn).size < 2 || !me.some((x) => x < 50 || x > 76)) { errors++; console.log('pans:', JSON.stringify(pans)); }
+    await p.evaluate(() => document.getElementById('undo').click()); await p.waitForTimeout(100);
   }
   { const has = await p.$$eval('#faders .sect h3', (h) => h.some((x) => x.textContent === 'seq' || x.querySelector?.('.t')?.textContent === 'seq'));
     await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
