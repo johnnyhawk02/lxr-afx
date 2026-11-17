@@ -16,7 +16,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L), **NEW SOUND** (K),
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
-  whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
+  whole engine or all three (scatter, alter, the ALTER amount, RHYTHMS, control locks) is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
@@ -66,14 +66,17 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
   randomisers, ALL KEYS edits, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip; a key that
-  plays a rhythm has a dashed foot, a key you edited by hand a dot. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
-  varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
-  **ALTER ALL** do all three sounds.
+  plays a rhythm has a dashed foot, a key you edited by hand a dot.
+- **RANDOM menu**: **SCATTER** and **ALTER** for the engine on screen, **SCATTER ALL** and **ALTER ALL** for all three.
+  ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
+  uses it too); **WILD** lets it take a control outside the ranges drums usually sit in. Locked keys and locked
+  controls stay. (RANDOMISE, VARY, RANDOM KIT and INIT are gone: they changed the engine's base sound, which no key
+  plays since every key got a sound of its own.)
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
   a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR, the RHYTHMS slider. It keeps the last 40 steps, so pressing it again
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
-- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, RANDOMISE,
-  RANDOM KIT, VARY, ALTER, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
+- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, SCATTER, SCATTER ALL, ALTER,
+  ALTER ALL, ALTER KEY, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
   randomisers.
 

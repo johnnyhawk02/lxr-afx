@@ -25,7 +25,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   const edits = after.keyEdits[0]['55'];
   if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on G2', edits); }
   // the randomisers pull variants from the kits without errors
-  for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.mclick(id); await p.waitForTimeout(80); }
+  for (const id of ['#alter', '#kit-alter', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.mclick(id); await p.waitForTimeout(80); }
   await p.evaluate(() => window.afx.noteOn(1, 55, 110));
   await p.waitForTimeout(400);
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
@@ -103,7 +103,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const snap = await k();
     await p.mclick('#scatter'); await p.waitForTimeout(600);
     await p.keyboard.press('r'); await p.waitForTimeout(50);
-    await p.mclick('#rand'); await p.waitForTimeout(600);
+    await p.mclick('#alter'); await p.waitForTimeout(600);
     await p.keyboard.press('k'); await p.waitForTimeout(300);
     if (!snap?._lock || JSON.stringify(await k()) !== JSON.stringify(snap)) { errors++; console.log('lock key: changed', snap?._lock); }
     if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/lockkey-${w}x${h}.png` });

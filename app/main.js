@@ -1,11 +1,11 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwktbism';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwktbism';
-import { KIT_FILES } from '../sound/kits.js?v=mwktbism';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwktbism';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwktbism';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkthatw';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkthatw';
+import { KIT_FILES } from '../sound/kits.js?v=mwkthatw';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwkthatw';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwkthatw';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -29,7 +29,7 @@ const S = {
   global: { depth: 100, pitch: 100, timbre: 100 },
   sounds: SOUNDS.map(() => ({ depth: 50, pitch: 50, timbre: 50, seed: newSeed() })),
   locks: defaultLocks(),
-  rand: { amount: 30, wild: false, rhythms: 50 }, // rhythms: the share of keys (%) that play a running sequence
+  rand: { alter: 10, wild: false, rhythms: 50 }, // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
@@ -74,7 +74,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwktbism', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkthatw', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -332,7 +332,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && learn) s
 window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: (note) => noteOff(note), cc: (cc, val) => onCC(cc, val),
   seqPars: (v) => [seqOnPar(v), seqPatPar(v)], keyEdits: () => S.keyEdits, base: (par) => S.values[par], rhythms: (v) => setRhythms(v),
   active: (sound, note) => keyPatch(sound, note).vals.get(seqOnPar(SOUNDS[sound].engineVoice)), sounds: SOUNDS,
-  pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)) };
+  pan: (sound, note) => keyPatch(sound, note).vals.get(panPar(SOUNDS[sound].engineVoice)), patch: (sound, note) => [...keyPatch(sound, note).vals] };
 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
@@ -423,7 +423,7 @@ const P = (v) => v + '%';
 // ---- level and the randomiser's amount ----
 const levelPar = () => PAR['VOL' + (SOUNDS[S.sel].engineVoice + 1)];
 const randDraws = [
-  hbar($('rand-bars'), 'AMOUNT', { min: 0, max: 100, get: () => S.rand.amount, set: (v) => { S.rand.amount = v; save(); }, show: P, dflt: 30 }),
+  hbar($('rand-bars'), 'ALTER', { min: 1, max: 100, get: () => S.rand.alter, set: (v) => { S.rand.alter = v; save(); }, show: P, dflt: 10 }),
   hbar($('rhythm-bars'), 'RHYTHMS', { min: 0, max: 100, get: () => S.rand.rhythms, set: (v) => setRhythms(v), show: P, dflt: 50 }),
 ];
 $('wild').checked = S.rand.wild;
@@ -592,7 +592,8 @@ function gswitch(label, names, title, get, set) {
 const FX_PAGE = [
   ['echo', 'ECHO', [['time', ECHO_TIME], ['sync', 'switch', ['OFF', 'ON'], 'Sync: TIME in note lengths at the BPM (1/32 to 1/2, triplets and dotted), following the BPM', (v) => {
     E().sync = v; sendFx(); detail(v ? `ECHO SYNC <em>ON</em>: TIME ${ECHO_DIVS[E().div][0]} at ${S.fx.tempo.bpm} BPM` : `ECHO SYNC <em>OFF</em>: TIME ${echoMs(E().time)} ms`);
-  }], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'p-pong' : 'normal'), 'mode']]],
+  }], ['feedback', 127], ['tone', 127], ['pingpong', 'switch', ['OFF', 'ON'], 'Ping-pong: each repeat on the other side', (v) => {
+    E().pingpong = v; sendFx(); detail(`ECHO PING-PONG <em>${v ? 'ON' : 'OFF'}</em>`); }, 'p-pong']]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
   'DIRT', // the distortion and its sidechain: buildDirt
@@ -608,9 +609,9 @@ function buildFx() {
     const [id, name, knobs] = item;
     const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
-    for (const [k, max, show, label, set] of knobs)
+    for (const [k, max, show, label, set, name] of knobs)
       el.querySelector('.row').append(typeof max === 'object' ? gknob(k, max) // a knob of its own (the echo's TIME)
-        : max === 'switch' ? gswitch(k, show, label, () => S.fx[id][k], set)
+        : max === 'switch' ? gswitch(name || k, show, label, () => S.fx[id][k], set)
           : gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
@@ -907,31 +908,21 @@ function alterKeys(sound, depth) {
     const note = Number(k), now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][k];
     for (const e of sc) {
       if (S.locks.has(e.par) || e.display.type === 'target' || e.seq) continue;
-      const v = vary(e, now.get(e.par), depth, false);
+      const v = vary(e, now.get(e.par), depth, S.rand.wild);
       if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
     }
   }
 }
-// a sound from a random built-in kit: one of the kit's voices of the same engine type (any of its three drums; its cymbal
-// or its hi-hat), mapped onto this sound, with a pan in its range. Its level and any locked control stay. Then, if vary, randomised
-// around that by the amount
-function pickVoice(sound, vary) {
-  const def = SOUNDS[sound], v = def.engineVoice;
-  const k = kits[Math.floor(rnd() * kits.length)].kit, src = def.sources[Math.floor(rnd() * def.sources.length)];
-  const keep = new Set([PAR.VOL1 + v, panPar(v)]);
-  for (const [par, x] of mapVoice(k, src, v)) if (!keep.has(par) && !S.locks.has(par)) { setValue(par, x, { quiet: true }); S.defaults[par] = x; }
-  if (!S.locks.has(panPar(v))) setValue(panPar(v), randPan(v), { quiet: true }); // and a pan in its range
-  delete homes[v];
-  if (vary) { randomiseVoice(v, vary, S.rand.wild); delete homes[v]; }
-}
-const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, 0.1, false); delete homes[v]; };
-// ALTER: the sound's base and every key with its own sound
-// ALTER KEY: this key's sound nudged a little (10%) around what it plays now, kept as its own edits
+// ALTER: every key of the zone nudged around what it plays now by the ALTER amount (the RANDOM menu's slider, 10% as it
+// comes; WILD lets a control leave its drum-safe range), and the engine's base (what CLEAR gives a key) with them
+// ALTER KEY: the same for one key
+const alterDepth = () => clamp(S.rand.alter, 1, 100) / 100;
+const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, alterDepth(), S.rand.wild); delete homes[v]; };
 function alterOne(sound, note, depth) {
   const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice], now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][note] || {};
   for (const e of sc) {
     if (S.locks.has(e.par) || e.display.type === 'target' || e.seq) continue;
-    const v = vary(e, now.get(e.par), depth, false);
+    const v = vary(e, now.get(e.par), depth, S.rand.wild);
     if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
   }
   if (editCount(ed)) S.keyEdits[sound][note] = ed;
@@ -939,10 +930,10 @@ function alterOne(sound, note, depth) {
 function alterKey() {
   const sound = S.sel, note = editKey[sound];
   if (keyLocked(sound, note)) { lockedMsg(); return; }
-  randChange(() => { alterOne(sound, note, 0.1); if (S.editAll) setEditAll(false); }, `${SOUNDS[sound].name} ${noteName(note)} altered <em>10%</em> (UNDO takes it back)`)
+  randChange(() => { alterOne(sound, note, alterDepth()); if (S.editAll) setEditAll(false); }, `${SOUNDS[sound].name} ${noteName(note)} altered <em>${S.rand.alter}%</em> (UNDO takes it back)`)
     .then(() => { drawKeymap(); play(sound, note, 100); });
 }
-const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, 0.1); };
+const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, alterDepth()); };
 async function randChange(fn, what) {
   await startAudio();
   snapshot(what.replace(/<[^>]+>/g, '').replace(/\s*(\(| · )UNDO takes it back\)?/, ''));
@@ -1044,17 +1035,9 @@ $('rand-key').addEventListener('click', () => { if (!learn) randKey(); });
 $('rand-key').dataset.learn = JSON.stringify({ t: 'randkey' });
 $('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})`));
 $('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), 'all three zones: a kit sound on every key'));
-$('rand').addEventListener('click', () => randChange(() => pickVoice(S.sel, S.rand.amount / 100),
-  `${SOUNDS[S.sel].name}: a variant from the kits <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
-$('vary').addEventListener('click', () => randChange(() => randomiseVoice(selVoice(), S.rand.amount / 100, S.rand.wild),
-  `${SOUNDS[S.sel].name} varied <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
-$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name} altered <em>10%</em>, and each of its own keys`));
-$('kit-rand').addEventListener('click', () => randChange(() => { for (let i = 0; i < SOUNDS.length; i++) pickVoice(i, S.rand.amount / 100); }, 'all three sounds: variants from the kits'));
-$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), 'every sound altered <em>10%</em>, and each key with its own sound'));
-$('kit-init').addEventListener('click', () => randChange(() => {
-  for (let p = 0; p < NUM_PARAMS; p++) setValue(p, INIT_VALUES[p], { quiet: true });
-  S.defaults = INIT_VALUES.slice(); for (const k in homes) delete homes[k];
-}, 'the init kit'));
+const wildly = () => (S.rand.wild ? ' wild' : '');
+$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>`));
+$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three zones: every key altered <em>${S.rand.alter}%${wildly()}</em>`));
 function undo() {
   const u = undoStack.pop();
   if (!u) { detail('nothing to undo'); return; }

@@ -437,3 +437,11 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 @media (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: 14px; } }
 @media (max-height: 820px) { .faders { --ks: 54px; } .faders .vf.big .knob { width: 96px; height: 96px; } }
 @media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
+
+/* ---- the RANDOM menu on an even grid: two equal buttons a row, the sliders and WILD under HOW MUCH ---- */
+.menupanel { width: 400px; }
+.menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.menupanel .randrow .btn { padding: 5px 6px; min-width: 0; }
+.menupanel .bars + .bars { margin-top: 6px; }
+.menupanel .chk.wild { margin-top: 8px; font-size: 18px; }
+.menupanel .chk.wild .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
