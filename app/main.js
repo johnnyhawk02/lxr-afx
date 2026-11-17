@@ -2,7 +2,7 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice } from '../sound/schema.js';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance } from '../sound/morph.js';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js';
 import { KIT_FILES } from '../sound/kits.js';
 
 const $ = (id) => document.getElementById(id);
@@ -76,9 +76,13 @@ function keyPatch(sound, note) {
   const vals = new Map(voiceOwned(v).map((p) => [p, S.values[p]]));
   for (const [p, x] of m.params) vals.set(p, x);
   const ed = S.keyEdits[sound][note];
-  if (ed) for (const p in ed) vals.set(Number(p), ed[p]);
-  return { note: m.note, vals, semitones: m.semitones };
+  // a scattered key (a kit sound dealt onto it) plays that sound as it is: no morph under it
+  if (ed && ed._kit) { for (const [p] of m.params) vals.set(p, S.values[p]); }
+  if (ed) for (const p in ed) if (p[0] !== '_') vals.set(Number(p), ed[p]);
+  return ed && ed._kit ? { note: BASE_NOTE, vals, semitones: 0 } : { note: m.note, vals, semitones: m.semitones };
 }
+// how many parameters a key's edits set (its labels, _kit and _src, aren't parameters)
+const editCount = (ed) => (ed ? Object.keys(ed).filter((k) => k[0] !== '_').length : 0);
 // a sound on a key, and that key becomes the one the editor edits
 const lastMorph = SOUNDS.map(() => null);
 const editKey = SOUNDS.map((s) => s.zone.base);
@@ -376,7 +380,7 @@ function vfader(e) {
   dragger(tr, 'y', { min: 0, max: e.max, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
   // double-click: a key's edit goes (back to its morph); on every key, back to the kit's value
   const reset = () => {
-    if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!Object.keys(ed).length) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
+    if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!editCount(ed)) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
     else put(S.defaults[e.par]);
   };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
@@ -418,10 +422,10 @@ function targetSelect(e, voice) {
 function setEditAll(all) { S.editAll = all; save(); drawEditKey(); drawFaders(); }
 function drawEditKey() {
   const note = editKey[S.sel], edits = S.keyEdits[S.sel], n = Object.keys(edits).length;
-  const here = edits[note] ? Object.keys(edits[note]).length : 0;
+  const here = editCount(edits[note]), from = edits[note] && edits[note]._kit;
   $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
   $('edit-key').textContent = 'KEY ' + noteName(note);
-  $('edit-info').textContent = S.editAll ? 'editing the base: every key follows' : `${here} edit${here === 1 ? '' : 's'} on ${noteName(note)} · ${n} key${n === 1 ? '' : 's'} edited`;
+  $('edit-info').textContent = S.editAll ? 'editing the base: every key follows' : (from ? `${noteName(note)}: ${from} · ` : `${here} edit${here === 1 ? '' : 's'} on ${noteName(note)} · `) + `${n} key${n === 1 ? '' : 's'} edited`;
   $('clear-key').disabled = !here; $('clear-keys').disabled = !n;
 }
 $('edit-key').addEventListener('click', () => setEditAll(false));
@@ -443,16 +447,32 @@ function randomiseVoice(voice, depth, wild) {
   const home = homes[voice];
   for (const e of sc) {
     if (S.locks.has(e.par) || e.display.type === 'target') continue;
-    const h = home.get(e.par);
-    let range = wild || e.rand === 'lock' ? [0, e.max] : e.rand; // an unlocked 'lock' control moves over its whole range
-    let v = h;
-    if (range === 'pitch') v = Math.round(h + (rnd() * 2 - 1) * depth * 12); // up to an octave either way
-    else if (e.max < 20) { if (rnd() < depth) v = range[0] + Math.floor(rnd() * (Math.min(e.max, range[1]) - range[0] + 1)); }
-    else {
-      const lo = Math.min(range[0], h), hi = Math.max(range[1], h); // the home always stays reachable
-      v = clamp(Math.round(h + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi);
+    setValue(e.par, vary(e, home.get(e.par), depth, wild), { quiet: true });
+  }
+}
+// one control's value moved around h by depth: within its drum-safe range, or its whole range when wild
+function vary(e, h, depth, wild) {
+  const range = wild || e.rand === 'lock' ? [0, e.max] : e.rand; // an unlocked 'lock' control moves over its whole range
+  let v = h;
+  if (range === 'pitch') v = Math.round(h + (rnd() * 2 - 1) * depth * 12); // up to an octave either way
+  else if (e.max < 20) { if (rnd() < depth) v = range[0] + Math.floor(rnd() * (Math.min(e.max, range[1]) - range[0] + 1)); }
+  else {
+    const lo = Math.min(range[0], h), hi = Math.max(range[1], h); // the home always stays reachable
+    v = clamp(Math.round(h + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi);
+  }
+  return clamp(v, 0, e.max);
+}
+// alter each key of a sound that has its own sound (scattered or edited): every unlocked control of that key, moved a
+// little around what the key plays now, kept as the key's edits
+function alterKeys(sound, depth) {
+  const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice];
+  for (const k in S.keyEdits[sound]) {
+    const note = Number(k), now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][k];
+    for (const e of sc) {
+      if (S.locks.has(e.par) || e.display.type === 'target') continue;
+      const v = vary(e, now.get(e.par), depth, false);
+      if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
     }
-    setValue(e.par, clamp(v, 0, e.max), { quiet: true });
   }
 }
 // a sound from a random built-in kit: one of the kit's voices of the same engine type (any of its three drums; its cymbal
@@ -467,22 +487,53 @@ function pickVoice(sound, vary) {
   if (vary) { randomiseVoice(v, vary, S.rand.wild); delete homes[v]; }
 }
 const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, 0.1, false); delete homes[v]; };
+// ALTER: the sound's base and every key with its own sound
+const alterSound = (i) => { alterVoice(SOUNDS[i].engineVoice); alterKeys(i, 0.1); };
 async function randChange(fn, what) {
   await startAudio();
-  undoValues = S.values.slice(); $('undo').disabled = false;
+  undoValues = S.values.slice(); undoKeys = structuredClone(S.keyEdits); $('undo').disabled = false;
   fn();
   for (const s of lastMorph.keys()) lastMorph[s] = null;
-  save(); drawFaders(); drawSide();
+  save(); drawFaders(); drawSide(); drawEditKey();
   detail(what);
 }
 const selVoice = () => SOUNDS[S.sel].engineVoice;
+let undoKeys = null;
+
+// ---- scatter: every voice of a sound's type from all the kits (every drum 1-3 for the drum, every snare, every cymbal
+// and hi-hat for the metal), the same sound only once, dealt at random one per key across the sound's zone. Each key
+// then plays its kit sound as it is (no morph), kept as that key's edits, so it can still be edited or cleared. The
+// level and pan stay the sound's own. Repeats only if a type has fewer distinct sounds than the zone has keys ----
+const pools = SOUNDS.map(() => null);
+function pool(sound) {
+  if (pools[sound]) return pools[sound];
+  const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, PAR.PAN1 + v]), seen = new Set(), out = [];
+  for (const { name, kit } of kits) for (const src of def.sources) {
+    const vals = mapVoice(kit, src, v).filter(([p]) => !skip.has(p));
+    const sig = vals.map(([p, x]) => x).join(',');
+    if (seen.has(sig)) continue;
+    seen.add(sig);
+    out.push({ label: `${name} ${['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'][src]}`, vals });
+  }
+  return (pools[sound] = out);
+}
+function scatter(sound) {
+  const z = SOUNDS[sound].zone, p = pool(sound), order = [];
+  for (let note = z.lo; note <= z.hi; note++) {
+    if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
+    const s = p[order.pop()];
+    S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+  }
+}
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: a kit sound on every key (from ${pool(S.sel).length})`));
+$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), 'all three zones: a kit sound on every key'));
 $('rand').addEventListener('click', () => randChange(() => pickVoice(S.sel, S.rand.amount / 100),
   `${SOUNDS[S.sel].name}: a variant from the kits <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
 $('vary').addEventListener('click', () => randChange(() => randomiseVoice(selVoice(), S.rand.amount / 100, S.rand.wild),
   `${SOUNDS[S.sel].name} varied <em>${S.rand.amount}%${S.rand.wild ? ' wild' : ''}</em>`));
-$('alter').addEventListener('click', () => randChange(() => alterVoice(selVoice()), `${SOUNDS[S.sel].name} altered <em>10%</em>`));
+$('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name} altered <em>10%</em>, and each of its own keys`));
 $('kit-rand').addEventListener('click', () => randChange(() => { for (let i = 0; i < SOUNDS.length; i++) pickVoice(i, S.rand.amount / 100); }, 'all three sounds: variants from the kits'));
-$('kit-alter').addEventListener('click', () => randChange(() => { for (const s of SOUNDS) alterVoice(s.engineVoice); }, 'every sound altered <em>10%</em>'));
+$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), 'every sound altered <em>10%</em>, and each key with its own sound'));
 $('kit-init').addEventListener('click', () => randChange(() => {
   for (let p = 0; p < NUM_PARAMS; p++) setValue(p, INIT_VALUES[p], { quiet: true });
   S.defaults = INIT_VALUES.slice(); for (const k in homes) delete homes[k];
@@ -490,7 +541,8 @@ $('kit-init').addEventListener('click', () => randChange(() => {
 $('undo').addEventListener('click', () => {
   if (!undoValues) return;
   for (let p = 0; p < NUM_PARAMS; p++) setValue(p, undoValues[p], { quiet: true });
-  undoValues = null; $('undo').disabled = true;
+  if (undoKeys) S.keyEdits = undoKeys;
+  undoValues = null; undoKeys = null; $('undo').disabled = true; save(); drawEditKey();
   for (const k in homes) delete homes[k];
   drawFaders(); drawSide(); detail('undone');
 });

@@ -19,7 +19,8 @@
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
     <div class="kitrand" role="group" aria-label="Kit randomiser">
       <button class="btn" id="kit-rand" title="All three sounds: variants from the built-in kits">RANDOM KIT</button>
-      <button class="btn" id="kit-alter" title="Nudge every sound a little (10%)">ALTER ALL</button>
+      <button class="btn" id="kit-scatter" title="Every key of all three zones: a sound of its type from the built-in kits">SCATTER ALL</button>
+      <button class="btn" id="kit-alter" title="Nudge all three sounds a little (10%), and each key with its own sound">ALTER ALL</button>
       <button class="btn" id="kit-init" title="Back to the firmware's init kit">INIT</button>
       <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
     </div>
@@ -52,7 +53,8 @@
           <label class="chk"><input type="checkbox" id="wild"><i></i>WILD</label>
           <button class="btn" id="rand" title="A variant of this sound from the built-in kits: a matching voice from a random kit, varied by the amount (locked controls stay)">RANDOMISE</button>
           <button class="btn" id="vary" title="Vary this sound around its home by the amount (unlocked controls only)">VARY</button>
-          <button class="btn" id="alter" title="Nudge this sound a little (10%)">ALTER</button>
+          <button class="btn" id="alter" title="Nudge this sound a little (10%), and each key with its own sound (scattered or edited)">ALTER</button>
+          <button class="btn" id="scatter" title="Every key of this zone: a different sound of its type from the built-in kits, played as it is">SCATTER</button>
         </div>
         <div class="randrow small"><span class="dim" id="lock-count">0 LOCKED</span>
           <button class="btn sm" id="lock-default">DEFAULT LOCKS</button><button class="btn sm" id="lock-none">UNLOCK ALL</button></div>

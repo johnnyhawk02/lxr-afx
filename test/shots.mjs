@@ -22,8 +22,12 @@ for (const [w, h] of [[1440, 900], [1280, 800]]) {
   const edits = after.keyEdits[0]['47'];
   if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on B1', edits); }
   // the randomisers pull variants from the kits without errors
-  for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo']) { await p.click(id); await p.waitForTimeout(80); }
+  for (const id of ['#rand', '#vary', '#alter', '#kit-rand', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.click(id); await p.waitForTimeout(80); }
   await p.evaluate(() => window.afx.noteOn(1, 47, 110));
+  await p.waitForTimeout(400);
+  { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v2')));
+    const keys = Object.keys(st.keyEdits[0]).length, labelled = Object.values(st.keyEdits[0]).filter((e) => e._kit).length;
+    if (keys !== 24 || labelled !== 24) { errors++; console.log('scatter: drum keys', keys, 'labelled', labelled); } }
   await p.screenshot({ path: `${out}/main-${w}x${h}.png` });
   const scroll = await p.evaluate(() => [document.documentElement.scrollWidth > innerWidth, document.documentElement.scrollHeight > innerHeight]);
   if (scroll.some(Boolean)) { errors++; console.log(`${w}x${h}: page scrolls`, scroll); }
