@@ -17,10 +17,11 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
   **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (randomise, vary, alter, scatter, random kit, init, control locks) is in the **RANDOM** menu.
-- **FX**: the three send effects from Elixir Desktop (the firmware's delay as an echo, its reverb, its distortion), in the
-  right-hand column with the current key's ECHO / REVERB / DIST sends on top. Sends are kept, locked, copied and pasted
-  like a key's other settings; ALL KEYS sets them on every key of the zone. The synth's knobs are on the left; an
-  engine's level is the LEVEL knob in MIX.
+- **FX and master** (the right-hand column, full height): the three send effects from Elixir Desktop (the firmware's
+  delay as an echo, its reverb, its distortion), then the **master**: everything, dry and FX returns, through a
+  distortion (drive, tone, mix), then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a
+  gain-reduction meter, then the level. Each key's ECHO / REVERB / DIST sends are FX SENDS knobs with its synth knobs.
+- **Left column**: the key, its engine, and the synth knobs; an engine's level is the LEVEL knob in MIX.
 - **Editor**: every parameter of the sound on one screen, as knobs (drag up/down, scroll or arrow keys; double-click
   resets; a notch outside the ring marks the base). By default an edit changes only the last key
   pressed (or the key picked in the key list); **ALL KEYS** sets a control on every key of the zone at once (locked keys

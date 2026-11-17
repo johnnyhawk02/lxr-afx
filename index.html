@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwklwcby">
+<link rel="stylesheet" href="css/lcd.css?v=mwkmgli3">
 </head>
 <body>
 <main class="screen" id="screen">
@@ -50,6 +50,8 @@
     <button class="btn" id="undo" disabled title="Take back the last randomise">UNDO</button>
   </header>
 
+  <div class="main">
+  <div class="left">
   <section class="keyhead" id="keyhead" aria-label="The key">
     <div class="keyname"><span class="dim">KEY</span><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
     <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
@@ -66,7 +68,6 @@
 
   <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span></nav>
 
-  <div class="body">
 
     <section class="editor">
       <div class="editbar">
@@ -82,6 +83,7 @@
       <footer class="status"><span id="detail">Play a key, then edit: the change stays on that key. ALL KEYS sets a control on every key of the zone.</span>
         <span class="dim" id="zones"></span></footer>
     </section>
+  </div>
     <aside class="fxside" aria-label="Effects">
       <h2>FX <span class="dim">EVERY KEY FEEDS THESE</span></h2>
       <div id="fxglobal"></div>
@@ -105,6 +107,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwklwcby"></script>
+<script type="module" src="app/main.js?v=mwkmgli3"></script>
 </body>
 </html>

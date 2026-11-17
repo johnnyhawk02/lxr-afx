@@ -1,10 +1,10 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwklwcby';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwklwcby';
-import { KIT_FILES } from '../sound/kits.js?v=mwklwcby';
-import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwklwcby';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START } from '../sound/schema.js?v=mwkmgli3';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwkmgli3';
+import { KIT_FILES } from '../sound/kits.js?v=mwkmgli3';
+import { FX_DEFAULTS, echoMs } from '../sound/instrument.js?v=mwkmgli3';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -67,9 +67,9 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwklwcby', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwkmgli3', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') showPeaks(e.data.peaks); };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -279,6 +279,14 @@ function showLast(sound, note, vel, st) {
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
+// the master compressor's gain reduction: a segment per dB (up to 24), held a moment and falling back
+let grShown = 0;
+function showGr(db) {
+  grShown = Math.max(db, grShown * 0.8);
+  const n = Math.round(Math.min(24, grShown));
+  document.querySelectorAll('.grm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
+  const o = document.querySelector('.grm output'); if (o) o.textContent = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
+}
 function showPeaks(peaks) {
   // the level lights follow the engine voices (both hats light with the hat voice)
   SOUNDS.forEach((s, i) => { if (peaks[s.engineVoice] > 0.02) { const led = soundBtns[i].querySelector('i'); led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 80); } });
@@ -429,6 +437,10 @@ const FX_PAGE = [
   ['echo', 'ECHO', [['time', 127, (v) => echoMs(v) + ' ms'], ['feedback', 127], ['tone', 127], ['pingpong', 1, (v) => (v ? 'ping-pong' : 'normal'), 'mode'], ['level', 100, (v) => v + '%', 'return']]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127], ['level', 100, (v) => v + '%', 'return']]],
   ['dist', 'DISTORTION', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['color', 127], ['tone', 127], ['volume', 127], ['level', 100, (v) => v + '%', 'return']]],
+  // the master: everything (dry and the FX returns) through a distortion, then the compressor, then the level
+  ['master', 'MASTER · DIST + LEVEL', [['type', 2, (v) => ['tube', 'fold', 'rat'][v]], ['drive', 127], ['tone', 127], ['mix', 100, (v) => (v ? v + '%' : 'off')], ['level', 100, (v) => v + '%']]],
+  ['master', 'MASTER · COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + ' dB' : 'off'), 'threshold'], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
+    ['attack', 100, (v) => Math.max(1, v) + ' ms'], ['release', 1000, (v) => Math.max(10, v) + ' ms'], ['knee', 24, (v) => v + ' dB'], ['makeup', 24, (v) => '+' + v + ' dB']]],
 ];
 function buildFx() {
   const box = $('fxglobal'); box.innerHTML = '';
@@ -439,6 +451,10 @@ function buildFx() {
       el.querySelector('.row').append(gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
+  // under the compressor: its gain reduction
+  const gm = document.createElement('div'); gm.className = 'grm';
+  gm.innerHTML = `<span class="dim">GR</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
+  box.lastChild.append(gm);
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down, scroll, arrow keys; Shift is fine

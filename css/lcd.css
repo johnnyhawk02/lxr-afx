@@ -309,3 +309,29 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .vf output { font-size: 16px; } .fxside .vf .lab { font-size: 15px; }
 .fxside .knob { width: var(--ks); height: var(--ks); }
 @media (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
+
+/* the master compressor's gain-reduction meter */
+.grm { display: grid; grid-template-columns: auto 1fr 4.6em; align-items: center; gap: 8px; margin-top: 4px; font-size: 15px; }
+.grm .segs { display: flex; gap: 2px; height: 14px; }
+.grm .segs i { flex: 1; background: var(--ghost); }
+.grm .segs i.on { background: var(--ink); }
+.grm output { font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+.fxside .sect { padding-top: 4px; }
+.fxside .sect + .sect { margin-top: 4px; }
+
+/* ---- the left column (the key, its engine, its synth) beside the FX and master column, full height ---- */
+.screen { grid-template-rows: auto 1fr; }
+.main { display: grid; grid-template-columns: 1fr auto; gap: 16px; min-height: 0; min-width: 0; }
+.left { display: grid; grid-template-rows: auto auto 1fr; gap: 10px; min-height: 0; min-width: 0; }
+.keyhead { grid-template-columns: auto auto 1fr; grid-template-areas: "name info acts" "strip strip strip"; row-gap: 6px; }
+.keyname { grid-area: name; } .keyinfo { grid-area: info; } .keyacts { grid-area: acts; justify-self: end; } .keystrip { grid-area: strip; }
+.keyhead .keyacts .btn { padding-left: 8px; padding-right: 8px; }
+.keyhead .keylock { min-width: 7.4em; }
+.fxside { padding-top: 2px; }
+.faders { --kw: 68px; --ks: 44px; }
+.fxside { --kw: 56px; --ks: 38px; }
+.keyhead .keyacts { gap: 5px; }
+.keyhead .keyacts .btn { font-size: 17px; min-height: 30px; }
+.keyhead .keylock { min-width: 7em; min-height: 36px; font-size: 19px; }
+.keyname b { font-size: 40px; }
+@media (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }

@@ -10,7 +10,7 @@
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
 import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, FX_DISTORTION } from '../engine/lxr.js';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, ALL_PARAMS } from './schema.js?v=mwklwcby';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, ALL_PARAMS } from './schema.js?v=mwkmgli3';
 
 // The three send effects (as in Elixir Desktop): the firmware's delay as an echo, its reverb (written for the firmware but
 // never switched on there) and its distortion, each a bus of its own, all wet, fed by every voice at its send and added
@@ -19,7 +19,11 @@ export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100 },
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
   dist: { type: 0, drive: 70, color: 64, tone: 80, volume: 90, level: 100 },
+  // the master: the whole mix (dry and FX returns) through a distortion, then a compressor, then the level
+  master: { type: 0, drive: 40, tone: 90, mix: 0, thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
 };
+// the master compressor's knobs in real units: threshold 0..-40 dB, ratio 1:1..20:1 (tenths), attack 1..100 ms,
+// release 10..1000 ms, knee 0..24 dB, makeup 0..24 dB
 // the echo's time knob (0..127) in milliseconds: 10 ms to 2 s, evenly in octaves
 export const echoMs = (v) => Math.round(10 * Math.pow(200, v / 127));
 
@@ -52,6 +56,8 @@ export class LxrInstrument {
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
+    this.mDist = new FxBus(); this.mDist.fxType = FX_DISTORTION; this.mDist.forceWet = true;
+    this.m = { ...FX_DEFAULTS.master }; this.mMixAt = 0; this.env = 0; this.gr = 0;
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -70,6 +76,12 @@ export class LxrInstrument {
       this.ret[0] = echo.level / 100;
     }
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = reverb.level / 100; }
+    const { master } = fx;
+    if (master) {
+      Object.assign(this.m, master);
+      this.mDist.distortion.type = master.type;
+      [master.drive, 64, master.tone, 90].forEach((v, i) => this.mDist.setParameter(i, v / 127));
+    }
     if (dist) {
       this.dist.distortion.type = dist.type;
       [dist.drive, dist.color, dist.tone, dist.volume].forEach((v, i) => this.dist.setParameter(i, v / 127));
@@ -107,9 +119,38 @@ export class LxrInstrument {
       const g = this.gain * this.ret[k] / 32768;
       if (g) for (let i = 0; i < BLOCK; i++) { L[i] += bo[2 * i] * g; R[i] += bo[2 * i + 1] * g; }
     }
+    this._master(L, R);
     // a soft limit, so seven voices at once don't clip hard
     for (let i = 0; i < BLOCK; i++) { L[i] = soft(L[i]); R[i] = soft(R[i]); }
   }
+  // the master: distortion blended in at its mix (ramped across the block), then a soft-knee compressor (a peak detector
+  // in dB, gain reduction smoothed by attack and release), the makeup gain and the level
+  _master(L, R) {
+    const M = this.m, m1 = M.mix / 100, m0 = this.mMixAt;
+    if (m1 || m0) {
+      const bi = this.mDist.input, bo = this.busOut;
+      for (let i = 0; i < BLOCK; i++) { bi[2 * i] = Math.max(-32768, Math.min(32767, Math.round(L[i] * 32768))); bi[2 * i + 1] = Math.max(-32768, Math.min(32767, Math.round(R[i] * 32768))); }
+      bo.fill(0); this.mDist.process(bo, BLOCK, this.fxRng);
+      for (let i = 0; i < BLOCK; i++) { const m = m0 + (m1 - m0) * (i + 1) / BLOCK; L[i] += (bo[2 * i] / 32768 - L[i]) * m; R[i] += (bo[2 * i + 1] / 32768 - R[i]) * m; }
+      this.mMixAt = m1;
+    }
+    const T = -M.thresh, ratio = Math.max(1, M.ratio / 10), W = M.knee, slope = 1 / ratio - 1;
+    const ca = Math.exp(-1000 / (Math.max(1, M.attack) * REAL_FS)), cr = Math.exp(-1000 / (Math.max(10, M.release) * REAL_FS));
+    const out = Math.pow(10, M.makeup / 20) * M.level / 100;
+    let env = this.env, gr = this.gr;
+    for (let i = 0; i < BLOCK; i++) {
+      const x = 20 * Math.log10(Math.max(Math.abs(L[i]), Math.abs(R[i])) + 1e-9), over = x - T;
+      // the gain reduction wanted for this level (dB, <= 0): none below the knee, the full slope above it, a curve between
+      const want = 2 * over < -W ? 0 : W > 0 && 2 * Math.abs(over) <= W ? slope * (over + W / 2) ** 2 / (2 * W) : slope * over;
+      env = want + (want < env ? ca : cr) * (env - want);
+      const g = Math.pow(10, env / 20) * out;
+      L[i] *= g; R[i] *= g;
+      if (-env > gr) gr = -env;
+    }
+    this.env = env; this.gr = gr;
+  }
+  /** the most gain reduction (dB) since the last call */
+  readGr() { const g = this.gr; this.gr = 0; return g; }
   /** fill left and right (Float32Arrays of the same length) at the output rate */
   render(left, right) {
     for (let n = 0; n < left.length; n++) {
