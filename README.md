@@ -23,7 +23,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   LFO 1 speed / portamento / LFO 2 speed → morph depth / pitch / timbre (all sounds), osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** maps any knob to any control: press it, click the control, turn the knob.
 - **Randomisers**: **SCATTER** deals a different real kit sound of the zone's type onto every key. **NEW SOUND** (or K, or a
-  learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
+  learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
+- **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (scatter,
+  randomisers, morph, re-roll, base edits, clear) changes it until you unlock it. Locked keys show a padlock on the key map. **RANDOMISE** pulls in a variant from the built-in kits (a voice of the same type from a random kit,
   varied by the amount; locked controls stay), **VARY** and **ALTER** move the current sound, **RANDOM KIT** and
   **ALTER ALL** do all three sounds, with undo.
 

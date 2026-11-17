@@ -62,6 +62,21 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700]]) {
     await p.click('#undo'); await p.waitForTimeout(300);
     if (JSON.stringify(await st()) !== JSON.stringify(before)) { errors++; console.log('new sound: undo did not restore'); }
   }
+  // LOCK KEY: a locked key keeps its sound through SCATTER, RE-ROLL and a base edit
+  { const k = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits[0]['51']);
+    await p.evaluate(() => afx.noteOn(1, 51, 100)); await p.waitForTimeout(50);
+    await p.click('#lock-key'); await p.waitForTimeout(400);
+    const snap = await k();
+    await p.click('#scatter'); await p.waitForTimeout(600);
+    await p.keyboard.press('r'); await p.waitForTimeout(50);
+    await p.click('#rand'); await p.waitForTimeout(600);
+    await p.keyboard.press('k'); await p.waitForTimeout(300);
+    if (!snap?._lock || JSON.stringify(await k()) !== JSON.stringify(snap)) { errors++; console.log('lock key: changed', snap?._lock); }
+    if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/lockkey-${w}x${h}.png` });
+    if (w === 1280 && h === 700) await p.screenshot({ path: `${out}/lockkey-${w}x${h}.png` });
+    await p.click('#lock-key'); await p.waitForTimeout(400);
+    if ((await k())?._lock) { errors++; console.log('lock key: did not unlock'); }
+  }
   await p.close();
 }
 await b.close();

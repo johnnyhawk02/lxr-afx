@@ -79,10 +79,15 @@ function keyPatch(sound, note) {
   const vals = new Map(voiceOwned(v).map((p) => [p, S.values[p]]));
   for (const [p, x] of m.params) vals.set(p, x);
   const ed = S.keyEdits[sound][note];
+  // a locked key plays the snapshot taken when it was locked, whole (only the sound's level still follows the mix)
+  if (ed && ed._lock) {
+    for (const p in ed) if (p[0] !== '_') vals.set(Number(p), ed[p]);
+    return { note: BASE_NOTE + Math.round(ed._st || 0), vals, semitones: ed._st || 0 };
+  }
   // a scattered key (a kit sound dealt onto it) plays that sound as it is: no morph under it
   if (ed && ed._kit) { for (const [p] of m.params) vals.set(p, S.values[p]); }
   if (ed) for (const p in ed) if (p[0] !== '_') vals.set(Number(p), ed[p]);
-  return ed && ed._kit ? { note: BASE_NOTE, vals, semitones: 0 } : { note: m.note, vals, semitones: m.semitones };
+  return ed && ed._kit ? { note: BASE_NOTE + Math.round(ed._st || 0), vals, semitones: ed._st || 0 } : { note: m.note, vals, semitones: m.semitones };
 }
 // how many parameters a key's edits set (its labels, _kit and _src, aren't parameters)
 const editCount = (ed) => (ed ? Object.keys(ed).filter((k) => k[0] !== '_').length : 0);
@@ -117,12 +122,30 @@ function valueNow(par) { return editing() ? keyPatch(S.sel, editKey[S.sel]).vals
 function editValue(par, v) {
   if (!editing()) { setValue(par, v); return; }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
+  if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
   (k[note] ||= {})[par] = v;
   send({ type: 'param', par, value: v }); // heard on what's still ringing
   save(); drawKeymap(); drawEditKey();
 }
 const keyEdited = (par) => { const ed = S.keyEdits[S.sel][editKey[S.sel]]; return !!ed && ed[par] !== undefined; };
-function clearKey(sound, note) { delete S.keyEdits[sound][note]; save(); }
+function clearKey(sound, note) { if (keyLocked(sound, note)) return; delete S.keyEdits[sound][note]; save(); }
+// ---- key locks: a locked key keeps exactly the sound it had when locked. Its whole sound (and its pitch) is kept
+// as its edits, so nothing (randomisers, scatter, morph, seed, base edits, clear) reaches it until it's unlocked ----
+const keyLocked = (sound, note) => !!S.keyEdits[sound][note]?._lock;
+function lockKey(sound, note) {
+  const ed = S.keyEdits[sound][note];
+  if (ed && ed._lock) { delete ed._lock; ed._kit ||= 'kept'; } // unlocked: it keeps the sound, now editable
+  else {
+    const m = keyPatch(sound, note), level = PAR.VOL1 + SOUNDS[sound].engineVoice, snap = { _lock: true, _st: m.semitones };
+    if (ed && ed._kit) snap._kit = ed._kit;
+    for (const [p, x] of m.vals) if (p !== level) snap[p] = x;
+    S.keyEdits[sound][note] = snap;
+    if (S.editAll) S.editAll = false;
+  }
+  save(); drawFaders(); drawKeymap(); drawEditKey();
+  detail(`${SOUNDS[sound].name} ${noteName(note)}: ${keyLocked(sound, note) ? 'locked, nothing changes it now' : 'unlocked'}`);
+}
+const lockedMsg = () => detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} is locked: <em>LOCK KEY</em> (L) unlocks it`);
 
 // ---------------------------------------------------------------------------------------------------------------
 // MIDI: note-ons on channels 1..7, keys C1..C5
@@ -342,7 +365,8 @@ function drawKeymap() {
     g.fillStyle = ghost;
     for (let s = 0; s < segsMax; s++) { g.fillRect(x, mid - STEP - s * STEP + 1, w, SEG); g.fillRect(x, mid + 1 + s * STEP, w, SEG); }
     // pitch: a segment per twelfth of the full 12 semitones' height, from the middle line
-    const semis = pitchOffset(note, st.seed, amount.pitch, zone), segs = Math.round(Math.abs(semis) / 12 * segsMax);
+    const lockEd = S.keyEdits[S.sel][note]?._lock ? S.keyEdits[S.sel][note] : null;
+    const semis = lockEd ? lockEd._st || 0 : pitchOffset(note, st.seed, amount.pitch, zone), segs = Math.round(Math.abs(semis) / 12 * segsMax);
     g.fillStyle = ink;
     for (let s = 0; s < segs; s++) g.fillRect(x, semis > 0 ? mid - STEP - s * STEP + 1 : mid + 1 + s * STEP, w, SEG);
     // timbre: up to three segments
@@ -354,7 +378,12 @@ function drawKeymap() {
     g.fillRect(x, ky, w, black ? keysH / 2 : keysH);
     if (editKey[S.sel] === note) { g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(x - 2, top - 3, w + 4, ky + keysH - top + 6); }
     // a key with its own edits: a solid block on the middle line
-    if (S.keyEdits[S.sel][note]) { g.fillStyle = ink; g.fillRect(x - 1, mid - 3, w + 2, 7); }
+    if (lockEd) { // a padlock on the middle line, and a frame round the column
+      const cx = x + w / 2, bw = Math.min(w + 2, 16);
+      g.fillStyle = ink; g.fillRect(cx - bw / 2, mid - 3, bw, 10);
+      g.strokeStyle = ink; g.lineWidth = 2.5; g.beginPath(); g.arc(cx, mid - 3, bw / 2 - 3, Math.PI, 0); g.stroke();
+      g.setLineDash([3, 3]); g.lineWidth = 1.5; g.strokeRect(x - 1, top - 1, w + 2, ky + keysH - top + 2); g.setLineDash([]);
+    } else if (S.keyEdits[S.sel][note]) { g.fillStyle = ink; g.fillRect(x - 1, mid - 3, w + 2, 7); }
   }
   g.fillStyle = 'rgba(23,32,14,.55)'; g.fillRect(0, mid, W, 1);
 }
@@ -478,6 +507,7 @@ function vfader(e) {
   dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
   // double-click: a key's edit goes (back to its morph); on every key, back to the kit's value
   const reset = () => {
+    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
     if (editing()) { const ed = S.keyEdits[S.sel][editKey[S.sel]]; if (ed) { delete ed[e.par]; if (!editCount(ed)) clearKey(S.sel, editKey[S.sel]); save(); draw(); drawKeymap(); drawEditKey(); } }
     else put(S.defaults[e.par]);
   };
@@ -525,12 +555,17 @@ function drawEditKey() {
   $('edit-key').setAttribute('aria-pressed', !S.editAll); $('edit-all').setAttribute('aria-pressed', S.editAll);
   $('edit-key').textContent = 'KEY ' + noteName(note);
   $('edit-info').textContent = S.editAll ? 'editing the base: every key follows' : (from ? `${noteName(note)}: ${from} · ` : `${here} edit${here === 1 ? '' : 's'} on ${noteName(note)} · `) + `${n} key${n === 1 ? '' : 's'} edited`;
-  $('clear-key').disabled = !here; $('clear-keys').disabled = !n;
+  const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
+  $('clear-key').disabled = !here || locked; $('clear-keys').disabled = n === nl;
+  $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').textContent = locked ? 'LOCKED' : 'LOCK KEY';
+  if (locked) $('edit-info').textContent = `${noteName(note)} locked${from && from !== 'kept' ? ` (${from})` : ''} · ${nl} locked`;
+  $('rand-key').disabled = locked;
 }
 $('edit-key').addEventListener('click', () => setEditAll(false));
 $('edit-all').addEventListener('click', () => setEditAll(true));
 $('clear-key').addEventListener('click', () => { clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to its morph`); });
-$('clear-keys').addEventListener('click', () => { S.keyEdits[S.sel] = {}; save(); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name}: every key back to its morph`); });
+$('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
+$('clear-keys').addEventListener('click', () => { const e = S.keyEdits[S.sel]; for (const k in e) if (!e[k]._lock) delete e[k]; save(); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name}: every key back to its morph`); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -566,6 +601,7 @@ function vary(e, h, depth, wild) {
 function alterKeys(sound, depth) {
   const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice];
   for (const k in S.keyEdits[sound]) {
+    if (S.keyEdits[sound][k]._lock) continue;
     const note = Number(k), now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][k];
     for (const e of sc) {
       if (S.locks.has(e.par) || e.display.type === 'target') continue;
@@ -620,6 +656,7 @@ function scatter(sound) {
   const z = SOUNDS[sound].zone, p = pool(sound), order = [];
   for (let note = z.lo; note <= z.hi; note++) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
+    if (keyLocked(sound, note)) continue;
     const s = p[order.pop()];
     S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
   }
@@ -627,6 +664,7 @@ function scatter(sound) {
 // NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as SCATTER
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
 function randKey() {
+  if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
   let s; do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
@@ -655,7 +693,11 @@ $('kit-init').addEventListener('click', () => randChange(() => {
 $('undo').addEventListener('click', () => {
   if (!undoValues) return;
   for (let p = 0; p < NUM_PARAMS; p++) setValue(p, undoValues[p], { quiet: true });
-  if (undoKeys) S.keyEdits = undoKeys;
+  if (undoKeys) { // a key locked now stays as it is
+    S.keyEdits.forEach((ks, i) => { for (const k in ks) if (ks[k]._lock) undoKeys[i][k] = ks[k]; });
+    S.keyEdits = undoKeys;
+  }
+  drawKeymap();
   undoValues = null; undoKeys = null; $('undo').disabled = true; save(); drawEditKey();
   for (const k in homes) delete homes[k];
   drawFaders(); drawSide(); detail('undone');
@@ -679,6 +721,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
   else if (e.key === 'r' || e.key === 'R') reroll();
   else if (e.key === 'k' || e.key === 'K') randKey();
+  else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
 });
 
 // ---------------------------------------------------------------------------------------------------------------
