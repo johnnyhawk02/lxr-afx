@@ -8,7 +8,7 @@
 //   KIT-STYLE  one kit sound's switches and routing, every knob a value some other kit sound has for that knob:
 //              new sounds that stay in the ranges the kits use
 //   FREE       one kit sound's switches and routing, every knob anywhere in its drum-safe range
-//   RECIPE     a named sound (kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell, zap): a kit sound
+//   RECIPE     a named sound (kick, tom, mid perc, snare, clap, rim, closed hat, open hat, cymbal, cowbell, zap): a kit sound
 //              of the right type, with the knobs that make that sound set inside the recipe's ranges
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -83,6 +83,8 @@ export const RECIPES = {
   cymbal: { from: /cymbal$/, set: { decay: [60, 110], attack: 0, ftype: [18, 54], cutoff: [80, 120], again: [60, 127], bgain: [60, 127] } },
   cowbell: { from: /cymbal$|hihat$/, set: { wave: 75, coarse: [60, 80], afreq: [55, 75], again: [0, 30], bgain: [0, 20], decay: [10, 30],
     attack: 0, ftype: 18, cutoff: [80, 105], reso: [20, 60] } },
+  'mid perc': { from: /drum \d$/, set: { coarse: [44, 62], wave: [0, 75], pamt: [5, 35], pdecay: [20, 50], decay: [6, 22], attack: 0, again: [0, 40],
+    clickvol: [20, 90], cutoff: [70, 127], reso: [0, 50] } },
   zap: { from: /drum \d$/, set: { coarse: [40, 75], wave: [0, 50], pamt: [100, 127], pdecay: [5, 25], decay: [5, 20], attack: 0, again: [0, 30],
     clickvol: [0, 40] } },
 };
