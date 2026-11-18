@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwmp8s9g">
+<link rel="stylesheet" href="css/lcd.css?v=mwmqs5iy">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -84,8 +84,9 @@
       <div class="menupanel" id="tools-panel" hidden>
         <h3>WAVETABLE</h3>
         <div class="randrow">
-          <button class="btn" id="to-table" title="Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves stay on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
-          <span class="dim cap wide">EVERY KEY ONTO BASIC,<br>SOUNDING AS IT DID</span>
+          <button class="btn" id="to-which"></button>
+          <button class="btn" id="to-table" title="Every key moves onto the wavetable picked beside it. Onto BASIC from CLASSIC, each key goes to the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, and noise waves stay on CLASSIC. Onto another table, the WAVE knob stays where it is and becomes the place along the table. Locked keys stay, and so does an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
+          <span class="dim cap wide" id="to-cap"></span>
         </div>
       </div>
     </div>
@@ -248,6 +249,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwmp8s9g"></script>
+<script type="module" src="app/main.js?v=mwmqs5iy"></script>
 </body>
 </html>

@@ -125,6 +125,7 @@
   "modsrc:rate": 1,
   "modamt:rate": 197,
   "modsrc:drive": 0,
-  "modamt:drive": 127
+  "modamt:drive": 127,
+  "table": 1
  }
 }
