@@ -89,5 +89,31 @@ for (const { file, pos: kit } of kits.slice(0, 60)) for (const def of SOUNDS.sli
   ok(same, `${file} ${def.name}: dealt through the merged controls, it plays differently`);
 }
 console.log(`kit sounds dealt onto their own voice: ${dsame} of ${dn} identical`);
+// any kit voice dealt onto any engine voice (step 4: every engine plays every kit sound) plays as the kit's voice
+// itself, sample for sample. Left out: the kits' LFOs and velocity (they reach voices by number, and an extra can't be
+// a target yet) and the hi-hat as a source (it plays as a cymbal with its open decay, by design)
+let xsame = 0, xnear = 0, xn = 0;
+for (const { file, pos: kit0 } of kits.slice(0, 30)) for (let src = 0; src < 5; src++) for (let dst = 0; dst < 6; dst++) {
+  if (src === dst) continue;
+  const kit = Uint8Array.from(kit0); for (let i = 1; i <= 6; i++) { kit[PAR['AMOUNT_LFO' + i]] = 0; kit[PAR['VELO_MOD_AMT_' + i]] = 0; kit[PAR['TARGET_LFO' + i]] = 0; kit[PAR['VEL_DEST_' + i]] = 0; }
+  const a = new LxrEngine({ seed: 3 }), b = new LxrEngine({ seed: 3 });
+  a.loadKit(kit); b.loadKit(kit);
+  for (const p of voiceOwned(src)) if (p < NUM_PARAMS) a.setParam(p, kit[p]);
+  for (let p = EXTRA_BASE; p < INIT_VALUES.length; p++) apply(b, p, INIT_VALUES[p]);
+  for (const [p, x] of mapVoice(kit, src, dst)) apply(b, p, x);
+  a.trigger(src, 100, 60); b.trigger(dst, 100, 60);
+  let same = true, d2 = 0, e2 = 0;
+  for (let k = 0; k < 300; k++) {
+    const oa = a.renderBlock(src)[src], ob = b.renderBlock(dst)[dst]; let ra = 0, rb = 0;
+    for (let i = 0; i < BLOCK; i++) { if (oa[i] !== ob[i]) same = false; ra += oa[i] * oa[i]; rb += ob[i] * ob[i]; }
+    ra = Math.sqrt(ra / BLOCK); rb = Math.sqrt(rb / BLOCK); d2 += (ra - rb) ** 2; e2 += ra * ra;
+  }
+  const near = Math.sqrt(d2 / (e2 || 1e-12)) < 0.1; // its loudness, block by block, within 10%
+  xn++; if (same) xsame++; if (near) xnear++; else if (process.env.SHOWX) console.log('x', file, src, dst);
+}
+// (where the noise is, the RNG can feed it in another order, so not every one is exact; all but a very few must play
+// alike, block by block)
+ok(xnear >= xn * 0.99, `kit sounds dealt onto other voices: only ${xnear} of ${xn} alike`);
+console.log(`kit sounds dealt onto other voices: ${xsame} of ${xn} identical, ${xnear} alike`);
 console.log(fails ? `${fails} of ${checks} checks FAILED` : `all ${checks} checks passed`);
 process.exit(fails ? 1 : 0);

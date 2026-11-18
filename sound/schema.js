@@ -298,6 +298,25 @@ function buildSchema(voice) {
 
 // the schema of each engine voice (index 0..5); a sound's schema is its engine voice's
 export const VOICE_SCHEMAS = [0, 1, 2, 3, 4, 5].map(buildSchema);
+// a voice's controls as the randomisers treat a sound of another kind on it (any kit voice can be dealt to any engine):
+// each control's range is the one it has on the kit voice that kind comes from (a cymbal's mod B moves on a drum's
+// voice as it does on the cymbal's; a drum's pitch envelope stays still on a cymbal). Pan, sends and the rest keep the
+// voice's own
+const NATIVE_VOICE = { drum: 0, snare: 3, cym: 4, hat: 5 };
+const kindSchemas = new Map();
+export function kindSchema(voice, kind) {
+  const name = KINDS[kind] || VOICE_KINDS[voice], key = voice * 8 + KINDS.indexOf(name);
+  if (!kindSchemas.has(key)) {
+    const nat = VOICE_SCHEMAS[NATIVE_VOICE[name]];
+    kindSchemas.set(key, VOICE_SCHEMAS[voice].map((e) => {
+      if (!e.ukey || e.strict || e.rand === 'mix' || e.seq) return e;
+      const n = nat.find((x) => x.ukey === e.ukey);
+      return n && n.rand !== e.rand ? { ...e, rand: n.rand } : e;
+    }));
+  }
+  return kindSchemas.get(key);
+}
+export const kindPar = (voice) => extraPar(voice, EX.KIND);
 // the extras a voice uses (the instrument passes only these to the engine: the others shadow a firmware parameter)
 export const EXTRA_LIVE = new Set(VOICE_SCHEMAS.flat().filter((e) => e.extra !== undefined).map((e) => e.par));
 // a voice's control by its merged name

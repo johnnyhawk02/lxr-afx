@@ -818,6 +818,8 @@ export function extraDefaults(kind) {
   return d;
 }
 
+// a one-pole's smoothing as makeOnePole() leaves it (a drum sets its own)
+const MIXER_R0 = makeOnePole().r, DRIVE_R0 = makeOnePole().r;
 function makeVoice(kind, i) {
   const v = {
     kind, osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), noiseOsc: makeOsc(),
@@ -1472,7 +1474,13 @@ export class LxrEngine {
     const v = this.voices[n], flt = f(value / 127);
     v.extra[k] = value;
     switch (k) {
-      case EX.KIND: v.kind = KINDS[value] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1; break;
+      case EX.KIND: { // (and the smoothing its finishing stage was made with, as makeVoice sets it for that kind)
+        v.kind = KINDS[value] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1;
+        const d = v.kind === 'drum';
+        if (!HAS[v.kind].P) v.osc.pitchMod = 1; // (no pitch envelope: the pitch as it is, as Cymbal_init() sets it)
+        v.faderFilter.r = d ? 0.01 : 0.1; v.mixerVolFilter.r = d ? 0.01 : MIXER_R0; v.distortion.driveFilter.r = d ? 0.01 : DRIVE_R0;
+        break;
+      }
       case EX.PITCH_DECAY: v.oscPitchEg.decay = decayEg_calcTime(value); break;
       case EX.PITCH_SLOPE: decayEg_setSlope(v.oscPitchEg, value); break;
       case EX.PITCH_AMOUNT: v.egPitchModAmount = f(f(flt * flt) * 32); break;

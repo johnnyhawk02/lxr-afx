@@ -3,7 +3,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
-import { sendPar, VOICE_SCHEMAS, trimPar, TRIM_ZERO } from '../sound/schema.js';
+import { sendPar, VOICE_SCHEMAS, kindSchema, trimPar, TRIM_ZERO } from '../sound/schema.js';
 const url = process.argv[2] || 'http://localhost:8123/';
 const out = process.argv[3] || 'shots';
 const b = await chromium.launch();
@@ -303,7 +303,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // KEY, ALTER, RANDOM, their ALL versions and INIT PATCH, and the message line names it. A new sound brings its own
   // waveforms and switches; ALTER leaves those alone unless WILD. RANDOM keeps every key's sends; a locked send keeps
   // them through INIT PATCH too. UNLOCK ALL opens every padlock
-  { const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, still = sc.filter((e) => e.rand === 'still' && e.display.type !== 'target').map((e) => e.par), REV = sendPar(0, 1);
+  { const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, still = sc.filter((e, i) => [0, 1, 2, 3].every((k) => kindSchema(0, k)[i].rand === 'still') && e.display.type !== 'target').map((e) => e.par), /* (still for every kind of sound a key can play) */ REV = sendPar(0, 1);
     const J = JSON.stringify, bad = (what, ...x) => { errors++; console.log(`padlocks, ${what}:`, J(x).slice(0, 600)); };
     const zone = () => p.evaluate(() => { const s = afx.sounds[0], o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(Object.fromEntries(afx.patch(0, k))); return o; });
     const sends = () => p.evaluate((sp) => afx.sounds.flatMap((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) { const m = new Map(afx.patch(i, k)); o.push([m.get(sp[0][s.engineVoice]), m.get(sp[1][s.engineVoice])]); } return o; }),

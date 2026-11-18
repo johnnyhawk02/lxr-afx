@@ -1,7 +1,7 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
   POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwleiyrl';
 import { presetName } from './names.js?v=mwleiyrl';
 import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwleiyrl';
@@ -965,7 +965,7 @@ const rnd = () => { rngState ^= rngState << 13; rngState >>>= 0; rngState ^= rng
 // switch or setting the kit sound brought ('still': waveforms, modes, the LFO, velocity, sample rate) unless WILD
 const alters = (e, wild = S.rand.wild) => !(S.locks.has(e.par) || e.display.type === 'target' || e.seq || e.rand === 'mix' || (e.rand === 'still' && !wild));
 function randomiseVoice(voice, depth, wild) {
-  const sc = VOICE_SCHEMAS[voice];
+  const sc = kindSchema(voice, S.values[kindPar(voice)]);
   if (!homes[voice]) homes[voice] = new Map(sc.map((e) => [e.par, S.values[e.par]]));
   const home = homes[voice];
   for (const e of sc) {
@@ -989,11 +989,11 @@ function vary(e, h, depth, wild) {
 // alter each key of a sound that has its own sound (scattered or edited): every unlocked control of that key, moved a
 // little around what the key plays now, kept as the key's edits
 function alterKeys(sound, depth) {
-  const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice];
+  const v0 = SOUNDS[sound].engineVoice;
   for (const k in S.keyEdits[sound]) {
     if (S.keyEdits[sound][k]._lock) continue;
     const note = Number(k), now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][k];
-    for (const e of sc) {
+    for (const e of kindSchema(v0, now.get(kindPar(v0)))) { // (the ranges of the kind of sound the key plays)
       if (!alters(e)) continue;
       const v = vary(e, now.get(e.par), depth, S.rand.wild);
       if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
@@ -1007,8 +1007,8 @@ function alterKeys(sound, depth) {
 const alterDepth = () => clamp(S.rand.alter, 1, 100) / 100;
 const alterVoice = (v) => { delete homes[v]; randomiseVoice(v, alterDepth(), S.rand.wild); delete homes[v]; };
 function alterOne(sound, note, depth) {
-  const sc = VOICE_SCHEMAS[SOUNDS[sound].engineVoice], now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][note] || {};
-  for (const e of sc) {
+  const v0 = SOUNDS[sound].engineVoice, now = keyPatch(sound, note).vals, ed = S.keyEdits[sound][note] || {};
+  for (const e of kindSchema(v0, now.get(kindPar(v0)))) {
     if (!alters(e)) continue;
     const v = vary(e, now.get(e.par), depth, S.rand.wild);
     if (v !== now.get(e.par) || ed[e.par] !== undefined) ed[e.par] = v;
@@ -1108,7 +1108,7 @@ const pools = SOUNDS.map(() => null);
 function pool(sound) {
   if (pools[sound]) return pools[sound];
   const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, panPar(v)]), seen = new Set(), out = [];
-  for (const { name, kit } of kits) for (const src of def.sources) {
+  for (const { name, kit } of kits) for (const src of [0, 1, 2, 3, 4, 5]) { // (every kit voice: any engine plays any kit sound)
     const vals = mapVoice(kit, src, v).filter(([p]) => !skip.has(p));
     const sig = vals.map(([p, x]) => x).join(',');
     if (seen.has(sig)) continue;
