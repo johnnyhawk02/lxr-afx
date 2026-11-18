@@ -2,7 +2,7 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmmzlre';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2 } from '../sound/schema.js?v=mwmmzlre';
 import { presetName, jumble } from './names.js?v=mwmmzlre';
 import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmmzlre';
 import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmmzlre';
@@ -1051,7 +1051,7 @@ function vary(e, h, depth, wild) {
   else if (e.max < 20) { if (rnd() < depth) v = range[0] + Math.floor(rnd() * (Math.min(e.max, range[1]) - range[0] + 1)); }
   else {
     const lo = Math.min(range[0], h), hi = Math.max(range[1], h); // the home always stays reachable
-    v = clamp(Math.round(h + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi);
+    v = clamp(dec2(h + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi); // (a decimal: the nudge isn't cut to a whole step)
   }
   return clamp(v, 0, e.max);
 }

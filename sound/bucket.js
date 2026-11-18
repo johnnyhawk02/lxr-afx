@@ -10,10 +10,8 @@
 //   params   every control of that voice, by its merged name (schema.js MERGED: coarse, decay, cutoff, ...), and each
 //            knob's modulation (modsrc:<knob>, modamt:<knob>: schema.js MOD_DIALS)
 // toVoice() puts it on any engine voice (schema.js mapVoice), so nothing of it is lost.
-import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice } from './schema.js?v=mwmmzlre';
+import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice, dec2 } from './schema.js?v=mwmmzlre';
 
-// a value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
-export const dec2 = (x) => Math.round(x * 100) / 100;
 export const TYPES = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
 // the controls a sound keeps: the voice's own and their modulation, not its sends, sequencer or trim (those belong to a key)
 const kept = (voice) => VOICE_SCHEMAS[voice].filter((e) => !(e.par >= NUM_PARAMS && e.extra === undefined && !e.mod));

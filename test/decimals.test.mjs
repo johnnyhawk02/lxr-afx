@@ -6,6 +6,7 @@ import { VOICE_SCHEMAS, extraPar, NUM_PARAMS, NUM_EXTRAS, modOf, ukeyPar, INIT_V
 import { LxrInstrument } from '../sound/instrument.js';
 import { tidy, toVoice, fromVoice } from '../sound/bucket.js';
 import { BUCKET } from '../sound/bucket-sounds.js';
+import { blend } from '../sound/makers.js';
 
 let n = 0;
 const between = (x, a, b, what) => { assert.ok((x > a && x < b) || (x < a && x > b), `${what}: ${x} not between ${a} and ${b}`); n++; };
@@ -60,4 +61,8 @@ for (let v = 0; v < 6; v++) {
   const cents = new Set();
   for (let b = 0; b < 2000; b++) { inst.e.renderBlock(0); const c = 1200 * Math.log2(inst.e.voices[0].osc.freq / 440); cents.add(Math.round(((c % 100) + 100) % 100)); }
   assert.ok(cents.size > 20, `an LFO on coarse lands between semitones (${cents.size} different cents)`); n++; }
+// a blend keeps the value between: decay 10 and 11 halfway is 10.5, not 11
+{ const sc = VOICE_SCHEMAS[0], d = ukeyPar(0, 'decay'), c = ukeyPar(0, 'cutoff');
+  const out = blend({ schema: sc, a: new Map([[d, 10], [c, 40]]), b: new Map([[d, 11], [c, 43]]), t: 0.5, base: INIT_VALUES });
+  assert.equal(out.get(d), 10.5); assert.equal(out.get(c), 41.5); n += 2; }
 console.log(`decimals: ${n} checks pass`);

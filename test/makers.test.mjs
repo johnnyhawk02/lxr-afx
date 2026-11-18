@@ -21,7 +21,8 @@ const VN = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
     for (let i = 0; i < N; i++) {
       const s = make({ schema: sc, pool, rnd, base: INIT_VALUES });
       ok(s.label && s.label.length <= 48, `${m}: label ${s.label}`);
-      for (const [p, x] of s.vals) { const e = byPar.get(p); if (e && e.display.type !== 'menu' && e.display.type !== 'target') ok(Number.isInteger(x) && x >= 0 && x <= 255, `${m} ${e.ukey} = ${x}`); }
+      // (a value: a whole number, or a decimal kept to two places)
+      for (const [p, x] of s.vals) { const e = byPar.get(p); if (e && e.display.type !== 'menu' && e.display.type !== 'target') ok(Number.isFinite(x) && Math.abs(Math.round(x * 100) - x * 100) < 1e-6 && x >= 0 && x <= 255, `${m} ${e.ukey} = ${x}`); }
       if (isDud(measure(sound, INIT_VALUES, s.vals), LEVEL_TARGET_DB[sound])) duds++;
     }
     line.push(`${m} ${duds}/${N}`);

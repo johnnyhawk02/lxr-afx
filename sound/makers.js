@@ -12,6 +12,7 @@
 //              of the right type, with the knobs that make that sound set inside the recipe's ranges
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+const dec2 = (x) => Math.round(x * 100) / 100; // a knob's value kept to two decimal places (as schema.js dec2)
 const pick = (a, rnd) => a[Math.floor(rnd() * a.length)];
 // a knob that moves smoothly (a number, a plus-minus or a morphable switch), not a menu, a modulation target or a
 // sound's kind
@@ -30,7 +31,7 @@ export function morph({ schema, pool, rnd, base }) {
     if (!makes(e)) continue;
     const x = valOf(A, e.par, base), y = valOf(B, e.par, base);
     if (x === undefined || y === undefined) continue;
-    out.set(e.par, clamp(Math.round(x + t * (y - x)), 0, e.max));
+    out.set(e.par, clamp(dec2(x + t * (y - x)), 0, e.max)); // (in between: a decimal)
   }
   return { label: `${a.label} ~ ${b.label} ${Math.round(t * 100)}%`, vals: [...out] };
 }
@@ -129,7 +130,7 @@ export function blend({ schema, a, b, t, base }) {
     if (x === undefined || y === undefined) { out.set(p, x ?? y); continue; }
     const from = side.get(p);
     if (from) out.set(p, get(from, p));
-    else if (e && isKnob(e)) out.set(p, clamp(Math.round(x + t * (y - x)), 0, e.max));
+    else if (e && isKnob(e)) out.set(p, clamp(dec2(x + t * (y - x)), 0, e.max)); // (in between: a decimal)
     else out.set(p, get(flip, p));
   }
   return out;
