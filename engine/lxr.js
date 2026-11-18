@@ -14,7 +14,6 @@ import {
   SINE_TABLE, TRI_TABLE, REC_TABLE, SAW_TABLE, TRANSIENT_DATA, MIDI_NOTE_FREQ,
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
-import { MOD_TARGETS } from './lxr-ui-data.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
 
 export { PAR, CC, CC2 };
@@ -678,7 +677,7 @@ const LFO_MAX_F = 200;
 
 function makeLfo() {
   return { phase: 0, phaseInc: 1, waveform: 0, retrigger: 0, phaseOffset: 0, rnd: 0, sync: 0,
-    freq: 1, modNodeValue: 1, modTarget: makeModNode() };
+    freq: 1, modNodeValue: 1 };
 }
 function lfo_calc(lfo, rng) {
   const old = lfo.phase;
@@ -710,10 +709,16 @@ function lfo_calcPhaseInc(freq, sync, bpm) {
 }
 
 // ---------------------------------------------------------------------------------------
-// modulationNode.c: velocity and LFO modulation re-send a target parameter through the
-// parameter handler with a modulated 0..1 value
+// Modulation (not the firmware's one LFO target and one velocity target per voice): any control of a voice can take a
+// source of its own, at an amount of its own (setRouteSrc, setRouteAmt). As in modulationNode.c, a modulated control
+// is re-sent through the parameter handler with a modulated 0..1 value, once a block: the LFO and velocity swing it
+// either way (base + amount * (2 * value - 1), the firmware's sum, so a kit's old LFO and velocity targets play as they
+// did), the two envelopes push it one way (base + amount * envelope). Amounts are -1..1
 // ---------------------------------------------------------------------------------------
-function makeModNode() { return { destination: 0, amount: 0, lastVal: 0 }; }
+export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env'];
+export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4 };
+// a route's destination: a parameter number, or EXTRA_DEST + an extra (EXTRAS)
+export const EXTRA_DEST = 1000;
 
 // parameters that have a pointer in parameterArray (ParameterArray.c); others are ignored
 // as modulation destinations
@@ -829,7 +834,7 @@ function makeVoice(kind, i) {
     oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
     transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
     distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0, filterB: 0, filterT: 0,
-    ampFilterInput: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
+    ampFilterInput: 0, egPitchNow: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
     faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
     hatDecays: 0, decayClosed: 0, decayOpen: 0, isOpen: 0,
   };
@@ -1359,7 +1364,10 @@ export class LxrEngine {
     this.decimationCnt = new Float32Array(6);
     this.voiceSamples = new Int16Array(6);
     this.audioRouting = new Uint8Array(6);
-    this.velocityModulators = Array.from({ length: 6 }, makeModNode);
+    // each voice's modulated controls: destination -> { src, amt } (src SRC.OFF: none); its last velocity (0..1) and
+    // its envelopes' values from the last block
+    this.routes = Array.from({ length: 6 }, () => new Map());
+    this.velLast = new Float32Array(6);
     // initDrumVoice(), Snare_init(), HiHat_init(), Cymbal_init()
     // the six voices, all one merged voice (VOICE_KINDS: what each firmware voice was), and their firmware names
     this.voices = VOICE_KINDS.map(makeVoice);
@@ -1454,11 +1462,6 @@ export class LxrEngine {
   /** load a kit given as parameter values indexed by parameter number */
   loadKit(values) {
     for (let i = 0; i < values.length && i < PAR.END_OF_SOUND_PARAMETERS; i++) this.activeParameters[i] = values[i];
-    // preset_sendDrumsetParameters(): the velocity and LFO targets go first
-    for (let i = 0; i < 6; i++) {
-      this.setVelocityDestination(i, this._targetPar(this.activeParameters[PAR.VEL_DEST_1 + i]));
-      this.setLfoDestination(i, this._targetPar(this.activeParameters[PAR.TARGET_LFO1 + i]));
-    }
     for (let i = 0; i < PAR.END_OF_SOUND_PARAMETERS; i++) {
       const p = PARAMETER_ORDER[i];
       if (NRPN_PARS.has(p)) continue; // (not in the firmware: see NRPN_PARS)
@@ -1470,9 +1473,10 @@ export class LxrEngine {
    * An extra of a voice (not in the firmware): one of EXTRAS, value 0..127. The parts its firmware voice lacks (a
    * pitch envelope on the metal, FM on the snare, noise on the drum, ...), its filter routing, and its kind.
    */
-  setExtra(n, k, value) {
+  setExtra(n, k, value) { this.voices[n].extra[k] = value; this._extra(n, k, value); }
+  // an extra's value made (its setting, or a modulated value 0..127), without changing its setting
+  _extra(n, k, value) {
     const v = this.voices[n], flt = f(value / 127);
-    v.extra[k] = value;
     switch (k) {
       case EX.KIND: { // (and the smoothing its finishing stage was made with, as makeVoice sets it for that kind)
         v.kind = KINDS[value] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1;
@@ -1506,9 +1510,7 @@ export class LxrEngine {
   setParam(par, value) {
     this.activeParameters[par] = value;
     if (par === 0) return; // PAR_NONE
-    // target menus: the value is an index into MOD_TARGETS, the menu sends the target separately
-    if (par >= PAR.VEL_DEST_1 && par <= PAR.VEL_DEST_6) this.setVelocityDestination(par - PAR.VEL_DEST_1, this._targetPar(value));
-    if (par >= PAR.TARGET_LFO1 && par <= PAR.TARGET_LFO6) this.setLfoDestination(par - PAR.TARGET_LFO1, this._targetPar(value));
+    // (the firmware's LFO and velocity target menus do nothing here: each control has its own source, setRouteSrc)
     this._dispatch(par, value, false, 0);
   }
 
@@ -1518,12 +1520,18 @@ export class LxrEngine {
     else this.ccHandler(true, (par - 128) & 0x7f, data2, isFloatModulator, v);
   }
 
-  _targetPar(index) { return (MOD_TARGETS[index] || MOD_TARGETS[0])[1]; }
-
-  /** modNode_setDestination() for a voice's velocity modulation (voice 0..5, parameter number) */
-  setVelocityDestination(voice, par) { this._resetTargets(); this.velocityModulators[voice].destination = par; }
-  /** modNode_setDestination() for an LFO (0..5, in voice order) */
-  setLfoDestination(lfo, par) { this._resetTargets(); this.lfos[lfo].modTarget.destination = par; }
+  /** a control's modulation source (voice 0..5; dest: a parameter number, or EXTRA_DEST + an extra; src: SRC) */
+  setRouteSrc(voice, dest, src) {
+    const m = this.routes[voice], r = m.get(dest);
+    if (r && r.src === src) return;
+    if (r && r.src) this._routeReset(voice, dest);
+    if (r) r.src = src; else m.set(dest, { src, amt: 0 });
+  }
+  /** and how much it moves it, -1..1 */
+  setRouteAmt(voice, dest, amount) {
+    const m = this.routes[voice], r = m.get(dest);
+    if (r) r.amt = f(amount); else m.set(dest, { src: 0, amt: f(amount) });
+  }
 
   /** voiceControl_noteOn: voice 0..2 drums, 3 snare, 4 cymbal, 5 closed hat, 6 open hat */
   trigger(voice, velocity = 127, note = SEQ_DEFAULT_NOTE) {
@@ -1532,20 +1540,34 @@ export class LxrEngine {
   }
 
   // ----- modulation -----
-  _modUpdate(vm, val) {
-    vm.lastVal = val;
-    if (!MODULATABLE.has(vm.destination)) return;
-    const kind = POS_KIND.get(vm.destination);
-    if (kind) { this._modPos(vm.destination, kind, vm.amount, val); return; }
-    const original = f(this.activeParameters[vm.destination] / 127);
-    let nv = f(original + f(vm.amount * f(f(val * 2) - 1)));
+  // a voice's control moved d (-1..1 of its range) from its setting (modNode_updateValue)
+  _modTo(n, dest, d) {
+    if (dest >= EXTRA_DEST) {
+      const k = dest - EXTRA_DEST, x = f(f(this.voices[n].extra[k] / 127) + d);
+      this._extra(n, k, Math.round((x < 0 ? 0 : x > 1 ? 1 : x) * 127));
+      return;
+    }
+    if (!MODULATABLE.has(dest)) return;
+    const kind = POS_KIND.get(dest);
+    if (kind) { this._modPos(dest, kind, d); return; }
+    const original = f(this.activeParameters[dest] / 127);
+    let nv = f(original + d);
     nv = nv < 0 ? 0 : nv > 1 ? 1 : nv;
-    this._dispatch(vm.destination, 0, true, nv);
+    this._dispatch(dest, 0, true, nv);
+  }
+  // back to its setting
+  _routeReset(n, dest) {
+    if (dest >= EXTRA_DEST) { const k = dest - EXTRA_DEST; this._extra(n, k, this.voices[n].extra[k]); return; }
+    this._setOriginal(dest);
+  }
+  // a voice's routes from one source: the LFO and velocity swing either way, the envelopes push one way
+  _routesFrom(n, src, val) {
+    for (const [dest, r] of this.routes[n]) if (r.src === src) this._modTo(n, dest, src <= SRC.VEL ? f(r.amt * f(f(val * 2) - 1)) : f(r.amt * val));
   }
   // a morphable switch, modulated: from a detent, as the firmware modulates its menu (so a kit sound plays as it did)
   // landing on a detent; from between two, along the dial
-  _modPos(par, kind, amount, val) {
-    const base = this.activeParameters[par], d = f(amount * f(f(val * 2) - 1));
+  _modPos(par, kind, d) {
+    const base = this.activeParameters[par];
     const raw = kind === 'wave' ? waveRaw(base) : kind === 'filter' ? filterRaw(base) : modeRaw(base);
     const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
     let x;
@@ -1563,8 +1585,7 @@ export class LxrEngine {
     this._dispatch(par, this.activeParameters[par], false, 0);
   }
   _resetTargets() {
-    for (const vm of this.velocityModulators) this._setOriginal(vm.destination);
-    for (const lfo of this.lfos) this._setOriginal(lfo.modTarget.destination);
+    for (let n = 0; n < 6; n++) for (const [dest, r] of this.routes[n]) if (r.src) this._routeReset(n, dest);
   }
   _lfoRetrigger(voice) {
     for (const lfo of this.lfos) if (lfo.retrigger === voice + 1) lfo.phase = lfo.phaseOffset;
@@ -1581,7 +1602,8 @@ export class LxrEngine {
   _trigger(n, vel, note, open) {
     const v = this.voices[n], drum = v.kind === 'drum';
     this._lfoRetrigger(n);
-    this._modUpdate(this.velocityModulators[n], f(vel / 127));
+    this.velLast[n] = f(vel / 127);
+    this._routesFrom(n, SRC.VEL, this.velLast[n]);
     let offset = 1;
     if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
     resetPhase(v.osc, offset, drum ? drumSineStart : otherSineStart);
@@ -1605,6 +1627,7 @@ export class LxrEngine {
     voiceParts(v);
     let egPitch = 0;
     if (v.pitchEg) { egPitch = decayEg_calc(v.oscPitchEg); v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount)); }
+    v.egPitchNow = egPitch;
     if (v.transGen.waveform === 0) {
       const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
       v.osc.pitchMod = f((v.pitchEg ? v.osc.pitchMod : 1) + f(snap * v.transGen.volume));
@@ -1716,9 +1739,16 @@ export class LxrEngine {
    * voices' buffers are left as they were). Six times quicker, for measuring one sound offline (sound/level.js)
    */
   renderBlock(only = -1) {
+    // every modulated control back to its setting, then moved: velocity, the LFOs (each runs every block, in voice
+    // order, as the firmware's), the envelopes (as they were at the end of the last block)
     this._resetTargets();
-    for (const vm of this.velocityModulators) this._modUpdate(vm, vm.lastVal);
-    for (const lfo of this.lfos) this._modUpdate(lfo.modTarget, lfo_calc(lfo, this.rng));
+    for (let n = 0; n < 6; n++) this._routesFrom(n, SRC.VEL, this.velLast[n]);
+    for (let n = 0; n < 6; n++) { const x = lfo_calc(this.lfos[n], this.rng); this._routesFrom(n, SRC.LFO, x); }
+    for (let n = 0; n < 6; n++) {
+      const v = this.voices[n];
+      this._routesFrom(n, SRC.AMP, v.kind === 'drum' ? v.ampFilterInput : v.egValueOscVol);
+      this._routesFrom(n, SRC.PITCH, v.pitchEg ? v.egPitchNow : 0);
+    }
     const o = this.out, V = this.voices;
     if (only >= 0 && !this.xmod) {
       const v = V[only], b = o[only];
@@ -1925,7 +1955,7 @@ export class LxrEngine {
         case CC.FREQ_LFO1: case CC.FREQ_LFO2: case CC.FREQ_LFO3: case CC.FREQ_LFO4: case CC.FREQ_LFO5: case CC.FREQ_LFO6:
           this._lfoSetFreq(this.lfos[num - CC.FREQ_LFO1], flt); break;
         case CC.AMOUNT_LFO1: case CC.AMOUNT_LFO2: case CC.AMOUNT_LFO3: case CC.AMOUNT_LFO4: case CC.AMOUNT_LFO5: case CC.AMOUNT_LFO6:
-          this.lfos[num - CC.AMOUNT_LFO1].modTarget.amount = flt; break;
+          break; // (each modulated control has its own amount: setRouteAmt)
         case CC.VOICE_DECIMATION1: case CC.VOICE_DECIMATION2: case CC.VOICE_DECIMATION3: case CC.VOICE_DECIMATION4:
         case CC.VOICE_DECIMATION5: case CC.VOICE_DECIMATION6: case CC.VOICE_DECIMATION_ALL:
           this.decimationRate[num - CC.VOICE_DECIMATION1] = valueShaperF2F(flt, f(-0.7)); break;
@@ -1965,7 +1995,7 @@ export class LxrEngine {
         [d0, d1, d2, sn, cy, hh][num - CC2.VOLUME_MOD_ON_OFF1].volumeMod = itg !== 0 ? 1 : 0; break;
       case CC2.VELO_MOD_AMT_1: case CC2.VELO_MOD_AMT_2: case CC2.VELO_MOD_AMT_3:
       case CC2.VELO_MOD_AMT_4: case CC2.VELO_MOD_AMT_5: case CC2.VELO_MOD_AMT_6:
-        this.velocityModulators[num - CC2.VELO_MOD_AMT_1].amount = flt; break;
+        break; // (each modulated control has its own amount: setRouteAmt)
       case CC2.WAVE_LFO1: case CC2.WAVE_LFO2: case CC2.WAVE_LFO3:
       case CC2.WAVE_LFO4: case CC2.WAVE_LFO5: case CC2.WAVE_LFO6:
         this.lfos[num - CC2.WAVE_LFO1].waveform = wave(NUM_LFO_WAVEFORMS); break;

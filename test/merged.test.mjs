@@ -1,7 +1,8 @@
 // node test/merged.test.mjs: the merged voice (engine/lxr.js) against the engine as it was before it (test/ref, the
 // firmware port with its four voice types). Every kit, all six voices hit together (and the open hi-hat), at two notes
-// and velocities, and a set of random kits (every parameter anywhere in its range, LFOs and velocity aimed anywhere),
-// must come out the same, sample for sample, voice by voice.
+// and velocities, and a set of random kits (every parameter anywhere in its range), must come out the same, sample for
+// sample, voice by voice. (parseSnd makes a kit's LFO and velocity targets routes on its knobs, which the engine before
+// didn't have, so here the kits have none: test/modroutes.test.mjs plays them against that engine with their targets.)
 import { LxrEngine, BLOCK, kitToPositions, kitToFirmware, toPosition } from '../engine/lxr.js';
 import { LxrEngine as RefEngine } from './ref/lxr-ref.js';
 import { PAR } from '../engine/lxr-tables.js';
@@ -36,9 +37,9 @@ const NRPN = [PAR.NRPN_DATA_ENTRY_COARSE, PAR.NRPN_FINE, PAR.NRPN_COARSE];
 const WAVE_VOICE = [0, 1, 2, 0, 1, 2, 3, 4, 4, 4, 5, 5, 5];
 // (parseSnd gives the knob positions; the firmware values are taken back from them, and a user sample wave from the file)
 const kits = KIT_FILES.map((k) => {
-  const bytes = Uint8Array.from(Buffer.from(k.data, 'base64')), s = parseSnd(bytes), raw = kitToFirmware(s.kit);
+  const bytes = Uint8Array.from(Buffer.from(k.data, 'base64')), s = parseSnd(bytes), raw = kitToFirmware(s.kit.slice(0, NUM_PARAMS));
   for (const p of WAVES) if (bytes[8 + p] > 5) raw[p] = bytes[8 + p];
-  return { file: k.file, kit: raw, pos: s.kit };
+  return { file: k.file, kit: raw, pos: s.kit.slice(0, NUM_PARAMS) };
 });
 const FILTERS = [1, 2, 3, 4, 5, 6].map((i) => PAR['FILTER_TYPE_' + i]);
 let same = 0, skipped = 0;
