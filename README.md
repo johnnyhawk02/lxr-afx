@@ -13,9 +13,10 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
-  (or clicked on its strip of all 25 keys), its engine and what it plays, with **LOCK KEY** (L),
-  **ALTER KEY** (A), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
-  **CLEAR**. A locked key turns the header black and veils the knobs. Everything that randomises a
+  (or clicked on its strip of all 25 keys, which starts under the key's info, with the engine bar below it), its engine
+  and what it plays, with the **NEW SOUND** dice (K), **ALTER KEY** (A, a picture of three sliders), **LOCK KEY** (L), **COPY** / **PASTE** (Cmd+C / Cmd+V, Ctrl on a PC; onto another engine it maps by control name) and
+  **CLEAR**, and under them the **MAKE THIS KEY** buttons (kick, tom, perc, zap, snare, clap, rim, bell, hats, cymbal,
+  any), two rows of six. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (INIT PATCH, random, alter, level, the ALTER amount, AUTO LEVEL, the knob padlocks)
   is in the **RANDOM** menu.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
@@ -52,8 +53,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **No sequencer**: the per-key step sequencer and the RHYTHMS slider were taken out (Johnny didn't find them useful); a
   key plays once per press. The engine's AMP REPEAT knob still retriggers a sound.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
-  velocity, mix / lfo), with the **NEW SOUND** dice, the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the
-  right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
+  velocity, mix / lfo), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
   below it on every engine; the right-hand column shares one set of six columns the same way. Pasting a key onto
   another engine labels it, e.g. "Brownie snare (as metal)".
 - **Editor**: every parameter of the sound on one screen, as knobs (press and drag up/down; the scroll
@@ -112,8 +112,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   every padlock, and the menu counts the closed ones. Only your own hand, UNDO and loading a preset change a locked
   knob. (Before, 17 knobs came locked, so NEW SOUND kept the old waveform and switches under a new sound's name, and
   RANDOM (then SCATTER) and INIT PATCH ignored the padlocks.) New sounds always keep a key's sends, locked or not.
-- **NEW SOUND is the dice** at the top right of the synth block, at the head of the key's own two columns (its FX
-  sends and its LEVEL are below it). Press it, or K, and the key gets a different kit sound of its engine; the dice
+- **NEW SOUND is the dice** in the key header's row of buttons, beside ALTER KEY. Press it, or K, and the key gets a different kit sound of its engine; the dice
   turns once and its face changes a few times, a third of a second (with reduced motion set, the face just changes).
 - **Auto level**: the kits' sounds are of very different loudness (the loudest drum is 50 dB above the quietest), so
   every sound a randomiser deals or alters (NEW SOUND, RANDOM, ALTER, ALTER KEY, a paste onto another engine) is

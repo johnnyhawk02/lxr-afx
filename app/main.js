@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwltmi9y';
-import { presetName } from './names.js?v=mwltmi9y';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwltmi9y';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwltmi9y';
-import { breed, isDud } from '../sound/breed.js?v=mwltmi9y';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwltmi9y';
-import { KIT_FILES } from '../sound/kits.js?v=mwltmi9y';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwltmi9y';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwltmi9y';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlvh9a5';
+import { presetName } from './names.js?v=mwlvh9a5';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlvh9a5';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwlvh9a5';
+import { breed, isDud } from '../sound/breed.js?v=mwlvh9a5';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlvh9a5';
+import { KIT_FILES } from '../sound/kits.js?v=mwlvh9a5';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlvh9a5';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlvh9a5';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -89,7 +89,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwltmi9y', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlvh9a5', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -493,8 +493,7 @@ function drawSide() {
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
-// ---- NEW SOUND: the dice at the top right of the synth block (the key's own two columns: the dice, its FX sends, its
-// LEVEL). A press, or K, deals the key another kit sound of its engine and rolls the dice: it turns once while its
+// ---- NEW SOUND: the dice in the key's row of buttons (beside ALTER KEY and LOCK KEY). A press, or K, deals the key another kit sound of its engine and rolls the dice: it turns once while its
 // face changes a few times, a third of a second. Flat, like the rest of the panel: seven pips, the lit ones the face ----
 const DICE_PIPS = { tl: [5, 5], tr: [19, 5], ml: [5, 12], mr: [19, 12], bl: [5, 19], br: [19, 19], c: [12, 12] };
 const DICE_FACES = [[], ['c'], ['tl', 'br'], ['tl', 'c', 'br'], ['tl', 'tr', 'bl', 'br'], ['tl', 'tr', 'c', 'bl', 'br'], ['tl', 'tr', 'ml', 'mr', 'bl', 'br']];
@@ -516,6 +515,7 @@ function rollDice() {
   let left = 3; diceT = setInterval(() => { next(); if (!--left) clearInterval(diceT); }, 80);
 }
 showDice(5);
+$('keyacts').prepend(diceBtn);
 for (const d of dice) d.addEventListener('animationend', () => d.classList.remove('roll'));
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
@@ -549,17 +549,16 @@ function buildFaders() {
       const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
       if (lv) faderDraws.push(() => el.classList.toggle('off', !valueNow(lv.par)));
     }
-    if (col <= GRID_COLS) { const n = GRID_COLS + 1 - col; if (r === 1 && n >= 3) makePanel(sect(n, ' make')); else sect(n, ' fill'); } // (row 2's free cells: the MAKE buttons)
+    if (col <= GRID_COLS) { const n = GRID_COLS + 1 - col; sect(n, ' fill'); }
   });
   const sends = entries.filter((e) => e.section === 'fx sends');
-  const el = cell(document.createElement('div'), 2, 3, GRID_COLS + 1, GRID_COLS + 3); el.className = 'sect sends rt sep'; el.style.setProperty('--n', 2);
+  const el = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 3); el.className = 'sect sends sep'; el.style.setProperty('--n', 2);
   el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
   for (const e of sends) el.querySelector('.row').append(vfader(e));
   box.append(el);
-  const dice = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 3); dice.className = 'sect dice sep'; dice.style.setProperty('--n', 2);
-  dice.innerHTML = '<h3><span class="dice-src"></span><kbd>K</kbd></h3>'; dice.append(diceBtn); drawSource();
-  box.append(dice);
-  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 3, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
+  drawSource(); // (the dice sits in the key's row of buttons, above)
+  makePanel($('make')); // (and the MAKE buttons under them)
+  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 2, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
   // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
   // key as it plays now and levels it again (it never switches it off)
@@ -1198,12 +1197,12 @@ function typeSound(sound, name) {
   }
   return s;
 }
-// the MAKE buttons: one press makes the key on screen that type of sound, a new one each press. A type needs a kit
+// the MAKE buttons (the key panel, under the key's buttons): one press makes the key on screen that type of sound, a new one each press. A type needs a kit
 // sound of its kind in the engine's pool (until every engine draws from every kit voice, a hat needs the metal)
 const MAKE_TYPES = [['kick', 'KICK'], ['tom', 'TOM'], ['mid perc', 'PERC'], ['zap', 'ZAP'], ['snare', 'SNARE'], ['clap', 'CLAP'], ['rim', 'RIM'],
   ['cowbell', 'BELL'], ['closed hat', 'C HAT'], ['open hat', 'O HAT'], ['cymbal', 'CYMBAL']];
 function makePanel(el) {
-  el.innerHTML = '<h3>make this key</h3><div class="mk"></div>';
+  el.innerHTML = '<span class="dim mkl">MAKE<br>THIS<br>KEY</span><div class="mk"></div>';
   const box = el.querySelector('.mk');
   for (const [name, text] of MAKE_TYPES) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = text; b.dataset.type = name;
