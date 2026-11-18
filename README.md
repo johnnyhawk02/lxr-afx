@@ -36,7 +36,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   and HP outputs (one filter state) are mixed, with LP2 or the dry input crossfaded in at the far end; and mod A's FM
   depth fades out as it fades into the mix (`node test/switches.test.mjs`). An LFO or velocity aimed at one moves it
   the firmware's way from a detent, and along the dial from between two. Patches saved before the knobs were dials are
-  converted when they load.
+  converted when they load. **PWM** never goes below 1 by hand or by a randomiser (at 0 the pwm wave is silent), but a kit
+  sound that comes with 0 keeps it.
 - **Master distortion** (`sound/dirt.js`, our own design after a dual-path bass distortion pedal's signal flow), before
   the compressor, off until its **ON** is pressed. A dirty path, PREGAIN, then a filter (FILTER: high-pass, or LP),
   GAIN into two anti-aliased clip stages (CLIP: diode, hard and early, or LED, louder and more open), then TONE (bass,
