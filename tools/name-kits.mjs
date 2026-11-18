@@ -32,3 +32,4 @@ const sorted = Object.fromEntries(Object.keys(names).sort().map((k) => [k, names
 writeFileSync(list, JSON.stringify(sorted, null, 1) + '\n');
 console.log(`named ${n} kits (${Object.keys(names).length} in kits/names.json)`);
 execFileSync(process.execPath, [new URL('build-kits.mjs', import.meta.url).pathname], { stdio: 'inherit' });
+execFileSync(process.execPath, [new URL('extract-bucket.mjs', import.meta.url).pathname], { stdio: 'inherit' }); // (the new kits' sounds into the sound bucket)

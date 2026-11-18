@@ -20,8 +20,8 @@
 //            not of the sound, so ALTER never moves them)
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
-import { LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmf5kyh';
+import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmf8td0';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -85,12 +85,25 @@ export const trimDb = (v) => (v - TRIM_ZERO) * TRIM_STEP_DB;
 // parameter for, and its kind. A voice uses only the ones its firmware voice lacks (extraLive)
 export const EXTRA_BASE = NUM_PARAMS + 42, NUM_EXTRAS = EXTRAS.length;
 export const extraPar = (voice, k) => EXTRA_BASE + voice * NUM_EXTRAS + k;
-export const ALL_PARAMS = EXTRA_BASE + 6 * NUM_EXTRAS;
+// then each voice's modulation: for every control that can be modulated (MOD_DIALS, by merged name) its source
+// (MOD_SOURCES: 0 off, 1 the voice's LFO, 2 velocity, 3 the amp envelope, 4 the pitch envelope) and its amount (0..254,
+// MOD_AMT_ZERO none: -127 .. +127, a firmware amount a is MOD_AMT_ZERO + a). Right-click a knob to set them
+export { MOD_SOURCES };
+export const MOD_DIALS = ['coarse', 'fine', 'wave', 'pwm', 'afreq', 'again', 'awave', 'amode', 'fmenv', 'bfreq', 'bgain', 'bwave',
+  'ncolour', 'nmix', 'attack', 'decay', 'repeat', 'aslope', 'pdecay', 'pslope', 'pamt', 'click', 'clickvol', 'clickfreq',
+  'cutoff', 'reso', 'ftype', 'fdrive', 'velvol', 'lfofreq', 'lfosync', 'lfowave', 'lforetrig', 'lfooffset', 'level', 'pan',
+  'rate', 'drive'];
+export const NUM_MOD = MOD_DIALS.length, MOD_BASE = EXTRA_BASE + 6 * NUM_EXTRAS, MOD_AMT_ZERO = 127, MOD_AMT_MAX = 254;
+export const modSrcPar = (voice, i) => MOD_BASE + (voice * NUM_MOD + i) * 2;
+export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
+export const ALL_PARAMS = MOD_BASE + 6 * NUM_MOD * 2;
 export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
+for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) INIT_VALUES[modAmtPar(v, i)] = MOD_AMT_ZERO;
 { const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
 for (let v = 0; v < 6; v++) INIT_VALUES[trimPar(v)] = TRIM_ZERO;
+// (INIT_VALUES' own LFO and velocity targets become routes once the schemas are made: see the end of this file)
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
   'tom', 'snap 2', ...EXTRA_CLICK_NAMES];
@@ -251,16 +264,14 @@ export const MERGED = [
   ['reso', 'filter', 'filter', 'reso', ['filter:FILTER_RESO']],
   ['ftype', 'filter', 'filter', 'type', ['filter:FILTER_TYPE']],
   ['fdrive', 'filter', 'filter', 'flt drive', ['filter:FILTER_DRIVE']],
-  ['veldest', 'mod', 'velocity', 'vel dest', ['velocity:VEL_DEST']],
-  ['velamt', 'mod', 'velocity', 'vel amt', ['velocity:VEL_AMT']],
-  ['velvol', 'mod', 'velocity', 'vel vol', ['velocity:VEL_MOD_VOL']],
+  // (the firmware's one velocity target and one LFO target, and their amounts, are gone: every knob takes a source of
+  // its own on a right-click, MOD_DIALS. They stay, unseen, so a .SND kit still lines up)
+  ['velvol', 'shape', 'amp', 'vel vol', ['velocity:VEL_MOD_VOL']], // (velocity on the level: with the amp envelope)
   ['lfofreq', 'mod', 'lfo', 'lfo freq', ['lfo:FREQ_LFO']],
   ['lfosync', 'mod', 'lfo', 'lfo sync', ['lfo:SYNC_LFO']],
-  ['lfoamt', 'mod', 'lfo', 'lfo amt', ['lfo:MOD_LFO']],
   ['lfowave', 'mod', 'lfo', 'lfo wave', ['lfo:WAVE_LFO']],
   ['lforetrig', 'mod', 'lfo', 'retrigger', ['lfo:RETRIGGER_LFO']],
   ['lfooffset', 'mod', 'lfo', 'lfo offset', ['lfo:OFFSET_LFO']],
-  ['lfodest', 'mod', 'lfo', 'lfo dest', ['lfo:TARGET_LFO']],
   ['level', 'mix', 'mix', 'level', ['mix:VOLUME']],
   ['pan', 'mix', 'mix', 'pan', ['mix:PAN']],
   ['rate', 'mix', 'mix', 'sample rate', ['mix:SAMPLE_RATE']],
@@ -293,6 +304,16 @@ function buildSchema(voice) {
   // AUTO LEVEL's trim (shown beside the LEVEL knob, set by the randomisers when they deal a sound; never randomised)
   out.push({ key: 'TRIM' + (voice + 1), par: trimPar(voice), label: 'auto level', text: 'TRIM', page: 'mix', section: 'auto', min: 0, max: 127,
     def: TRIM_ZERO, display: { type: 'num' }, morph: null, weight: 0, rand: 'seq', seq: true });
+  // each knob's modulation (unseen as knobs: a right-click on the knob sets them). Part of the sound (a kit sound brings
+  // its own, MORPH KEYS and BREED carry them), but ALTER and the drum-safe randomisers leave them alone ('mix')
+  MOD_DIALS.forEach((u, i) => {
+    const d = out.find((e) => e.ukey === u), dest = d ? (d.extra !== undefined ? EXTRA_DEST + d.extra : d.par) : -1;
+    const base = { page: 'mod', section: 'mod', min: 0, morph: null, weight: 0, rand: 'mix', hidden: true, mod: { dial: u, dest } };
+    out.push({ ...base, key: 'MODSRC_' + u + (voice + 1), par: modSrcPar(voice, i), ukey: 'modsrc:' + u, label: (d ? d.label : u) + ' mod', text: 'MOD_SRC',
+      max: MOD_SOURCES.length - 1, def: 0, display: { type: 'menu', names: MOD_SOURCES } });
+    out.push({ ...base, key: 'MODAMT_' + u + (voice + 1), par: modAmtPar(voice, i), ukey: 'modamt:' + u, label: (d ? d.label : u) + ' mod amt', text: 'MOD_AMT',
+      max: MOD_AMT_MAX, def: MOD_AMT_ZERO, display: { type: 'pm', centre: MOD_AMT_ZERO } });
+  });
   return out;
 }
 
@@ -364,41 +385,33 @@ export function parseSnd(bytes) {
     const tw = PAR['TRANS' + (i + 1) + '_WAVE'];
     if (kit[tw] >= 14) kit[tw] %= 14;
   }
-  return { name, kit: kitToPositions(kit) }; // (the waves, filter types and FM/MIX modes as knob positions)
+  // (the waves, filter types and FM/MIX modes as knob positions; its LFO and velocity targets as routes)
+  const values = INIT_VALUES.slice(); values.set(kitToPositions(kit));
+  return { name, kit: upgradeMod(values) };
 }
 
 // one voice's sound taken from a kit voice (any voice: the merged voice has every control): its values mapped control by
-// control (by merged name), its modulation targets moved to the same controls of the new voice, and its kind. kit: a
-// kit's values (a .SND kit has no extras: a control its voice lacks takes the voice's own setting as it comes, a part
-// switched off). Returns [[parameter, value], ...] for dst; the sends, the sequencer and the trim are left out
+// control (by merged name), its modulation with them, and its kind. kit: a kit's values, as parseSnd gives them (its
+// LFO and velocity targets already routes: a .SND kit has no extras, so a control its voice lacks takes the voice's own
+// setting as it comes, a part switched off). Returns [[parameter, value], ...] for dst; the sends, the sequencer and the trim are left out
 export function mapVoice(kit, src, dst) {
   const S = VOICE_SCHEMAS[src], D = VOICE_SCHEMAS[dst];
   const val = (p) => (p < kit.length ? kit[p] : INIT_VALUES[p]);
   const parMap = new Map(); // source parameter -> destination parameter
   for (const e of S) {
-    if (e.hidden && e.ukey !== 'kind') continue;
-    if (e.par >= NUM_PARAMS && e.extra === undefined) continue; // (sends, sequencer, trim)
+    if (e.hidden && e.ukey !== 'kind' && !e.mod) continue;
+    if (e.par >= NUM_PARAMS && e.extra === undefined && !e.mod) continue; // (sends, sequencer, trim)
     const d = D.find((x) => x.ukey === e.ukey);
     if (d) parMap.set(e.par, d.par);
   }
-  const target = (i) => { // a modulation target index from the source voice's to the destination's
-    if (!i) return 0;
-    const p = MOD_TARGETS[i] && MOD_TARGETS[i][1], q = parMap.get(p);
-    if (voiceOfTarget(i) !== src || src === dst) return i; // aimed at another voice, or onto its own voice: as it is
-    if (q === undefined || q >= NUM_PARAMS) return 0; // (an extra can't be modulated yet)
-    const [a, b] = MOD_TARGET_VOICE_RANGES[dst];
-    for (let k = a; k <= b; k++) if (MOD_TARGETS[k][1] === q) return k;
-    return 0;
-  };
   const out = [];
   for (const [p, q] of parMap) {
     const e = S.find((x) => x.par === p);
     // the hi-hat's decay: its open one (as the cymbal's decay; the closed one is a different sound)
     let v = src === 5 && e.ukey === 'decay' ? val(PAR.VELOD6_OPEN) : val(p);
     if (e.ukey === 'kind' && KINDS[v] === 'hat') v = KINDS.indexOf('cym'); // (a hi-hat plays as the cymbal, as it always did here)
-    out.push([q, e.display.type === 'target' ? target(v) : v]);
+    out.push([q, v]);
   }
-  out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(val(PAR.TARGET_LFO1 + src)) === src ? dst + 1 : val(PAR.VOICE_LFO1 + src)]);
   return out;
 }
 
@@ -422,3 +435,63 @@ export function editsToPositions(edits) {
   }
   return edits;
 }
+
+// ---- the firmware's modulation as routes. A firmware voice had one velocity target and one LFO target (VEL_DEST,
+// TARGET_LFO: an index into MOD_TARGETS) with an amount each; now every knob has its own source and amount. A voice's
+// old targets become routes on the same knobs at the same amounts (an exact match: the engine moves a routed knob as
+// the firmware moved its target). Left out, as they did nothing to the sound: an LFO aimed at another voice (each key
+// plays one voice's sound on its own) and a target with no knob (the firmware's FX, the hi-hat's open decay, the old
+// amounts and targets themselves). An amount of 0 is kept (re-sent, a knob can land a step away). With both on one knob, the LFO's (the firmware re-sent the LFO's
+// after the velocity's, so only the LFO's was heard) ----
+const OLD_MOD = (v) => ({ vd: PAR.VEL_DEST_1 + v, va: PAR['VELO_MOD_AMT_' + (v + 1)], ld: PAR['TARGET_LFO' + (v + 1)], la: PAR['AMOUNT_LFO' + (v + 1)] });
+const DIAL_OF_PAR = VOICE_SCHEMAS.map((sc) => new Map(MOD_DIALS.map((u, i) => [sc.find((e) => e.ukey === u), i]).filter(([e]) => e && e.extra === undefined).map(([e, i]) => [e.par, i])));
+// voice v's routes from its old targets (get: a parameter's value): [[parameter, value], ...] for every knob of the voice
+export function routesFromOld(get, v) {
+  const o = OLD_MOD(v), r = new Map();
+  const dial = (i) => (i && i < MOD_TARGETS.length && voiceOfTarget(i) === v ? DIAL_OF_PAR[v].get(MOD_TARGETS[i][1]) : undefined);
+  const vd = dial(get(o.vd)), ld = dial(get(o.ld));
+  if (vd !== undefined) r.set(vd, [2, get(o.va)]);
+  if (ld !== undefined) r.set(ld, [1, get(o.la)]);
+  const out = [];
+  for (let i = 0; i < NUM_MOD; i++) { const x = r.get(i); out.push([modSrcPar(v, i), x ? x[0] : 0], [modAmtPar(v, i), MOD_AMT_ZERO + (x ? x[1] : 0)]); }
+  return out;
+}
+export const MOD_RULE = 1; // what a store or preset made since then says (mod: MOD_RULE)
+const OLD_TARGETS = (v) => { const o = OLD_MOD(v); return [o.vd, o.va, o.ld, o.la]; };
+// a sound's values (an array by parameter: a kit, a store's, a preset's) with its old targets as routes, in place, and
+// its keys' edits with it (keys: per sound, { note: { parameter: value, _o: { ... } } }: a key that set a target or an
+// amount of its own gets the routes that made, where they differ from the base's). A voice with no old target is left
+// as it is, so it can be run again
+export function upgradeMod(values, keys) {
+  const base = Array.from(values);
+  if (keys) SOUNDS.forEach((def, s) => {
+    const v = def.engineVoice, olds = OLD_TARGETS(v), ks = keys[s];
+    if (!ks) return;
+    const baseR = new Map(routesFromOld((p) => base[p], v));
+    for (const n in ks) {
+      const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
+      const o = ed._o && typeof ed._o === 'object' ? ed._o : null;
+      if (olds.some((p) => p in ed) || (o && olds.some((p) => p in o))) {
+        const now = routesFromOld((p) => ed[p] ?? base[p], v);
+        const was = o ? routesFromOld((p) => o[p] ?? ed[p] ?? base[p], v) : now;
+        now.forEach(([p, x], j) => { if (ed._lock || x !== baseR.get(p)) ed[p] = x; if (o && was[j][1] !== x) o[p] = was[j][1]; });
+      }
+      for (const p of olds) { delete ed[p]; if (o) delete o[p]; }
+      if (o && !Object.keys(o).length) delete ed._o;
+    }
+  });
+  for (let v = 0; v < 6; v++) {
+    const o = OLD_MOD(v);
+    if (!base[o.vd] && !base[o.ld]) continue;
+    for (const [p, x] of routesFromOld((p) => base[p], v)) values[p] = x;
+    values[o.vd] = 0; values[o.ld] = 0;
+  }
+  return values;
+}
+upgradeMod(INIT_VALUES);
+// a route's parameter: { voice, dest (the engine's: a parameter number, or EXTRA_DEST + an extra), src (true: its source,
+// false: its amount) }, or null
+const ROUTES = new Map(VOICE_SCHEMAS.flatMap((sc, voice) => sc.filter((e) => e.mod).map((e) => [e.par, { voice, dest: e.mod.dest, src: e.text === 'MOD_SRC' }])));
+export const routeOf = (par) => ROUTES.get(par) || null;
+// a knob's modulation parameters ({ src, amt }), by its merged name, or null if it can't be modulated
+export function modOf(voice, ukey) { const i = MOD_DIALS.indexOf(ukey); return i < 0 ? null : { src: modSrcPar(voice, i), amt: modAmtPar(voice, i) }; }

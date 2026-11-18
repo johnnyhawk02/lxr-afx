@@ -410,10 +410,10 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.keyboard.press('Escape'); const shut = await p.evaluate(() => document.getElementById('preset-panel').hidden);
     const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), l = r('last'), lt = document.getElementById('last-text'); return [b.left > r('screen').left, document.getElementById('last').offsetWidth, [...document.getElementById('last').parentElement.children].map((c) => (c.id || c.className) + ' ' + c.offsetWidth).join(' | ') + ' · ' + lt.textContent]; });
     if (!shut || !bar[0] || bar[1] < 175) bad('top bar', shut, bar); } // (room left for the last note, whatever the name's length)
-  // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob, a menu or the BPM
+  // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
-    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob', '#faders select']) {
+    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob']) {
       if (sel === '.fxside .knob') await p.click('#fx-tab'); else if (await p.evaluate(() => !document.getElementById('fxside').hidden)) await p.click('#fx-tab');
       const el = await p.$(sel); if (!el) { errors++; console.log('wheel: no', sel); continue; }
       const box = await el.boundingBox(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

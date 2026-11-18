@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwmf5kyh">
+<link rel="stylesheet" href="css/lcd.css?v=mwmf8td0">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -79,6 +79,7 @@
         </div>
       </div>
     </div>
+    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUND BLENDER (B): blend two sounds from the bucket into a new one, and save it to the bucket">BLENDER<kbd>B</kbd></button>
     <div class="menu" id="menu">
       <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
       <div class="menupanel" id="menu-panel" hidden>
@@ -192,6 +193,35 @@
     <p id="start-text"></p>
     <p class="ph" id="start-phone">A pad for each of the 25 keys: drum, snare and metal. Press a pad to play it. NEW SOUND rolls the pad you pressed last.</p>
   </div>
+  <div class="blender" id="blender" hidden>
+    <div class="blbox" role="dialog" aria-label="Sound blender">
+      <h3>SOUND BLENDER <span class="dim" id="bl-eng"></span><button class="btn sm" id="bl-close" title="Close (Esc)">CLOSE</button></h3>
+      <div class="blpick" id="bl-a"></div>
+      <div class="blpick" id="bl-b"></div>
+      <div class="bars" id="bl-bars" title="How far from A to B: knobs slide, switches flip halfway. Let go to hear it; double-click for 50%"></div>
+      <div class="blnames"><span id="bl-an"></span><span id="bl-bn"></span></div>
+      <div class="blrow five">
+        <button class="btn" id="bl-play" title="Hear the blend on the engine on screen">PLAY</button>
+        <button class="btn" id="bl-alter">ALTER</button>
+        <button class="btn" id="bl-mods" title="RANDOM MODS: 3 or 4 knobs get a modulation (LFO, velocity, amp env or pitch env) at a random amount; press again for another set">RANDOM MODS</button>
+        <button class="btn" id="bl-pair" title="Two new sounds from the bucket for A and B">NEW PAIR</button>
+        <button class="btn" id="bl-key" title="Put the blend on the key on screen (UNDO takes it back)">PUT ON KEY</button>
+      </div>
+      <div class="dim blmods" id="bl-modtext"></div>
+      <h3>SAVE TO THE BUCKET</h3>
+      <div class="blrow">
+        <input class="pname" id="bl-name" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="The new sound's name" title="The new sound's name: type one, or press NEW NAME">
+        <button class="btn" id="bl-roll" title="Another made-up name">NEW NAME</button>
+        <button class="btn" id="bl-save" title="Keep this sound: it joins the bucket at once (RANDOM, the dice and the blender draw from it) and the list below">SAVE</button>
+      </div>
+      <h3>SAVED <span class="dim" id="bl-count"></span></h3>
+      <div class="plist bllist" id="bl-list"></div>
+      <div class="blrow">
+        <button class="btn" id="bl-export" title="Write the saved sounds to a file: hand it over and they go into the repo's sound bucket for good">EXPORT LIST</button>
+        <span class="dim note">EXPORT, THEN HAND THE FILE OVER: THE SOUNDS GO INTO THE REPO'S BUCKET</span>
+      </div>
+    </div>
+  </div>
 </main>
 <script>
 // if the page's code fails to load or start (a stale cached file, an error), say so instead of sitting on START
@@ -205,6 +235,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwmf5kyh"></script>
+<script type="module" src="app/main.js?v=mwmf8td0"></script>
 </body>
 </html>

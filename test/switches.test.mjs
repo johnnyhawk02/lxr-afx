@@ -2,7 +2,7 @@
 // and mod A's FM/MIX mode as knobs. On a detent a sound plays as the menu setting did (test/merged.test.mjs checks that
 // against the firmware port); here, between two detents the sound moves smoothly from one to the other: one step off a
 // detent is close to the detent, the halfway point lies between the two ends, and nothing blows up.
-import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX, FILTER_PROBE } from '../engine/lxr.js';
+import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX, SRC, FILTER_PROBE } from '../engine/lxr.js';
 import { PAR } from '../engine/lxr-tables.js';
 import { parseSnd, mapVoice } from '../sound/schema.js';
 import { KIT_FILES } from '../sound/kits.js';
@@ -96,8 +96,8 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
   const e = new LxrEngine({ seed: 9 });
   e.loadKit(kit);
   e.setParam(PAR.OSC_WAVE_DRUM1, 40);
-  e.setLfoDestination(0, PAR.OSC_WAVE_DRUM1);
-  e.lfos[0].modTarget.amount = 0.5;
+  e.setRouteSrc(0, PAR.OSC_WAVE_DRUM1, SRC.LFO);
+  e.setRouteAmt(0, PAR.OSC_WAVE_DRUM1, 0.5);
   e.trigger(0, 120, 60);
   const seen = new Set();
   let good = true;
