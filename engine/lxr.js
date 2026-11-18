@@ -1551,9 +1551,9 @@ export class LxrEngine {
       case EX.NOISE_COLOUR: v.noiseOsc.freq = f(flt * 22000); break;
       case EX.NOISE_MIX: v.mix = flt; break;
       case EX.FM_ENV: v.fmEnv = flt; break;
-      case EX.ROUTE_TONE: v.routeT = value ? 1 : 0; break;
-      case EX.ROUTE_NOISE: v.routeN = value ? 1 : 0; break;
-      case EX.ROUTE_CLICK: v.routeC = value ? 1 : 0; break;
+      case EX.ROUTE_TONE: v.routeT = value >= 0.5 ? 1 : 0; break; // (a modulated switch: on from halfway, as the nearest step was)
+      case EX.ROUTE_NOISE: v.routeN = value >= 0.5 ? 1 : 0; break;
+      case EX.ROUTE_CLICK: v.routeC = value >= 0.5 ? 1 : 0; break;
       case EX.REPEAT: v.oscVolEg.repeat = Math.round(value); break;
       default: break;
     }
@@ -1597,7 +1597,7 @@ export class LxrEngine {
   _modTo(n, dest, d) {
     if (dest >= EXTRA_DEST) {
       const k = dest - EXTRA_DEST, x = f(f(this.voices[n].extra[k] / 127) + d);
-      this._extra(n, k, Math.round((x < 0 ? 0 : x > 1 ? 1 : x) * 127));
+      this._extra(n, k, (x < 0 ? 0 : x > 1 ? 1 : x) * 127); // (the value as it is, not the nearest step)
       return;
     }
     if (!MODULATABLE.has(dest)) return;
@@ -1883,9 +1883,9 @@ export class LxrEngine {
     let itg, flt;
     if (isFloatModulator) { itg = toU8(f(v * 127)); flt = f(v); }
     else { itg = data2 & 0xff; flt = f(data2 / 127); }
-    // a knob's value as a number (not in the firmware: an edit may be a decimal; a whole number is itg). Menus, counts
-    // and switches keep itg
-    const val = isFloatModulator ? itg : data2;
+    // a knob's value as a number (not in the firmware: an edit or a modulated value may be a decimal; an edit of a whole
+    // number is itg). Menus, counts and switches keep itg
+    const val = isFloatModulator ? f(v * 127) : data2; // (modulated: the value as it is, not the step below it)
     const [d0, d1, d2] = this.drums;
     const drums = this.drums, sn = this.snare, cy = this.cymbal, hh = this.hat;
     const wave = (count) => {

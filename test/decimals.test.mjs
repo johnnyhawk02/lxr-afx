@@ -2,7 +2,7 @@
 // to a whole number) by the engine, the bucket and the presets.   node test/decimals.test.mjs
 import assert from 'node:assert/strict';
 import { LxrEngine, PAR, EX } from '../engine/lxr.js';
-import { VOICE_SCHEMAS, extraPar, NUM_PARAMS, NUM_EXTRAS } from '../sound/schema.js';
+import { VOICE_SCHEMAS, extraPar, NUM_PARAMS, NUM_EXTRAS, modOf, ukeyPar, INIT_VALUES, ALL_PARAMS } from '../sound/schema.js';
 import { LxrInstrument } from '../sound/instrument.js';
 import { tidy, toVoice, fromVoice } from '../sound/bucket.js';
 import { BUCKET } from '../sound/bucket-sounds.js';
@@ -53,4 +53,11 @@ for (let v = 0; v < 6; v++) {
   const t = tidy(s); assert.equal(t.params.decay, 61.23); assert.equal(t.params.coarse, 40.5);
   const back = fromVoice(toVoice(t, t.voice), t.voice, { name: 'X', type: t.type });
   assert.equal(back.params.decay, 61.23); assert.equal(back.params.coarse, 40.5); n += 4; }
+// modulation moves a control smoothly: an LFO on the coarse tune sweeps through the pitches between semitones
+{ const inst = new LxrInstrument(44140); inst.loadKit(INIT_VALUES.slice(0, ALL_PARAMS));
+  const m = modOf(0, 'coarse'); inst.setParam(m.src, 1); inst.setParam(m.amt, 127 + 40);
+  inst.setParam(ukeyPar(0, 'lfofreq'), 90); inst.e.trigger(0, 100, 60);
+  const cents = new Set();
+  for (let b = 0; b < 2000; b++) { inst.e.renderBlock(0); const c = 1200 * Math.log2(inst.e.voices[0].osc.freq / 440); cents.add(Math.round(((c % 100) + 100) % 100)); }
+  assert.ok(cents.size > 20, `an LFO on coarse lands between semitones (${cents.size} different cents)`); n++; }
 console.log(`decimals: ${n} checks pass`);
