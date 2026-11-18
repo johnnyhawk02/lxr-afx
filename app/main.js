@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmqs5iy';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic, soundToBasic } from '../sound/tables.js?v=mwmqs5iy';
-import { presetName, jumble } from './names.js?v=mwmqs5iy';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmqs5iy';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmqs5iy';
-import { breed, isDud } from '../sound/breed.js?v=mwmqs5iy';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmqs5iy';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmqs5iy';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmqs5iy';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmqs5iy';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmqs5iy';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmri8vp';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, NOISE, NOISE_POS, classicPlace, soundToTable } from '../sound/tables.js?v=mwmri8vp';
+import { presetName, jumble } from './names.js?v=mwmri8vp';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmri8vp';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmri8vp';
+import { breed, isDud } from '../sound/breed.js?v=mwmri8vp';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmri8vp';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmri8vp';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmri8vp';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmri8vp';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmri8vp';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -86,8 +86,9 @@ const onSounds = () => SOUNDS.map((_, i) => i).filter(engineOn);
 const BLEND_STORE = 'lxr-afx-blends-v1';
 let savedSounds = [];
 try { savedSounds = (JSON.parse(localStorage.getItem(BLEND_STORE)) || []).map(tidySound).filter(Boolean); } catch (e) { /* none */ }
-// the bucket moved onto the BASIC wavetable (2026-11-18): the sounds saved in this browser go with it, once
-try { if (!localStorage.getItem('lxr-afx-basic')) { savedSounds = savedSounds.map(soundToBasic); localStorage.setItem(BLEND_STORE, JSON.stringify(savedSounds)); localStorage.setItem('lxr-afx-basic', '1'); } } catch (e) { /* as they are */ }
+// the bucket moved onto the wavetables (2026-11-18: BASIC, and NOISE for the noise): the sounds saved in this browser go
+// with it, once
+try { if (!localStorage.getItem('lxr-afx-tables')) { savedSounds = savedSounds.map(soundToTable); localStorage.setItem(BLEND_STORE, JSON.stringify(savedSounds)); localStorage.setItem('lxr-afx-tables', '1'); } } catch (e) { /* as they are */ }
 const inRepo = new Set(BUCKET.map((s) => s.name));
 const bucket = () => [...BUCKET, ...savedSounds.filter((s) => !inRepo.has(s.name))];
 
@@ -108,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmqs5iy', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmri8vp', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
@@ -1169,44 +1170,48 @@ const selVoice = () => SOUNDS[S.sel].engineVoice;
 function openTools(open) { $('tools-panel').hidden = !open; $('tools-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openSettings(false); } }
 $('tools-btn').addEventListener('click', () => openTools($('tools-panel').hidden));
 // ALL KEYS TO WAVETABLE: every key moved onto the table picked beside the button (BASIC as it comes). From CLASSIC onto
-// BASIC a key goes to the place that plays its wave (sine, triangle, saw, square, or the pulse of its PWM:
-// sound/tables.js classicOnBasic), so it sounds as it did; a noise wave has no frame there and stays on CLASSIC. Onto
-// any other table, or from one table to another, the WAVE knob stays where it is and becomes the place along the new
-// table. Locked keys stay, and so does an engine whose WAVE or TABLE knob is padlocked. The engine's base sound (what a
-// key with no sound of its own plays) moves too. AUTO LEVEL on, each moved key is measured and levelled again. UNDO
-// takes it back
+// BASIC a key goes to the place that plays its wave (sound/tables.js classicPlace), so it sounds as it did: the noise
+// onto NOISE, at its stepped noise. Onto NOISE, a classic noise goes there too. Onto any other table, or from one table
+// to another, the WAVE knob stays where it is and becomes the place along the new table. Locked keys stay, and so does
+// an engine whose WAVE or TABLE knob is padlocked. The engine's base sound (what a key with no sound of its own plays)
+// moves too. AUTO LEVEL on, each moved key is measured and levelled again. UNDO takes it back
 let toTable = BASIC;
-// where a key playing wave on table cur goes on table to: its WAVE knob there, or null if it stays
-const placeOn = (to, cur, wave, pwm) => (cur === to ? null : cur === 0 && to === BASIC ? classicOnBasic(wave, pwm) : wave);
+// where a key playing wave on table cur goes, picked table to: [table, WAVE knob], or null if it's there already
+const noisy = (wave) => wave > WAVE_TOP - 12.5;
+function placeOn(to, cur, wave, pwm) {
+  if (cur === to) return null;
+  if (cur === 0 && to === BASIC) { const p = classicPlace(wave, pwm); return p[0] === cur ? null : p; }
+  if (cur === 0 && to === NOISE && noisy(wave)) return [NOISE, NOISE_POS];
+  return [to, wave];
+}
 function keysToTable(sound, n, to) {
   const v = SOUNDS[sound].engineVoice, w = ukeyPar(v, 'wave'), pw = ukeyPar(v, 'pwm'), t = tablePar(v), z = SOUNDS[sound].zone;
   if (S.locks.has(w) || S.locks.has(t)) { n.padlock++; return; }
-  const why = (cur) => (cur === to ? 'there' : 'noise');
   const moves = [], stay = [];
   for (let note = z.lo; note <= z.hi; note++) {
     const ed = S.keyEdits[sound][note];
     if (ed && ed._lock) { n.locked++; continue; }
     if (!ed) continue; // (plays the base sound, moved below)
     const now = keyPatch(sound, note).vals, x = placeOn(to, now.get(t), now.get(w), now.get(pw));
-    if (x === null) { n[why(now.get(t))]++; stay.push([ed, now.get(t), now.get(w)]); } else moves.push([note, ed, x]);
+    if (x === null) { n.there++; stay.push([ed, now.get(t), now.get(w)]); } else moves.push([note, ed, x]);
   }
-  const bt = S.values[t], base = placeOn(to, bt, S.values[w], S.values[pw]);
+  const base = placeOn(to, S.values[t], S.values[w], S.values[pw]);
   if (base !== null) {
     // (a key that stays keeps what it plays, though the base under it moves)
     for (const [ed, cur, wave] of stay) { ed[t] ??= cur; ed[w] ??= wave; }
-    S.values[w] = base; S.values[t] = to;
+    S.values[t] = base[0]; S.values[w] = base[1];
   }
   let plain = 0;
   for (let note = z.lo; note <= z.hi; note++) if (!S.keyEdits[sound][note]) plain++;
-  if (base !== null) n.moved += plain; else n[why(bt)] += plain;
-  for (const [note, ed, x] of moves) { ed[w] = x; ed[t] = to; levelKey(sound, note); n.moved++; }
+  if (base !== null) n.moved += plain; else n.there += plain;
+  for (const [note, ed, [tab, x]] of moves) { ed[t] = tab; ed[w] = x; levelKey(sound, note); n.moved++; }
 }
 async function allToTable() {
-  const to = toTable, name = TABLE_NAMES[to].toUpperCase(), n = { moved: 0, noise: 0, locked: 0, there: 0, padlock: 0 };
-  const left = () => [[n.noise, 'with a noise wave (on CLASSIC)'], [n.there, `on ${name} already`], [n.locked, 'locked']].filter(([k]) => k).map(([k, why]) => `${k} ${why}`);
+  const to = toTable, name = TABLE_NAMES[to].toUpperCase(), n = { moved: 0, locked: 0, there: 0, padlock: 0 };
+  const left = () => [[n.there, `on ${name} already`], [n.locked, 'locked']].filter(([k]) => k).map(([k, why]) => `${k} ${why}`);
   await randChange(() => onSounds().forEach((i) => keysToTable(i, n, to)), `all keys to <em>${name}</em>`);
   drawKeymap();
-  const rest = left(), how = to === BASIC ? 'each playing its wave as before' : 'the WAVE knob now its place along the table';
+  const rest = left(), how = to === BASIC ? 'each playing its wave as before (a noise onto NOISE)' : 'the WAVE knob now its place along the table';
   detail(n.moved ? `<em>${n.moved} key${n.moved === 1 ? '' : 's'}</em> moved onto ${name}, ${how}${rest.length ? `; left as they were: ${rest.join(', ')}` : ''}${n.padlock ? `; ${n.padlock} engine${n.padlock === 1 ? '' : 's'} skipped (WAVE or TABLE padlocked)` : ''} (UNDO takes it back)`
     : `no key to move: ${rest.join(', ') || `none to move onto ${name}`}${n.padlock ? `, ${n.padlock} engine${n.padlock === 1 ? '' : 's'} padlocked` : ''}`);
   openTools(false);
@@ -1215,7 +1220,7 @@ async function allToTable() {
 function drawToTable() {
   const b = $('to-which'); b.textContent = TABLE_NAMES[toTable].toUpperCase();
   b.title = `The wavetable ALL KEYS TO WAVETABLE moves the keys onto: ${TABLE_NAMES[toTable].toUpperCase()}. Click for the next (Shift: the one before)`;
-  $('to-cap').innerHTML = toTable === BASIC ? 'EVERY KEY ONTO BASIC, SOUNDING AS IT DID<br>(NOISE STAYS ON CLASSIC)' : `EVERY KEY ONTO ${TABLE_NAMES[toTable].toUpperCase()},<br>THE WAVE KNOB ITS PLACE ALONG IT`;
+  $('to-cap').innerHTML = toTable === BASIC ? 'EVERY KEY ONTO BASIC, SOUNDING AS IT DID<br>(A NOISE ONTO NOISE)' : `EVERY KEY ONTO ${TABLE_NAMES[toTable].toUpperCase()},<br>THE WAVE KNOB ITS PLACE ALONG IT`;
 }
 $('to-which').addEventListener('click', (ev) => { const k = TABLE_NAMES.length - 1; toTable = ((toTable - 1 + (ev.shiftKey ? k - 1 : 1)) % k) + 1; drawToTable(); });
 drawToTable();

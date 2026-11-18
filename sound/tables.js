@@ -2,17 +2,21 @@
 // the WAVE dial, as always), 1 to 11 are METAMORF's built-in tables (engine/wavetables.js), made from maths when first
 // used. A table is plain data, so the page builds it and posts it to the AudioWorklet, which never builds one while it
 // plays (it plays CLASSIC until the table arrives).
-import { BUILTINS, need, holds, table, hold, drop, read } from '../engine/wavetables.js?v=mwmqs5iy';
+import { BUILTINS, need, holds, table, hold, drop, read, fromFrames } from '../engine/wavetables.js?v=mwmri8vp';
+import { NOISE_TABLES } from '../engine/noise-tables.js?v=mwmri8vp';
 
-export const TABLE_IDS = [null, ...BUILTINS.map((b) => b[0])];
-export const TABLE_NAMES = ['classic', ...BUILTINS.map((b) => b[1].toLowerCase())];
+// (then LXR-AFX's own: NOISE and DUST, engine/noise-tables.js, read slower by their div)
+export const TABLE_IDS = [null, ...BUILTINS.map((b) => b[0]), ...NOISE_TABLES.map((b) => b[0])];
+export const TABLE_NAMES = ['classic', ...BUILTINS.map((b) => b[1].toLowerCase()), ...NOISE_TABLES.map((b) => b[1].toLowerCase())];
+const OWN = new Map(NOISE_TABLES.map((b) => [b[0], b]));
+function own(id) { if (holds(id)) return table(id); const [, name, frames, div, view] = OWN.get(id), t = fromFrames(id, name, frames()); t.div = div; t.view = view; hold(t); return t; }
 export const tableId = (i) => TABLE_IDS[Math.round(i)] || null;
 /** the table to play for TABLE value i (null: CLASSIC). build: make it here if it isn't made yet (false: only one
  *  already held, as the AudioWorklet wants) */
 export function tableFor(i, build = true) {
   const id = tableId(i);
   if (!id) return null;
-  return build ? need(id) : holds(id) ? table(id) : null;
+  return build ? (OWN.has(id) ? own(id) : need(id)) : holds(id) ? table(id) : null;
 }
 export { hold, holds, drop };
 
@@ -33,7 +37,9 @@ function classicAt(k, x, pwm) {
 }
 export function waveShape(i, wave, pwm = 0, n = 96) {
   const out = new Float32Array(n), t = tableFor(i, true);
-  if (t) { const pos = Math.min(Math.max(wave / (WAVE_STEP * (CLASSIC_WAVES - 1)), 0), 1); for (let j = 0; j < n; j++) out[j] = read(t, pos, j / n, 20, 44140); return out; }
+  if (t) { const pos = Math.min(Math.max(wave / (WAVE_STEP * (CLASSIC_WAVES - 1)), 0), 1) || 0; const v = t.view || 1, sub = t.div ? (v < 1 ? 4 : 64) : 1; // (a noise table: a few of its steps, or DUST whole, each point the biggest of several so no click is missed)
+    for (let j = 0; j < n; j++) { let m = 0; for (let q = 0; q < sub; q++) { const y = read(t, pos, (j + q / sub) / n * v, 20 / (t.div || 1), 44140); if (Math.abs(y) > Math.abs(m)) m = y; } out[j] = m; }
+    return out; }
   const p = Math.min(Math.max(wave, 0), WAVE_STEP * (CLASSIC_WAVES - 1)) / WAVE_STEP, k = Math.min(Math.floor(p), CLASSIC_WAVES - 2), f = p - k;
   for (let j = 0; j < n; j++) { const a = classicAt(k, j / n, pwm), b = classicAt(k + 1, j / n, pwm); out[j] = a + (b - a) * f; }
   return out;
@@ -54,12 +60,15 @@ export function classicOnBasic(wave, pwm) {
   return Math.round(frame / 40 * WAVE_TOP * 100) / 100;
 }
 
-// a sound (sound/bucket.js: params by name) on CLASSIC moved onto BASIC as classicOnBasic places it; a noise wave, or a
-// sound already on a table, comes back as it was (the same object)
-export function soundToBasic(snd) {
+// a CLASSIC wave's table and place: BASIC (classicOnBasic), or for the noise NOISE at its stepped noise (frame 20 of
+// 40, the firmware's noise: a new random level each cycle). A blend between the pwm wave and noise goes to the nearer
+export const NOISE = TABLE_IDS.indexOf('lxr:noise'), NOISE_POS = WAVE_TOP / 2;
+export const classicPlace = (wave, pwm) => (wave > WAVE_TOP - WAVE_STEP / 2 ? [NOISE, NOISE_POS] : [BASIC, classicOnBasic(Math.min(wave, WAVE_TOP - WAVE_STEP), pwm)]);
+// a sound (sound/bucket.js: params by name) on CLASSIC moved onto its table (classicPlace); a sound already on a table
+// comes back as it was (the same object)
+export function soundToTable(snd) {
   const p = snd.params || {};
   if (p.table) return snd;
-  const x = classicOnBasic(p.wave ?? 0, p.pwm ?? 0);
-  return x === null ? snd : { ...snd, params: { ...p, wave: x, table: BASIC } };
+  const [table, wave] = classicPlace(p.wave ?? 0, p.pwm ?? 0);
+  return { ...snd, params: { ...p, wave, table } };
 }
-

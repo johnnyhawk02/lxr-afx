@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwmqs5iy';
+import { read as readTable } from './wavetables.js?v=mwmri8vp';
 
 export { PAR, CC, CC2 };
 
@@ -156,7 +156,7 @@ function detent(x, step, last) {
 }
 function osc_setPos(osc, x) {
   osc.wraw = x;
-  if (osc.wtab) { const p = x / WAVE_MAX; osc.wpos = p < 0 ? 0 : p > 1 ? 1 : p; osc.wB = -1; return; } // (a wavetable: the knob moves along it)
+  if (osc.wtab) { const p = x / WAVE_MAX; osc.wpos = p > 0 ? (p > 1 ? 1 : p) : 0; /* (and 0 for no number) */ osc.wB = -1; return; } // (a wavetable: the knob moves along it)
   const [k, t] = detent(x, WAVE_STEP, WAVE_ORDER.length - 1);
   osc.waveform = WAVE_ORDER[k];
   if (t > 0) { osc.wB = WAVE_ORDER[k + 1]; osc.wt = t; } else osc.wB = -1;
@@ -309,13 +309,13 @@ const BASIC_ID = 'builtin:basic';
 // tables are read a quarter behind: a sound moved onto BASIC starts and runs in the same phase
 const LAG = PHASE_ONE * 3 / 4;
 function calcWtBlock(osc, mod, buf, size, gain) {
-  const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767);
+  const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767), div = t.div || 1;
   const sine = mod && t.id === BASIC_ID ? Math.max(0, 1 - pos * (t.frames - 1) / 10) : 0; // (how much of the sine's FM depth)
   for (let i = 0; i < size; i++) {
     const phase = osc.phase;
     let p = ((pm ? phase + pm[i] : phase) + LAG) >>> 0, out;
     if (mod) {
-      const m = toU32(f(mod[i] * osc.fmMod)), pT = (p + ((m << 19) >>> 0)) >>> 0;
+      const m = toU32(f(mod[i] * osc.fmMod)), pT = (p + (div > 1 ? Math.floor(((m << 19) >>> 0) / div) : (m << 19) >>> 0)) >>> 0; // (FM as deep in steps on a noise table)
       out = readTable(t, pos, pT / PHASE_ONE, hz, REAL_FS);
       if (sine > 0) { const pS = (p + ((m << 17) >>> 0)) >>> 0, s = readTable(t, pos, pS / PHASE_ONE, hz, REAL_FS); out = s + (out - s) * (1 - sine); }
     } else out = readTable(t, pos, p / PHASE_ONE, hz, REAL_FS);
@@ -359,7 +359,7 @@ function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
 
 function osc_setFreq(osc) {
   const cur = f(f(osc.freq * osc.pitchMod) * osc.modNodeValue);
-  if (osc.wtab) { osc.hz = Math.abs(cur); /* (pitch modulation can take the frequency below 0: it then runs backwards) */ osc.phaseInc = toU32(f(cur / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
+  if (osc.wtab) { const d = osc.wtab.div || 1; osc.hz = Math.abs(cur) / d || 0; /* (pitch modulation can take the frequency below 0: it then runs backwards) */ osc.phaseInc = toU32(f(cur / d / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
   if (osc.wB >= 0) { // between two waves: one phase for both (the tables' format; the sine's is the same frequency)
     osc.phaseInc = freq2PhaseIncr1024(cur);
     const idx = freqToTableIndex(cur);
