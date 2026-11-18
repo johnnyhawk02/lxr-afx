@@ -4,7 +4,7 @@
 // port as it was any more, it changes with the page)
 import { readFileSync, writeFileSync } from 'node:fs';
 const v = Date.now().toString(36);
-for (const f of ['index.html', 'app/main.js', 'sound/morph.js', 'sound/instrument.js', 'sound/worklet.js', 'sound/dirt.js', 'sound/level.js', 'sound/breed.js', 'sound/schema.js', 'sound/makers.js', 'sound/bucket.js']) {
+for (const f of ['index.html', 'app/main.js', 'engine/lxr.js', 'sound/tables.js', 'sound/morph.js', 'sound/instrument.js', 'sound/worklet.js', 'sound/dirt.js', 'sound/level.js', 'sound/breed.js', 'sound/schema.js', 'sound/makers.js', 'sound/bucket.js']) {
   const s = readFileSync(f, 'utf8'), t = s.replace(/\?v=[0-9a-z]+/g, '?v=' + v);
   if (t !== s) writeFileSync(f, t);
 }

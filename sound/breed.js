@@ -15,10 +15,11 @@
 // voice) goes with the LFO
 // (the merged voice's sections: mod A and mod B are one gene, the FM; the noise goes with the tone; the filter with
 // what goes into it; the kind with the amp, whose last steps it sets)
-export const GENES = [['osc', 'pitch', 'noise'], ['mod a', 'mod b'], ['amp', 'kind'], ['click'], ['filter', 'filter in'], ['lfo', 'velocity', 'mod'], ['mix']];
+export const GENES = [['osc', 'table', 'pitch', 'noise'], ['mod a', 'mod b'], ['amp', 'kind'], ['click'], ['filter', 'filter in'], ['lfo', 'velocity', 'mod'], ['mix']];
 export const BREED_NUDGE = 0.06;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+const dec2 = (x) => Math.round(x * 100) / 100; // a knob's value kept to two decimal places (as schema.js dec2)
 
 export function breed({ schema, a, b, rnd, nudge = BREED_NUDGE }) {
   const sectionOf = new Map(schema.map((e) => [e.par, e.section]));
@@ -39,7 +40,7 @@ export function breed({ schema, a, b, rnd, nudge = BREED_NUDGE }) {
   if (nudge > 0) for (const e of schema) {
     if (!out.has(e.par) || e.strict || e.max < 20 || !Array.isArray(e.rand) || (e.display.type !== 'num' && e.display.type !== 'pm')) continue;
     const h = out.get(e.par), [r0, r1] = e.rand, lo = Math.min(r0, h), hi = Math.max(r1, h);
-    out.set(e.par, clamp(Math.round(h + (rnd() * 2 - 1) * nudge * (r1 - r0)), lo, hi));
+    out.set(e.par, clamp(dec2(h + (rnd() * 2 - 1) * nudge * (r1 - r0)), lo, hi));
   }
   return { vals: [...out], from: Object.fromEntries([...pick].map(([g, w]) => [GENES[g].join('+'), w])) };
 }
