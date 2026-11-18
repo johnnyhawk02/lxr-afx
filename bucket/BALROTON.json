@@ -5,7 +5,7 @@
  "params": {
   "coarse": 52,
   "fine": 63,
-  "wave": 25,
+  "wave": 31.25,
   "pwm": 0,
   "afreq": 127,
   "again": 30,
@@ -124,6 +124,7 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127
+  "modamt:drive": 127,
+  "table": 1
  }
 }

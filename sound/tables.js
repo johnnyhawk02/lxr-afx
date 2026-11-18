@@ -2,7 +2,7 @@
 // the WAVE dial, as always), 1 to 11 are METAMORF's built-in tables (engine/wavetables.js), made from maths when first
 // used. A table is plain data, so the page builds it and posts it to the AudioWorklet, which never builds one while it
 // plays (it plays CLASSIC until the table arrives).
-import { BUILTINS, need, holds, table, hold, drop, read } from '../engine/wavetables.js?v=mwmp8s9g';
+import { BUILTINS, need, holds, table, hold, drop, read } from '../engine/wavetables.js?v=mwmqe1ig';
 
 export const TABLE_IDS = [null, ...BUILTINS.map((b) => b[0])];
 export const TABLE_NAMES = ['classic', ...BUILTINS.map((b) => b[1].toLowerCase())];
@@ -53,3 +53,13 @@ export function classicOnBasic(wave, pwm) {
   const frame = anchors[k] + (anchors[k + 1] - anchors[k]) * fr;
   return Math.round(frame / 40 * WAVE_TOP * 100) / 100;
 }
+
+// a sound (sound/bucket.js: params by name) on CLASSIC moved onto BASIC as classicOnBasic places it; a noise wave, or a
+// sound already on a table, comes back as it was (the same object)
+export function soundToBasic(snd) {
+  const p = snd.params || {};
+  if (p.table) return snd;
+  const x = classicOnBasic(p.wave ?? 0, p.pwm ?? 0);
+  return x === null ? snd : { ...snd, params: { ...p, wave: x, table: BASIC } };
+}
+

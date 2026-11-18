@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwmp8s9g';
+import { read as readTable } from './wavetables.js?v=mwmqe1ig';
 
 export { PAR, CC, CC2 };
 
@@ -359,7 +359,7 @@ function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
 
 function osc_setFreq(osc) {
   const cur = f(f(osc.freq * osc.pitchMod) * osc.modNodeValue);
-  if (osc.wtab) { osc.hz = cur; osc.phaseInc = toU32(f(cur / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
+  if (osc.wtab) { osc.hz = Math.abs(cur); /* (pitch modulation can take the frequency below 0: it then runs backwards) */ osc.phaseInc = toU32(f(cur / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
   if (osc.wB >= 0) { // between two waves: one phase for both (the tables' format; the sine's is the same frequency)
     osc.phaseInc = freq2PhaseIncr1024(cur);
     const idx = freqToTableIndex(cur);

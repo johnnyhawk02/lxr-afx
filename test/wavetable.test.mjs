@@ -87,7 +87,8 @@ for (let v = 0; v < 6; v++) {
   const s = fromVoice(vals, 0, { name: 'T', type: 'drum 1' });
   assert.equal(s.params.table, 8); assert.equal(tidy(s).params.table, 8);
   assert.equal(new Map(toVoice(s, 4)).get(tablePar(4)), 8); n += 3;
-  assert.equal(new Map(toVoice(drum, 2)).get(tablePar(2)) ?? 0, 0); n++; // (an older sound: CLASSIC)
+  const { table, ...old } = drum.params; assert.equal(table, 1); // (the bucket is on BASIC)
+  assert.equal(new Map(toVoice({ ...drum, params: old }, 2)).get(tablePar(2)) ?? 0, 0); n += 2; // (an older sound: CLASSIC)
 }
 
 // AUTO LEVEL measures a key with its table
