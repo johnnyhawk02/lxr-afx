@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { LxrInstrument } from '../sound/instrument.js';
 import { SOUNDS, INIT_VALUES, ALL_PARAMS, tablePar, ukeyPar, modOf, extraPar, VOICE_SCHEMAS } from '../sound/schema.js';
-import { TABLE_NAMES, tableFor, classicOnBasic, BASIC, waveShape, frameStep, WAVE_TOP } from '../sound/tables.js';
+import { TABLE_NAMES, tableFor, classicOnBasic, BASIC, waveShape, frameStep, WAVE_TOP, NOISE, NOISE_POS, classicPlace, soundToTable } from '../sound/tables.js';
 import { BUCKET } from '../sound/bucket-sounds.js';
 import { toVoice, fromVoice, tidy } from '../sound/bucket.js';
 import { measure } from '../sound/level.js';
@@ -13,7 +13,7 @@ import { WAVE_MAX } from '../engine/lxr.js';
 
 let n = 0;
 const ok = (c, m) => { assert.ok(c, m); n++; };
-assert.equal(TABLE_NAMES.length, 12); assert.equal(TABLE_NAMES[0], 'classic'); n += 2;
+assert.equal(TABLE_NAMES.length, 14); assert.equal(TABLE_NAMES[0], 'classic'); n += 2;
 
 // a bucket sound on voice v with its TABLE and WAVE set: the voice's output, blocks long
 function play(snd, v, table, wave, { blocks = 120, build = true, setup } = {}) {
@@ -121,5 +121,21 @@ for (let v = 0; v < 6; v++) {
   ok(c.length === 96 && c.every((x) => Math.abs(x) <= 1.01), 'the picture is one cycle within -1..1');
   ok(c.every((x, i) => Math.abs(x - t[i]) < 0.02), 'CLASSIC sine and BASIC sine draw alike');
   ok(frameStep(0) === 0 && Math.abs(frameStep(BASIC) - WAVE_TOP / 40) < 1e-9, 'neighbour frames: none on CLASSIC, one frame apart on BASIC');
+}
+
+// NOISE and DUST: LXR-AFX's own tables, read STEPS times slower so their random steps come at the key's pitch
+{
+  ok(TABLE_NAMES[NOISE] === 'noise' && TABLE_NAMES[NOISE + 1] === 'dust', 'NOISE and DUST follow the METAMORF tables');
+  const t = tableFor(NOISE), d = tableFor(NOISE + 1);
+  ok(t.div === 256 && d.div === 256 && t.frames === 41 && d.frames === 33, 'NOISE (41 frames) and DUST (33) read 256 times slower');
+  assert.deepEqual(classicPlace(WAVE_TOP, 0), [NOISE, NOISE_POS]); assert.deepEqual(classicPlace(0, 0), [BASIC, 0]); n += 2;
+  assert.equal(soundToTable({ params: { wave: 125 } }).params.table, NOISE); n++;
+  ok(BUCKET.every((s) => s.params.table > 0), 'every bucket sound is on a table');
+  // the firmware's noise and NOISE's stepped noise: a new level at the key's pitch, so as busy (zero crossings) and loud
+  const snd = BUCKET.find((s) => s.params.table === NOISE && s.params.nmix === 0 && s.params.again === 0) || BUCKET.find((s) => s.params.table === NOISE);
+  const zc = (x) => { let c = 0; for (let i = 1; i < x.length; i++) if ((x[i - 1] < 0) !== (x[i] < 0)) c++; return c; };
+  const a = play(snd, snd.voice, 0, WAVE_TOP, { blocks: 80 }).out, b = play(snd, snd.voice, NOISE, NOISE_POS, { blocks: 80 }).out;
+  ok(Math.abs(zc(a) - zc(b)) <= 0.2 * zc(a) + 4 && rms(b) > 0.5 * rms(a) && rms(b) < 2 * rms(a), `NOISE plays like the classic noise (${zc(a)} / ${zc(b)} crossings, ${rms(a).toFixed(0)} / ${rms(b).toFixed(0)} rms)`);
+  for (const [tab, pos] of [[NOISE, 0], [NOISE, 90], [NOISE, 125], [NOISE + 1, 0], [NOISE + 1, 125]]) { const o = play(snd, snd.voice, tab, pos, { blocks: 40 }).out; ok(o.every(Number.isFinite) && rms(o) > 0, `${TABLE_NAMES[tab]} at ${pos} sounds`); }
 }
 console.log(`wavetable: ${n} checks pass`);
