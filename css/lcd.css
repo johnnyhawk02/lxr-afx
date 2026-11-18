@@ -513,7 +513,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 html.phone, html.phone body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 html.phone body { padding: 4px; touch-action: none; }
 html.phone .screen { display: block; height: calc(100vh - 8px); height: calc(100dvh - 8px); max-width: 520px; padding: 8px; border-width: 4px; border-radius: 10px; font-size: 18px; }
-html.phone .screen > :not(.pv):not(.start) { display: none; }
+html.phone .screen > :not(.blender):not(.start) { display: none; }
 html.phone .dk, html.phone #start-text { display: none; }
 html.phone .ph { display: revert; }
 html.phone .start { gap: 14px; padding: 0 18px; background: rgb(var(--panel-rgb) / .95); }
@@ -687,3 +687,27 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .blitem button:hover { background: var(--tint); }
 .blrow.five { grid-template-columns: repeat(5, 1fr); }
 .blmods { margin-top: 6px; font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- the PHONE is the blender alone (Johnny, 2026-11-18: "use the phone to solely generate and put sounds in the
+   bucket"): the popup fills the screen, on a 4-column grid, and scrolls if it must ---- */
+.blmsg { display: none; }
+html.phone .blender, html.phone .blender[hidden] { position: static; display: block; height: 100%; background: none; }
+html.phone .blbox { width: 100%; max-height: 100%; height: 100%; border: 0; box-shadow: none; padding: 2px; touch-action: pan-y; }
+html.phone #bl-close, html.phone #bl-key { display: none; }
+html.phone .blbox h3:first-child { flex-wrap: wrap; font-size: 20px; row-gap: 2px; }
+html.phone .blbox h3:first-child .dim { flex-basis: 100%; }
+html.phone .blpick { grid-template-columns: 30px repeat(4, minmax(0, 1fr)); row-gap: 6px; }
+html.phone .blpick .bl-tag { grid-row: span 2; }
+html.phone .blpick select { grid-column: 2 / -1; }
+html.phone .blpick .btn { min-height: 40px; }
+html.phone .blbox .hb { grid-template-columns: 58px 1fr 48px; }
+html.phone .blbox .htrack { height: 34px; }
+html.phone .blnames { grid-template-columns: 58px 1fr 1fr 48px; font-size: 15px; }
+html.phone .blrow, html.phone .blrow.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html.phone .blrow .btn { min-height: 44px; }
+html.phone #bl-play { grid-column: 1 / -1; }
+html.phone .blrow .pname { grid-column: 1 / -1; min-height: 44px; }
+html.phone #bl-export, html.phone .blrow .note { grid-column: 1 / -1; }
+html.phone .blmsg { display: block; margin-top: 6px; min-height: 2.3em; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+html.phone .bllist { max-height: none; }
+html.phone #bl-pair { grid-column: 1 / -1; }

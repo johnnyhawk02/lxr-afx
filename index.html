@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwmf8td0">
+<link rel="stylesheet" href="css/lcd.css?v=mwmfd9dt">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -191,7 +191,7 @@
   <div class="start" id="start">
     <button class="btn big" id="start-btn"><span class="dk">START AUDIO + MIDI</span><span class="ph">START</span></button>
     <p id="start-text"></p>
-    <p class="ph" id="start-phone">A pad for each of the 25 keys: drum, snare and metal. Press a pad to play it. NEW SOUND rolls the pad you pressed last.</p>
+    <p class="ph" id="start-phone">The sound blender: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
   </div>
   <div class="blender" id="blender" hidden>
     <div class="blbox" role="dialog" aria-label="Sound blender">
@@ -208,6 +208,7 @@
         <button class="btn" id="bl-key" title="Put the blend on the key on screen (UNDO takes it back)">PUT ON KEY</button>
       </div>
       <div class="dim blmods" id="bl-modtext"></div>
+      <div class="blmsg" id="bl-msg"></div>
       <h3>SAVE TO THE BUCKET</h3>
       <div class="blrow">
         <input class="pname" id="bl-name" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="The new sound's name" title="The new sound's name: type one, or press NEW NAME">
@@ -235,6 +236,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwmf8td0"></script>
+<script type="module" src="app/main.js?v=mwmfd9dt"></script>
 </body>
 </html>
