@@ -613,3 +613,26 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .menupanel.settings .btn.theme { background: var(--tp); color: var(--ti); border-color: var(--ti); text-shadow: none; padding: 3px 4px; }
 .menupanel.settings .btn.theme[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); }
 .menupanel.settings .lowkey.colour input, .menupanel.settings .lowkey.colour .btn { grid-column: 2 / 5; width: 100%; height: 34px; padding: 0 2px; border: 2px solid var(--ink); border-radius: 3px; background: transparent; cursor: pointer; }
+
+/* ---- the key row: the key strip (and the engine bar under it) starts under the key's engine info, on its column;
+   the dice and ALTER KEY are pictures in the key's row of buttons ---- */
+.keyhead { grid-template-areas: "name info acts" ". strip strip"; }
+.keystrip { justify-content: flex-start; }
+.keyacts .dicebtn { width: 36px; height: 36px; margin: 0; }
+.keyacts .iconbtn + .keylock { margin-left: 8px; }
+.keyacts .dicebtn .die { border-radius: 5px; }
+.keyacts .iconbtn { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; }
+.keyacts .iconbtn svg { width: 26px; height: 22px; fill: var(--panel); stroke: currentColor; stroke-width: 2; }
+.keyacts .iconbtn:hover svg { fill: var(--tint); }
+.keyacts .iconbtn:active svg rect { fill: currentColor; }
+.keylocked .keyhead .dicebtn .die { border-color: var(--panel); }
+.keylocked .keyhead .dicebtn .pip { fill: var(--panel); }
+.keylocked .keyhead .iconbtn svg { fill: var(--ink); }
+.keyacts .dicebtn:disabled { opacity: .35; cursor: default; }
+.keyacts .iconbtn kbd { margin-left: 0; }
+/* MAKE THIS KEY: under the key's buttons, two rows of six, right of the key strip */
+.keyhead { grid-template-columns: auto auto 1fr auto; grid-template-areas: "name info . acts" ". strip strip make"; }
+.keymake { grid-area: make; display: grid; grid-template-columns: auto repeat(6, 1fr); grid-template-rows: repeat(2, auto); gap: 3px 5px; align-self: end; }
+.keymake .mkl { grid-row: 1 / 3; align-self: center; font-size: 13px; line-height: 1; letter-spacing: .12em; padding-right: 4px; }
+.keymake .mk { display: contents; }
+.keymake .btn { min-height: 0; height: 24px; padding: 0 4px; font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; }
