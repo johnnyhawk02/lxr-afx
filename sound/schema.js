@@ -21,7 +21,7 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwle0w5j';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwle80c2';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -284,6 +284,9 @@ function buildSchema(voice) {
 
 // the schema of each engine voice (index 0..5); a sound's schema is its engine voice's
 export const VOICE_SCHEMAS = [0, 1, 2, 3, 4, 5].map(buildSchema);
+// PWM's width: a hand or a randomiser never sets it below 1 (at 0 the PWM wave is silent, and a blend into it from the
+// rec jumps through the drive); a kit sound that comes with 0 keeps it, so it plays as it did (Johnny, 2026-11-18)
+for (const sc of VOICE_SCHEMAS) for (const e of sc) if (e.ukey === 'pwm') e.floor = 1;
 // the extras a voice uses (the instrument passes only these to the engine: the others shadow a firmware parameter)
 export const EXTRA_LIVE = new Set(VOICE_SCHEMAS.flat().filter((e) => e.extra !== undefined).map((e) => e.par));
 // a voice's control by its merged name
