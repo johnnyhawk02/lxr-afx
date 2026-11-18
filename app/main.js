@@ -2,16 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2 } from '../sound/schema.js?v=mwmntcdy';
-import { presetName, jumble } from './names.js?v=mwmntcdy';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmntcdy';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmntcdy';
-import { breed, isDud } from '../sound/breed.js?v=mwmntcdy';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmntcdy';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmntcdy';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmntcdy';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmntcdy';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmntcdy';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmo73go';
+import { TABLE_NAMES, tableId, tableFor } from '../sound/tables.js?v=mwmo73go';
+import { presetName, jumble } from './names.js?v=mwmo73go';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmo73go';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmo73go';
+import { breed, isDud } from '../sound/breed.js?v=mwmo73go';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmo73go';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmo73go';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmo73go';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmo73go';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmo73go';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -92,11 +93,20 @@ const bucket = () => [...BUCKET, ...savedSounds.filter((s) => !inRepo.has(s.name
 // audio
 // ---------------------------------------------------------------------------------------------------------------
 let ctx = null, node = null;
-const send = (m) => { if (node) node.port.postMessage(m); };
+const send = (m) => { if (node) { postTables(m); node.port.postMessage(m); } };
+// a wavetable a message is about to use is made here and posted first (the AudioWorklet never makes one while it plays;
+// messages arrive in order, so it holds the table before the TABLE that asks for it). Made once, posted once
+const postedTables = new Set();
+function postTables(m) {
+  const want = (par, x) => { if (par >= TABLE_BASE && par < TABLE_BASE + 6 && x > 0) { const id = tableId(x); if (id && !postedTables.has(id)) { postedTables.add(id); node.port.postMessage({ type: 'table', t: tableFor(x) }); } } };
+  if (m.type === 'kit') for (let v = 0; v < 6; v++) want(TABLE_BASE + v, m.values[TABLE_BASE + v]);
+  else if (m.type === 'param') want(m.par, m.value);
+  else if (m.params) for (const [par, x] of m.params) want(par, x);
+}
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmntcdy', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmo73go', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -328,8 +338,10 @@ function onCC(cc, val) {
     const sc = VOICE_SCHEMAS[SOUNDS[S.sel].engineVoice];
     const e = t.label.map((l) => sc.find((x) => x.label === (OLD_LABELS[l] || l))).find(Boolean);
     if (!e) { showLastText(`CC${cc} · ${SOUNDS[S.sel].name} has no ${t.label[0]}`); return; }
-    let v = Math.round(val / 127 * e.max);
-    if (e.display.type === 'detent') { const k = Math.round(v / e.display.step) * e.display.step; if (Math.abs(v - k) <= 2) v = Math.min(k, e.max); } // (a dial's settings catch the knob)
+    let v = val / 127 * e.max; // (a decimal: a BS2 knob's 128 steps spread over the control's range)
+    if (e.display.type === 'detent' && !(e.ukey === 'wave' && tableNow(SOUNDS[S.sel].engineVoice) > 0)) { v = Math.round(v); const k = Math.round(v / e.display.step) * e.display.step; if (Math.abs(v - k) <= 2) v = Math.min(k, e.max); } // (a dial's settings catch the knob; not on a wavetable)
+    else if (e.max < 20 || e.display.type === 'menu' || e.display.type === 'target') v = Math.round(v); // (a menu or a count stays whole)
+    else v = dec2(v);
     editValue(e.par, v);
     text = `${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) : 'ALL'} ${e.label} ${showValue(e, v)}`;
   }
@@ -563,6 +575,7 @@ function buildFaders() {
       if (sec === 'seq') { seqPanel(sect(GRID_COLS + 1 - col, ' seq'), voice); continue; }
       const el = sect(list.length);
       el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
+      if (sec === 'osc') tablePicker(el.querySelector('h3'), voice);
       const row = el.querySelector('.row');
       for (const e of list) row.append(vfader(e));
       const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
@@ -589,6 +602,22 @@ function buildFaders() {
   drawFaders();
 }
 function drawFaders() { faderDraws.forEach((d) => d()); }
+// the tone's TABLE, in the OSC heading: CLASSIC (the firmware's waves on the WAVE dial) or one of METAMORF's wavetables,
+// which the WAVE knob then moves along. A click picks the next one (Shift: the one before)
+const tableNow = (voice) => Math.round(valueNow(tablePar(voice)) || 0);
+function tablePicker(h3, voice) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb tbl'; h3.classList.add('withbtn'); h3.append(b);
+  b.addEventListener('click', (ev) => {
+    const i = tableNow(voice), k = (i + (ev.shiftKey ? TABLE_NAMES.length - 1 : 1)) % TABLE_NAMES.length;
+    editValue(tablePar(voice), k); drawFaders();
+    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}TABLE <em>${TABLE_NAMES[k].toUpperCase()}</em>${k ? ': the WAVE knob moves along it' : ': the classic waves'}`);
+  });
+  faderDraws.push(() => {
+    const i = tableNow(voice);
+    b.textContent = TABLE_NAMES[i].toUpperCase(); b.classList.toggle('on', i > 0);
+    b.title = `The tone's wavetable: ${TABLE_NAMES[i].toUpperCase()}. ${i ? 'The WAVE knob moves along it, smoothly' : 'CLASSIC: the WAVE knob picks sine, tri, saw, rec, pwm or noise'}. Click for the next (Shift: the one before)`;
+  });
+}
 
 // ---- the key's 8-step sequencer: while the key is held and ACTIVE is on, it plays the lit steps in 1/16s on the BPM
 // grid, from the next 1/16 after the press, round and round; ACTIVE off, the key plays once as usual. RANDOM deals a
@@ -806,13 +835,16 @@ function vfader(e) {
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   tr.title = 'Drag up or down. Hold Shift for fine: tenths of a step';
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
+  // the tone's WAVE on a wavetable (TABLE not CLASSIC): POSITION along it, in % (no detents)
+  const onTable = () => e.ukey === 'wave' && e.par < NUM_PARAMS && tableNow(SOUNDS[S.sel].engineVoice) > 0;
+  const shown = (v) => (onTable() ? Math.round(v / e.max * 100) + '%' : showValue(e, v));
   if (e.display.lr) tr.querySelector('svg').insertAdjacentHTML('beforeend', LR_SVG);
   const draw = () => {
     const v = valueNow(e.par);
     lightRing(ticks, v, e.max, c);
     ptr.setAttribute('transform', `rotate(${knobDeg(v, e.max, c)} 32 32)`);
-    out.textContent = showValue(e, v);
-    tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', showValue(e, v));
+    out.textContent = shown(v); if (e.ukey === 'wave') el.querySelector('.lab').textContent = onTable() ? 'position' : e.label;
+    tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', shown(v));
     // the notch: editing a key, where the control was before you changed it; editing every key, where the last key
     // played has it
     const lm = lastMorph[S.sel], mv = editing() ? S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par] : lm && lm.values.get(e.par);
@@ -828,11 +860,11 @@ function vfader(e) {
   const step = e.display.type === 'detent' ? e.display.step : 0;
   const put = (x, fine) => {
     x = clamp(fine ? Math.round(x * 10) / 10 : Math.round(x), 0, e.max); // (SHIFT held: tenths of a step)
-    if (step && !fine) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
+    if (step && !fine && !onTable()) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
     if (x === valueNow(e.par)) return;
     editValue(e.par, x); draw();
 
-    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
+    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${shown(x)}</em>`);
   };
   dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
   // double-click: on a key, the control goes back to where it was before you changed it; on every key, back to the
@@ -844,7 +876,7 @@ function vfader(e) {
   };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
   el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
-  tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${showValue(e, valueNow(e.par))}</em>`));
+  tr.addEventListener('focus', () => detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${shown(valueNow(e.par))}</em>`));
   lock.addEventListener('click', () => {
     const on = !S.locks.has(e.par); if (on) S.locks.add(e.par); else S.locks.delete(e.par); save(); draw(); drawLocks();
     detail(on ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);

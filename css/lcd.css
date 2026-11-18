@@ -712,3 +712,7 @@ html.phone .blmsg { display: block; margin-top: 6px; min-height: 2.3em; font-siz
 html.phone .bllist { max-height: none; }
 html.phone #bl-pair { grid-column: 1 / -1; }
 html.phone #bl-clear { grid-column: 1 / -1; }
+/* the tone's TABLE (CLASSIC or a wavetable) in the OSC heading; lit when a wavetable plays */
+.faders .sect h3.withbtn { display: flex; align-items: center; gap: 6px; overflow: visible; }
+.faders .sect h3 .tbl { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
+.faders .sect h3 .tbl.on { background: var(--ink); color: var(--panel); }

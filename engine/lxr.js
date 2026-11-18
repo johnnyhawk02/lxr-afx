@@ -15,6 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
+import { read as readTable } from './wavetables.js?v=mwmo73go';
 
 export { PAR, CC, CC2 };
 
@@ -118,6 +119,9 @@ function makeOsc() {
     output: 0, pm: null, phaseInc: 0, phase: 0, freq: 0, waveform: 0, tableOffset: 0,
     pitchMod: 0, fmMod: 0, modNodeValue: 0, midiFreq: 0, baseNote: 0,
     coarseFrac: 0, fineFrac: 0, // (not in the firmware) the part of a decimal coarse or fine tune past its whole number
+    // (not in the firmware) a wavetable (null: the firmware's waves), where the WAVE knob is along it (0..1), the knob's
+    // value, and the frequency it plays (Hz)
+    wtab: null, wpos: 0, wraw: 0, hz: 0,
     wB: -1, wt: 0, // between two waves (not in the firmware): the next wave on the dial (-1: none) and how far towards it
   };
 }
@@ -151,6 +155,8 @@ function detent(x, step, last) {
   return [k, k < last ? f(p - k) : 0];
 }
 function osc_setPos(osc, x) {
+  osc.wraw = x;
+  if (osc.wtab) { const p = x / WAVE_MAX; osc.wpos = p < 0 ? 0 : p > 1 ? 1 : p; osc.wB = -1; return; } // (a wavetable: the knob moves along it)
   const [k, t] = detent(x, WAVE_STEP, WAVE_ORDER.length - 1);
   osc.waveform = WAVE_ORDER[k];
   if (t > 0) { osc.wB = WAVE_ORDER[k + 1]; osc.wt = t; } else osc.wB = -1;
@@ -290,11 +296,30 @@ function calcBlendBlock(osc, mod, buf, size, gain, pwm, rng) {
   }
 }
 
+// ---------------------------------------------------------------------------------------
+// The wavetable oscillator (not in the firmware): METAMORF's tables (wavetables.js), read band-limited for the pitch,
+// between frames by the WAVE knob. FM from mod A / B moves the read point as it does in the firmware's tables
+// ---------------------------------------------------------------------------------------
+const PHASE_ONE = 4294967296;
+function calcWtBlock(osc, mod, buf, size, gain) {
+  const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767);
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase;
+    let p = pm ? (phase + pm[i]) >>> 0 : phase;
+    if (mod) p = (p + ((toU32(f(mod[i] * osc.fmMod)) << 19) >>> 0)) >>> 0;
+    const out = readTable(t, pos, p / PHASE_ONE, hz, REAL_FS);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    osc.output = out * 32767;
+    buf[i] = toI16(f(out * g));
+  }
+}
+
 // waveforms above PWM are user samples, which this port doesn't load: they are silent (the
 // firmware without samples leaves the buffer as it was, so it replays whatever another part
 // of the voice put there last; the merged voice's parts keep their own buffers, so that would
 // no longer be the same garbage)
 function calcNextOscSampleBlock(osc, buf, size, gain, pwm, rng) {
+  if (osc.wtab) { calcWtBlock(osc, null, buf, size, gain); return; }
   if (osc.wB >= 0) { calcBlendBlock(osc, null, buf, size, gain, pwm, rng); return; }
   switch (osc.waveform) {
     case SINE: calcSineBlock(osc, buf, size, gain); break;
@@ -308,6 +333,7 @@ function calcNextOscSampleBlock(osc, buf, size, gain, pwm, rng) {
 }
 
 function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
+  if (osc.wtab) { calcWtBlock(osc, mod, buf, size, gain); return; }
   if (osc.wB >= 0) { calcBlendBlock(osc, mod, buf, size, gain, pwm, rng); return; }
   switch (osc.waveform) {
     case SINE: calcFmSineBlock(osc, mod, buf, size, gain); break;
@@ -322,6 +348,7 @@ function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
 
 function osc_setFreq(osc) {
   const cur = f(f(osc.freq * osc.pitchMod) * osc.modNodeValue);
+  if (osc.wtab) { osc.hz = cur; osc.phaseInc = toU32(f(cur / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
   if (osc.wB >= 0) { // between two waves: one phase for both (the tables' format; the sine's is the same frequency)
     osc.phaseInc = freq2PhaseIncr1024(cur);
     const idx = freqToTableIndex(cur);
@@ -935,6 +962,7 @@ function updatePan(v) {
 // oscillator start phase on trigger; "offset" transient mode (1) starts it later in the cycle
 // (between two waves, the nearer one's start)
 function resetPhase(osc, offset, sineStart) {
+  if (osc.wtab) { osc.phase = 0; return; } // (a wavetable starts its cycle at the start)
   const w = osc.wB >= 0 && osc.wt >= 0.5 ? osc.wB : osc.waveform;
   if (w === SINE) osc.phase = toU32(sineStart(offset));
   else if (w > SINE && w <= REC) osc.phase = toU32(f((0xff << 22) * offset));
@@ -1426,6 +1454,8 @@ export class LxrEngine {
     this.voices = VOICE_KINDS.map(makeVoice);
     this.drums = this.voices.slice(0, 3);
     [this.snare, this.cymbal, this.hat] = this.voices.slice(3);
+    // (not in the firmware) each voice's tone WAVE parameter and its oscillator, for the wavetables (setTable)
+    this.toneWave = new Map([PAR.OSC_WAVE_DRUM1, PAR.OSC_WAVE_DRUM2, PAR.OSC_WAVE_DRUM3, PAR.OSC_WAVE_SNARE, PAR.WAVE1_CYM, PAR.WAVE1_HH].map((p, n) => [p, this.voices[n].osc]));
     this.lfos = this.voices.map((v) => v.lfo);
     this.out = Array.from({ length: 6 }, () => new Int16Array(BLOCK));
     this._bA = new Int16Array(BLOCK); // mod A (with mod B summed in)
@@ -1527,6 +1557,18 @@ export class LxrEngine {
    * pitch envelope on the metal, FM on the snare, noise on the drum, ...), its filter routing, and its kind.
    */
   setExtra(n, k, value) { this.voices[n].extra[k] = value; this._extra(n, k, value); }
+
+  /**
+   * A voice's wavetable (not in the firmware): a table made by wavetables.js, or null for the firmware's waves. With a
+   * table the tone's WAVE knob moves along it (0 its first frame, WAVE_MAX its last), smoothly, modulated too.
+   */
+  setTable(n, t) {
+    const osc = this.voices[n].osc;
+    if (osc.wtab === (t || null)) return;
+    osc.wtab = t || null;
+    osc_setPos(osc, osc.wraw);
+    osc_setFreq(osc);
+  }
   // an extra's value made (its setting, or a modulated value 0..127), without changing its setting
   _extra(n, k, value) {
     const v = this.voices[n], flt = f(value / 127);
@@ -1621,7 +1663,8 @@ export class LxrEngine {
   // landing on a detent; from between two, along the dial
   _modPos(par, kind, d) {
     const base = this.activeParameters[par];
-    const raw = kind === 'wave' ? waveRaw(base) : kind === 'filter' ? filterRaw(base) : modeRaw(base);
+    const wt = kind === 'wave' && this.toneWave.get(par)?.wtab; // (on a wavetable the knob has no detents: along the dial)
+    const raw = wt ? null : kind === 'wave' ? waveRaw(base) : kind === 'filter' ? filterRaw(base) : modeRaw(base);
     const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
     let x;
     if (raw === null) x = f(clamp(f(f(base / 127) + d)) * 127);

@@ -21,8 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmntcdy';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmo73go';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
+import { TABLE_NAMES } from './tables.js?v=mwmo73go';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -96,7 +97,11 @@ export const MOD_DIALS = ['coarse', 'fine', 'wave', 'pwm', 'afreq', 'again', 'aw
 export const NUM_MOD = MOD_DIALS.length, MOD_BASE = EXTRA_BASE + 6 * NUM_EXTRAS, MOD_AMT_ZERO = 127, MOD_AMT_MAX = 254;
 export const modSrcPar = (voice, i) => MOD_BASE + (voice * NUM_MOD + i) * 2;
 export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
-export const ALL_PARAMS = MOD_BASE + 6 * NUM_MOD * 2;
+// then each voice's TABLE: the wavetable its tone plays (sound/tables.js: 0 CLASSIC, the firmware's waves). Last, so
+// every parameter number before it stays as it was (a store or preset saved before it plays CLASSIC)
+export const TABLE_BASE = MOD_BASE + 6 * NUM_MOD * 2;
+export const tablePar = (voice) => TABLE_BASE + voice;
+export const ALL_PARAMS = TABLE_BASE + 6;
 // a knob's value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
 export const dec2 = (x) => Math.round(x * 100) / 100;
 export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
@@ -316,6 +321,10 @@ function buildSchema(voice) {
     out.push({ ...base, key: 'MODAMT_' + u + (voice + 1), par: modAmtPar(voice, i), ukey: 'modamt:' + u, label: (d ? d.label : u) + ' mod amt', text: 'MOD_AMT',
       max: MOD_AMT_MAX, def: MOD_AMT_ZERO, display: { type: 'pm', centre: MOD_AMT_ZERO } });
   });
+  // the tone's wavetable (chosen in the OSC section's heading, not a knob: section 'table' has no place in the grid).
+  // Part of the sound; ALTER leaves it alone unless WILD
+  out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
+    max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
   return out;
 }
 
@@ -384,7 +393,7 @@ export function mapVoice(kit, src, dst) {
   const parMap = new Map(); // source parameter -> destination parameter
   for (const e of S) {
     if (e.hidden && e.ukey !== 'kind' && !e.mod) continue;
-    if (e.par >= NUM_PARAMS && e.extra === undefined && !e.mod) continue; // (sends, sequencer, trim)
+    if (e.par >= NUM_PARAMS && e.extra === undefined && !e.mod && !e.table) continue; // (sends, sequencer, trim)
     const d = D.find((x) => x.ukey === e.ukey);
     if (d) parMap.set(e.par, d.par);
   }

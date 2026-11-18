@@ -6,8 +6,9 @@
 // BS.1770 (a high-pass that takes out the sub rumble the ear hardly counts, and a shelf that lifts the presence
 // range it counts most), in dB below digital full scale. The correction is kept on the key as its TRIM (trimPar in
 // schema.js), a gain of its own that the instrument applies to the voice: the LEVEL knob stays yours.
-import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js?v=mwmntcdy';
-import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB, EXTRA_BASE, EXTRA_LIVE, NUM_EXTRAS, INIT_VALUES, voiceOwned } from './schema.js?v=mwmntcdy';
+import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js?v=mwmo73go';
+import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB, EXTRA_BASE, EXTRA_LIVE, NUM_EXTRAS, INIT_VALUES, voiceOwned, tablePar } from './schema.js?v=mwmo73go';
+import { tableFor } from './tables.js?v=mwmo73go';
 
 // each engine's target: the middle (median) loudness of all its sounds in the built-in kits, so a typical kit sound
 // plays as it always did and the drums, snares and metals keep the balance the kits were made with
@@ -54,6 +55,7 @@ export function measure(sound, kit, vals, note = 60) {
   for (const p of EXTRA_LIVE) if (Math.floor((p - EXTRA_BASE) / NUM_EXTRAS) === v) {
     e.setExtra(v, (p - EXTRA_BASE) % NUM_EXTRAS, ex.has(p) ? ex.get(p) : p < kit.length ? kit[p] : INIT_VALUES[p]);
   }
+  { const tp = tablePar(v); e.setTable(v, tableFor(ex.has(tp) ? ex.get(tp) : tp < kit.length ? kit[tp] : 0)); } // (its wavetable)
   e.trigger(def.trigger, 100, note);
   const k = kWeight(), energy = new Float64Array(MAX_BLOCKS);
   let peak = 0, win = 0, best = 0, b = 0;

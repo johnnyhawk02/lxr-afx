@@ -15,7 +15,7 @@
 // voice) goes with the LFO
 // (the merged voice's sections: mod A and mod B are one gene, the FM; the noise goes with the tone; the filter with
 // what goes into it; the kind with the amp, whose last steps it sets)
-export const GENES = [['osc', 'pitch', 'noise'], ['mod a', 'mod b'], ['amp', 'kind'], ['click'], ['filter', 'filter in'], ['lfo', 'velocity', 'mod'], ['mix']];
+export const GENES = [['osc', 'table', 'pitch', 'noise'], ['mod a', 'mod b'], ['amp', 'kind'], ['click'], ['filter', 'filter in'], ['lfo', 'velocity', 'mod'], ['mix']];
 export const BREED_NUDGE = 0.06;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
