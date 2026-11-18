@@ -1,7 +1,5 @@
 {
  "name": "CONOR",
- "from": "kits/factory/PROJ00-57-AURORLIN.SND drum 2",
- "n": 511,
  "type": "drum 2",
  "voice": 1,
  "params": {

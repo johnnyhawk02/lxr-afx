@@ -1,7 +1,5 @@
 {
  "name": "CHALADUS",
- "from": "kits/14-GROOSYNE.SND hihat",
- "n": 89,
  "type": "hihat",
  "voice": 5,
  "params": {

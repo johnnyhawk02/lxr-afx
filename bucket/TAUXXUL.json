@@ -1,7 +1,5 @@
 {
  "name": "TAUXXUL",
- "from": "kits/elixir-kits/SIRIUDO.SND drum 1",
- "n": 174,
  "type": "drum 1",
  "voice": 0,
  "params": {

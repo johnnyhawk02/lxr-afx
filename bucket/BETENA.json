@@ -1,7 +1,5 @@
 {
  "name": "BETENA",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND drum 1",
- "n": 420,
  "type": "drum 1",
  "voice": 0,
  "params": {

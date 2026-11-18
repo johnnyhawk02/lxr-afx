@@ -1,7 +1,5 @@
 {
  "name": "GENOS",
- "from": "kits/E04-UNCELEG.SND drum 1",
- "n": 114,
  "type": "drum 1",
  "voice": 0,
  "params": {

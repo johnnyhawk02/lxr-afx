@@ -1,7 +1,5 @@
 {
  "name": "TELEPEIA",
- "from": "kits/factory/PROJ01-06-MAGNECE.SND drum 3",
- "n": 590,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,14 +1,14 @@
 // node test/keymorph.test.mjs: MORPH KEYS' blend (sound/makers.js). Between two kit sounds every knob moves steadily
 // from one end to the other, menus and targets flip at the halfway point, a part whose gain is 0 at one end keeps the
 // other end's settings all the way, and the in-between keys are seldom duds.
-import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { SOUNDS, INIT_VALUES, PAR, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
+import { KITS } from './bucket-kits.mjs';
 import { measure, LEVEL_TARGET_DB } from '../sound/level.js';
 import { isDud } from '../sound/breed.js';
 import { blend, GATES } from '../sound/makers.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; if (fails < 30) console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
+const kits = KITS;
 let seed = 4242; const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const isKnob = (e) => ['num', 'pm', 'detent'].includes(e.display.type);
 const GATED = Object.fromEntries(Object.entries(GATES).flatMap(([g, parts]) => parts.map((u) => [u, g])));

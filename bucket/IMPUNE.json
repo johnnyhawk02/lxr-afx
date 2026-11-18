@@ -1,7 +1,5 @@
 {
  "name": "IMPUNE",
- "from": "kits/factory/PROJ00-20-LELFIN.SND hihat",
- "n": 305,
  "type": "hihat",
  "voice": 5,
  "params": {

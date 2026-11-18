@@ -1,7 +1,5 @@
 {
  "name": "FANDODO",
- "from": "kits/factory/PROJ00-37-MNETE.SND drum 3",
- "n": 404,
  "type": "drum 3",
  "voice": 2,
  "params": {

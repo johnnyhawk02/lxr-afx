@@ -1,7 +1,5 @@
 {
  "name": "PRORZAKU",
- "from": "kits/factory/PROJ05-05-THRUTRY.SND drum 3",
- "n": 668,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "INTELLUM",
- "from": "kits/E12-PETARBAG.SND drum 3",
- "n": 164,
  "type": "drum 3",
  "voice": 2,
  "params": {

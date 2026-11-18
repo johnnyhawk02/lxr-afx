@@ -1,7 +1,5 @@
 {
  "name": "MODUBBLO",
- "from": "kits/hrtl-untz/PROJ00-13-AGAMEMA.SND hihat",
- "n": 773,
  "type": "hihat",
  "voice": 5,
  "params": {

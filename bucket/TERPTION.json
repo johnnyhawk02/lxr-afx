@@ -1,7 +1,5 @@
 {
  "name": "TERPTION",
- "from": "kits/factory/PROJ00-23-ISITIC.SND hihat",
- "n": 323,
  "type": "hihat",
  "voice": 5,
  "params": {

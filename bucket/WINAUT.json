@@ -1,7 +1,5 @@
 {
  "name": "WINAUT",
- "from": "kits/factory/PROJ00-45-MERINDOR.SND cymbal",
- "n": 448,
  "type": "cymbal",
  "voice": 4,
  "params": {

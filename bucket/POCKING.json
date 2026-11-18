@@ -1,7 +1,5 @@
 {
  "name": "POCKING",
- "from": "kits/factory/PROJ00-43-HARIS.SND hihat",
- "n": 437,
  "type": "hihat",
  "voice": 5,
  "params": {

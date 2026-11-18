@@ -1,7 +1,5 @@
 {
  "name": "XALELISK",
- "from": "kits/factory/PROJ05-04-KREMPEKE.SND drum 2",
- "n": 661,
  "type": "drum 2",
  "voice": 1,
  "params": {

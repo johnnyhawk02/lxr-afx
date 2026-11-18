@@ -1,7 +1,5 @@
 {
  "name": "HOMURES",
- "from": "kits/factory/PROJ00-33-SYRMES.SND hihat",
- "n": 383,
  "type": "hihat",
  "voice": 5,
  "params": {

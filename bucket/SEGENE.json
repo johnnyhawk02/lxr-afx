@@ -1,7 +1,5 @@
 {
  "name": "SEGENE",
- "from": "kits/factory/PROJ00-49-WYMMA.SND drum 1",
- "n": 468,
  "type": "drum 1",
  "voice": 0,
  "params": {

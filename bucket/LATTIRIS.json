@@ -1,7 +1,5 @@
 {
  "name": "LATTIRIS",
- "from": "kits/factory/PROJ00-36-HANITH.SND snare",
- "n": 399,
  "type": "snare",
  "voice": 3,
  "params": {

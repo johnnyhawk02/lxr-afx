@@ -1,7 +1,5 @@
 {
  "name": "GALDORU",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND snare",
- "n": 417,
  "type": "snare",
  "voice": 3,
  "params": {

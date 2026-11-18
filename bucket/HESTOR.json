@@ -1,7 +1,5 @@
 {
  "name": "HESTOR",
- "from": "kits/factory/PROJ00-07-TINTAURI.SND drum 3",
- "n": 224,
  "type": "drum 3",
  "voice": 2,
  "params": {

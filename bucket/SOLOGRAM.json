@@ -1,7 +1,5 @@
 {
  "name": "SOLOGRAM",
- "from": "kits/factory/PROJ00-17-XYRPHEUS.SND cymbal",
- "n": 286,
  "type": "cymbal",
  "voice": 4,
  "params": {

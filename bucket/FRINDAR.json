@@ -1,7 +1,5 @@
 {
  "name": "FRINDAR",
- "from": "kits/E06-CUVAL.SND drum 3",
- "n": 128,
  "type": "drum 3",
  "voice": 2,
  "params": {

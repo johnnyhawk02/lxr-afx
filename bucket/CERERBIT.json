@@ -1,7 +1,5 @@
 {
  "name": "CERERBIT",
- "from": "kits/hrtl-untz/PROJ00-07-PENDURE.SND snare",
- "n": 735,
  "type": "snare",
  "voice": 3,
  "params": {

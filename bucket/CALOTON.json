@@ -1,7 +1,5 @@
 {
  "name": "CALOTON",
- "from": "kits/hrtl-untz/PROJ00-06-CEMWIRON.SND snare",
- "n": 729,
  "type": "snare",
  "voice": 3,
  "params": {

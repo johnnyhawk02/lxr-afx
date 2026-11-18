@@ -1,7 +1,5 @@
 {
  "name": "POZOON",
- "from": "kits/E12-PETARBAG.SND cymbal",
- "n": 166,
  "type": "cymbal",
  "voice": 4,
  "params": {

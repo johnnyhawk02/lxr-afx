@@ -1,7 +1,5 @@
 {
  "name": "CHATIME",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND hihat",
- "n": 347,
  "type": "hihat",
  "voice": 5,
  "params": {

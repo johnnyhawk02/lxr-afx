@@ -1,7 +1,5 @@
 {
  "name": "NORMETO",
- "from": "kits/E11-ZINSOR.SND drum 3",
- "n": 158,
  "type": "drum 3",
  "voice": 2,
  "params": {

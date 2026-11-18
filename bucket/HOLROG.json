@@ -1,7 +1,5 @@
 {
  "name": "HOLROG",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND drum 1",
- "n": 288,
  "type": "drum 1",
  "voice": 0,
  "params": {

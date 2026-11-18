@@ -1,7 +1,5 @@
 {
  "name": "PEMIRIS",
- "from": "kits/E07-HORIA.SND drum 3",
- "n": 134,
  "type": "drum 3",
  "voice": 2,
  "params": {

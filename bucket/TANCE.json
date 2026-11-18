@@ -1,7 +1,5 @@
 {
  "name": "TANCE",
- "from": "kits/E06-CUVAL.SND snare",
- "n": 129,
  "type": "snare",
  "voice": 3,
  "params": {

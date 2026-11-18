@@ -1,7 +1,5 @@
 {
  "name": "WEFIN",
- "from": "kits/factory/PROJ05-08-PIORE.SND drum 1",
- "n": 684,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "THRANEER",
- "from": "kits/factory/PROJ05-06-GOCLIPSE.SND snare",
- "n": 675,
  "type": "snare",
  "voice": 3,
  "params": {

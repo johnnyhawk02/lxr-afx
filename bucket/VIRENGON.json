@@ -1,7 +1,5 @@
 {
  "name": "VIRENGON",
- "from": "kits/factory/PROJ05-04-KREMPEKE.SND snare",
- "n": 663,
  "type": "snare",
  "voice": 3,
  "params": {

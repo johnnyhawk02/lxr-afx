@@ -1,7 +1,5 @@
 {
  "name": "MORGOXI",
- "from": "kits/factory/PROJ00-19-PORIRY.SND drum 2",
- "n": 295,
  "type": "drum 2",
  "voice": 1,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "VYCKING",
- "from": "kits/E11-ZINSOR.SND drum 2",
- "n": 157,
  "type": "drum 2",
  "voice": 1,
  "params": {

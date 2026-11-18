@@ -1,7 +1,5 @@
 {
  "name": "GNONTARI",
- "from": "kits/factory/PROJ05-08-PIORE.SND hihat",
- "n": 689,
  "type": "hihat",
  "voice": 5,
  "params": {

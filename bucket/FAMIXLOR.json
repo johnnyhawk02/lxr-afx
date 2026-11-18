@@ -1,7 +1,5 @@
 {
  "name": "FAMIXLOR",
- "from": "kits/E03-XYHETTER.SND drum 3",
- "n": 110,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "CODENWE",
- "from": "kits/factory/PROJ00-11-GALATHAN.SND cymbal",
- "n": 250,
  "type": "cymbal",
  "voice": 4,
  "params": {

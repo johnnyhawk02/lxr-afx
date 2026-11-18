@@ -1,7 +1,5 @@
 {
  "name": "MALAN",
- "from": "kits/13-TITARI.SND snare",
- "n": 81,
  "type": "snare",
  "voice": 3,
  "params": {

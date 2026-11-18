@@ -1,7 +1,5 @@
 {
  "name": "GRABBLE",
- "from": "kits/factory/PROJ00-54-AGAXA.SND snare",
- "n": 495,
  "type": "snare",
  "voice": 3,
  "params": {

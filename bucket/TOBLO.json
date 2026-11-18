@@ -1,7 +1,5 @@
 {
  "name": "TOBLO",
- "from": "kits/factory/PROJ00-24-BARUBUR.SND hihat",
- "n": 329,
  "type": "hihat",
  "voice": 5,
  "params": {

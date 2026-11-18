@@ -1,7 +1,5 @@
 {
  "name": "CABUR",
- "from": "kits/hrtl-untz/PROJ00-00-MEPSIS.SND drum 3",
- "n": 692,
  "type": "drum 3",
  "voice": 2,
  "params": {

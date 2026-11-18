@@ -1,7 +1,5 @@
 {
  "name": "SOMIERU",
- "from": "kits/factory/PROJ01-03-HIPPORY.SND snare",
- "n": 573,
  "type": "snare",
  "voice": 3,
  "params": {

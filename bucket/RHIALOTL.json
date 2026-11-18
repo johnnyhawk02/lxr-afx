@@ -1,7 +1,5 @@
 {
  "name": "RHIALOTL",
- "from": "kits/E07-HORIA.SND hihat",
- "n": 137,
  "type": "hihat",
  "voice": 5,
  "params": {

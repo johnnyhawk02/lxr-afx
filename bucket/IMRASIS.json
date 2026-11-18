@@ -1,7 +1,5 @@
 {
  "name": "IMRASIS",
- "from": "kits/08-THOMETER.SND hihat",
- "n": 53,
  "type": "hihat",
  "voice": 5,
  "params": {

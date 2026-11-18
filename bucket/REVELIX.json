@@ -1,7 +1,5 @@
 {
  "name": "REVELIX",
- "from": "kits/factory/PROJ02-02-FRORY.SND drum 2",
- "n": 613,
  "type": "drum 2",
  "voice": 1,
  "params": {

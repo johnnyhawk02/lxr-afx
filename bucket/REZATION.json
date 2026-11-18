@@ -1,7 +1,5 @@
 {
  "name": "REZATION",
- "from": "kits/factory/PROJ00-24-BARUBUR.SND drum 2",
- "n": 325,
  "type": "drum 2",
  "voice": 1,
  "params": {

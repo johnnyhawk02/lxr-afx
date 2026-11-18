@@ -1,7 +1,5 @@
 {
  "name": "NALVIN",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND cymbal",
- "n": 628,
  "type": "cymbal",
  "voice": 4,
  "params": {

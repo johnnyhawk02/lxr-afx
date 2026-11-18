@@ -1,7 +1,5 @@
 {
  "name": "JUPIVER",
- "from": "kits/10-SKAVERAC.SND drum 1",
- "n": 60,
  "type": "drum 1",
  "voice": 0,
  "params": {

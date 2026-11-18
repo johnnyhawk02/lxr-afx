@@ -1,7 +1,5 @@
 {
  "name": "XANWE",
- "from": "kits/factory/PROJ00-13-ARCARAN.SND snare",
- "n": 261,
  "type": "snare",
  "voice": 3,
  "params": {

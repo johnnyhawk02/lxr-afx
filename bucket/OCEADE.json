@@ -1,7 +1,5 @@
 {
  "name": "OCEADE",
- "from": "kits/hrtl-untz/PROJ00-12-UNDODA.SND cymbal",
- "n": 766,
  "type": "cymbal",
  "voice": 4,
  "params": {

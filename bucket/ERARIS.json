@@ -1,7 +1,5 @@
 {
  "name": "ERARIS",
- "from": "kits/factory/PROJ00-02-VYLOC.SND snare",
- "n": 195,
  "type": "snare",
  "voice": 3,
  "params": {

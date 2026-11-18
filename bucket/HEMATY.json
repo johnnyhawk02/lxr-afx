@@ -1,7 +1,5 @@
 {
  "name": "HEMATY",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND hihat",
- "n": 713,
  "type": "hihat",
  "voice": 5,
  "params": {

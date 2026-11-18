@@ -1,7 +1,5 @@
 {
  "name": "MEKEMAKE",
- "from": "kits/hrtl-untz/PROJ00-09-CERIN.SND drum 1",
- "n": 744,
  "type": "drum 1",
  "voice": 0,
  "params": {

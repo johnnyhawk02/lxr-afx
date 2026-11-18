@@ -1,7 +1,5 @@
 {
  "name": "PARRET",
- "from": "kits/factory/PROJ05-04-KREMPEKE.SND cymbal",
- "n": 664,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "PENANT",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND hihat",
- "n": 293,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SACTRON",
- "from": "kits/hrtl-untz/PROJ00-05-EQUIDINE.SND hihat",
- "n": 725,
  "type": "hihat",
  "voice": 5,
  "params": {

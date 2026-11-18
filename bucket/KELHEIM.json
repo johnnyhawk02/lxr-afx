@@ -1,7 +1,5 @@
 {
  "name": "KELHEIM",
- "from": "kits/factory/PROJ00-16-MERIFUR.SND drum 3",
- "n": 278,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "CULIOPSE",
- "from": "kits/factory/PROJ00-11-GALATHAN.SND hihat",
- "n": 251,
  "type": "hihat",
  "voice": 5,
  "params": {

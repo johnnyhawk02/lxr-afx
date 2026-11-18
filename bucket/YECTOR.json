@@ -1,7 +1,5 @@
 {
  "name": "YECTOR",
- "from": "kits/factory/PROJ00-03-CARALPIE.SND hihat",
- "n": 203,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "AXORYON",
- "from": "kits/hrtl-untz/PROJ00-10-NAZGULEK.SND drum 1",
- "n": 750,
  "type": "drum 1",
  "voice": 0,
  "params": {

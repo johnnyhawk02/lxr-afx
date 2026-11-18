@@ -1,7 +1,5 @@
 {
  "name": "ARERRIM",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND snare",
- "n": 345,
  "type": "snare",
  "voice": 3,
  "params": {

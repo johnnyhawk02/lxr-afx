@@ -1,7 +1,5 @@
 {
  "name": "NAIAVALE",
- "from": "kits/factory/PROJ00-61-PIGLUK.SND hihat",
- "n": 539,
  "type": "hihat",
  "voice": 5,
  "params": {

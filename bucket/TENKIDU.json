@@ -1,7 +1,5 @@
 {
  "name": "TENKIDU",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND drum 3",
- "n": 698,
  "type": "drum 3",
  "voice": 2,
  "params": {

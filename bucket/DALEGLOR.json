@@ -1,7 +1,5 @@
 {
  "name": "DALEGLOR",
- "from": "kits/factory/PROJ00-55-SIRAMIRU.SND snare",
- "n": 501,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "TUOMESH",
- "from": "kits/E03-XYHETTER.SND snare",
- "n": 111,
  "type": "snare",
  "voice": 3,
  "params": {

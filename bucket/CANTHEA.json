@@ -1,7 +1,5 @@
 {
  "name": "CANTHEA",
- "from": "kits/factory/PROJ00-04-BATON.SND hihat",
- "n": 209,
  "type": "hihat",
  "voice": 5,
  "params": {

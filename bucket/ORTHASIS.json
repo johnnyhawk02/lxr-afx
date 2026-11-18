@@ -1,7 +1,5 @@
 {
  "name": "ORTHASIS",
- "from": "kits/factory/PROJ00-21-TIRISER.SND hihat",
- "n": 311,
  "type": "hihat",
  "voice": 5,
  "params": {

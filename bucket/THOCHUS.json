@@ -1,7 +1,5 @@
 {
  "name": "THOCHUS",
- "from": "kits/factory/PROJ05-07-BAQUENCY.SND drum 3",
- "n": 680,
  "type": "drum 3",
  "voice": 2,
  "params": {

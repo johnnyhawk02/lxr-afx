@@ -21,7 +21,7 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmlyv9o';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmmzlre';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -265,7 +265,7 @@ export const MERGED = [
   ['ftype', 'filter', 'filter', 'type', ['filter:FILTER_TYPE']],
   ['fdrive', 'filter', 'filter', 'flt drive', ['filter:FILTER_DRIVE']],
   // (the firmware's one velocity target and one LFO target, and their amounts, are gone: every knob takes a source of
-  // its own on a right-click, MOD_DIALS. They stay, unseen, so a .SND kit still lines up)
+  // its own on a right-click, MOD_DIALS. They stay, unseen, so the parameter numbers stay as they were)
   ['velvol', 'shape', 'amp', 'vel vol', ['velocity:VEL_MOD_VOL']], // (velocity on the level: with the amp envelope)
   ['lfofreq', 'mod', 'lfo', 'lfo freq', ['lfo:FREQ_LFO']],
   ['lfosync', 'mod', 'lfo', 'lfo sync', ['lfo:SYNC_LFO']],
@@ -370,29 +370,9 @@ export function showValue(e, v) {
   return String(v);
 }
 
-// .SND kit files: the 8-character kit name followed by one byte per parameter (presetManager.c)
-export function parseSnd(bytes) {
-  if (bytes.length < 9) throw new Error('too short for a kit file');
-  const name = String.fromCharCode(...bytes.slice(0, 8)).replace(/[^\x20-\x7e]/g, '').trim() || 'Empty';
-  const kit = new Uint8Array(NUM_PARAMS);
-  kit.set(bytes.slice(8, 8 + NUM_PARAMS));
-  for (let i = 0; i < 6; i++) {
-    // the firmware's own clean-up of out-of-range mod targets and LFO voices
-    if (kit[PAR.VEL_DEST_1 + i] >= MOD_TARGETS.length) kit[PAR.VEL_DEST_1 + i] = 0;
-    if (kit[PAR.TARGET_LFO1 + i] >= MOD_TARGETS.length) kit[PAR.TARGET_LFO1 + i] = 0;
-    if (kit[PAR.VOICE_LFO1 + i] < 1 || kit[PAR.VOICE_LFO1 + i] > 6) kit[PAR.VOICE_LFO1 + i] = 1;
-    // a transient that uses a user sample from the SD card gets a built-in wave instead
-    const tw = PAR['TRANS' + (i + 1) + '_WAVE'];
-    if (kit[tw] >= 14) kit[tw] %= 14;
-  }
-  // (the waves, filter types and FM/MIX modes as knob positions; its LFO and velocity targets as routes)
-  const values = INIT_VALUES.slice(); values.set(kitToPositions(kit));
-  return { name, kit: upgradeMod(values) };
-}
-
 // one voice's sound taken from a kit voice (any voice: the merged voice has every control): its values mapped control by
-// control (by merged name), its modulation with them, and its kind. kit: a kit's values, as parseSnd gives them (its
-// LFO and velocity targets already routes: a .SND kit has no extras, so a control its voice lacks takes the voice's own
+// control (by merged name), its modulation with them, and its kind. kit: every parameter's value (a voice with no extras set
+// takes the voice's own
 // setting as it comes, a part switched off). Returns [[parameter, value], ...] for dst; the sends, the sequencer and the trim are left out
 export function mapVoice(kit, src, dst) {
   const S = VOICE_SCHEMAS[src], D = VOICE_SCHEMAS[dst];

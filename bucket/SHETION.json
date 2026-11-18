@@ -1,7 +1,5 @@
 {
  "name": "SHETION",
- "from": "kits/01-HALLER.SND drum 3",
- "n": 8,
  "type": "drum 3",
  "voice": 2,
  "params": {

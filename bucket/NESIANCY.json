@@ -1,7 +1,5 @@
 {
  "name": "NESIANCY",
- "from": "kits/factory/PROJ05-00-SYTTER.SND drum 3",
- "n": 638,
  "type": "drum 3",
  "voice": 2,
  "params": {

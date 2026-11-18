@@ -1,7 +1,5 @@
 {
  "name": "CASSUS",
- "from": "kits/03-CRYORIM.SND drum 3",
- "n": 20,
  "type": "drum 3",
  "voice": 2,
  "params": {

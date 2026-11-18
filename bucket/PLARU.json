@@ -1,7 +1,5 @@
 {
  "name": "PLARU",
- "from": "kits/factory/PROJ00-63-THEBBLIX.SND hihat",
- "n": 551,
  "type": "hihat",
  "voice": 5,
  "params": {

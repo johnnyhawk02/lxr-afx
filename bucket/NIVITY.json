@@ -1,7 +1,5 @@
 {
  "name": "NIVITY",
- "from": "kits/factory/PROJ00-12-THEREREN.SND cymbal",
- "n": 256,
  "type": "cymbal",
  "voice": 4,
  "params": {

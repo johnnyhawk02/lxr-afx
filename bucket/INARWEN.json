@@ -1,7 +1,5 @@
 {
  "name": "INARWEN",
- "from": "kits/factory/PROJ00-31-TITADO.SND drum 1",
- "n": 366,
  "type": "drum 1",
  "voice": 0,
  "params": {

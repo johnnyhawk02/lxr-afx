@@ -1,7 +1,5 @@
 {
  "name": "VECHERON",
- "from": "kits/00-VAMET.SND cymbal",
- "n": 4,
  "type": "cymbal",
  "voice": 4,
  "params": {

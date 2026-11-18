@@ -1,7 +1,5 @@
 {
  "name": "NERZAN",
- "from": "kits/hrtl-untz/PROJ00-09-CERIN.SND drum 3",
- "n": 746,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "QUIXOFIN",
- "from": "kits/11-PARAXURA.SND snare",
- "n": 69,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "BETORU",
- "from": "kits/06-MANOR.SND drum 1",
- "n": 36,
  "type": "drum 1",
  "voice": 0,
  "params": {

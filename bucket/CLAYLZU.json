@@ -1,7 +1,5 @@
 {
  "name": "CLAYLZU",
- "from": "kits/factory/PROJ00-35-REATHOR.SND cymbal",
- "n": 394,
  "type": "cymbal",
  "voice": 4,
  "params": {

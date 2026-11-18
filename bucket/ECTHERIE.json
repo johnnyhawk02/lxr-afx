@@ -1,7 +1,5 @@
 {
  "name": "ECTHERIE",
- "from": "kits/factory/PROJ00-59-CRONUTRY.SND cymbal",
- "n": 526,
  "type": "cymbal",
  "voice": 4,
  "params": {

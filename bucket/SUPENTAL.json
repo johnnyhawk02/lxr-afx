@@ -1,7 +1,5 @@
 {
  "name": "SUPENTAL",
- "from": "kits/factory/PROJ00-04-BATON.SND drum 3",
- "n": 206,
  "type": "drum 3",
  "voice": 2,
  "params": {

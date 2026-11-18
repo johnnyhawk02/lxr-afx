@@ -1,7 +1,5 @@
 {
  "name": "EXCAMMOX",
- "from": "kits/hrtl-untz/PROJ00-08-EAREBEK.SND snare",
- "n": 741,
  "type": "snare",
  "voice": 3,
  "params": {

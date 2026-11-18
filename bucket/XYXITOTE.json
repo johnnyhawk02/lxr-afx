@@ -1,7 +1,5 @@
 {
  "name": "XYXITOTE",
- "from": "kits/factory/PROJ00-57-AURORLIN.SND snare",
- "n": 513,
  "type": "snare",
  "voice": 3,
  "params": {

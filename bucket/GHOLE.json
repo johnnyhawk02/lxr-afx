@@ -1,7 +1,5 @@
 {
  "name": "GHOLE",
- "from": "kits/factory/PROJ00-17-XYRPHEUS.SND drum 1",
- "n": 282,
  "type": "drum 1",
  "voice": 0,
  "params": {

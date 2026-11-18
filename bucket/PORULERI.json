@@ -1,7 +1,5 @@
 {
  "name": "PORULERI",
- "from": "kits/factory/PROJ00-19-PORIRY.SND hihat",
- "n": 299,
  "type": "hihat",
  "voice": 5,
  "params": {

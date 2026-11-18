@@ -1,7 +1,5 @@
 {
  "name": "INTERA",
- "from": "kits/factory/PROJ00-01-LEROSIC.SND cymbal",
- "n": 190,
  "type": "cymbal",
  "voice": 4,
  "params": {

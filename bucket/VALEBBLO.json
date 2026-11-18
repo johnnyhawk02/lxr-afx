@@ -1,7 +1,5 @@
 {
  "name": "VALEBBLO",
- "from": "kits/E03-XYHETTER.SND cymbal",
- "n": 112,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "HOLODRIL",
- "from": "kits/factory/PROJ00-39-SVANUR.SND hihat",
- "n": 413,
  "type": "hihat",
  "voice": 5,
  "params": {

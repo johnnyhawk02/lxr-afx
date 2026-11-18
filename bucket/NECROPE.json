@@ -1,7 +1,5 @@
 {
  "name": "NECROPE",
- "from": "kits/05-DRYARI.SND cymbal",
- "n": 34,
  "type": "cymbal",
  "voice": 4,
  "params": {

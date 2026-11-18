@@ -1,7 +1,5 @@
 {
  "name": "FERLIN",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND snare",
- "n": 711,
  "type": "snare",
  "voice": 3,
  "params": {

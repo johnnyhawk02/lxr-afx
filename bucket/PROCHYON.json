@@ -1,7 +1,5 @@
 {
  "name": "PROCHYON",
- "from": "kits/elixir-kits/SIRIUDO.SND hihat",
- "n": 179,
  "type": "hihat",
  "voice": 5,
  "params": {

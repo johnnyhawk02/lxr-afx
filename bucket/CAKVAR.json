@@ -1,7 +1,5 @@
 {
  "name": "CAKVAR",
- "from": "kits/factory/PROJ00-28-VORUTIC.SND hihat",
- "n": 353,
  "type": "hihat",
  "voice": 5,
  "params": {

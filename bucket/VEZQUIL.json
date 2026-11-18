@@ -1,7 +1,5 @@
 {
  "name": "VEZQUIL",
- "from": "kits/factory/PROJ05-00-SYTTER.SND drum 1",
- "n": 636,
  "type": "drum 1",
  "voice": 0,
  "params": {

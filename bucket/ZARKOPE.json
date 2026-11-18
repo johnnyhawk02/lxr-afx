@@ -1,7 +1,5 @@
 {
  "name": "ZARKOPE",
- "from": "kits/factory/PROJ00-26-XORANDA.SND cymbal",
- "n": 340,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "GALESMA",
- "from": "kits/hrtl-untz/PROJ00-05-EQUIDINE.SND snare",
- "n": 723,
  "type": "snare",
  "voice": 3,
  "params": {

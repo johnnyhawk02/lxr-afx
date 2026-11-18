@@ -1,7 +1,5 @@
 {
  "name": "TOXIRGON",
- "from": "kits/factory/PROJ05-03-CELEPTON.SND cymbal",
- "n": 658,
  "type": "cymbal",
  "voice": 4,
  "params": {

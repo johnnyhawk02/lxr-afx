@@ -1,7 +1,5 @@
 {
  "name": "KISTET",
- "from": "kits/E04-UNCELEG.SND snare",
- "n": 117,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "CALHEIM",
- "from": "kits/factory/PROJ00-29-HERANTUM.SND cymbal",
- "n": 358,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "NIEHEIM",
- "from": "kits/factory/PROJ00-31-TITADO.SND hihat",
- "n": 371,
  "type": "hihat",
  "voice": 5,
  "params": {

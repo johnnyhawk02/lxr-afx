@@ -1,7 +1,5 @@
 {
  "name": "ERIRA",
- "from": "kits/factory/PROJ00-44-SHABUR.SND snare",
- "n": 441,
  "type": "snare",
  "voice": 3,
  "params": {

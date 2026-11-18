@@ -1,7 +1,5 @@
 {
  "name": "MAEDRON",
- "from": "kits/factory/PROJ00-42-ELACORE.SND cymbal",
- "n": 430,
  "type": "cymbal",
  "voice": 4,
  "params": {

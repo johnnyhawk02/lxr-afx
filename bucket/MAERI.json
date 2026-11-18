@@ -1,7 +1,5 @@
 {
  "name": "MAERI",
- "from": "kits/factory/PROJ00-44-SHABUR.SND drum 3",
- "n": 440,
  "type": "drum 3",
  "voice": 2,
  "params": {

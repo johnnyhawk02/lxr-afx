@@ -1,7 +1,5 @@
 {
  "name": "NADIVEXA",
- "from": "kits/factory/PROJ00-48-SPENDUME.SND hihat",
- "n": 467,
  "type": "hihat",
  "voice": 5,
  "params": {

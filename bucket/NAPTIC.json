@@ -1,7 +1,5 @@
 {
  "name": "NAPTIC",
- "from": "kits/hrtl-untz/PROJ00-11-ICANET.SND drum 1",
- "n": 756,
  "type": "drum 1",
  "voice": 0,
  "params": {

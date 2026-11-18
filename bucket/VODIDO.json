@@ -1,7 +1,5 @@
 {
  "name": "VODIDO",
- "from": "kits/factory/PROJ00-52-THROGDA.SND drum 2",
- "n": 481,
  "type": "drum 2",
  "voice": 1,
  "params": {

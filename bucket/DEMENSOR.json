@@ -1,7 +1,5 @@
 {
  "name": "DEMENSOR",
- "from": "kits/factory/PROJ00-06-DURIRI.SND drum 1",
- "n": 216,
  "type": "drum 1",
  "voice": 0,
  "params": {

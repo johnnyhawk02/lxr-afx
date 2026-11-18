@@ -1,7 +1,5 @@
 {
  "name": "COUKHMET",
- "from": "kits/factory/PROJ00-21-TIRISER.SND drum 3",
- "n": 308,
  "type": "drum 3",
  "voice": 2,
  "params": {

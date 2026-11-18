@@ -1,7 +1,5 @@
 {
  "name": "CARIDOR",
- "from": "kits/factory/PROJ00-48-SPENDUME.SND cymbal",
- "n": 466,
  "type": "cymbal",
  "voice": 4,
  "params": {

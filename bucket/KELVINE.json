@@ -1,7 +1,5 @@
 {
  "name": "KELVINE",
- "from": "kits/factory/PROJ05-01-VOROMU.SND snare",
- "n": 645,
  "type": "snare",
  "voice": 3,
  "params": {

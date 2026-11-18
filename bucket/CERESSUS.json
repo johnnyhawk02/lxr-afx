@@ -1,7 +1,5 @@
 {
  "name": "CERESSUS",
- "from": "kits/factory/PROJ00-14-EURYLE.SND drum 3",
- "n": 266,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "COLLIDEL",
- "from": "kits/15-ORCRILE.SND drum 1",
- "n": 90,
  "type": "drum 1",
  "voice": 0,
  "params": {

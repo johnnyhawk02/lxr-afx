@@ -1,7 +1,5 @@
 {
  "name": "TUSEUS",
- "from": "kits/factory/PROJ00-30-ZORLIN.SND snare",
- "n": 363,
  "type": "snare",
  "voice": 3,
  "params": {

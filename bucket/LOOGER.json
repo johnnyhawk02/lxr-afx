@@ -1,7 +1,5 @@
 {
  "name": "LOOGER",
- "from": "kits/factory/PROJ00-33-SYRMES.SND snare",
- "n": 381,
  "type": "snare",
  "voice": 3,
  "params": {

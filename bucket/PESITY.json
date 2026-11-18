@@ -1,7 +1,5 @@
 {
  "name": "PESITY",
- "from": "kits/factory/PROJ00-02-VYLOC.SND drum 3",
- "n": 194,
  "type": "drum 3",
  "voice": 2,
  "params": {

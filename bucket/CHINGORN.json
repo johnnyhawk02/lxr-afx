@@ -1,7 +1,5 @@
 {
  "name": "CHINGORN",
- "from": "kits/elixir-kits/ISILAS.SND drum 1",
- "n": 168,
  "type": "drum 1",
  "voice": 0,
  "params": {

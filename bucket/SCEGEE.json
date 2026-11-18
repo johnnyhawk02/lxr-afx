@@ -1,7 +1,5 @@
 {
  "name": "SCEGEE",
- "from": "kits/factory/PROJ00-26-XORANDA.SND drum 3",
- "n": 338,
  "type": "drum 3",
  "voice": 2,
  "params": {

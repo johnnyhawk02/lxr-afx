@@ -1,7 +1,5 @@
 {
  "name": "POLEGLIN",
- "from": "kits/04-KUKULAR.SND snare",
- "n": 27,
  "type": "snare",
  "voice": 3,
  "params": {

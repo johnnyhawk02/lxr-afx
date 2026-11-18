@@ -1,7 +1,5 @@
 {
  "name": "NAMPART",
- "from": "kits/factory/PROJ05-07-BAQUENCY.SND cymbal",
- "n": 682,
  "type": "cymbal",
  "voice": 4,
  "params": {

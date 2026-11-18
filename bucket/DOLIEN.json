@@ -1,7 +1,5 @@
 {
  "name": "DOLIEN",
- "from": "kits/factory/PROJ00-11-GALATHAN.SND drum 1",
- "n": 246,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "VENTUM",
- "from": "kits/13-TITARI.SND drum 3",
- "n": 80,
  "type": "drum 3",
  "voice": 2,
  "params": {

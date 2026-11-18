@@ -1,7 +1,5 @@
 {
  "name": "NAIABLAX",
- "from": "kits/factory/PROJ00-42-ELACORE.SND drum 1",
- "n": 426,
  "type": "drum 1",
  "voice": 0,
  "params": {

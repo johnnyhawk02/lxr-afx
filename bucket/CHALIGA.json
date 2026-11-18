@@ -1,7 +1,5 @@
 {
  "name": "CHALIGA",
- "from": "kits/hrtl-untz/PROJ00-15-TREARUS.SND drum 1",
- "n": 780,
  "type": "drum 1",
  "voice": 0,
  "params": {

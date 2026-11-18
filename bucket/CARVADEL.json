@@ -1,7 +1,5 @@
 {
  "name": "CARVADEL",
- "from": "kits/factory/PROJ00-57-AURORLIN.SND hihat",
- "n": 515,
  "type": "hihat",
  "voice": 5,
  "params": {

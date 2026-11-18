@@ -1,7 +1,5 @@
 {
  "name": "KNISTER",
- "from": "kits/factory/PROJ00-47-GYRONDOR.SND snare",
- "n": 459,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "STARI",
- "from": "kits/factory/PROJ01-05-PARIRIEL.SND drum 3",
- "n": 584,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "VENSATE",
- "from": "kits/03-CRYORIM.SND snare",
- "n": 21,
  "type": "snare",
  "voice": 3,
  "params": {

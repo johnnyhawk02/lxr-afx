@@ -1,7 +1,5 @@
 {
  "name": "XEPAROK",
- "from": "kits/factory/PROJ00-52-THROGDA.SND snare",
- "n": 483,
  "type": "snare",
  "voice": 3,
  "params": {

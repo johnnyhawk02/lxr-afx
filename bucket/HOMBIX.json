@@ -1,7 +1,5 @@
 {
  "name": "HOMBIX",
- "from": "kits/factory/PROJ00-22-VEXIE.SND cymbal",
- "n": 316,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "WYLBO",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND cymbal",
- "n": 292,
  "type": "cymbal",
  "voice": 4,
  "params": {

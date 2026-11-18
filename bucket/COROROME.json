@@ -1,7 +1,5 @@
 {
  "name": "COROROME",
- "from": "kits/factory/PROJ00-28-VORUTIC.SND drum 2",
- "n": 349,
  "type": "drum 2",
  "voice": 1,
  "params": {

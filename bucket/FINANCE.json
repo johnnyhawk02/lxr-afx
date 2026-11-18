@@ -1,7 +1,5 @@
 {
  "name": "FINANCE",
- "from": "kits/factory/PROJ00-07-TINTAURI.SND snare",
- "n": 225,
  "type": "snare",
  "voice": 3,
  "params": {

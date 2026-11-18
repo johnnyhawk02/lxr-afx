@@ -1,7 +1,5 @@
 {
  "name": "NIRIGEE",
- "from": "kits/factory/PROJ00-34-ANGBATER.SND snare",
- "n": 387,
  "type": "snare",
  "voice": 3,
  "params": {

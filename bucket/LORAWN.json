@@ -1,7 +1,5 @@
 {
  "name": "LORAWN",
- "from": "kits/factory/PROJ05-02-MINIRGAL.SND snare",
- "n": 651,
  "type": "snare",
  "voice": 3,
  "params": {

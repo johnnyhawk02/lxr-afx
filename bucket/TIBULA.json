@@ -1,7 +1,5 @@
 {
  "name": "TIBULA",
- "from": "kits/factory/PROJ00-34-ANGBATER.SND drum 1",
- "n": 384,
  "type": "drum 1",
  "voice": 0,
  "params": {

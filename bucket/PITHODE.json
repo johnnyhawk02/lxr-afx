@@ -1,7 +1,5 @@
 {
  "name": "PITHODE",
- "from": "kits/factory/PROJ00-29-HERANTUM.SND snare",
- "n": 357,
  "type": "snare",
  "voice": 3,
  "params": {

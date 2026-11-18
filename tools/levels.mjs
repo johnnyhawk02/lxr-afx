@@ -1,17 +1,19 @@
-// node tools/levels.mjs: how loud every sound of the built-in kits is (sound/level.js), engine by engine, and the
+// node tools/levels.mjs: how loud every sound of the sound bucket is (as each engine's own kind: the drums' sounds on
+// the drum engines, and so on) (sound/level.js), engine by engine, and the
 // median of each engine: AUTO LEVEL's targets (LEVEL_TARGET_DB in sound/level.js are these, rounded to half a dB).
-import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { SOUNDS, INIT_VALUES, PAR } from '../sound/schema.js';
+import { BUCKET } from '../sound/bucket-sounds.js';
+import { toVoice } from '../sound/bucket.js';
 import { measure, trimFor, LEVEL_TARGET_DB } from '../sound/level.js';
 import { trimDb } from '../sound/schema.js';
 
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
 const q = (a, f) => a[Math.min(a.length - 1, Math.floor(f * a.length))];
 const t0 = Date.now(); let n = 0;
 SOUNDS.forEach((def, sound) => {
   const v = def.engineVoice, seen = new Set(), dbs = [], peaks = [], after = [];
-  for (const { kit } of kits) for (const src of def.sources) {
-    const vals = mapVoice(kit, src, v).filter(([p]) => p !== PAR.VOL1 + v);
+  for (const snd of BUCKET) {
+    if (!def.sources.includes(snd.voice)) continue;
+    const vals = toVoice(snd, v).filter(([p]) => p !== PAR.VOL1 + v);
     const sig = vals.map(([, x]) => x).join(',');
     if (seen.has(sig)) continue;
     seen.add(sig);

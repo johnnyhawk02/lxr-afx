@@ -1,7 +1,5 @@
 {
  "name": "XYLEREAL",
- "from": "kits/factory/PROJ00-32-SMEATE.SND cymbal",
- "n": 376,
  "type": "cymbal",
  "voice": 4,
  "params": {

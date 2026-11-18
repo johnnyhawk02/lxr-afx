@@ -1,7 +1,5 @@
 {
  "name": "LAVARA",
- "from": "kits/hrtl-untz/PROJ00-06-CEMWIRON.SND drum 1",
- "n": 726,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "CALAS",
- "from": "kits/E12-PETARBAG.SND hihat",
- "n": 167,
  "type": "hihat",
  "voice": 5,
  "params": {

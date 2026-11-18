@@ -1,7 +1,5 @@
 {
  "name": "MINEER",
- "from": "kits/12-ISOTIONE.SND drum 3",
- "n": 74,
  "type": "drum 3",
  "voice": 2,
  "params": {

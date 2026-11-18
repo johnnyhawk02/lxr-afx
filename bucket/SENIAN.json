@@ -1,7 +1,5 @@
 {
  "name": "SENIAN",
- "from": "kits/factory/PROJ00-45-MERINDOR.SND hihat",
- "n": 449,
  "type": "hihat",
  "voice": 5,
  "params": {

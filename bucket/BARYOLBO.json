@@ -1,7 +1,5 @@
 {
  "name": "BARYOLBO",
- "from": "kits/factory/PROJ05-07-BAQUENCY.SND drum 1",
- "n": 678,
  "type": "drum 1",
  "voice": 0,
  "params": {

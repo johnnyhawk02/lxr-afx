@@ -1,7 +1,5 @@
 {
  "name": "WYTRY",
- "from": "kits/E05-QELANTY.SND snare",
- "n": 123,
  "type": "snare",
  "voice": 3,
  "params": {

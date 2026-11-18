@@ -1,7 +1,5 @@
 {
  "name": "AMRODIN",
- "from": "kits/factory/PROJ00-13-ARCARAN.SND drum 3",
- "n": 260,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SPUDRIS",
- "from": "kits/05-DRYARI.SND drum 3",
- "n": 32,
  "type": "drum 3",
  "voice": 2,
  "params": {

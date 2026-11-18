@@ -1,7 +1,5 @@
 {
  "name": "EDOVVAX",
- "from": "kits/E04-UNCELEG.SND hihat",
- "n": 119,
  "type": "hihat",
  "voice": 5,
  "params": {

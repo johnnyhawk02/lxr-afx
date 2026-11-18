@@ -1,7 +1,5 @@
 {
  "name": "SUMITAR",
- "from": "kits/06-MANOR.SND drum 3",
- "n": 38,
  "type": "drum 3",
  "voice": 2,
  "params": {

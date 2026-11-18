@@ -1,7 +1,5 @@
 {
  "name": "KITSUNA",
- "from": "kits/10-SKAVERAC.SND hihat",
- "n": 65,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "WAYRAC",
- "from": "kits/hrtl-untz/PROJ00-12-UNDODA.SND drum 3",
- "n": 764,
  "type": "drum 3",
  "voice": 2,
  "params": {

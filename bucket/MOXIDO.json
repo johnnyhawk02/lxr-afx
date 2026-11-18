@@ -1,7 +1,5 @@
 {
  "name": "MOXIDO",
- "from": "kits/factory/PROJ00-43-HARIS.SND drum 3",
- "n": 434,
  "type": "drum 3",
  "voice": 2,
  "params": {

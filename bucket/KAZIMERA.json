@@ -1,7 +1,5 @@
 {
  "name": "KAZIMERA",
- "from": "kits/elixir-kits/ISILAS.SND drum 3",
- "n": 170,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "AQVEGDA",
- "from": "kits/factory/PROJ00-62-RUXANO.SND snare",
- "n": 543,
  "type": "snare",
  "voice": 3,
  "params": {

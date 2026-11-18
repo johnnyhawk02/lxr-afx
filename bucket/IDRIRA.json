@@ -1,7 +1,5 @@
 {
  "name": "IDRIRA",
- "from": "kits/factory/PROJ00-19-PORIRY.SND cymbal",
- "n": 298,
  "type": "cymbal",
  "voice": 4,
  "params": {

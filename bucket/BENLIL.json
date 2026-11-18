@@ -1,7 +1,5 @@
 {
  "name": "BENLIL",
- "from": "kits/factory/PROJ05-01-VOROMU.SND hihat",
- "n": 647,
  "type": "hihat",
  "voice": 5,
  "params": {

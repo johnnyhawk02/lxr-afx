@@ -1,7 +1,5 @@
 {
  "name": "MENUPTER",
- "from": "kits/factory/PROJ00-06-DURIRI.SND snare",
- "n": 219,
  "type": "snare",
  "voice": 3,
  "params": {

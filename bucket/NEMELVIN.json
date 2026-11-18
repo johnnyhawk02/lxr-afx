@@ -1,7 +1,5 @@
 {
  "name": "NEMELVIN",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND drum 2",
- "n": 625,
  "type": "drum 2",
  "voice": 1,
  "params": {

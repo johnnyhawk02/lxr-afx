@@ -1,7 +1,5 @@
 {
  "name": "SHATHYST",
- "from": "kits/factory/PROJ02-02-FRORY.SND hihat",
- "n": 617,
  "type": "hihat",
  "voice": 5,
  "params": {

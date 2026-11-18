@@ -1,7 +1,5 @@
 {
  "name": "HYCORN",
- "from": "kits/factory/PROJ00-17-XYRPHEUS.SND hihat",
- "n": 287,
  "type": "hihat",
  "voice": 5,
  "params": {

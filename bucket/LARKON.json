@@ -1,7 +1,5 @@
 {
  "name": "LARKON",
- "from": "kits/factory/PROJ00-15-NYTURGUL.SND drum 2",
- "n": 271,
  "type": "drum 2",
  "voice": 1,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "XILOLEM",
- "from": "kits/E05-QELANTY.SND hihat",
- "n": 125,
  "type": "hihat",
  "voice": 5,
  "params": {

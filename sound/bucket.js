@@ -1,30 +1,21 @@
-// The SOUND BUCKET: every sound the app makes new sounds from. It began as every sound of every kit, taken out one by
-// one (tools/extract-bucket.mjs), and every sound saved in the SOUND BLENDER joins it (tools/add-to-bucket.mjs), so
-// new sounds become the source of newer ones. The files are bucket/*.json, one per sound; tools/build-bucket.mjs
-// bundles them into sound/bucket-sounds.js for the page.
+// The SOUND BUCKET: every sound the app plays and makes new sounds from. Every sound saved in the SOUND BLENDER joins
+// it (tools/add-to-bucket.mjs), so new sounds become the source of newer ones. The files are bucket/*.json, one per
+// sound; tools/build-bucket.mjs bundles them into sound/bucket-sounds.js for the page.
 //
-// A bucket sound: { name, type, from, voice, params: { control: value } }
-//   name     its own name (a kit drum's name from kits/names.json, or a made-up one for a saved sound)
-//   type     drum 1, drum 2, drum 3, snare, cymbal or hihat: the kit voice it is (or is mostly) of. It goes last in
+// A bucket sound: { name, type, voice, params: { control: value } }
+//   name     its own name (made up by the preset namer)
+//   type     drum 1, drum 2, drum 3, snare, cymbal or hihat: the kind of sound it is (or is mostly). It goes last in
 //            the label the randomisers see, as RECIPES in makers.js look for it
-//   from     where it came from (a kit file and voice, or the two sounds it was blended from)
 //   voice    the engine voice (0..5) its values are in
 //   params   every control of that voice, by its merged name (schema.js MERGED: coarse, decay, cutoff, ...), and each
 //            knob's modulation (modsrc:<knob>, modamt:<knob>: schema.js MOD_DIALS)
-// toVoice() puts it on any engine voice, the way a kit sound is (schema.js mapVoice), so nothing of it is lost.
-import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice } from './schema.js?v=mwmlyv9o';
+// toVoice() puts it on any engine voice (schema.js mapVoice), so nothing of it is lost.
+import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice } from './schema.js?v=mwmmzlre';
 
 export const TYPES = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
 // the controls a sound keeps: the voice's own and their modulation, not its sends, sequencer or trim (those belong to a key)
 const kept = (voice) => VOICE_SCHEMAS[voice].filter((e) => !(e.par >= NUM_PARAMS && e.extra === undefined && !e.mod));
 
-// a kit's voice as a bucket sound
-export function fromKit(kit, src, meta) {
-  const val = (p) => (p < kit.length ? kit[p] : INIT_VALUES[p]);
-  const params = {};
-  for (const e of kept(src)) params[e.ukey] = val(e.par);
-  return { ...meta, type: TYPES[src], voice: src, params };
-}
 // a voice's values ([[parameter, value]] or a Map) as a bucket sound
 export function fromVoice(vals, voice, meta) {
   const m = vals instanceof Map ? vals : new Map(vals), params = {};
@@ -33,7 +24,7 @@ export function fromVoice(vals, voice, meta) {
   if ('decay_open' in params) params.decay_open = params.decay;
   return { ...meta, voice, params };
 }
-// a bucket sound on an engine voice: [[parameter, value], ...], as mapVoice gives a kit sound
+// a bucket sound on an engine voice: [[parameter, value], ...]
 export function toVoice(snd, dst) {
   const kit = Uint8Array.from(INIT_VALUES.subarray(0, ALL_PARAMS));
   for (const e of kept(snd.voice)) if (snd.params[e.ukey] !== undefined) kit[e.par] = snd.params[e.ukey];
@@ -52,5 +43,5 @@ export function tidy(s) {
   for (const e of kept(voice)) { const x = s.params[e.ukey]; if (Number.isInteger(x)) params[e.ukey] = Math.max(0, Math.min(e.max, x)); }
   if (!Object.keys(params).length) return null;
   const name = String(s.name || '').toUpperCase().replace(/[^A-Z0-9 _-]/g, '').slice(0, 18).trim();
-  return { name: name || 'SOUND', type: TYPES.includes(s.type) ? s.type : TYPES[voice], from: String(s.from || '').slice(0, 160), voice, params };
+  return { name: name || 'SOUND', type: TYPES.includes(s.type) ? s.type : TYPES[voice], voice, params };
 }

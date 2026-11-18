@@ -1,7 +1,5 @@
 {
  "name": "HELANTIR",
- "from": "kits/factory/PROJ02-02-FRORY.SND snare",
- "n": 615,
  "type": "snare",
  "voice": 3,
  "params": {

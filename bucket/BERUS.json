@@ -1,7 +1,5 @@
 {
  "name": "BERUS",
- "from": "kits/hrtl-untz/PROJ00-08-EAREBEK.SND drum 3",
- "n": 740,
  "type": "drum 3",
  "voice": 2,
  "params": {

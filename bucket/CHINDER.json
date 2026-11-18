@@ -1,7 +1,5 @@
 {
  "name": "CHINDER",
- "from": "kits/12-ISOTIONE.SND hihat",
- "n": 77,
  "type": "hihat",
  "voice": 5,
  "params": {

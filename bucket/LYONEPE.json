@@ -1,7 +1,5 @@
 {
  "name": "LYONEPE",
- "from": "kits/factory/PROJ00-58-ERATION.SND drum 3",
- "n": 518,
  "type": "drum 3",
  "voice": 2,
  "params": {

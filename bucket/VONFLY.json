@@ -1,7 +1,5 @@
 {
  "name": "VONFLY",
- "from": "kits/factory/PROJ00-33-SYRMES.SND drum 1",
- "n": 378,
  "type": "drum 1",
  "voice": 0,
  "params": {

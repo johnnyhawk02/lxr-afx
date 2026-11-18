@@ -1,7 +1,5 @@
 {
  "name": "SIDUSA",
- "from": "kits/factory/PROJ00-60-WENCE.SND cymbal",
- "n": 532,
  "type": "cymbal",
  "voice": 4,
  "params": {

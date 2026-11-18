@@ -1,7 +1,5 @@
 {
  "name": "TALONOX",
- "from": "kits/factory/PROJ00-57-AURORLIN.SND drum 1",
- "n": 510,
  "type": "drum 1",
  "voice": 0,
  "params": {

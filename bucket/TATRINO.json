@@ -1,7 +1,5 @@
 {
  "name": "TATRINO",
- "from": "kits/factory/PROJ00-36-HANITH.SND drum 1",
- "n": 396,
  "type": "drum 1",
  "voice": 0,
  "params": {

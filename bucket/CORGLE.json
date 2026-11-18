@@ -1,7 +1,5 @@
 {
  "name": "CORGLE",
- "from": "kits/factory/PROJ00-31-TITADO.SND drum 2",
- "n": 367,
  "type": "drum 2",
  "voice": 1,
  "params": {

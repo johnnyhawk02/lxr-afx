@@ -1,7 +1,5 @@
 {
  "name": "SOLIDAS",
- "from": "kits/factory/PROJ00-23-ISITIC.SND drum 3",
- "n": 320,
  "type": "drum 3",
  "voice": 2,
  "params": {

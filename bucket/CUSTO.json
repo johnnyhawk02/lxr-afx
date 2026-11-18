@@ -1,7 +1,5 @@
 {
  "name": "CUSTO",
- "from": "kits/factory/PROJ00-35-REATHOR.SND drum 3",
- "n": 392,
  "type": "drum 3",
  "voice": 2,
  "params": {

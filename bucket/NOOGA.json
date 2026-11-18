@@ -1,7 +1,5 @@
 {
  "name": "NOOGA",
- "from": "kits/factory/PROJ00-55-SIRAMIRU.SND hihat",
- "n": 503,
  "type": "hihat",
  "voice": 5,
  "params": {

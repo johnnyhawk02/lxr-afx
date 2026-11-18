@@ -1,7 +1,5 @@
 {
  "name": "STYTE",
- "from": "kits/factory/PROJ00-32-SMEATE.SND drum 3",
- "n": 374,
  "type": "drum 3",
  "voice": 2,
  "params": {

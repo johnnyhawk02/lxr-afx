@@ -1,7 +1,5 @@
 {
  "name": "ROHARZAN",
- "from": "kits/E08-FADIA.SND hihat",
- "n": 143,
  "type": "hihat",
  "voice": 5,
  "params": {

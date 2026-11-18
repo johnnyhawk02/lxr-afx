@@ -1,7 +1,5 @@
 {
  "name": "DAXONSIT",
- "from": "kits/hrtl-untz/PROJ00-12-UNDODA.SND hihat",
- "n": 767,
  "type": "hihat",
  "voice": 5,
  "params": {

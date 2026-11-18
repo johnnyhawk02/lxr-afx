@@ -1,7 +1,5 @@
 {
  "name": "CAULOC",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND drum 3",
- "n": 416,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "CELIN",
- "from": "kits/factory/PROJ00-03-CARALPIE.SND drum 1",
- "n": 198,
  "type": "drum 1",
  "voice": 0,
  "params": {

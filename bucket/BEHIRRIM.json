@@ -1,7 +1,5 @@
 {
  "name": "BEHIRRIM",
- "from": "kits/hrtl-untz/PROJ00-11-ICANET.SND snare",
- "n": 759,
  "type": "snare",
  "voice": 3,
  "params": {

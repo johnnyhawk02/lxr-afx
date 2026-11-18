@@ -1,7 +1,5 @@
 {
  "name": "WONTIR",
- "from": "kits/05-DRYARI.SND snare",
- "n": 33,
  "type": "snare",
  "voice": 3,
  "params": {

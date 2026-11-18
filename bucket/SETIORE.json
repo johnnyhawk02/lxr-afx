@@ -1,7 +1,5 @@
 {
  "name": "SETIORE",
- "from": "kits/factory/PROJ00-48-SPENDUME.SND drum 1",
- "n": 462,
  "type": "drum 1",
  "voice": 0,
  "params": {

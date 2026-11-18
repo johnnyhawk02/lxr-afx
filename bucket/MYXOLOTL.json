@@ -1,7 +1,5 @@
 {
  "name": "MYXOLOTL",
- "from": "kits/04-KUKULAR.SND hihat",
- "n": 29,
  "type": "hihat",
  "voice": 5,
  "params": {

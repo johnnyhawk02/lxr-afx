@@ -1,7 +1,5 @@
 {
  "name": "JUTION",
- "from": "kits/factory/PROJ00-50-ANGBAXA.SND drum 2",
- "n": 475,
  "type": "drum 2",
  "voice": 1,
  "params": {

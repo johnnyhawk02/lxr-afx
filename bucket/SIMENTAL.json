@@ -1,7 +1,5 @@
 {
  "name": "SIMENTAL",
- "from": "kits/E12-PETARBAG.SND snare",
- "n": 165,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "PALALDUR",
- "from": "kits/elixir-kits/ISILAS.SND snare",
- "n": 171,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "BARZAKU",
- "from": "kits/E09-WETOR.SND drum 3",
- "n": 146,
  "type": "drum 3",
  "voice": 2,
  "params": {

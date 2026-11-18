@@ -1,7 +1,5 @@
 {
  "name": "JAMESH",
- "from": "kits/E04-UNCELEG.SND drum 3",
- "n": 116,
  "type": "drum 3",
  "voice": 2,
  "params": {

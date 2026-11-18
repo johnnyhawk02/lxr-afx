@@ -1,7 +1,5 @@
 {
  "name": "PROTOGID",
- "from": "kits/E09-WETOR.SND snare",
- "n": 147,
  "type": "snare",
  "voice": 3,
  "params": {

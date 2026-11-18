@@ -1,7 +1,5 @@
 {
  "name": "VATROPIC",
- "from": "kits/hrtl-untz/PROJ00-07-PENDURE.SND hihat",
- "n": 737,
  "type": "hihat",
  "voice": 5,
  "params": {

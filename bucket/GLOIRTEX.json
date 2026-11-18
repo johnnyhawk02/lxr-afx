@@ -1,7 +1,5 @@
 {
  "name": "GLOIRTEX",
- "from": "kits/factory/PROJ00-16-MERIFUR.SND drum 2",
- "n": 277,
  "type": "drum 2",
  "voice": 1,
  "params": {

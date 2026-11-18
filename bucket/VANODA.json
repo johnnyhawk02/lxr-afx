@@ -1,7 +1,5 @@
 {
  "name": "VANODA",
- "from": "kits/factory/PROJ05-03-CELEPTON.SND drum 3",
- "n": 656,
  "type": "drum 3",
  "voice": 2,
  "params": {

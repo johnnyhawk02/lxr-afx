@@ -1,14 +1,14 @@
 // node test/makers.test.mjs: the NEW SOUNDS FROM methods in sound/makers.js (MORPH, KIT-STYLE, FREE, RECIPE). Every
 // result stays inside each control's range, a recipe sets its knobs inside its ranges, MORPH lands between its
 // parents, and few results are duds (nearly silent, or ringing on) for the page's dud filter to skip.
-import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { SOUNDS, INIT_VALUES, PAR, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
+import { KITS } from './bucket-kits.mjs';
 import { measure, LEVEL_TARGET_DB } from '../sound/level.js';
 import { isDud } from '../sound/breed.js';
 import { MAKERS, RECIPES, recipe, morph } from '../sound/makers.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; if (fails < 30) console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => ({ ...parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))), drums: k.drums || [] }));
+const kits = KITS;
 let seed = 987; const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const VN = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
 [0, 1, 2].forEach((sound) => {

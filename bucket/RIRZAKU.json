@@ -1,7 +1,5 @@
 {
  "name": "RIRZAKU",
- "from": "kits/factory/PROJ00-35-REATHOR.SND snare",
- "n": 393,
  "type": "snare",
  "voice": 3,
  "params": {

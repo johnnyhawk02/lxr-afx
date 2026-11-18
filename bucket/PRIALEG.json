@@ -1,7 +1,5 @@
 {
  "name": "PRIALEG",
- "from": "kits/hrtl-untz/PROJ00-10-NAZGULEK.SND snare",
- "n": 753,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "ORTHAMUN",
- "from": "kits/factory/PROJ00-50-ANGBAXA.SND hihat",
- "n": 479,
  "type": "hihat",
  "voice": 5,
  "params": {

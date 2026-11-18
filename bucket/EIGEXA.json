@@ -1,7 +1,5 @@
 {
  "name": "EIGEXA",
- "from": "kits/hrtl-untz/PROJ00-02-OSCIRION.SND snare",
- "n": 705,
  "type": "snare",
  "voice": 3,
  "params": {

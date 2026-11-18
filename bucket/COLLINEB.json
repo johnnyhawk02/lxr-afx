@@ -1,7 +1,5 @@
 {
  "name": "COLLINEB",
- "from": "kits/factory/PROJ00-25-GOLDIZGU.SND snare",
- "n": 333,
  "type": "snare",
  "voice": 3,
  "params": {

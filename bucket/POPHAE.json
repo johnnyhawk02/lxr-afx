@@ -1,7 +1,5 @@
 {
  "name": "POPHAE",
- "from": "kits/07-DEMELEK.SND hihat",
- "n": 47,
  "type": "hihat",
  "voice": 5,
  "params": {

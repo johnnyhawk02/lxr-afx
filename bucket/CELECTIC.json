@@ -1,7 +1,5 @@
 {
  "name": "CELECTIC",
- "from": "kits/E02-ZHURALSE.SND drum 3",
- "n": 104,
  "type": "drum 3",
  "voice": 2,
  "params": {

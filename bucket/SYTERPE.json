@@ -1,7 +1,5 @@
 {
  "name": "SYTERPE",
- "from": "kits/factory/PROJ00-60-WENCE.SND hihat",
- "n": 533,
  "type": "hihat",
  "voice": 5,
  "params": {

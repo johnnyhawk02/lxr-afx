@@ -1,7 +1,5 @@
 {
  "name": "DAVERN",
- "from": "kits/factory/PROJ00-22-VEXIE.SND drum 3",
- "n": 314,
  "type": "drum 3",
  "voice": 2,
  "params": {

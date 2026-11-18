@@ -1,7 +1,5 @@
 {
  "name": "VIMANT",
- "from": "kits/hrtl-untz/PROJ00-05-EQUIDINE.SND drum 1",
- "n": 720,
  "type": "drum 1",
  "voice": 0,
  "params": {

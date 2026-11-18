@@ -1,7 +1,5 @@
 {
  "name": "RABOLD",
- "from": "kits/factory/PROJ00-44-SHABUR.SND hihat",
- "n": 443,
  "type": "hihat",
  "voice": 5,
  "params": {

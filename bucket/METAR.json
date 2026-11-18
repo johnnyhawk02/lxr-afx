@@ -1,7 +1,5 @@
 {
  "name": "METAR",
- "from": "kits/09-NERES.SND hihat",
- "n": 59,
  "type": "hihat",
  "voice": 5,
  "params": {

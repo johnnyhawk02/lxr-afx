@@ -1,10 +1,10 @@
 // node test/morph.test.mjs: the key morph is deterministic, a zone's base key and depth 0 play the base sound, far keys
 // move more, kit voices map onto the three sounds, and every sound renders audio across its zone.
 import assert from 'node:assert/strict';
-import { SOUNDS as ALL_SOUNDS, ZONE_SIZES, setZoneStart, setEngines, zoneSizes, soundOfNote as ofNote, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
+import { SOUNDS as ALL_SOUNDS, ZONE_SIZES, setZoneStart, setEngines, zoneSizes, soundOfNote as ofNote, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice } from '../sound/schema.js';
 import { morphKey, combinedAmount, BASE_NOTE } from '../sound/morph.js';
 import { LxrInstrument } from '../sound/instrument.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { KITS } from './bucket-kits.mjs';
 
 const base = INIT_VALUES;
 const full = { pitch: 1, timbre: 1 };
@@ -45,7 +45,7 @@ for (let s = 0; s < SOUNDS.length; s++) {
   assert.equal(run(s, z.hi, 5, { pitch: 0, timbre: 1 }).note, BASE_NOTE); n++;
 }
 // kit voices map onto each sound: every mapped parameter belongs to the destination voice
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
+const kits = KITS;
 for (const s of SOUNDS) for (const src of s.sources) for (const { kit } of kits.slice(0, 20)) {
   const own = new Set(VOICE_SCHEMAS[s.engineVoice].map((e) => e.par));
   for (const [p, v] of mapVoice(kit, src, s.engineVoice)) { assert.ok(own.has(p) || p === 0 || p >= 0, `par ${p}`); assert.ok(v >= 0 && v <= 255); }

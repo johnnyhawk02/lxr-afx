@@ -1,7 +1,5 @@
 {
  "name": "CALIENGU",
- "from": "kits/factory/PROJ00-08-XEDHRIM.SND drum 3",
- "n": 230,
  "type": "drum 3",
  "voice": 2,
  "params": {

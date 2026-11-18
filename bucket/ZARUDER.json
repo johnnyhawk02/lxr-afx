@@ -1,7 +1,5 @@
 {
  "name": "ZARUDER",
- "from": "kits/factory/PROJ01-07-GOMIPE.SND drum 3",
- "n": 596,
  "type": "drum 3",
  "voice": 2,
  "params": {

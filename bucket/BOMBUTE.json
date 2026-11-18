@@ -1,7 +1,5 @@
 {
  "name": "BOMBUTE",
- "from": "kits/05-DRYARI.SND drum 2",
- "n": 31,
  "type": "drum 2",
  "voice": 1,
  "params": {

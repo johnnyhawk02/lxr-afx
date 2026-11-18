@@ -1,7 +1,5 @@
 {
  "name": "GARACLE",
- "from": "kits/hrtl-untz/PROJ00-07-PENDURE.SND cymbal",
- "n": 736,
  "type": "cymbal",
  "voice": 4,
  "params": {

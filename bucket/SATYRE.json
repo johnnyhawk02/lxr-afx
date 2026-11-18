@@ -1,7 +1,5 @@
 {
  "name": "SATYRE",
- "from": "kits/factory/PROJ00-49-WYMMA.SND hihat",
- "n": 473,
  "type": "hihat",
  "voice": 5,
  "params": {

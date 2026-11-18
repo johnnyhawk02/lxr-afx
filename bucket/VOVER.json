@@ -1,7 +1,5 @@
 {
  "name": "VOVER",
- "from": "kits/08-THOMETER.SND drum 2",
- "n": 49,
  "type": "drum 2",
  "voice": 1,
  "params": {

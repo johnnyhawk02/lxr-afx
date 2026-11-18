@@ -1,7 +1,5 @@
 {
  "name": "PLOMEDE",
- "from": "kits/E02-ZHURALSE.SND hihat",
- "n": 107,
  "type": "hihat",
  "voice": 5,
  "params": {

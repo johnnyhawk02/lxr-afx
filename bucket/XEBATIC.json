@@ -1,7 +1,5 @@
 {
  "name": "XEBATIC",
- "from": "kits/factory/PROJ05-00-SYTTER.SND cymbal",
- "n": 640,
  "type": "cymbal",
  "voice": 4,
  "params": {

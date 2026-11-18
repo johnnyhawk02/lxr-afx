@@ -1,7 +1,5 @@
 {
  "name": "PEREVERE",
- "from": "kits/factory/PROJ01-03-HIPPORY.SND drum 1",
- "n": 570,
  "type": "drum 1",
  "voice": 0,
  "params": {

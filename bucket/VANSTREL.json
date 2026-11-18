@@ -1,7 +1,5 @@
 {
  "name": "VANSTREL",
- "from": "kits/factory/PROJ00-15-NYTURGUL.SND hihat",
- "n": 275,
  "type": "hihat",
  "voice": 5,
  "params": {

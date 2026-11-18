@@ -1,7 +1,5 @@
 {
  "name": "DIMURGH",
- "from": "kits/factory/PROJ00-62-RUXANO.SND drum 3",
- "n": 542,
  "type": "drum 3",
  "voice": 2,
  "params": {

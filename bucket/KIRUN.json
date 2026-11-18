@@ -1,7 +1,5 @@
 {
  "name": "KIRUN",
- "from": "kits/09-NERES.SND drum 3",
- "n": 56,
  "type": "drum 3",
  "voice": 2,
  "params": {

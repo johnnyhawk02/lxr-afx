@@ -1,7 +1,5 @@
 {
  "name": "KEMROTH",
- "from": "kits/factory/PROJ01-04-PYRIAN.SND hihat",
- "n": 581,
  "type": "hihat",
  "voice": 5,
  "params": {

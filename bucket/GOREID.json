@@ -1,7 +1,5 @@
 {
  "name": "GOREID",
- "from": "kits/factory/PROJ00-12-THEREREN.SND hihat",
- "n": 257,
  "type": "hihat",
  "voice": 5,
  "params": {

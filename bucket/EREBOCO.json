@@ -1,7 +1,5 @@
 {
  "name": "EREBOCO",
- "from": "kits/factory/PROJ00-01-LEROSIC.SND drum 1",
- "n": 186,
  "type": "drum 1",
  "voice": 0,
  "params": {

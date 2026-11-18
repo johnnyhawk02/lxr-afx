@@ -1,7 +1,5 @@
 {
  "name": "PERTAL",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND snare",
- "n": 699,
  "type": "snare",
  "voice": 3,
  "params": {

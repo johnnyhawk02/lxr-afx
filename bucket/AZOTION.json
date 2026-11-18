@@ -1,7 +1,5 @@
 {
  "name": "AZOTION",
- "from": "kits/factory/PROJ05-03-CELEPTON.SND hihat",
- "n": 659,
  "type": "hihat",
  "voice": 5,
  "params": {

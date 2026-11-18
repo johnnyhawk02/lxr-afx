@@ -1,7 +1,5 @@
 {
  "name": "ICARUTY",
- "from": "kits/factory/PROJ00-02-VYLOC.SND drum 2",
- "n": 193,
  "type": "drum 2",
  "voice": 1,
  "params": {

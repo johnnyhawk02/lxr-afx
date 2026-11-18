@@ -1,7 +1,5 @@
 {
  "name": "NARCILUM",
- "from": "kits/E02-ZHURALSE.SND snare",
- "n": 105,
  "type": "snare",
  "voice": 3,
  "params": {

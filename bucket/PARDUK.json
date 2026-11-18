@@ -1,7 +1,5 @@
 {
  "name": "PARDUK",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND drum 1",
- "n": 414,
  "type": "drum 1",
  "voice": 0,
  "params": {

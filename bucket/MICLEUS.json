@@ -1,7 +1,5 @@
 {
  "name": "MICLEUS",
- "from": "kits/E10-ABSOBIS.SND hihat",
- "n": 155,
  "type": "hihat",
  "voice": 5,
  "params": {

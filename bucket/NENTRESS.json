@@ -1,7 +1,5 @@
 {
  "name": "NENTRESS",
- "from": "kits/05-DRYARI.SND hihat",
- "n": 35,
  "type": "hihat",
  "voice": 5,
  "params": {

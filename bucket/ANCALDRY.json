@@ -1,7 +1,5 @@
 {
  "name": "ANCALDRY",
- "from": "kits/E08-FADIA.SND drum 3",
- "n": 140,
  "type": "drum 3",
  "voice": 2,
  "params": {

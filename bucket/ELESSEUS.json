@@ -1,7 +1,5 @@
 {
  "name": "ELESSEUS",
- "from": "kits/factory/PROJ00-30-ZORLIN.SND hihat",
- "n": 365,
  "type": "hihat",
  "voice": 5,
  "params": {

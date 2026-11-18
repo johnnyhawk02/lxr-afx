@@ -1,7 +1,5 @@
 {
  "name": "GRIDI",
- "from": "kits/factory/PROJ00-49-WYMMA.SND snare",
- "n": 471,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "MASEPSIS",
- "from": "kits/00-VAMET.SND drum 1",
- "n": 0,
  "type": "drum 1",
  "voice": 0,
  "params": {

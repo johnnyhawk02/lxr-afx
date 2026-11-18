@@ -1,12 +1,12 @@
 // node test/breed.test.mjs: BREED (sound/breed.js). A child takes each section whole from one parent, never all from
 // one, stays inside each control's range, and the dud filter lets few of the children through as duds.
-import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { SOUNDS, INIT_VALUES, PAR, mapVoice, VOICE_SCHEMAS } from '../sound/schema.js';
+import { KITS } from './bucket-kits.mjs';
 import { measure, LEVEL_TARGET_DB } from '../sound/level.js';
 import { breed, isDud, GENES } from '../sound/breed.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
+const kits = KITS;
 let seed = 12345; const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 SOUNDS.forEach((def, sound) => {
   const v = def.engineVoice, sc = VOICE_SCHEMAS[v], pool = [];

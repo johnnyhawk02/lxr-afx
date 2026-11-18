@@ -1,7 +1,5 @@
 {
  "name": "TURBUNOS",
- "from": "kits/03-CRYORIM.SND hihat",
- "n": 23,
  "type": "hihat",
  "voice": 5,
  "params": {

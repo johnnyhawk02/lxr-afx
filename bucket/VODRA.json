@@ -1,7 +1,5 @@
 {
  "name": "VODRA",
- "from": "kits/factory/PROJ02-02-FRORY.SND drum 3",
- "n": 614,
  "type": "drum 3",
  "voice": 2,
  "params": {

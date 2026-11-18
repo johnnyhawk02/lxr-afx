@@ -1,7 +1,5 @@
 {
  "name": "POLAN",
- "from": "kits/hrtl-untz/PROJ00-11-ICANET.SND drum 2",
- "n": 757,
  "type": "drum 2",
  "voice": 1,
  "params": {

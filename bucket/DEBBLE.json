@@ -1,7 +1,5 @@
 {
  "name": "DEBBLE",
- "from": "kits/factory/PROJ00-35-REATHOR.SND drum 1",
- "n": 390,
  "type": "drum 1",
  "voice": 0,
  "params": {

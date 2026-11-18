@@ -1,7 +1,5 @@
 {
  "name": "XETON",
- "from": "kits/factory/PROJ05-04-KREMPEKE.SND drum 3",
- "n": 662,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "VARUSER",
- "from": "kits/E11-ZINSOR.SND hihat",
- "n": 161,
  "type": "hihat",
  "voice": 5,
  "params": {

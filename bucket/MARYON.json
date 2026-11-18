@@ -1,7 +1,5 @@
 {
  "name": "MARYON",
- "from": "kits/hrtl-untz/PROJ00-05-EQUIDINE.SND cymbal",
- "n": 724,
  "type": "cymbal",
  "voice": 4,
  "params": {

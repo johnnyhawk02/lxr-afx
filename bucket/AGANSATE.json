@@ -1,7 +1,5 @@
 {
  "name": "AGANSATE",
- "from": "kits/hrtl-untz/PROJ00-15-TREARUS.SND cymbal",
- "n": 784,
  "type": "cymbal",
  "voice": 4,
  "params": {

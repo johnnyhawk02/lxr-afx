@@ -1,7 +1,5 @@
 {
  "name": "SKADIAC",
- "from": "kits/factory/PROJ00-02-VYLOC.SND drum 1",
- "n": 192,
  "type": "drum 1",
  "voice": 0,
  "params": {

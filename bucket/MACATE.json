@@ -1,7 +1,5 @@
 {
  "name": "MACATE",
- "from": "kits/factory/PROJ05-02-MINIRGAL.SND cymbal",
- "n": 652,
  "type": "cymbal",
  "voice": 4,
  "params": {

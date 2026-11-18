@@ -1,7 +1,5 @@
 {
  "name": "TWINTIS",
- "from": "kits/factory/PROJ00-16-MERIFUR.SND snare",
- "n": 279,
  "type": "snare",
  "voice": 3,
  "params": {

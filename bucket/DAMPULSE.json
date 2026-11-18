@@ -1,7 +1,5 @@
 {
  "name": "DAMPULSE",
- "from": "kits/hrtl-untz/PROJ00-09-CERIN.SND snare",
- "n": 747,
  "type": "snare",
  "voice": 3,
  "params": {

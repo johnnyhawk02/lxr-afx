@@ -1,7 +1,5 @@
 {
  "name": "KINEMGEE",
- "from": "kits/factory/PROJ05-07-BAQUENCY.SND snare",
- "n": 681,
  "type": "snare",
  "voice": 3,
  "params": {

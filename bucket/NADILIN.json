@@ -1,7 +1,5 @@
 {
  "name": "NADILIN",
- "from": "kits/factory/PROJ05-00-SYTTER.SND snare",
- "n": 639,
  "type": "snare",
  "voice": 3,
  "params": {

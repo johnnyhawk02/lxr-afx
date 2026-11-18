@@ -1,7 +1,5 @@
 {
  "name": "BOPHON",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND cymbal",
- "n": 712,
  "type": "cymbal",
  "voice": 4,
  "params": {

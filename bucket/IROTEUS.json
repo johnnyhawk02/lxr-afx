@@ -1,7 +1,5 @@
 {
  "name": "IROTEUS",
- "from": "kits/factory/PROJ00-16-MERIFUR.SND hihat",
- "n": 281,
  "type": "hihat",
  "voice": 5,
  "params": {

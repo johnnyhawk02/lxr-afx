@@ -1,7 +1,5 @@
 {
  "name": "HESTIAL",
- "from": "kits/factory/PROJ00-13-ARCARAN.SND drum 1",
- "n": 258,
  "type": "drum 1",
  "voice": 0,
  "params": {

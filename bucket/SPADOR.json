@@ -1,7 +1,5 @@
 {
  "name": "SPADOR",
- "from": "kits/13-TITARI.SND cymbal",
- "n": 82,
  "type": "cymbal",
  "voice": 4,
  "params": {

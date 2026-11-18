@@ -1,7 +1,5 @@
 {
  "name": "ZEVIEDUN",
- "from": "kits/factory/PROJ00-05-PERGLE.SND snare",
- "n": 213,
  "type": "snare",
  "voice": 3,
  "params": {

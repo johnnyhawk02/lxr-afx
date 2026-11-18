@@ -1,7 +1,5 @@
 {
  "name": "COROTON",
- "from": "kits/factory/PROJ00-22-VEXIE.SND hihat",
- "n": 317,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "ARIADIR",
- "from": "kits/factory/PROJ05-02-MINIRGAL.SND drum 3",
- "n": 650,
  "type": "drum 3",
  "voice": 2,
  "params": {

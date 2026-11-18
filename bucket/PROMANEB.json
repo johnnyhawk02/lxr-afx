@@ -1,7 +1,5 @@
 {
  "name": "PROMANEB",
- "from": "kits/factory/PROJ00-04-BATON.SND drum 2",
- "n": 205,
  "type": "drum 2",
  "voice": 1,
  "params": {

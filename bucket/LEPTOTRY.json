@@ -1,7 +1,5 @@
 {
  "name": "LEPTOTRY",
- "from": "kits/02-REWYN.SND drum 1",
- "n": 12,
  "type": "drum 1",
  "voice": 0,
  "params": {

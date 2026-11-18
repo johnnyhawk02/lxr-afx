@@ -1,7 +1,5 @@
 {
  "name": "CANGORN",
- "from": "kits/factory/PROJ00-58-ERATION.SND drum 2",
- "n": 517,
  "type": "drum 2",
  "voice": 1,
  "params": {

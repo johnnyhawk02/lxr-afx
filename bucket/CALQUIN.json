@@ -1,7 +1,5 @@
 {
  "name": "CALQUIN",
- "from": "kits/factory/PROJ00-11-GALATHAN.SND drum 3",
- "n": 248,
  "type": "drum 3",
  "voice": 2,
  "params": {

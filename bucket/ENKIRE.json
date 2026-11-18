@@ -1,7 +1,5 @@
 {
  "name": "ENKIRE",
- "from": "kits/factory/PROJ02-03-AZITER.SND drum 2",
- "n": 619,
  "type": "drum 2",
  "voice": 1,
  "params": {

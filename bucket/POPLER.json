@@ -1,7 +1,5 @@
 {
  "name": "POPLER",
- "from": "kits/factory/PROJ00-24-BARUBUR.SND drum 1",
- "n": 324,
  "type": "drum 1",
  "voice": 0,
  "params": {

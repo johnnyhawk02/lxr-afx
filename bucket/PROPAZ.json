@@ -1,7 +1,5 @@
 {
  "name": "PROPAZ",
- "from": "kits/factory/PROJ00-09-XIRPENT.SND drum 2",
- "n": 235,
  "type": "drum 2",
  "voice": 1,
  "params": {

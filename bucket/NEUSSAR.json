@@ -1,7 +1,5 @@
 {
  "name": "NEUSSAR",
- "from": "kits/factory/PROJ05-00-SYTTER.SND drum 2",
- "n": 637,
  "type": "drum 2",
  "voice": 1,
  "params": {

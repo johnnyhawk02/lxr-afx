@@ -1,7 +1,5 @@
 {
  "name": "BASTER",
- "from": "kits/factory/PROJ00-10-COROZZLE.SND hihat",
- "n": 245,
  "type": "hihat",
  "voice": 5,
  "params": {

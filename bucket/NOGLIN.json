@@ -1,7 +1,5 @@
 {
  "name": "NOGLIN",
- "from": "kits/factory/PROJ00-59-CRONUTRY.SND drum 3",
- "n": 524,
  "type": "drum 3",
  "voice": 2,
  "params": {

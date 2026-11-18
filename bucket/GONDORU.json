@@ -1,7 +1,5 @@
 {
  "name": "GONDORU",
- "from": "kits/factory/PROJ05-03-CELEPTON.SND snare",
- "n": 657,
  "type": "snare",
  "voice": 3,
  "params": {

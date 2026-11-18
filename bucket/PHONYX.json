@@ -1,7 +1,5 @@
 {
  "name": "PHONYX",
- "from": "kits/hrtl-untz/PROJ00-15-TREARUS.SND snare",
- "n": 783,
  "type": "snare",
  "voice": 3,
  "params": {

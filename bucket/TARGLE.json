@@ -1,7 +1,5 @@
 {
  "name": "TARGLE",
- "from": "kits/06-MANOR.SND drum 2",
- "n": 37,
  "type": "drum 2",
  "voice": 1,
  "params": {

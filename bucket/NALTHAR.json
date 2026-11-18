@@ -1,7 +1,5 @@
 {
  "name": "NALTHAR",
- "from": "kits/factory/PROJ00-56-IMPUNET.SND snare",
- "n": 507,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "ANTIRIM",
- "from": "kits/E08-FADIA.SND snare",
- "n": 141,
  "type": "snare",
  "voice": 3,
  "params": {

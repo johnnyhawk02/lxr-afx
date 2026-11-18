@@ -1,7 +1,5 @@
 {
  "name": "MOMALEG",
- "from": "kits/factory/PROJ00-54-AGAXA.SND drum 3",
- "n": 494,
  "type": "drum 3",
  "voice": 2,
  "params": {

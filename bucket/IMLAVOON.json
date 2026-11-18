@@ -1,7 +1,5 @@
 {
  "name": "IMLAVOON",
- "from": "kits/factory/PROJ00-63-THEBBLIX.SND drum 1",
- "n": 546,
  "type": "drum 1",
  "voice": 0,
  "params": {

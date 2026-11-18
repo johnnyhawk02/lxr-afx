@@ -1,7 +1,5 @@
 {
  "name": "OXURVARA",
- "from": "kits/factory/PROJ00-50-ANGBAXA.SND drum 1",
- "n": 474,
  "type": "drum 1",
  "voice": 0,
  "params": {

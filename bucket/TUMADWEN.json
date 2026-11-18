@@ -1,7 +1,5 @@
 {
  "name": "TUMADWEN",
- "from": "kits/08-THOMETER.SND drum 1",
- "n": 48,
  "type": "drum 1",
  "voice": 0,
  "params": {

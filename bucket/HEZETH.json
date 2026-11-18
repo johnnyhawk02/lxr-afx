@@ -1,7 +1,5 @@
 {
  "name": "HEZETH",
- "from": "kits/factory/PROJ00-32-SMEATE.SND drum 1",
- "n": 372,
  "type": "drum 1",
  "voice": 0,
  "params": {

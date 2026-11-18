@@ -1,7 +1,5 @@
 {
  "name": "PROXIDU",
- "from": "kits/hrtl-untz/PROJ00-02-OSCIRION.SND drum 1",
- "n": 702,
  "type": "drum 1",
  "voice": 0,
  "params": {

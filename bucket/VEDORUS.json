@@ -1,7 +1,5 @@
 {
  "name": "VEDORUS",
- "from": "kits/elixir-kits/SIRIUDO.SND drum 2",
- "n": 175,
  "type": "drum 2",
  "voice": 1,
  "params": {

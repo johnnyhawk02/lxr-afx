@@ -1,7 +1,5 @@
 {
  "name": "SYZYVELI",
- "from": "kits/factory/PROJ00-29-HERANTUM.SND drum 3",
- "n": 356,
  "type": "drum 3",
  "voice": 2,
  "params": {

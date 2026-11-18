@@ -1,7 +1,5 @@
 {
  "name": "HYMANDER",
- "from": "kits/factory/PROJ00-01-LEROSIC.SND drum 3",
- "n": 188,
  "type": "drum 3",
  "voice": 2,
  "params": {

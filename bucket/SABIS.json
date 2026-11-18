@@ -1,7 +1,5 @@
 {
  "name": "SABIS",
- "from": "kits/factory/PROJ00-09-XIRPENT.SND hihat",
- "n": 239,
  "type": "hihat",
  "voice": 5,
  "params": {

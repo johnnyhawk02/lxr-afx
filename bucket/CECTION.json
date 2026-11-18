@@ -1,7 +1,5 @@
 {
  "name": "CECTION",
- "from": "kits/elixir-kits/ISILAS.SND cymbal",
- "n": 172,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "LENICORN",
- "from": "kits/factory/PROJ00-25-GOLDIZGU.SND hihat",
- "n": 335,
  "type": "hihat",
  "voice": 5,
  "params": {

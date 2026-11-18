@@ -1,7 +1,5 @@
 {
  "name": "FETIME",
- "from": "kits/factory/PROJ03-01-ZELPY.SND snare",
- "n": 633,
  "type": "snare",
  "voice": 3,
  "params": {

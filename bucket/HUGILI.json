@@ -1,7 +1,5 @@
 {
  "name": "HUGILI",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND cymbal",
- "n": 346,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "JUPITON",
- "from": "kits/factory/PROJ00-61-PIGLUK.SND snare",
- "n": 537,
  "type": "snare",
  "voice": 3,
  "params": {
