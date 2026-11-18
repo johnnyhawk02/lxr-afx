@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlfqpjr';
-import { presetName } from './names.js?v=mwlfqpjr';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlfqpjr';
-import { MAKERS, recipe, recipesFor } from '../sound/makers.js?v=mwlfqpjr';
-import { breed, isDud } from '../sound/breed.js?v=mwlfqpjr';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlfqpjr';
-import { KIT_FILES } from '../sound/kits.js?v=mwlfqpjr';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlfqpjr';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlfqpjr';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlr7ugm';
+import { presetName } from './names.js?v=mwlr7ugm';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlr7ugm';
+import { MAKERS, recipe, recipesFor } from '../sound/makers.js?v=mwlr7ugm';
+import { breed, isDud } from '../sound/breed.js?v=mwlr7ugm';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlr7ugm';
+import { KIT_FILES } from '../sound/kits.js?v=mwlr7ugm';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlr7ugm';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlr7ugm';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -78,7 +78,8 @@ const save = () => {
 setEngines(S.engines); setZoneStart(S.zoneStart);
 // the engines in use, in order (the others have no keys)
 const onSounds = () => SOUNDS.map((_, i) => i).filter(engineOn);
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(atob(k.data), (c) => c.charCodeAt(0))));
+// (drums: each kit drum's own name, from kits/names.json)
+const kits = KIT_FILES.map((k) => ({ ...parseSnd(Uint8Array.from(atob(k.data), (c) => c.charCodeAt(0))), drums: k.drums || [] }));
 
 // ---------------------------------------------------------------------------------------------------------------
 // audio
@@ -88,7 +89,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlfqpjr', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlr7ugm', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1135,12 +1136,12 @@ const pools = SOUNDS.map(() => null);
 function pool(sound) {
   if (pools[sound]) return pools[sound];
   const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, panPar(v)]), seen = new Set(), out = [];
-  for (const { name, kit } of kits) for (const src of [0, 1, 2, 3, 4, 5]) { // (every kit voice: any engine plays any kit sound)
+  for (const { name, kit, drums } of kits) for (const src of [0, 1, 2, 3, 4, 5]) { // (every kit voice: any engine plays any kit sound)
     const vals = mapVoice(kit, src, v).filter(([p]) => !skip.has(p));
     const sig = vals.map(([p, x]) => x).join(',');
     if (seen.has(sig)) continue;
     seen.add(sig);
-    out.push({ label: `${name} ${['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'][src]}`, vals });
+    out.push({ label: `${drums[src] || name} ${['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'][src]}`, vals }); // ("NEXUNE drum 3": the type last, as RECIPES look for it)
   }
   return (pools[sound] = out);
 }

@@ -1,0 +1,1574 @@
+{
+ "00-VAMET.SND": {
+  "kit": "VAMET",
+  "drums": [
+   "MASEPSIS",
+   "CAREWOLF",
+   "NEXUNE",
+   "NIREAL",
+   "VECHERON",
+   "RATORY"
+  ],
+  "was": "00-LAMBO.SND"
+ },
+ "01-HALLER.SND": {
+  "kit": "HALLER",
+  "drums": [
+   "VEPSIS",
+   "DWALIRE",
+   "SHETION",
+   "NOONTIAL",
+   "NOSINFLY",
+   "SAUNGEON"
+  ],
+  "was": "01-RESER.SND"
+ },
+ "02-REWYN.SND": {
+  "kit": "REWYN",
+  "drums": [
+   "LEPTOTRY",
+   "MOGNAKE",
+   "MEPHON",
+   "CACTION",
+   "PIOTA",
+   "MEBBLO"
+  ],
+  "was": "02-FADER.SND"
+ },
+ "03-CRYORIM.SND": {
+  "kit": "CRYORIM",
+  "drums": [
+   "ITHICE",
+   "LOREUS",
+   "CASSUS",
+   "VENSATE",
+   "GLIXALE",
+   "TURBUNOS"
+  ],
+  "was": "03-MALWA.SND"
+ },
+ "04-KUKULAR.SND": {
+  "kit": "KUKULAR",
+  "drums": [
+   "HYCTION",
+   "KITER",
+   "GISION",
+   "POLEGLIN",
+   "BELAROG",
+   "MYXOLOTL"
+  ],
+  "was": "04-ZIPPE.SND"
+ },
+ "05-DRYARI.SND": {
+  "kit": "DRYARI",
+  "drums": [
+   "XATOSTAR",
+   "BOMBUTE",
+   "SPUDRIS",
+   "WONTIR",
+   "NECROPE",
+   "NENTRESS"
+  ],
+  "was": "05-NANOB.SND"
+ },
+ "06-MANOR.SND": {
+  "kit": "MANOR",
+  "drums": [
+   "BETORU",
+   "TARGLE",
+   "SUMITAR",
+   "THELTHEX",
+   "ROSUS",
+   "MOLENOID"
+  ],
+  "was": "06-KRONK.SND"
+ },
+ "07-DEMELEK.SND": {
+  "kit": "DEMELEK",
+  "drums": [
+   "MIPHAE",
+   "RALENDIL",
+   "INTEFRIT",
+   "SITER",
+   "LORONUS",
+   "POPHAE"
+  ],
+  "was": "07-BOOOO.SND"
+ },
+ "08-THOMETER.SND": {
+  "kit": "THOMETER",
+  "drums": [
+   "TUMADWEN",
+   "VOVER",
+   "ARTEZIMU",
+   "WAYDHROS",
+   "SYPNOS",
+   "IMRASIS"
+  ],
+  "was": "08-DROPB.SND"
+ },
+ "09-NERES.SND": {
+  "kit": "NERES",
+  "drums": [
+   "RETEOR",
+   "KUDASMON",
+   "KIRUN",
+   "MAGNEZGU",
+   "CHINTARU",
+   "METAR"
+  ],
+  "was": "09-GOOND.SND"
+ },
+ "10-SKAVERAC.SND": {
+  "kit": "SKAVERAC",
+  "drums": [
+   "JUPIVER",
+   "CLUSIL",
+   "MARDUNCE",
+   "ECLIXLOR",
+   "GANTEDER",
+   "KITSUNA"
+  ],
+  "was": "10-SPACE.SND"
+ },
+ "11-PARAXURA.SND": {
+  "kit": "PARAXURA",
+  "drums": [
+   "NAZATION",
+   "LINHEIM",
+   "VITON",
+   "QUIXOFIN",
+   "THASTEPY",
+   "CANDEDEA"
+  ],
+  "was": "11-PENAL.SND"
+ },
+ "12-ISOTIONE.SND": {
+  "kit": "ISOTIONE",
+  "drums": [
+   "SINGULMO",
+   "ORORADAS",
+   "MINEER",
+   "LUMETE",
+   "TUDEREAL",
+   "CHINDER"
+  ],
+  "was": "12-DIALU.SND"
+ },
+ "13-TITARI.SND": {
+  "kit": "TITARI",
+  "drums": [
+   "WEZATION",
+   "ETHESTET",
+   "VENTUM",
+   "MALAN",
+   "SPADOR",
+   "SOSTAL"
+  ],
+  "was": "13-EXPRE.SND"
+ },
+ "14-GROOSYNE.SND": {
+  "kit": "GROOSYNE",
+  "drums": [
+   "CARISTOR",
+   "THETENA",
+   "METTENET",
+   "CRYPHON",
+   "PAMENT",
+   "CHALADUS"
+  ],
+  "was": "14-NECRO.SND"
+ },
+ "15-ORCRILE.SND": {
+  "kit": "ORCRILE",
+  "drums": [
+   "COLLIDEL",
+   "LOONDURE",
+   "PLANENIC",
+   "DIRALFIN",
+   "GLOVAL",
+   "ELETY"
+  ],
+  "was": "15-MIST_.SND"
+ },
+ "E01-DILLEPUS.SND": {
+  "kit": "DILLEPUS",
+  "drums": [
+   "CELEDER",
+   "SYZATE",
+   "ELIKVAR",
+   "MOPIER",
+   "THENDOR",
+   "MEXIR"
+  ],
+  "was": "E01-KYOQKIT.SND"
+ },
+ "E02-ZHURALSE.SND": {
+  "kit": "ZHURALSE",
+  "drums": [
+   "SVAROLAS",
+   "SCIGEE",
+   "CELECTIC",
+   "NARCILUM",
+   "CORIM",
+   "PLOMEDE"
+  ],
+  "was": "E02-LAAAXKIT.SND"
+ },
+ "E03-XYHETTER.SND": {
+  "kit": "XYHETTER",
+  "drums": [
+   "NADIPUS",
+   "ENKIRA",
+   "FAMIXLOR",
+   "TUOMESH",
+   "VALEBBLO",
+   "ALTAITER"
+  ],
+  "was": "E03-YIZHUKIT.SND"
+ },
+ "E04-UNCELEG.SND": {
+  "kit": "UNCELEG",
+  "drums": [
+   "GENOS",
+   "ASTENITO",
+   "JAMESH",
+   "KISTET",
+   "AGAMERY",
+   "EDOVVAX"
+  ],
+  "was": "E04-VUTHAKIT.SND"
+ },
+ "E05-QELANTY.SND": {
+  "kit": "QELANTY",
+  "drums": [
+   "FRORINA",
+   "LIBLIN",
+   "JASORI",
+   "WYTRY",
+   "NETHER",
+   "XILOLEM"
+  ],
+  "was": "E05-YQAZKIT.SND"
+ },
+ "E06-CUVAL.SND": {
+  "kit": "CUVAL",
+  "drums": [
+   "NIENOXA",
+   "MATRON",
+   "FRINDAR",
+   "TANCE",
+   "ODYNDIR",
+   "TETIC"
+  ],
+  "was": "E06-YULOXKIT.SND"
+ },
+ "E07-HORIA.SND": {
+  "kit": "HORIA",
+  "drums": [
+   "CAUQUILA",
+   "HASTER",
+   "PEMIRIS",
+   "HYNCER",
+   "CAPALAN",
+   "RHIALOTL"
+  ],
+  "was": "E07-ZHAOKIT.SND"
+ },
+ "E08-FADIA.SND": {
+  "kit": "FADIA",
+  "drums": [
+   "APOSTOR",
+   "SQUONDOR",
+   "ANCALDRY",
+   "ANTIRIM",
+   "GEOGIL",
+   "ROHARZAN"
+  ],
+  "was": "E08-QAQAKIT.SND"
+ },
+ "E09-WETOR.SND": {
+  "kit": "WETOR",
+  "drums": [
+   "PEREBOR",
+   "ELELON",
+   "BARZAKU",
+   "PROTOGID",
+   "VEROPA",
+   "KLYLANOR"
+  ],
+  "was": "E09-ZHUYOKIT.SND"
+ },
+ "E10-ABSOBIS.SND": {
+  "kit": "ABSOBIS",
+  "drums": [
+   "RADRIEL",
+   "SISYNUNA",
+   "TOSTER",
+   "VALHARE",
+   "NIENOTOS",
+   "MICLEUS"
+  ],
+  "was": "E10-THUIKKIT.SND"
+ },
+ "E11-ZINSOR.SND": {
+  "kit": "ZINSOR",
+  "drums": [
+   "THARORY",
+   "VYCKING",
+   "NORMETO",
+   "STOCTRON",
+   "IONOMIS",
+   "VARUSER"
+  ],
+  "was": "E11-XIZUEKIT.SND"
+ },
+ "E12-PETARBAG.SND": {
+  "kit": "PETARBAG",
+  "drums": [
+   "MIDARY",
+   "GWIVI",
+   "INTELLUM",
+   "SIMENTAL",
+   "POZOON",
+   "CALAS"
+  ],
+  "was": "E12-ZOLUNKIT.SND"
+ },
+ "elixir-kits/ISILAS.SND": {
+  "kit": "ISILAS",
+  "drums": [
+   "CHINGORN",
+   "NOLADIN",
+   "KAZIMERA",
+   "PALALDUR",
+   "CECTION",
+   "IMPUZOO"
+  ],
+  "was": "elixir-kits/MUZIZ-BAARAM.SND"
+ },
+ "elixir-kits/SIRIUDO.SND": {
+  "kit": "SIRIUDO",
+  "drums": [
+   "TAUXXUL",
+   "VEDORUS",
+   "THOPLER",
+   "BEOMATIC",
+   "MANDOGDA",
+   "PROCHYON"
+  ],
+  "was": "elixir-kits/NOUKSAM-NAARQUE.SND"
+ },
+ "factory/PROJ00-00-PASITION.SND": {
+  "kit": "PASITION",
+  "drums": [
+   "MEENDOR",
+   "FINGORRA",
+   "DUMEDA",
+   "HORENDIL",
+   "BORAN",
+   "NEROXA"
+  ],
+  "was": "factory/PROJ00-00-BADON.SND"
+ },
+ "factory/PROJ00-01-LEROSIC.SND": {
+  "kit": "LEROSIC",
+  "drums": [
+   "EREBOCO",
+   "AZIMURIN",
+   "HYMANDER",
+   "PARAMIME",
+   "INTERA",
+   "VYNDIL"
+  ],
+  "was": "factory/PROJ00-01-SHORT.SND"
+ },
+ "factory/PROJ00-02-VYLOC.SND": {
+  "kit": "VYLOC",
+  "drums": [
+   "SKADIAC",
+   "ICARUTY",
+   "PESITY",
+   "ERARIS",
+   "THAPO",
+   "DRAJAX"
+  ],
+  "was": "factory/PROJ00-02-DUBEE.SND"
+ },
+ "factory/PROJ00-03-CARALPIE.SND": {
+  "kit": "CARALPIE",
+  "drums": [
+   "CELIN",
+   "MILAN",
+   "MAGLOLE",
+   "CALARITY",
+   "SQUINOLA",
+   "YECTOR"
+  ],
+  "was": "factory/PROJ00-03-METRO.SND"
+ },
+ "factory/PROJ00-04-BATON.SND": {
+  "kit": "BATON",
+  "drums": [
+   "RIRCULES",
+   "PROMANEB",
+   "SUPENTAL",
+   "IMLANHUR",
+   "XENORER",
+   "CANTHEA"
+  ],
+  "was": "factory/PROJ00-04-BLUMP.SND"
+ },
+ "factory/PROJ00-05-PERGLE.SND": {
+  "kit": "PERGLE",
+  "drums": [
+   "VELECTRA",
+   "DRUIZOO",
+   "CALKAS",
+   "ZEVIEDUN",
+   "LURALDRY",
+   "XEPOLLO"
+  ],
+  "was": "factory/PROJ00-05-WOODS.SND"
+ },
+ "factory/PROJ00-06-DURIRI.SND": {
+  "kit": "DURIRI",
+  "drums": [
+   "DEMENSOR",
+   "POLALAR",
+   "ELERION",
+   "MENUPTER",
+   "TWILROG",
+   "MOZATION"
+  ],
+  "was": "factory/PROJ00-06-BOW__.SND"
+ },
+ "factory/PROJ00-07-TINTAURI.SND": {
+  "kit": "TINTAURI",
+  "drums": [
+   "MNETAL",
+   "GLOORIE",
+   "HESTOR",
+   "FINANCE",
+   "ZYSILISK",
+   "BERETER"
+  ],
+  "was": "factory/PROJ00-07-KARPC.SND"
+ },
+ "factory/PROJ00-08-XEDHRIM.SND": {
+  "kit": "XEDHRIM",
+  "drums": [
+   "SPENTARI",
+   "ZUVILVIN",
+   "CALIENGU",
+   "EUROSMA",
+   "EREMESIS",
+   "HYLINOR"
+  ],
+  "was": "factory/PROJ00-08-STRIN.SND"
+ },
+ "factory/PROJ00-09-XIRPENT.SND": {
+  "kit": "XIRPENT",
+  "drums": [
+   "TELETON",
+   "PROPAZ",
+   "PANDONCE",
+   "PEVLOK",
+   "HYLHALLA",
+   "SABIS"
+  ],
+  "was": "factory/PROJ00-09-ZARTA.SND"
+ },
+ "factory/PROJ00-10-COROZZLE.SND": {
+  "kit": "COROZZLE",
+  "drums": [
+   "PERIAND",
+   "LAPHECY",
+   "HATHOLOB",
+   "GALLATOR",
+   "NAMEXIE",
+   "BASTER"
+  ],
+  "was": "factory/PROJ00-10-POLYD.SND"
+ },
+ "factory/PROJ00-11-GALATHAN.SND": {
+  "kit": "GALATHAN",
+  "drums": [
+   "DOLIEN",
+   "COSMOHIR",
+   "CALQUIN",
+   "MIRINA",
+   "CODENWE",
+   "CULIOPSE"
+  ],
+  "was": "factory/PROJ00-11-DIRTB.SND"
+ },
+ "factory/PROJ00-12-THEREREN.SND": {
+  "kit": "THEREREN",
+  "drums": [
+   "VAQUIDE",
+   "AXIMETER",
+   "CROPOLLO",
+   "MATAFREY",
+   "NIVITY",
+   "GOREID"
+  ],
+  "was": "factory/PROJ00-12-BROKE.SND"
+ },
+ "factory/PROJ00-13-ARCARAN.SND": {
+  "kit": "ARCARAN",
+  "drums": [
+   "HESTIAL",
+   "CARUS",
+   "AMRODIN",
+   "XANWE",
+   "BERLIN",
+   "MODRON"
+  ],
+  "was": "factory/PROJ00-13-NERVO.SND"
+ },
+ "factory/PROJ00-14-EURYLE.SND": {
+  "kit": "EURYLE",
+  "drums": [
+   "NEXXUL",
+   "GANDAGER",
+   "CERESSUS",
+   "GLORU",
+   "FARARUNG",
+   "HERAS"
+  ],
+  "was": "factory/PROJ00-14-SLAPP.SND"
+ },
+ "factory/PROJ00-15-NYTURGUL.SND": {
+  "kit": "NYTURGUL",
+  "drums": [
+   "INTERESS",
+   "LARKON",
+   "CAPSUVER",
+   "MALASTIC",
+   "TAMKARA",
+   "VANSTREL"
+  ],
+  "was": "factory/PROJ00-15-HACKE.SND"
+ },
+ "factory/PROJ00-16-MERIFUR.SND": {
+  "kit": "MERIFUR",
+  "drums": [
+   "ALBEBYTY",
+   "GLOIRTEX",
+   "KELHEIM",
+   "TWINTIS",
+   "RESOLA",
+   "IROTEUS"
+  ],
+  "was": "factory/PROJ00-16-UDUSM.SND"
+ },
+ "factory/PROJ00-17-XYRPHEUS.SND": {
+  "kit": "XYRPHEUS",
+  "drums": [
+   "GHOLE",
+   "LASERI",
+   "DORIADE",
+   "LUMAN",
+   "SOLOGRAM",
+   "HYCORN"
+  ],
+  "was": "factory/PROJ00-17-ROBOW.SND"
+ },
+ "factory/PROJ00-18-HEBENADU.SND": {
+  "kit": "HEBENADU",
+  "drums": [
+   "HOLROG",
+   "LIBRARCE",
+   "KNIBRIXA",
+   "SCASEUS",
+   "WYLBO",
+   "PENANT"
+  ],
+  "was": "factory/PROJ00-18-NUYOR.SND"
+ },
+ "factory/PROJ00-19-PORIRY.SND": {
+  "kit": "PORIRY",
+  "drums": [
+   "VERPE",
+   "MORGOXI",
+   "ELILIA",
+   "THERU",
+   "IDRIRA",
+   "PORULERI"
+  ],
+  "was": "factory/PROJ00-19-8-BIT.SND"
+ },
+ "factory/PROJ00-20-LELFIN.SND": {
+  "kit": "LELFIN",
+  "drums": [
+   "SUPERAWN",
+   "VABEK",
+   "PHOTOBOS",
+   "GALARION",
+   "QWISSE",
+   "IMPUNE"
+  ],
+  "was": "factory/PROJ00-20-WARMT.SND"
+ },
+ "factory/PROJ00-21-TIRISER.SND": {
+  "kit": "TIRISER",
+  "drums": [
+   "CANTIR",
+   "DODAMANT",
+   "COUKHMET",
+   "DRUINUS",
+   "NEUMGEE",
+   "ORTHASIS"
+  ],
+  "was": "factory/PROJ00-21-CLICK.SND"
+ },
+ "factory/PROJ00-22-VEXIE.SND": {
+  "kit": "VEXIE",
+  "drums": [
+   "ERKESTO",
+   "TIRENTZ",
+   "DAVERN",
+   "XENOVA",
+   "HOMBIX",
+   "COROTON"
+  ],
+  "was": "factory/PROJ00-22-VHS__.SND"
+ },
+ "factory/PROJ00-23-ISITIC.SND": {
+  "kit": "ISITIC",
+  "drums": [
+   "GOSMAN",
+   "TACHERON",
+   "SOLIDAS",
+   "ROREDE",
+   "VIRANA",
+   "TERPTION"
+  ],
+  "was": "factory/PROJ00-23-MILLS.SND"
+ },
+ "factory/PROJ00-24-BARUBUR.SND": {
+  "kit": "BARUBUR",
+  "drums": [
+   "POPLER",
+   "REZATION",
+   "INCAVAN",
+   "PERIATHE",
+   "MORBAG",
+   "TOBLO"
+  ],
+  "was": "factory/PROJ00-24-FREAK.SND"
+ },
+ "factory/PROJ00-25-GOLDIZGU.SND": {
+  "kit": "GOLDIZGU",
+  "drums": [
+   "XERELIEN",
+   "XASIL",
+   "SILMARCE",
+   "COLLINEB",
+   "GANDAGA",
+   "LENICORN"
+  ],
+  "was": "factory/PROJ00-25-BROWN.SND"
+ },
+ "factory/PROJ00-26-XORANDA.SND": {
+  "kit": "XORANDA",
+  "drums": [
+   "VAFARER",
+   "XENOGON",
+   "SCEGEE",
+   "ELYRTAL",
+   "ZARKOPE",
+   "ZUVINI"
+  ],
+  "was": "factory/PROJ00-26-CLUNK.SND"
+ },
+ "factory/PROJ00-27-ZANZILLO.SND": {
+  "kit": "ZANZILLO",
+  "drums": [
+   "VOZHAMAN",
+   "MOLKORA",
+   "ROTZAL",
+   "ARERRIM",
+   "HUGILI",
+   "CHATIME"
+  ],
+  "was": "factory/PROJ00-27-ATARI.SND"
+ },
+ "factory/PROJ00-28-VORUTIC.SND": {
+  "kit": "VORUTIC",
+  "drums": [
+   "SQUOROK",
+   "COROROME",
+   "ZINDAR",
+   "THRARTAL",
+   "NARCILSE",
+   "CAKVAR"
+  ],
+  "was": "factory/PROJ00-28-NAPAL.SND"
+ },
+ "factory/PROJ00-29-HERANTUM.SND": {
+  "kit": "HERANTUM",
+  "drums": [
+   "OROLLAR",
+   "HARZAKU",
+   "SYZYVELI",
+   "PITHODE",
+   "CALHEIM",
+   "PLALIOS"
+  ],
+  "was": "factory/PROJ00-29-STEEL.SND"
+ },
+ "factory/PROJ00-30-ZORLIN.SND": {
+  "kit": "ZORLIN",
+  "drums": [
+   "SOBELKAS",
+   "FAMANDER",
+   "ERERORA",
+   "TUSEUS",
+   "LOMINI",
+   "ELESSEUS"
+  ],
+  "was": "factory/PROJ00-30-SAWER.SND"
+ },
+ "factory/PROJ00-31-TITADO.SND": {
+  "kit": "TITADO",
+  "drums": [
+   "INARWEN",
+   "CORGLE",
+   "HAMIRITH",
+   "PAGON",
+   "THRALUS",
+   "NIEHEIM"
+  ],
+  "was": "factory/PROJ00-31-JUNGL.SND"
+ },
+ "factory/PROJ00-32-SMEATE.SND": {
+  "kit": "SMEATE",
+  "drums": [
+   "HEZETH",
+   "OROPE",
+   "STYTE",
+   "KEZHAN",
+   "XYLEREAL",
+   "BOROPHON"
+  ],
+  "was": "factory/PROJ00-32-FAXMA.SND"
+ },
+ "factory/PROJ00-33-SYRMES.SND": {
+  "kit": "SYRMES",
+  "drums": [
+   "VONFLY",
+   "GAVELA",
+   "BEDUN",
+   "LOOGER",
+   "DALARA",
+   "HOMURES"
+  ],
+  "was": "factory/PROJ00-33-SIZZU.SND"
+ },
+ "factory/PROJ00-34-ANGBATER.SND": {
+  "kit": "ANGBATER",
+  "drums": [
+   "TIBULA",
+   "LARIDWEN",
+   "INCADIA",
+   "NIRIGEE",
+   "RELIRE",
+   "TITADWEN"
+  ],
+  "was": "factory/PROJ00-34-LIU_D.SND"
+ },
+ "factory/PROJ00-35-REATHOR.SND": {
+  "kit": "REATHOR",
+  "drums": [
+   "DEBBLE",
+   "BALIZOO",
+   "CUSTO",
+   "RIRZAKU",
+   "CLAYLZU",
+   "ENCEROK"
+  ],
+  "was": "factory/PROJ00-35-REPLI.SND"
+ },
+ "factory/PROJ00-36-HANITH.SND": {
+  "kit": "HANITH",
+  "drums": [
+   "TATRINO",
+   "KLODRED",
+   "JANEVERE",
+   "LATTIRIS",
+   "CARON",
+   "WEREKU"
+  ],
+  "was": "factory/PROJ00-36-JURAP.SND"
+ },
+ "factory/PROJ00-37-MNETE.SND": {
+  "kit": "MNETE",
+  "drums": [
+   "PHOTONE",
+   "ZENCE",
+   "FANDODO",
+   "TALLIX",
+   "OSGICA",
+   "TELROND"
+  ],
+  "was": "factory/PROJ00-37-TETRI.SND"
+ },
+ "factory/PROJ00-39-SVANUR.SND": {
+  "kit": "SVANUR",
+  "drums": [
+   "PECTOR",
+   "XITOFOLD",
+   "VOROGAL",
+   "HAVER",
+   "SPUMERA",
+   "HOLODRIL"
+  ],
+  "was": "factory/PROJ00-39-DRUMT.SND"
+ },
+ "factory/PROJ00-40-BOMBARIS.SND": {
+  "kit": "BOMBARIS",
+  "drums": [
+   "PARDUK",
+   "WILITON",
+   "CAULOC",
+   "GALDORU",
+   "BEOVITY",
+   "XAPEKE"
+  ],
+  "was": "factory/PROJ00-40-SUBMA.SND"
+ },
+ "factory/PROJ00-41-ARCTUPIC.SND": {
+  "kit": "ARCTUPIC",
+  "drums": [
+   "BETENA",
+   "QUIGRIFF",
+   "SIVVAX",
+   "LYSSUS",
+   "BELUS",
+   "NARCILA"
+  ],
+  "was": "factory/PROJ00-41-AUTOB.SND"
+ },
+ "factory/PROJ00-42-ELACORE.SND": {
+  "kit": "ELACORE",
+  "drums": [
+   "NAIABLAX",
+   "PLARON",
+   "SOBENDIR",
+   "CHAMER",
+   "MAEDRON",
+   "HYCITOR"
+  ],
+  "was": "factory/PROJ00-42-FLIPP.SND"
+ },
+ "factory/PROJ00-43-HARIS.SND": {
+  "kit": "HARIS",
+  "drums": [
+   "SODER",
+   "HEZIMUMA",
+   "MOXIDO",
+   "PENDUGER",
+   "ANUZZLOT",
+   "POCKING"
+  ],
+  "was": "factory/PROJ00-43-BITJA.SND"
+ },
+ "factory/PROJ00-44-SHABUR.SND": {
+  "kit": "SHABUR",
+  "drums": [
+   "BACTION",
+   "PHOTOTIC",
+   "MAERI",
+   "ERIRA",
+   "MINEBLO",
+   "RABOLD"
+  ],
+  "was": "factory/PROJ00-44-ZUBAT.SND"
+ },
+ "factory/PROJ00-45-MERINDOR.SND": {
+  "kit": "MERINDOR",
+  "drums": [
+   "KLYBYNTY",
+   "SVAROLOB",
+   "BOOLOLAN",
+   "GASER",
+   "WINAUT",
+   "SENIAN"
+  ],
+  "was": "factory/PROJ00-45-NIGHT.SND"
+ },
+ "factory/PROJ00-46-XENOCHO.SND": {
+  "kit": "XENOCHO",
+  "drums": [
+   "LONWE",
+   "KASIS",
+   "PAYLALU",
+   "POSITOS",
+   "PHANGORN",
+   "UBRIRE"
+  ],
+  "was": "factory/PROJ00-46-SIMMO.SND"
+ },
+ "factory/PROJ00-47-GYRONDOR.SND": {
+  "kit": "GYRONDOR",
+  "drums": [
+   "NAZGUZU",
+   "RELTA",
+   "ALBEDWEN",
+   "KNISTER",
+   "SESUS",
+   "MERISITY"
+  ],
+  "was": "factory/PROJ00-47-ROTER.SND"
+ },
+ "factory/PROJ00-48-SPENDUME.SND": {
+  "kit": "SPENDUME",
+  "drums": [
+   "SETIORE",
+   "NAMEN",
+   "APORA",
+   "GACKESAR",
+   "CARIDOR",
+   "NADIVEXA"
+  ],
+  "was": "factory/PROJ00-48-AMAZO.SND"
+ },
+ "factory/PROJ00-49-WYMMA.SND": {
+  "kit": "WYMMA",
+  "drums": [
+   "SEGENE",
+   "ROTRY",
+   "MEDULYRI",
+   "GRIDI",
+   "YXANE",
+   "SATYRE"
+  ],
+  "was": "factory/PROJ00-49-ERROR.SND"
+ },
+ "factory/PROJ00-50-ANGBAXA.SND": {
+  "kit": "ANGBAXA",
+  "drums": [
+   "OXURVARA",
+   "JUTION",
+   "LONDRONI",
+   "PHATAN",
+   "FIRORMI",
+   "ORTHAMUN"
+  ],
+  "was": "factory/PROJ00-50-BANZA.SND"
+ },
+ "factory/PROJ00-52-THROGDA.SND": {
+  "kit": "THROGDA",
+  "drums": [
+   "LUXODIAC",
+   "VODIDO",
+   "TITALOT",
+   "XEPAROK",
+   "DENEME",
+   "BORANDA"
+  ],
+  "was": "factory/PROJ00-52-TANKE.SND"
+ },
+ "factory/PROJ00-53-RUNILAUS.SND": {
+  "kit": "RUNILAUS",
+  "drums": [
+   "SATON",
+   "KARIDIAN",
+   "HANICOZU",
+   "NEURI",
+   "CHAGRAT",
+   "HAPOLE"
+  ],
+  "was": "factory/PROJ00-53-LOADI.SND"
+ },
+ "factory/PROJ00-54-AGAXA.SND": {
+  "kit": "AGAXA",
+  "drums": [
+   "VORNATON",
+   "LABYTION",
+   "MOMALEG",
+   "GRABBLE",
+   "LUNANNOS",
+   "ENCEDO"
+  ],
+  "was": "factory/PROJ00-54-RAILG.SND"
+ },
+ "factory/PROJ00-55-SIRAMIRU.SND": {
+  "kit": "SIRAMIRU",
+  "drums": [
+   "MODAGAST",
+   "CATHACA",
+   "CALESMOS",
+   "DALEGLOR",
+   "IDURESS",
+   "NOOGA"
+  ],
+  "was": "factory/PROJ00-55-DYNAS.SND"
+ },
+ "factory/PROJ00-56-IMPUNET.SND": {
+  "kit": "IMPUNET",
+  "drums": [
+   "EMBEZZIT",
+   "NEZLAR",
+   "BANTLET",
+   "NALTHAR",
+   "MUNEVERE",
+   "NISIFOLD"
+  ],
+  "was": "factory/PROJ00-56-BERLI.SND"
+ },
+ "factory/PROJ00-57-AURORLIN.SND": {
+  "kit": "AURORLIN",
+  "drums": [
+   "TALONOX",
+   "CONOR",
+   "CYGNUDA",
+   "XYXITOTE",
+   "SAURODEL",
+   "CARVADEL"
+  ],
+  "was": "factory/PROJ00-57-MEGAD.SND"
+ },
+ "factory/PROJ00-58-ERATION.SND": {
+  "kit": "ERATION",
+  "drums": [
+   "MELLICA",
+   "CANGORN",
+   "LYONEPE",
+   "FRIRNONE",
+   "ZHUDIA",
+   "RECTORY"
+  ],
+  "was": "factory/PROJ00-58-DELOR.SND"
+ },
+ "factory/PROJ00-59-CRONUTRY.SND": {
+  "kit": "CRONUTRY",
+  "drums": [
+   "MIZHAN",
+   "SMEAXURI",
+   "NOGLIN",
+   "DAELLAR",
+   "ECTHERIE",
+   "SIRTEMIS"
+  ],
+  "was": "factory/PROJ00-59-BURNE.SND"
+ },
+ "factory/PROJ00-60-WENCE.SND": {
+  "kit": "WENCE",
+  "drums": [
+   "HONDOR",
+   "MITHOR",
+   "BACORN",
+   "MIMMETRY",
+   "SIDUSA",
+   "SYTERPE"
+  ],
+  "was": "factory/PROJ00-60-ROBOK.SND"
+ },
+ "factory/PROJ00-61-PIGLUK.SND": {
+  "kit": "PIGLUK",
+  "drums": [
+   "THELTHAR",
+   "ORITRON",
+   "BALROTON",
+   "JUPITON",
+   "MINEPAL",
+   "NAIAVALE"
+  ],
+  "was": "factory/PROJ00-61-LINNK.SND"
+ },
+ "factory/PROJ00-62-RUXANO.SND": {
+  "kit": "RUXANO",
+  "drums": [
+   "GAVAN",
+   "WERIGEE",
+   "DIMURGH",
+   "AQVEGDA",
+   "FUNOR",
+   "TERPHEUS"
+  ],
+  "was": "factory/PROJ00-62-ASSEM.SND"
+ },
+ "factory/PROJ00-63-THEBBLIX.SND": {
+  "kit": "THEBBLIX",
+  "drums": [
+   "IMLAVOON",
+   "GAXXUL",
+   "FARONOX",
+   "KISINET",
+   "MEXCHEL",
+   "PLARU"
+  ],
+  "was": "factory/PROJ00-63-OCTOP.SND"
+ },
+ "factory/PROJ01-00-MARUS.SND": {
+  "kit": "MARUS",
+  "drums": [
+   "PALALIC",
+   "GLUOVIKA",
+   "WELPIE",
+   "SOTLAS",
+   "SELENIX",
+   "THAPTER"
+  ],
+  "was": "factory/PROJ01-00-BROWN.SND"
+ },
+ "factory/PROJ01-01-NYRMES.SND": {
+  "kit": "NYRMES",
+  "drums": [
+   "CATHELA",
+   "BAXITORU",
+   "GANYXI",
+   "CYDHRAS",
+   "ELETRY",
+   "BERSEMAT"
+  ],
+  "was": "factory/PROJ01-01-BROWN.SND"
+ },
+ "factory/PROJ01-02-ENCHANIC.SND": {
+  "kit": "ENCHANIC",
+  "drums": [
+   "HENNA",
+   "MONONGU",
+   "SPRINA",
+   "RORGLE",
+   "PUQVELON",
+   "CANERQUE"
+  ],
+  "was": "factory/PROJ01-02-BROWN.SND"
+ },
+ "factory/PROJ01-03-HIPPORY.SND": {
+  "kit": "HIPPORY",
+  "drums": [
+   "PEREVERE",
+   "VAZKAVI",
+   "LOXUVI",
+   "SOMIERU",
+   "KENAUT",
+   "FLUXARER"
+  ],
+  "was": "factory/PROJ01-03-VHS__.SND"
+ },
+ "factory/PROJ01-04-PYRIAN.SND": {
+  "kit": "PYRIAN",
+  "drums": [
+   "SAPOLE",
+   "MEMOSYNE",
+   "ELROLA",
+   "KOGNET",
+   "DULON",
+   "KEMROTH"
+  ],
+  "was": "factory/PROJ01-04-FAXMA.SND"
+ },
+ "factory/PROJ01-05-PARIRIEL.SND": {
+  "kit": "PARIRIEL",
+  "drums": [
+   "BATYR",
+   "CERONA",
+   "STARI",
+   "TRANGER",
+   "BEBYSS",
+   "QUIVENTY"
+  ],
+  "was": "factory/PROJ01-05-SIMMO.SND"
+ },
+ "factory/PROJ01-06-MAGNECE.SND": {
+  "kit": "MAGNECE",
+  "drums": [
+   "MILDOR",
+   "ARIAMADA",
+   "TELEPEIA",
+   "CABUCK",
+   "DRALENCE",
+   "FUSIOLBO"
+  ],
+  "was": "factory/PROJ01-06-ROBOW.SND"
+ },
+ "factory/PROJ01-07-GOMIPE.SND": {
+  "kit": "GOMIPE",
+  "drums": [
+   "TIRIGID",
+   "PLADNE",
+   "ZARUDER",
+   "ARNOCOMB",
+   "KISTER",
+   "BICTOR"
+  ],
+  "was": "factory/PROJ01-07-PA___.SND"
+ },
+ "factory/PROJ02-00-RHIARI.SND": {
+  "kit": "RHIARI",
+  "drums": [
+   "PLASIS",
+   "MAPSILON",
+   "PULSADEN",
+   "CARIKVAR",
+   "NUNDUCE",
+   "ELESLA"
+  ],
+  "was": "factory/PROJ02-00-RAILG.SND"
+ },
+ "factory/PROJ02-01-MONDELL.SND": {
+  "kit": "MONDELL",
+  "drums": [
+   "NIDHOLEM",
+   "PRORI",
+   "WRAILPHI",
+   "JOURA",
+   "GANDREL",
+   "MISEIDON"
+  ],
+  "was": "factory/PROJ02-01-ZUBAT.SND"
+ },
+ "factory/PROJ02-02-FRORY.SND": {
+  "kit": "FRORY",
+  "drums": [
+   "FARES",
+   "REVELIX",
+   "VODRA",
+   "HELANTIR",
+   "ZOMOIRE",
+   "SHATHYST"
+  ],
+  "was": "factory/PROJ02-02-LOADI.SND"
+ },
+ "factory/PROJ02-03-AZITER.SND": {
+  "kit": "AZITER",
+  "drums": [
+   "SUNWETYR",
+   "ENKIRE",
+   "MIBIS",
+   "QUINKARI",
+   "GATRODAS",
+   "SNATION"
+  ],
+  "was": "factory/PROJ02-03-JURAP.SND"
+ },
+ "factory/PROJ03-00-HOMURWEN.SND": {
+  "kit": "HOMURWEN",
+  "drums": [
+   "GOBLINDA",
+   "NEMELVIN",
+   "GRAVIRPY",
+   "VOPTER",
+   "NALVIN",
+   "MORWESIL"
+  ],
+  "was": "factory/PROJ03-00-DUBEE.SND"
+ },
+ "factory/PROJ03-01-ZELPY.SND": {
+  "kit": "ZELPY",
+  "drums": [
+   "DRYASTO",
+   "PAYRE",
+   "SHADONON",
+   "FETIME",
+   "GORGORON",
+   "SANDUITE"
+  ],
+  "was": "factory/PROJ03-01-DUBEE.SND"
+ },
+ "factory/PROJ05-00-SYTTER.SND": {
+  "kit": "SYTTER",
+  "drums": [
+   "VEZQUIL",
+   "NEUSSAR",
+   "NESIANCY",
+   "NADILIN",
+   "XEBATIC",
+   "ZERPHEUS"
+  ],
+  "was": "factory/PROJ05-00-BAKED.SND"
+ },
+ "factory/PROJ05-01-VOROMU.SND": {
+  "kit": "VOROMU",
+  "drums": [
+   "POREWOLF",
+   "MOXORIM",
+   "RACTOR",
+   "KELVINE",
+   "ADATY",
+   "BENLIL"
+  ],
+  "was": "factory/PROJ05-01-SCHIE.SND"
+ },
+ "factory/PROJ05-02-MINIRGAL.SND": {
+  "kit": "MINIRGAL",
+  "drums": [
+   "HARARON",
+   "TRITOGAR",
+   "ARIADIR",
+   "LORAWN",
+   "MACATE",
+   "MAGNERTA"
+  ],
+  "was": "factory/PROJ05-02-LECTR.SND"
+ },
+ "factory/PROJ05-03-CELEPTON.SND": {
+  "kit": "CELEPTON",
+  "drums": [
+   "SILIPA",
+   "FAELA",
+   "VANODA",
+   "GONDORU",
+   "TOXIRGON",
+   "AZOTION"
+  ],
+  "was": "factory/PROJ05-03-LYSER.SND"
+ },
+ "factory/PROJ05-04-KREMPEKE.SND": {
+  "kit": "KREMPEKE",
+  "drums": [
+   "COLEGI",
+   "XALELISK",
+   "XETON",
+   "VIRENGON",
+   "PARRET",
+   "ELALOTEN"
+  ],
+  "was": "factory/PROJ05-04-ACID_.SND"
+ },
+ "factory/PROJ05-05-THRUTRY.SND": {
+  "kit": "THRUTRY",
+  "drums": [
+   "NEMELIEN",
+   "FINEER",
+   "PRORZAKU",
+   "RAVOON",
+   "DEMERIS",
+   "GANYSUS"
+  ],
+  "was": "factory/PROJ05-05-CHIME.SND"
+ },
+ "factory/PROJ05-06-GOCLIPSE.SND": {
+  "kit": "GOCLIPSE",
+  "drums": [
+   "GANTUM",
+   "PALKAS",
+   "CEMRAHIL",
+   "THRANEER",
+   "MIRARERA",
+   "DRARPHON"
+  ],
+  "was": "factory/PROJ05-06-BOOM_.SND"
+ },
+ "factory/PROJ05-07-BAQUENCY.SND": {
+  "kit": "BAQUENCY",
+  "drums": [
+   "BARYOLBO",
+   "FIRCANE",
+   "THOCHUS",
+   "KINEMGEE",
+   "NAMPART",
+   "TITAZAN"
+  ],
+  "was": "factory/PROJ05-07-STOMP.SND"
+ },
+ "factory/PROJ05-08-PIORE.SND": {
+  "kit": "PIORE",
+  "drums": [
+   "WEFIN",
+   "CAMPER",
+   "AMROSIAS",
+   "ZAZYGY",
+   "MAETRY",
+   "GNONTARI"
+  ],
+  "was": "factory/PROJ05-08-KRAFT.SND"
+ },
+ "hrtl-untz/PROJ00-00-MEPSIS.SND": {
+  "kit": "MEPSIS",
+  "drums": [
+   "ELESTER",
+   "XANAVA",
+   "CABUR",
+   "BOBBLON",
+   "SETION",
+   "NOLES"
+  ],
+  "was": "hrtl-untz/PROJ00-00-STOVE.SND"
+ },
+ "hrtl-untz/PROJ00-01-WASIC.SND": {
+  "kit": "WASIC",
+  "drums": [
+   "PERIBLIX",
+   "TONGOL",
+   "TENKIDU",
+   "PERTAL",
+   "BICHUS",
+   "ZYGONET"
+  ],
+  "was": "hrtl-untz/PROJ00-01-RYZEN.SND"
+ },
+ "hrtl-untz/PROJ00-02-OSCIRION.SND": {
+  "kit": "OSCIRION",
+  "drums": [
+   "PROXIDU",
+   "CHAGNET",
+   "VANSTONE",
+   "EIGEXA",
+   "DILROND",
+   "SPECLOPS"
+  ],
+  "was": "hrtl-untz/PROJ00-02-FLANG.SND"
+ },
+ "hrtl-untz/PROJ00-03-ZWIGA.SND": {
+  "kit": "ZWIGA",
+  "drums": [
+   "GLUORAD",
+   "SPUZZLOT",
+   "TREENIC",
+   "FERLIN",
+   "BOPHON",
+   "HEMATY"
+  ],
+  "was": "hrtl-untz/PROJ00-03-GOBLI.SND"
+ },
+ "hrtl-untz/PROJ00-04-BLOSION.SND": {
+  "kit": "BLOSION",
+  "drums": [
+   "ZUPSO",
+   "GOSTA",
+   "SOLOPE",
+   "TERUN",
+   "NOLDOPA",
+   "RAKEMAKE"
+  ],
+  "was": "hrtl-untz/PROJ00-04-TITAN.SND"
+ },
+ "hrtl-untz/PROJ00-05-EQUIDINE.SND": {
+  "kit": "EQUIDINE",
+  "drums": [
+   "VIMANT",
+   "SICTOLI",
+   "RERIS",
+   "GALESMA",
+   "MARYON",
+   "SACTRON"
+  ],
+  "was": "hrtl-untz/PROJ00-05-NETRU.SND"
+ },
+ "hrtl-untz/PROJ00-06-CEMWIRON.SND": {
+  "kit": "CEMWIRON",
+  "drums": [
+   "LAVARA",
+   "GASTISIS",
+   "KARUS",
+   "CALOTON",
+   "SINWE",
+   "VALIBLIN"
+  ],
+  "was": "hrtl-untz/PROJ00-06-TAIPE.SND"
+ },
+ "hrtl-untz/PROJ00-07-PENDURE.SND": {
+  "kit": "PENDURE",
+  "drums": [
+   "THOTIC",
+   "NEUKZUL",
+   "YXAVALON",
+   "CERERBIT",
+   "GARACLE",
+   "VATROPIC"
+  ],
+  "was": "hrtl-untz/PROJ00-07-HEXEN.SND"
+ },
+ "hrtl-untz/PROJ00-08-EAREBEK.SND": {
+  "kit": "EAREBEK",
+  "drums": [
+   "PEVEXA",
+   "KLOWTON",
+   "BERUS",
+   "EXCAMMOX",
+   "SILON",
+   "FINWOOD"
+  ],
+  "was": "hrtl-untz/PROJ00-08-LITHI.SND"
+ },
+ "hrtl-untz/PROJ00-09-CERIN.SND": {
+  "kit": "CERIN",
+  "drums": [
+   "MEKEMAKE",
+   "UTNANO",
+   "NERZAN",
+   "DAMPULSE",
+   "PRORACLE",
+   "TRARDA"
+  ],
+  "was": "hrtl-untz/PROJ00-09-OPIAT.SND"
+ },
+ "hrtl-untz/PROJ00-10-NAZGULEK.SND": {
+  "kit": "NAZGULEK",
+  "drums": [
+   "AXORYON",
+   "VYCTION",
+   "ECLIXIR",
+   "PRIALEG",
+   "XALUS",
+   "THEOGI"
+  ],
+  "was": "hrtl-untz/PROJ00-10-THRES.SND"
+ },
+ "hrtl-untz/PROJ00-11-ICANET.SND": {
+  "kit": "ICANET",
+  "drums": [
+   "NAPTIC",
+   "POLAN",
+   "GANGORN",
+   "BEHIRRIM",
+   "SOQUISE",
+   "RIGEPE"
+  ],
+  "was": "hrtl-untz/PROJ00-11-ARCAD.SND"
+ },
+ "hrtl-untz/PROJ00-12-UNDODA.SND": {
+  "kit": "UNDODA",
+  "drums": [
+   "POLLA",
+   "HERALA",
+   "WAYRAC",
+   "OMERCON",
+   "OCEADE",
+   "DAXONSIT"
+  ],
+  "was": "hrtl-untz/PROJ00-12-FOLDE.SND"
+ },
+ "hrtl-untz/PROJ00-13-AGAMEMA.SND": {
+  "kit": "AGAMEMA",
+  "drums": [
+   "SOLEPA",
+   "DOCKIMIS",
+   "MAMAN",
+   "NINJURER",
+   "MERNAX",
+   "MODUBBLO"
+  ],
+  "was": "hrtl-untz/PROJ00-13-PAPAG.SND"
+ },
+ "hrtl-untz/PROJ00-14-EXCARATY.SND": {
+  "kit": "EXCARATY",
+  "drums": [
+   "RESOZZIT",
+   "WERUNG",
+   "YATOR",
+   "NENGEON",
+   "AJALA",
+   "BELBEDO"
+  ],
+  "was": "hrtl-untz/PROJ00-14-CORPO.SND"
+ },
+ "hrtl-untz/PROJ00-15-TREARUS.SND": {
+  "kit": "TREARUS",
+  "drums": [
+   "CHALIGA",
+   "DILIDHEL",
+   "SAUROLUS",
+   "PHONYX",
+   "AGANSATE",
+   "RACOMB"
+  ],
+  "was": "hrtl-untz/PROJ00-15-RESON.SND"
+ }
+}
