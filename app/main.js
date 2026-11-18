@@ -2,14 +2,14 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwle80c2';
-import { presetName } from './names.js?v=mwle80c2';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwle80c2';
-import { breed, isDud } from '../sound/breed.js?v=mwle80c2';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwle80c2';
-import { KIT_FILES } from '../sound/kits.js?v=mwle80c2';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwle80c2';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwle80c2';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlehxci';
+import { presetName } from './names.js?v=mwlehxci';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlehxci';
+import { breed, isDud } from '../sound/breed.js?v=mwlehxci';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlehxci';
+import { KIT_FILES } from '../sound/kits.js?v=mwlehxci';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlehxci';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlehxci';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -84,7 +84,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwle80c2', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlehxci', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -317,7 +317,6 @@ function onCC(cc, val) {
     if (!e) { showLastText(`CC${cc} · ${SOUNDS[S.sel].name} has no ${t.label[0]}`); return; }
     let v = Math.round(val / 127 * e.max);
     if (e.display.type === 'detent') { const k = Math.round(v / e.display.step) * e.display.step; if (Math.abs(v - k) <= 2) v = Math.min(k, e.max); } // (a dial's settings catch the knob)
-    v = Math.max(v, e.floor || 0);
     editValue(e.par, v);
     text = `${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) : 'ALL'} ${e.label} ${showValue(e, v)}`;
   }
@@ -795,8 +794,8 @@ function vfader(e) {
     lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
   };
   const step = e.display.type === 'detent' ? e.display.step : 0;
-  const put = (x, back) => { // (back: a double-click putting back a kit's value, which may be under the control's floor)
-    x = clamp(Math.round(x), back ? 0 : e.floor || 0, e.max);
+  const put = (x) => {
+    x = clamp(Math.round(x), 0, e.max);
     if (step) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
     if (x === valueNow(e.par)) return;
     editValue(e.par, x); draw();
@@ -808,8 +807,8 @@ function vfader(e) {
   // kit's value
   const reset = () => {
     if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
-    if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was, true); }
-    else put(S.defaults[e.par], true);
+    if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
+    else put(S.defaults[e.par]);
   };
   el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
   el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
@@ -980,7 +979,7 @@ function vary(e, h, depth, wild) {
     const lo = Math.min(range[0], h), hi = Math.max(range[1], h); // the home always stays reachable
     v = clamp(Math.round(h + (rnd() * 2 - 1) * depth * (hi - lo)), lo, hi);
   }
-  return v === h ? v : clamp(v, e.floor || 0, e.max); // (a control left where it was keeps a kit's value under its floor)
+  return clamp(v, 0, e.max);
 }
 // alter each key of a sound that has its own sound (scattered or edited): every unlocked control of that key, moved a
 // little around what the key plays now, kept as the key's edits
