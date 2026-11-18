@@ -44,7 +44,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const bred = Object.values(st.keyEdits[0]).filter((e) => / × /.test(e._kit || '')).length;
     if (st.rand.source !== 'breed' || bred !== 8) { errors++; console.log('breed: source', st.rand.source, 'bred keys', bred); } }
   // and the other NEW SOUNDS FROM methods: each names its sounds its own way
-  for (const [src, re] of [['morph', / ~ .* \d+%$/], ['kitstyle', /^kit-style \(/], ['free', /^free \(/], ['recipe', /^(kick|tom|snare|clap|rim|closed hat|open hat|cymbal|cowbell|zap) \(/]]) {
+  for (const [src, re] of [['morph', / ~ .* \d+%$/], ['kitstyle', /^kit-style \(/], ['free', /^free \(/], ['recipe', /^(kick|tom|mid perc|snare|clap|rim|closed hat|open hat|cymbal|cowbell|zap) \(/]]) {
     await p.mclick('#src-' + src); await p.mclick('#scatter'); await p.waitForTimeout(600);
     const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
     const made = Object.values(st.keyEdits[0]).filter((e) => re.test(e._kit || '')).length;
@@ -55,6 +55,16 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (r > sh + 1) { errors++; console.log(`${w}x${h}: RANDOM menu runs off the screen`, r, sh); }
     await p.keyboard.press('Escape'); }
   await p.mclick('#src-kit');
+  // MAKE THIS KEY: KICK makes the drum key on screen a kick, SNARE on the snare engine a snare
+  for (const [eng, type] of [['1', 'kick'], ['2', 'snare'], ['1', 'mid perc']]) {
+    await p.keyboard.press(eng); await p.waitForTimeout(100);
+    await p.click(`.sect.make .btn[data-type="${type}"]`); await p.waitForTimeout(500);
+    const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3'))), kits = Object.values(st.keyEdits[Number(eng) - 1]).map((e) => e._kit);
+    if (!kits.some((k) => (k || '').startsWith(type + ' ('))) { errors++; console.log('make', type, kits); }
+  }
+  if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/make-${w}x${h}.png` });
+  if (w === 1280 && h === 700) await p.screenshot({ path: `${out}/make-${w}x${h}.png` });
+  await p.keyboard.press('1');
   // knobs: filter freq (CC16) on the key just played; LEARN maps CC 30 to the drum's decay
   await p.evaluate(() => { window.afx.noteOn(1, 66, 110); window.afx.cc(16, 20); window.afx.cc(18, 64); });
   await p.click('#learn'); await p.click('.vf .knob');

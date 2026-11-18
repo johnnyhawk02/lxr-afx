@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlewge5';
-import { presetName } from './names.js?v=mwlewge5';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlewge5';
-import { MAKERS } from '../sound/makers.js?v=mwlewge5';
-import { breed, isDud } from '../sound/breed.js?v=mwlewge5';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlewge5';
-import { KIT_FILES } from '../sound/kits.js?v=mwlewge5';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlewge5';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlewge5';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlfgmwn';
+import { presetName } from './names.js?v=mwlfgmwn';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlfgmwn';
+import { MAKERS, recipe, recipesFor } from '../sound/makers.js?v=mwlfgmwn';
+import { breed, isDud } from '../sound/breed.js?v=mwlfgmwn';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlfgmwn';
+import { KIT_FILES } from '../sound/kits.js?v=mwlfgmwn';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlfgmwn';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlfgmwn';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -88,7 +88,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlewge5', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlfgmwn', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -548,7 +548,7 @@ function buildFaders() {
       const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
       if (lv) faderDraws.push(() => el.classList.toggle('off', !valueNow(lv.par)));
     }
-    if (col <= GRID_COLS) sect(GRID_COLS + 1 - col, ' fill');
+    if (col <= GRID_COLS) { const n = GRID_COLS + 1 - col; if (r === 1 && n >= 3) makePanel(sect(n, ' make')); else sect(n, ' fill'); } // (row 2's free cells: the MAKE buttons)
   });
   const sends = entries.filter((e) => e.section === 'fx sends');
   const el = cell(document.createElement('div'), 2, 3, GRID_COLS + 1, GRID_COLS + 3); el.className = 'sect sends rt sep'; el.style.setProperty('--n', 2);
@@ -1187,6 +1187,40 @@ function newSound(sound) {
   }
   return s;
 }
+// a recipe's sound (the MAKE buttons on the knob panel), through the dud filter like the rest
+function typeSound(sound, name) {
+  const v = SOUNDS[sound].engineVoice;
+  let s;
+  for (let i = 0; i < 8; i++) {
+    s = recipe({ schema: VOICE_SCHEMAS[v], pool: pool(sound), rnd, name });
+    if (!isDud(measure(sound, S.values, s.vals), LEVEL_TARGET_DB[sound])) break;
+  }
+  return s;
+}
+// the MAKE buttons: one press makes the key on screen that type of sound, a new one each press. A type needs a kit
+// sound of its kind in the engine's pool (until every engine draws from every kit voice, a hat needs the metal)
+const MAKE_TYPES = [['kick', 'KICK'], ['tom', 'TOM'], ['mid perc', 'PERC'], ['zap', 'ZAP'], ['snare', 'SNARE'], ['clap', 'CLAP'], ['rim', 'RIM'],
+  ['cowbell', 'BELL'], ['closed hat', 'C HAT'], ['open hat', 'O HAT'], ['cymbal', 'CYMBAL']];
+function makePanel(el) {
+  el.innerHTML = '<h3>make this key</h3><div class="mk"></div>';
+  const box = el.querySelector('.mk');
+  for (const [name, text] of MAKE_TYPES) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = text; b.dataset.type = name;
+    b.addEventListener('click', () => { if (!learn) randKey(name); });
+    box.append(b);
+  }
+  const any = document.createElement('button'); any.type = 'button'; any.className = 'btn sm'; any.textContent = 'ANY'; any.dataset.type = '';
+  any.addEventListener('click', () => { if (!learn) { const ok = recipesFor(pool(S.sel)); if (ok.length) randKey(ok[Math.floor(rnd() * ok.length)]); } });
+  box.append(any);
+  faderDraws.push(() => {
+    const ok = new Set(recipesFor(pool(S.sel))), locked = keyLocked(S.sel, editKey[S.sel]);
+    for (const b of box.children) {
+      const can = b.dataset.type ? ok.has(b.dataset.type) : ok.size > 0;
+      b.disabled = locked || !can;
+      b.title = !can ? `No kit sound of that kind on this engine yet` : locked ? 'This key is locked' : `Make this key ${b.dataset.type ? 'a ' + b.dataset.type : 'a sound of any type'}: a new one each press (UNDO takes it back)`;
+    }
+  });
+}
 const madeText = () => SOURCES[source()].made;
 function drawSource() {
   const src = source(), d = SOURCES[src];
@@ -1272,10 +1306,10 @@ function setRhythms(pc, press) { // press: a button's name (the phone's menu), n
 }
 // NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as RANDOM
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
-function randKey() {
+function randKey(type) { // type: a recipe's name (the MAKE buttons), else the NEW SOUNDS FROM method
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
-  let s = newSound(sound); if (!s) do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
+  let s = type ? typeSound(sound, type) : newSound(sound); if (!s) do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
   rollDice();
   randChange(() => {
