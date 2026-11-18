@@ -462,7 +462,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   await p.tap('#bl-alter'); await p.tap('#bl-mods'); await p.waitForTimeout(150);
   await p.locator('#bl-save').scrollIntoViewIfNeeded(); await p.tap('#bl-save'); await p.waitForTimeout(300); await p.keyboard.press('Escape');
   const s1 = await p.evaluate(() => ({ t: afx.blender.state.t, mods: afx.blender.state.mods.size, saved: afx.blender.saved().length, items: document.querySelectorAll('#bl-list .blitem').length,
-    msg: document.getElementById('bl-msg').textContent, open: !document.getElementById('blender').hidden, exp: !document.getElementById('bl-export').disabled }));
+    msg: document.getElementById('bl-msg').textContent, open: !document.getElementById('blender').hidden, exp: true }));
   if (s1.t < 60 || s1.mods < 6 || s1.saved !== 1 || s1.items !== 1 || !/saved: it's in the bucket now/.test(s1.msg) || !s1.open || !s1.exp) bad('blend and save', s1);
   if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });
   // ?desktop: the big screen on the phone

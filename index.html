@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwmfd9dt">
+<link rel="stylesheet" href="css/lcd.css?v=mwmlyv9o">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -218,8 +218,9 @@
       <h3>SAVED <span class="dim" id="bl-count"></span></h3>
       <div class="plist bllist" id="bl-list"></div>
       <div class="blrow">
-        <button class="btn" id="bl-export" title="Write the saved sounds to a file: hand it over and they go into the repo's sound bucket for good">EXPORT LIST</button>
-        <span class="dim note">EXPORT, THEN HAND THE FILE OVER: THE SOUNDS GO INTO THE REPO'S BUCKET</span>
+        <button class="btn" id="bl-export" title="The saved sounds as a file (on a phone, through its share sheet): hand it over and they go into the repo's sound bucket for good">EXPORT LIST</button>
+        <button class="btn" id="bl-copy" title="The saved sounds as text on the clipboard, to paste into a message">COPY LIST</button>
+        <span class="dim note">HAND THE FILE (OR THE COPIED TEXT) OVER: THE SOUNDS GO INTO THE REPO'S BUCKET</span>
       </div>
     </div>
   </div>
@@ -236,6 +237,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwmfd9dt"></script>
+<script type="module" src="app/main.js?v=mwmlyv9o"></script>
 </body>
 </html>
