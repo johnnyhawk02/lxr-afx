@@ -528,7 +528,10 @@ export const FILTER_LP = 1, FILTER_HP = 2, FILTER_BP = 3, FILTER_UNITY_BP = 4, F
   FILTER_PEAK = 6, FILTER_NAIVE_2_POLE = 7, FILTER_OFF = 8;
 export const FILTER_TYPE_NAMES = ['LP', 'HP', 'BP', 'Unity BP', 'Notch', 'Peak', 'LP2', 'Off'];
 
-function makeFilter() { return { f: 0, g: 0, q: 0, s1: 0, s2: 0, a: 0, b: 0, drive: 0 }; }
+// (ws1, ws2, wa, wb: not in the firmware. While one filter plays, the other one runs alongside on a copy of its state, so a
+// blend into it (the type dial, between two detents) starts from a warm filter, not from whatever it held when last used.
+// The firmware's own state is left as it has it, so a menu switch from one type to another plays as the firmware's does)
+function makeFilter() { return { f: 0, g: 0, q: 0, s1: 0, s2: 0, a: 0, b: 0, drive: 0, ws1: 0, ws2: 0, wa: 0, wb: 0 }; }
 
 function fastTanh(v) {
   if (v < f(-1.95)) return -1;
@@ -549,11 +552,11 @@ function tanhXdX(x) {
 const softClipTwo = (x) => f(x * tanhXdX(f(0.5 * x)));
 
 function SVF_init(flt) {
-  flt.s1 = 0; flt.s2 = 0; flt.a = flt.b = 0;
+  flt.s1 = 0; flt.s2 = 0; flt.a = flt.b = 0; flt.ws1 = flt.ws2 = flt.wa = flt.wb = 0;
   flt.f = f(0.20); flt.q = f(0.9); flt.drive = f(0.315);
   SVF_directSetFilterValue(flt, f(0.25));
 }
-function SVF_reset(flt) { flt.s1 = 0; flt.s2 = 0; flt.a = flt.b = 0; }
+function SVF_reset(flt) { flt.s1 = 0; flt.s2 = 0; flt.a = flt.b = 0; flt.ws1 = flt.ws2 = flt.wa = flt.wb = 0; }
 function SVF_setReso(flt, fb) { flt.q = f(1 - fb); if (flt.q < f(0.1)) flt.q = f(0.02); }
 function SVF_setDrive(flt, d) { flt.drive = f(f(0.4) + f(f(d * d) * 6)); }
 function SVF_directSetFilterValue(flt, val) {
@@ -562,11 +565,50 @@ function SVF_directSetFilterValue(flt, val) {
 }
 function SVF_recalcFreq(flt) { flt.g = fastTan(Math.PI * flt.f); }
 
+// one step of each filter on a state object (s1, s2 or a, b): the firmware's sums, for the shadow copies and the blend
+function zdfStep(st, x, g, gg, R) {
+  const g0 = f(1 / f(1 + f(f(g * 2) * R)));
+  const s1 = st.s1, s2 = st.s2;
+  const f1 = f(gg * g0);
+  const y1 = f(f(f(f(f1 * x) + s2) + f(f(g * g0) * s1)) / f(f1 + 1));
+  const xx = f(x - y1);
+  const y0 = f(f(softClipTwo(s1) + f(g * xx)) * g0);
+  st.s1 = f(softClipTwo(s1) + f(f(2 * g) * f(xx - f(f(2 * R) * y0))));
+  st.s2 = f(s2 + f(f(2 * g) * y0));
+  zdfStep.y0 = y0; zdfStep.y1 = y1;
+}
+function naiveStep(st, x, f2, q) {
+  st.a = f(st.a + f(f2 * f(f(x - st.a) + f(q * f(st.a - st.b)))));
+  if (st.a > 1) st.a = 1; else if (st.a < -1) st.a = -1;
+  st.b = f(st.b + f(f2 * f(st.a - st.b)));
+  if (st.b > 1) st.b = 1; else if (st.b < -1) st.b = -1;
+}
+const naiveQ = (flt, f2) => f(f(1 - flt.q) * 1.4 + f(1 - flt.q) / (1.0 - f2));
+const SHADOW = { s1: 0, s2: 0, a: 0, b: 0 };
+function shadowIn(flt) { SHADOW.s1 = flt.ws1; SHADOW.s2 = flt.ws2; SHADOW.a = flt.wa; SHADOW.b = flt.wb; return SHADOW; }
+function shadowOut(flt) { flt.ws1 = SHADOW.s1; flt.ws2 = SHADOW.s2; flt.wa = SHADOW.a; flt.wb = SHADOW.b; }
+// the shadow copies of the filters a block of the firmware's code didn't run (zdf, naive: whether to run that one)
+function SVF_shadow(flt, buf, size, zdf, naive) {
+  const g = flt.g, R = flt.f >= f(0.4499) ? 1 : flt.q, gg = f(g * g), f2 = f(flt.f * f(2.21)), q = naiveQ(flt, f2);
+  const st = shadowIn(flt);
+  if (st.s1 !== st.s1) st.s1 = 0;
+  if (st.s2 !== st.s2) st.s2 = 0;
+  for (let i = 0; i < size; i++) {
+    const x = softClipTwo(f(f(buf[i] / F_32767) * flt.drive));
+    if (zdf) zdfStep(st, x, g, gg, R);
+    if (naive) naiveStep(st, x, f2, q);
+  }
+  shadowOut(flt);
+}
+
 function SVF_calcBlockZDF(flt, type, buf, size) {
   const g = flt.g;
   const R = flt.f >= f(0.4499) ? 1 : flt.q; // high cutoff + resonance would go unstable
   const gg = f(g * g);
-  if (type === FILTER_OFF) return;
+  // (not in the firmware: keep the filters this type doesn't use warm, for a blend from here)
+  if (type === FILTER_OFF) { SVF_shadow(flt, buf, size, true, true); return; }
+  if (type === FILTER_NAIVE_2_POLE) SVF_shadow(flt, buf, size, true, false);
+  else if (type >= FILTER_LP && type <= FILTER_PEAK) SVF_shadow(flt, buf, size, false, true);
   if (type === FILTER_NAIVE_2_POLE) {
     const f2 = f(flt.f * f(2.21));
     for (let i = 0; i < size; i++) {
@@ -616,57 +658,64 @@ export const FILTER_MAX = FILTER_STEP * (FILTER_ORDER.length - 1);
 // as a knob position, and back (null: between two)
 export const filterPos = (raw) => FILTER_ORDER.indexOf(Math.min(raw + 1, FILTER_OFF)) * FILTER_STEP;
 export const filterRaw = (pos) => (pos % FILTER_STEP === 0 && pos <= FILTER_MAX ? FILTER_ORDER[pos / FILTER_STEP] - 1 : null);
+// Each type as a sum of what the two filters work out (not in the firmware): weights on [LP (tanh of the low output),
+// low, band, band * 2R, the driven input, LP2's output, the dry input], the same sums as SVF_calcBlockZDF's. Between two
+// detents the weights are the two types' weights crossfaded; a move of the dial glides the weights over one block
+const FW = [];
+FW[FILTER_LP] = [1, 0, 0, 0, 0, 0, 0];
+FW[FILTER_HP] = [0, -1, 0, -1, 1, 0, 0];
+FW[FILTER_BP] = [0, 0, 1, 0, 0, 0, 0];
+FW[FILTER_UNITY_BP] = [0, 0, 0, 1, 0, 0, 0];
+FW[FILTER_NOTCH] = [0, 0, 0, -1, 1, 0, 0];
+FW[FILTER_PEAK] = [0, 2, 0, 1, -1, 0, 0];
+FW[FILTER_NAIVE_2_POLE] = [0, 0, 0, 0, 0, 1, 0];
+FW[FILTER_OFF] = [0, 0, 0, 0, 0, 0, 1];
 function voice_setFilterPos(v, x) {
   const [k, t] = detent(x, FILTER_STEP, FILTER_ORDER.length - 1);
   v.filterType = FILTER_ORDER[k];
   if (t > 0) { v.filterB = FILTER_ORDER[k + 1]; v.filterT = t; } else v.filterB = 0;
+  const A = FW[v.filterType], B = t > 0 ? FW[v.filterB] : A, first = !v.fwTo;
+  if (first) { v.fwTo = new Float64Array(7); v.fwAt = new Float64Array(7); }
+  for (let i = 0; i < 7; i++) v.fwTo[i] = A[i] + (B[i] - A[i]) * t;
+  if (first) v.fwAt.set(v.fwTo);
 }
-// one ZDF type's output, as SVF_calcBlockZDF works it out (x the driven input, y0 band, y1 low)
-function zdfOut(type, x, y0, y1, R) {
-  switch (type) {
-    case FILTER_LP: return f(fastTanh(y1) * 32767);
-    case FILTER_HP: return f(f(f(x - f(f(2 * R) * y0)) - y1) * 32767);
-    case FILTER_BP: return f(y0 * 32767);
-    case FILTER_UNITY_BP: return f(f(f(2 * R) * y0) * 32767);
-    case FILTER_NOTCH: return f(f(x - f(f(2 * R) * y0)) * 32767);
-    case FILTER_PEAK: { const h = f(f(x - f(f(2 * R) * y0)) - y1); return f(f(y1 - h) * 32767); }
-    default: return 0;
-  }
-}
-// between two filter types (not in the firmware): typeA's output crossfaded by t into typeB's
-function SVF_calcBlockMorph(flt, typeA, typeB, t, buf, size) {
+// a block between two filter types: the weights glide from `from` to `to` over the block. Both filters run (on their
+// own state, warmed by the shadow copies when the last block played one type on the firmware's code)
+function SVF_calcBlockMorph(flt, from, to, entering, buf, size) {
   const g = flt.g, R = flt.f >= f(0.4499) ? 1 : flt.q, gg = f(g * g);
-  const zdf = typeA <= FILTER_PEAK || typeB <= FILTER_PEAK;
-  const naive = typeA === FILTER_NAIVE_2_POLE || typeB === FILTER_NAIVE_2_POLE;
-  const f2 = f(flt.f * f(2.21)), nq = f(f(1 - flt.q) * 1.4 + f(1 - flt.q) / (1.0 - f2));
+  const f2 = f(flt.f * f(2.21)), q = naiveQ(flt, f2);
+  if (entering === FILTER_NAIVE_2_POLE) { flt.s1 = flt.ws1; flt.s2 = flt.ws2; }
+  else if (entering === FILTER_OFF) { flt.s1 = flt.ws1; flt.s2 = flt.ws2; flt.a = flt.wa; flt.b = flt.wb; }
+  else if (entering) { flt.a = flt.wa; flt.b = flt.wb; }
   if (flt.s1 !== flt.s1) flt.s1 = 0;
   if (flt.s2 !== flt.s2) flt.s2 = 0;
+  const R2 = 2 * R;
   for (let i = 0; i < size; i++) {
+    const u = (i + 1) / size, w = (j) => from[j] + (to[j] - from[j]) * u;
     const dry = buf[i], x = softClipTwo(f(f(dry / F_32767) * flt.drive));
-    let y0 = 0, y1 = 0;
-    if (zdf) {
-      const g0 = f(1 / f(1 + f(f(g * 2) * R)));
-      const s1 = flt.s1, s2 = flt.s2;
-      const f1 = f(gg * g0);
-      y1 = f(f(f(f(f1 * x) + s2) + f(f(g * g0) * s1)) / f(f1 + 1));
-      const xx = f(x - y1);
-      y0 = f(f(softClipTwo(s1) + f(g * xx)) * g0);
-      flt.s1 = f(softClipTwo(s1) + f(f(2 * g) * f(xx - f(f(2 * R) * y0))));
-      flt.s2 = f(s2 + f(f(2 * g) * y0));
-    }
-    if (naive) {
-      flt.a = f(flt.a + f(f2 * f(f(x - flt.a) + f(nq * f(flt.a - flt.b)))));
-      if (flt.a > 1) flt.a = 1; else if (flt.a < -1) flt.a = -1;
-      flt.b = f(flt.b + f(f2 * f(flt.a - flt.b)));
-      if (flt.b > 1) flt.b = 1; else if (flt.b < -1) flt.b = -1;
-    }
-    const out = (type) => (type === FILTER_OFF ? dry : type === FILTER_NAIVE_2_POLE ? f(flt.b * 32767) : zdfOut(type, x, y0, y1, R));
-    const a = out(typeA);
-    buf[i] = ssat16(toI32(f(a + f(f(out(typeB) - a) * t))));
+    zdfStep(flt, x, g, gg, R);
+    naiveStep(flt, x, f2, q);
+    const y0 = zdfStep.y0, y1 = zdfStep.y1;
+    const sum = w(0) * fastTanh(y1) + w(1) * y1 + w(2) * y0 + w(3) * R2 * y0 + w(4) * x + w(5) * flt.b;
+    buf[i] = ssat16(toI32(sum * 32767 + w(6) * dry));
   }
+  flt.ws1 = flt.s1; flt.ws2 = flt.s2; flt.wa = flt.a; flt.wb = flt.b;
 }
-const filterBlock = (v, buf) => (v.filterB ? SVF_calcBlockMorph(v.filter, v.filterType, v.filterB, v.filterT, buf, BLOCK)
-  : SVF_calcBlockZDF(v.filter, v.filterType, buf, BLOCK));
+// (for test/switches.test.mjs: the filter on its own)
+export const FILTER_PROBE = { make: () => { const flt = makeFilter(); SVF_init(flt); return flt; }, setReso: SVF_setReso, setCutoff: SVF_directSetFilterValue, setPos: voice_setFilterPos, block: (v, buf) => filterBlock(v, buf) };
+const sameW = (a, b) => { for (let i = 0; i < 7; i++) if (a[i] !== b[i]) return false; return true; };
+// on a detent the firmware's code runs (from one detent straight to another too: a menu switch, as the firmware does it);
+// between two, or gliding into a detent from between, the blend
+function filterBlock(v, buf) {
+  if (!v.fwTo || (!v.filterB && (v.fFirm || sameW(v.fwAt, v.fwTo)))) {
+    SVF_calcBlockZDF(v.filter, v.filterType, buf, BLOCK);
+    if (v.fwTo) v.fwAt.set(v.fwTo);
+    v.fFirm = v.filterType; return;
+  }
+  SVF_calcBlockMorph(v.filter, v.fwAt, v.fwTo, v.fFirm, buf, BLOCK);
+  v.fwAt.set(v.fwTo);
+  v.fFirm = 0;
+}
 
 // ---------------------------------------------------------------------------------------
 // lfo.c
@@ -828,7 +877,7 @@ function makeVoice(kind, i) {
     vol: f(0.8), velo: 0, pan: 0, triggeredPanL: 0, triggeredPanR: 0,
     oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
     transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
-    distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0, filterB: 0, filterT: 0,
+    distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0, filterB: 0, filterT: 0, fwTo: null, fwAt: null, fFirm: 0,
     ampFilterInput: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
     faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
     hatDecays: 0, decayClosed: 0, decayOpen: 0, isOpen: 0,
@@ -1597,6 +1646,7 @@ export class LxrEngine {
     v.transGen.phase = 0;
     v.snapEg.value = 1;
     if (drum) SVF_reset(v.filter);
+    if (v.fwTo) v.fwAt.set(v.fwTo); // (a filter type set before the note sounds from the start: no glide into it)
     updatePan(v);
   }
 

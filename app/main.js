@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwmf3bht';
-import { presetName } from './names.js?v=mwmf3bht';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmf3bht';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmf3bht';
-import { breed, isDud } from '../sound/breed.js?v=mwmf3bht';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmf3bht';
-import { KIT_FILES } from '../sound/kits.js?v=mwmf3bht';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmf3bht';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmf3bht';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwmf5kyh';
+import { presetName } from './names.js?v=mwmf5kyh';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmf5kyh';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmf5kyh';
+import { breed, isDud } from '../sound/breed.js?v=mwmf5kyh';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmf5kyh';
+import { KIT_FILES } from '../sound/kits.js?v=mwmf5kyh';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmf5kyh';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmf5kyh';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -89,7 +89,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmf3bht', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmf5kyh', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
