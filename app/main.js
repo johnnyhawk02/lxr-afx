@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmetvn3';
-import { presetName, jumble } from './names.js?v=mwmetvn3';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmetvn3';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmetvn3';
-import { breed, isDud } from '../sound/breed.js?v=mwmetvn3';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmetvn3';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmetvn3';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmetvn3';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmetvn3';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmetvn3';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmf3ffm';
+import { presetName, jumble } from './names.js?v=mwmf3ffm';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmf3ffm';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmf3ffm';
+import { breed, isDud } from '../sound/breed.js?v=mwmf3ffm';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmf3ffm';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmf3ffm';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmf3ffm';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmf3ffm';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmf3ffm';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmetvn3', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmf3ffm', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -405,27 +405,37 @@ const detail = (html) => { $('detail').innerHTML = html; };
 // a drag changes a value from where it was; Shift is fine. Only a press and drag changes a control: the scroll wheel,
 // the trackpad and the arrow keys never do, and nothing marks a control after it's let go (Johnny: no selection
 // circle), so passing the pointer over one is safe
+// mouse and pen moves carry the buttons held; a touch is pressed for as long as it moves
+const stillPressed = (e) => e.pointerType === 'touch' || (e.buttons & 1) === 1;
+// leaving the page (another window, tab or app) lets go of the control being dragged
+let dragEnd = null;
+const endDrags = () => { if (dragEnd) dragEnd(); };
+window.addEventListener('blur', endDrags);
+document.addEventListener('visibilitychange', () => { if (document.hidden) endDrags(); });
 function dragger(track, axis, o) {
   let d = null;
   track.addEventListener('pointerdown', (e) => {
     if (e.button) return;
-    track.setPointerCapture(e.pointerId); e.preventDefault();
+    try { track.setPointerCapture(e.pointerId); } catch (err) { /* the pointer is gone already */ } e.preventDefault();
     const r = track.getBoundingClientRect(), len = o.len || (axis === 'x' ? r.width : r.height);
     // a press off the bar's end jumps there (not on a knob: it turns from where it is)
     const at = axis === 'x' ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
     const f = (o.get() - o.min) / (o.max - o.min);
     if (!o.len && Math.abs(at - f) * len > 8) o.put(o.min + clamp(at, 0, 1) * (o.max - o.min));
-    d = { last: axis === 'x' ? e.clientX : e.clientY, acc: o.get(), len };
-    o.held && o.held(true);
+    d = { id: e.pointerId, last: axis === 'x' ? e.clientX : e.clientY, acc: o.get(), len };
+    o.held && o.held(true); dragEnd = end;
   });
   track.addEventListener('pointermove', (e) => {
-    if (!d) return;
+    if (!d || e.pointerId !== d.id) return;
+    // a drag lives only while the button is down: if the release was missed (let go outside the window, a context
+    // menu, a tab switch), the next plain mouse move ends it instead of turning the control under the pointer
+    if (!stillPressed(e)) { end(); return; }
     const p = axis === 'x' ? e.clientX : e.clientY, dp = axis === 'x' ? p - d.last : d.last - p;
     d.last = p; d.acc = clamp(d.acc + dp / d.len * (o.max - o.min) * (e.shiftKey ? 0.25 : 1), o.min, o.max);
     o.put(d.acc);
   });
-  const end = () => { if (d) { d = null; o.held && o.held(false); } };
-  track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
+  function end() { if (dragEnd === end) dragEnd = null; if (d) { d = null; o.held && o.held(false); } }
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) track.addEventListener(ev, end);
 }
 function hbar(box, label, o) {
   const el = document.createElement('div'); el.className = 'hb';
@@ -1993,9 +2003,10 @@ const sendBars = [['pv-echo', 0, 'ECHO'], ['pv-reverb', 1, 'REVERB']].map(([id, 
     if (!keyLocked(S.sel, editKey[S.sel])) detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${name} send <em>${x}</em>`);
   };
   let on = false;
-  track.addEventListener('pointerdown', (e) => { e.preventDefault(); try { track.setPointerCapture(e.pointerId); } catch (err) { /* gone */ } on = true; put(at(e)); });
-  track.addEventListener('pointermove', (e) => { if (on) put(at(e)); });
-  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) track.addEventListener(ev, () => { on = false; });
+  const end = () => { on = false; if (dragEnd === end) dragEnd = null; };
+  track.addEventListener('pointerdown', (e) => { e.preventDefault(); try { track.setPointerCapture(e.pointerId); } catch (err) { /* gone */ } on = true; dragEnd = end; put(at(e)); });
+  track.addEventListener('pointermove', (e) => { if (on && !stillPressed(e)) end(); if (on) put(at(e)); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) track.addEventListener(ev, end);
   track.addEventListener('keydown', (e) => { const d = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key]; if (d) { e.preventDefault(); put(clamp(valueNow(par()) + d * (e.shiftKey ? 10 : 1), 0, 127)); } });
   const draw = () => { const v = valueNow(par()) || 0; fill.style.width = `${v / 127 * 100}%`; out.textContent = v; track.setAttribute('aria-valuenow', v); };
   return draw;

@@ -7,7 +7,7 @@
 //   { type: 'release', sound }                  every key of the zone let go
 //   { type: 'engines', n }                      ENGINES: how many engines are in use (1..6)
 // It posts { type: 'peaks', peaks } about 30 times a second for the level lights.
-import { LxrInstrument } from './instrument.js?v=mwmetvn3';
+import { LxrInstrument } from './instrument.js?v=mwmf3ffm';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {
