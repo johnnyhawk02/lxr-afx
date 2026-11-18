@@ -677,7 +677,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .blrow .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
   border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
 .blrow .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.blrow .note { grid-column: span 2; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+.blrow .note { grid-column: 1 / -1; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
 .bllist { max-height: min(196px, 24vh); min-height: 34px; overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
 .blitem { display: grid; grid-template-columns: 1fr 40px 40px 64px; border-top: 1px solid rgb(var(--ink-rgb) / .25); }
 .blitem:first-child { border-top: 0; }
@@ -711,3 +711,4 @@ html.phone .blrow .note { grid-column: 1 / -1; }
 html.phone .blmsg { display: block; margin-top: 6px; min-height: 2.3em; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
 html.phone .bllist { max-height: none; }
 html.phone #bl-pair { grid-column: 1 / -1; }
+html.phone #bl-clear { grid-column: 1 / -1; }

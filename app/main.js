@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmlyv9o';
-import { presetName, jumble } from './names.js?v=mwmlyv9o';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmlyv9o';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmlyv9o';
-import { breed, isDud } from '../sound/breed.js?v=mwmlyv9o';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmlyv9o';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmlyv9o';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmlyv9o';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmlyv9o';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmlyv9o';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmmf2iw';
+import { presetName, jumble } from './names.js?v=mwmmf2iw';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmmf2iw';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmmf2iw';
+import { breed, isDud } from '../sound/breed.js?v=mwmmf2iw';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmmf2iw';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmmf2iw';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmmf2iw';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmmf2iw';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmmf2iw';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmlyv9o', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmmf2iw', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1919,6 +1919,16 @@ $('bl-export').addEventListener('click', async () => {
     }
   }
   blDownload(text, `lxr-afx-new-sounds-${day}.json`);
+});
+// CLEAR LIST: the SAVED list emptied once it's handed over (press twice), so the next export holds only new sounds.
+// The sounds already in the repo's bucket stay in the bucket; the others leave this browser's bucket with the list
+$('bl-clear').addEventListener('click', () => {
+  const b = $('bl-clear');
+  if (!savedSounds.length) { detail('the SAVED list is empty already'); return; }
+  if (b.textContent !== 'SURE?') { b.textContent = 'SURE?'; b.setAttribute('aria-pressed', 'true'); setTimeout(() => { b.textContent = 'CLEAR LIST'; b.setAttribute('aria-pressed', 'false'); }, 4000); return; }
+  const n = savedSounds.length, out = savedSounds.filter((s) => !inRepo.has(s.name)).length;
+  savedSounds = []; blStore(); pools.fill(null); b.textContent = 'CLEAR LIST'; b.setAttribute('aria-pressed', 'false'); fillSides(); drawBlender();
+  detail(`SAVED list cleared (${n} sound${n === 1 ? '' : 's'})${out ? `: ${out} not in the repo's bucket yet left with it` : ''}`);
 });
 $('bl-copy').addEventListener('click', async () => {
   if (!savedSounds.length) { detail('nothing saved yet: SAVE a sound first'); return; }
