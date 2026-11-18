@@ -637,6 +637,21 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .keymake .mk { display: contents; }
 .keymake .btn { min-height: 0; height: 24px; padding: 0 4px; font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; }
 
+/* ---- a knob's modulation (right-click a knob): the source's short name in the middle of a modulated knob's ring, and
+   the picker under the knob: the five sources on one row of equal cells, then AMOUNT and what the source does ---- */
+.knob { position: relative; }
+.modtag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; letter-spacing: 0;
+  padding: 1px 2px 0; background: var(--ink); color: var(--panel); text-shadow: none; border-radius: 2px; pointer-events: none; }
+.vf:not(.modded) .modtag { display: none; }
+.modpop { position: absolute; right: auto; width: 560px; z-index: 30; }
+.modpop h3 span { color: var(--ink); }
+.modpop .srcs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.modpop .srcs .btn { padding: 4px 2px; min-width: 0; font-size: 17px; }
+.modpop .amtrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 10px; align-items: center; }
+.modpop .amtrow .vf { grid-column: 1; --ks: 50px; }
+.modpop .amtrow .vf.off { opacity: .4; }
+.modpop .amtrow .cap { grid-column: 2 / 6; margin: 0; font-size: 15px; letter-spacing: 1px; line-height: 1.2; }
+
 /* ---- SOUND BLENDER: a popup over the screen, on the same 4-column grid throughout ---- */
 .blender { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgb(var(--panel-rgb) / .55); }
 .blender[hidden] { display: none; }
@@ -670,3 +685,5 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
   cursor: pointer; min-height: 28px; padding: 2px 10px; text-align: center; }
 .blitem .blload { border-left: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blitem button:hover { background: var(--tint); }
+.blrow.five { grid-template-columns: repeat(5, 1fr); }
+.blmods { margin-top: 6px; font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

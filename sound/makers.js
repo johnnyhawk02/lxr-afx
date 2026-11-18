@@ -112,8 +112,7 @@ export function recipe({ schema, pool, rnd, name }) {
 // sound has ----
 export const GATES = {
   again: ['afreq', 'awave', 'amode', 'fmenv'], bgain: ['bfreq', 'bwave'], nmix: ['ncolour', 'rnoise'],
-  clickvol: ['click', 'clickfreq', 'rclick'], pamt: ['pdecay', 'pslope'], velamt: ['veldest'],
-  lfoamt: ['lfofreq', 'lfosync', 'lfowave', 'lforetrig', 'lfooffset', 'lfodest'],
+  clickvol: ['click', 'clickfreq', 'rclick'], pamt: ['pdecay', 'pslope'],
 };
 export function blend({ schema, a, b, t, base }) {
   const byPar = new Map(schema.map((e) => [e.par, e])), byU = new Map(schema.map((e) => [e.ukey, e]));
@@ -124,12 +123,11 @@ export function blend({ schema, a, b, t, base }) {
     if (x === y) continue;
     for (const u of parts) { const q = byU.get(u); if (q) side.set(q.par, x ? a : b); }
   }
-  const flip = t < 0.5 ? a : b, lfo = byU.get('lfodest'), out = new Map();
+  const flip = t < 0.5 ? a : b, out = new Map();
   for (const p of new Set([...a.keys(), ...b.keys()])) {
     const e = byPar.get(p), x = get(a, p), y = get(b, p);
     if (x === undefined || y === undefined) { out.set(p, x ?? y); continue; }
-    // (a parameter with no control, the LFO's voice, goes with the LFO's destination)
-    const from = side.get(p) || (!e && lfo && side.get(lfo.par));
+    const from = side.get(p);
     if (from) out.set(p, get(from, p));
     else if (e && isKnob(e)) out.set(p, clamp(Math.round(x + t * (y - x)), 0, e.max));
     else out.set(p, get(flip, p));

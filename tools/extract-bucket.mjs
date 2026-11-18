@@ -12,7 +12,7 @@ const kitDir = new URL('../kits/', import.meta.url), dir = new URL('../bucket/',
 const names = JSON.parse(readFileSync(new URL('names.json', kitDir), 'utf8'));
 const files = readdirSync(kitDir, { recursive: true }).filter((f) => /\.snd$/i.test(f)).sort();
 const have = readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
-const sig = (s) => `${s.voice}|${JSON.stringify(s.params)}|${s.lfovoice}`;
+const sig = (s) => `${s.voice}|${JSON.stringify(s.params)}`;
 const sigs = new Set(have.map(sig)), froms = new Set(have.map((s) => s.from)), taken = new Set(have.map((s) => fileOf(s)));
 let n = have.filter((s) => s.from?.startsWith('kits/')).length, added = 0, same = 0;
 files.forEach((f, ki) => {

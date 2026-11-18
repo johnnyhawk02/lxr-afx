@@ -21,7 +21,7 @@ for (const f of files) {
   }
 }
 // every kit voice is in the bucket (by its from, or as a sound with the same values)
-const sig = (s) => `${s.voice}|${JSON.stringify(s.params)}|${s.lfovoice}`, sigs = new Set(BUCKET.map(sig));
+const sig = (s) => `${s.voice}|${JSON.stringify(s.params)}`, sigs = new Set(BUCKET.map(sig));
 for (const f of files) {
   const { kit } = parseSnd(readFileSync(new URL(f, kitDir)));
   for (let src = 0; src < 6; src++) assert.ok(sigs.has(sig(fromKit(kit, src, {}))), `${f} ${TYPES[src]} is in the bucket`);

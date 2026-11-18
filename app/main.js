@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwmej0jy';
-import { presetName, jumble } from './names.js?v=mwmej0jy';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmej0jy';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmej0jy';
-import { breed, isDud } from '../sound/breed.js?v=mwmej0jy';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmej0jy';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmej0jy';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmej0jy';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmej0jy';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmej0jy';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmetvn3';
+import { presetName, jumble } from './names.js?v=mwmetvn3';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmetvn3';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmetvn3';
+import { breed, isDud } from '../sound/breed.js?v=mwmetvn3';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmetvn3';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmetvn3';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmetvn3';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmetvn3';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmetvn3';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -62,6 +62,7 @@ try {
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.rand.rhythms = 0; /* (no sequencer any more: Johnny, 2026-11-17) */ S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; if (d.engines) S.engines = clamp(d.engines | 0, 1, MAX_ENGINES); S.ccMap = d.ccMap || null;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
+    if (d.modRule !== MOD_RULE) { upgradeMod(S.defaults); upgradeMod(S.values, S.keyEdits); } // (kept with the firmware's one LFO and one velocity target: now routes on the knobs)
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -70,7 +71,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, modRule: MOD_RULE, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
@@ -95,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmej0jy', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmetvn3', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -526,12 +527,13 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
-const ROWS = [['osc', 'mod a', 'mod b', 'noise'], ['amp', 'pitch', 'click'], ['filter in', 'filter', 'velocity'], ['lfo', 'mix']];
+const ROWS = [['osc', 'mod a', 'mod b', 'noise'], ['amp', 'pitch', 'click'], ['filter in', 'filter'], ['lfo', 'mix']];
 const GRID_COLS = 14;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
 function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
+  closeMod();
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
   const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
@@ -548,10 +550,10 @@ function buildFaders() {
       const list = entries.filter((e) => e.section === sec);
       if (!list.length) continue;
       if (sec === 'seq') { seqPanel(sect(GRID_COLS + 1 - col, ' seq'), voice); continue; }
-      const el = sect(list.reduce((a, e) => a + (e.display.type === 'target' ? 2 : 1), 0));
+      const el = sect(list.length);
       el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
       const row = el.querySelector('.row');
-      for (const e of list) row.append(e.display.type === 'target' ? targetSelect(e, voice) : vfader(e));
+      for (const e of list) row.append(vfader(e));
       const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
       if (lv) faderDraws.push(() => el.classList.toggle('off', !valueNow(lv.par)));
     }
@@ -783,6 +785,12 @@ function vfader(e) {
   el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
+  // its modulation (a right-click picks the source): the source's short name in the middle of the ring
+  const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey), tag = mod && document.createElement('span');
+  if (mod) {
+    tag.className = 'modtag'; tr.append(tag);
+    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); openMod(e, el, mod); });
+  }
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
@@ -800,6 +808,7 @@ function vfader(e) {
     if (mv !== undefined) notch.setAttribute('transform', `rotate(${knobDeg(mv, e.max, c)} 32 32)`);
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
+    if (mod) { const src = valueNow(mod.src) || 0; tag.textContent = MOD_SHORT[src]; el.classList.toggle('modded', !!src); }
     const locked = S.locks.has(e.par);
     lock.setAttribute('aria-pressed', locked);
     lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
@@ -831,34 +840,51 @@ function vfader(e) {
   faderDraws.push(draw);
   return el;
 }
-// a modulation target: velocity targets stay in the voice, LFO targets can reach any voice
-function targetSelect(e, voice) {
-  const el = document.createElement('div'); el.className = 'vsel';
-  const id = 'sel-' + e.par;
-  el.innerHTML = `<label for="${id}">${e.label}</label>`;
-  const s = document.createElement('select'); s.id = id;
-  s.append(new Option('none', 0));
-  const vnames = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
-  for (const v of e.display.anyVoice ? [0, 1, 2, 3, 4, 5] : [voice]) {
-    const og = document.createElement('optgroup'); og.label = vnames[v];
-    const [a, b] = MOD_TARGET_VOICE_RANGES[v];
-    for (let i = a; i <= b; i++) {
-      const [t, p] = MOD_TARGETS[i];
-      if (t.startsWith('FX_') || t === 'VEL_DEST') continue;
-      const pe = VOICE_SCHEMAS[v].find((x) => x.par === p);
-      og.append(new Option(pe ? `${pe.section} ${pe.label}` : t.toLowerCase().replace(/_/g, ' '), i));
-    }
-    s.append(og);
-  }
-  s.addEventListener('change', () => {
-    editValue(e.par, Number(s.value));
-    if (e.display.anyVoice) editValue(PAR.VOICE_LFO1 + voice, voiceOfTarget(Number(s.value)) + 1);
-    detail(`${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>${s.selectedOptions[0].text}</em>`);
+// ---- a knob's modulation: a right-click on a knob picks what moves it, for the key being edited: OFF, the engine's
+// LFO, the key's VELOCITY, the AMP ENV or the PITCH ENV, and how much (AMOUNT, either way from its centre). A knob
+// that's modulated shows its source's short name in the middle of its ring. One source a knob, as many knobs as you like ----
+const MOD_NAMES = ['OFF', 'LFO', 'VELOCITY', 'AMP ENV', 'PITCH ENV'], MOD_SHORT = ['', 'LFO', 'VEL', 'AMP', 'PIT'];
+const MOD_SAYS = ['Not modulated: the knob stays where you set it',
+  'The LFO swings it either way of where it is set, at its LFO SPEED, WAVE and SYNC', 'Hits harder than halfway push it up, softer ones down (below zero: the other way round)',
+  'Follows the amp envelope: the amount at its peak, back to where it is set as the sound dies away', 'Follows the pitch envelope: the amount at the hit, back as the pitch settles'];
+const modPop = document.createElement('div'); modPop.className = 'menupanel modpop'; modPop.hidden = true; $('screen').append(modPop);
+function closeMod() { if (modPop.hidden) return; modPop.hidden = true; modPop.innerHTML = ''; faderDraws = faderDraws.filter((d) => !d.mod); }
+function openMod(e, el, m) {
+  closeMod();
+  const voice = SOUNDS[S.sel].engineVoice, amtE = VOICE_SCHEMAS[voice].find((x) => x.par === m.amt);
+  modPop.innerHTML = `<h3>MODULATE <span></span></h3><div class="srcs"></div><div class="amtrow"></div>`;
+  modPop.querySelector('h3 span').textContent = e.label.toUpperCase();
+  const srcs = modPop.querySelector('.srcs'), row = modPop.querySelector('.amtrow');
+  const btns = MOD_NAMES.map((name, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = name;
+    b.addEventListener('click', () => {
+      if (valueNow(m.src) !== i) editValue(m.src, i);
+      drawFaders();
+      detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${e.label.toUpperCase()} <em>${i ? 'moved by ' + name : 'not modulated'}</em>`);
+    });
+    srcs.append(b); return b;
   });
-  el.append(s);
-  faderDraws.push(() => { s.value = valueNow(e.par); el.classList.toggle('keyed', editing() && keyEdited(e.par)); });
-  return el;
+  const knob = vfader({ ...amtE, label: 'amount', ukey: undefined });
+  knob.querySelector('.lock').remove(); faderDraws[faderDraws.length - 1].mod = true;
+  const says = document.createElement('p'); says.className = 'cap';
+  row.append(knob, says);
+  const draw = () => {
+    const src = valueNow(m.src) || 0;
+    btns.forEach((b, i) => b.setAttribute('aria-pressed', i === src));
+    knob.classList.toggle('off', !src); says.textContent = MOD_SAYS[src];
+  };
+  draw.mod = true; faderDraws.push(draw); draw();
+  // under the knob, inside the screen (the screen may be scaled down to fit)
+  modPop.hidden = false;
+  const sc = $('screen'), sr = sc.getBoundingClientRect(), k = sr.width / sc.offsetWidth || 1, r = el.getBoundingClientRect();
+  const w = modPop.offsetWidth, h = modPop.offsetHeight;
+  let left = (r.left - sr.left) / k, top = (r.bottom - sr.top) / k + 4;
+  left = clamp(left, 8, sc.offsetWidth - w - 8);
+  if (top + h > sc.offsetHeight - 8) top = (r.top - sr.top) / k - h - 4;
+  Object.assign(modPop.style, { left: left + 'px', top: Math.max(8, top) + 'px' });
 }
+document.addEventListener('pointerdown', (ev) => { if (!modPop.hidden && !modPop.contains(ev.target)) closeMod(); });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeMod(); });
 
 // ---- what the editor edits: the last key (KEY) or every key (ALL KEYS); clearing a key's edits ----
 function setEditAll(all) { S.editAll = all; save(); drawEditKey(); drawFaders(); }
@@ -1545,9 +1571,10 @@ function tidyPreset(p) {
     }
     return old ? editsToPositions(out) : out;
   });
+  if (d.mod !== MOD_RULE) upgradeMod(values, keys); // (saved with the firmware's one LFO and one velocity target: now routes on the knobs)
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
-  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, engines } };
+  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, mod: MOD_RULE, engines } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
 let presets = [];
@@ -1557,7 +1584,7 @@ function storePresets() { try { localStorage.setItem(PRESET_STORE, JSON.stringif
 const storeOr = (said) => { if (!storePresets()) said += ' · <em>the browser would not keep it</em> (storage full or blocked): EXPORT writes a file'; detail(said); };
 // the patch as a preset keeps it: the keys by their place in the layout
 const shiftKeys = (ks, by) => ks.map((k) => Object.fromEntries(Object.entries(k || {}).map(([n, e]) => [Number(n) + by, structuredClone(e)])));
-const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE, engines: S.engines });
+const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE, mod: MOD_RULE, engines: S.engines });
 // the same patch, whatever order its parts were written in
 const canon = (x) => (Array.isArray(x) ? '[' + x.map(canon).join() + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => k + ':' + canon(x[k])).join() + '}' : JSON.stringify(x));
 const presetSaved = () => presets.find((p) => p.id === S.preset.id);
@@ -1689,7 +1716,7 @@ window.afx.presets = { list: () => presets, now: () => S.preset, dirty: presetDi
 // and the SAVED list. EXPORT LIST writes the saved sounds to a file; tools/add-to-bucket.mjs adds that file to the
 // repo's bucket/, so they stay a source for new sounds everywhere
 // ---------------------------------------------------------------------------------------------------------------
-const BL = { a: null, b: null, t: 50, alt: new Map(), name: '' };
+const BL = { a: null, b: null, t: 50, alt: new Map(), mods: new Map(), modText: '', name: '' };
 const blVoice = () => SOUNDS[S.sel].engineVoice;
 const blBucket = () => bucket();
 const blFind = (name) => blBucket().find((s) => s.name === name) || null;
@@ -1700,9 +1727,31 @@ function blendNow() {
   const on = (s) => new Map(toVoice(s, v).filter(([p]) => !skip.has(p)));
   const out = blend({ schema: sc, a: on(BL.a), b: on(BL.b), t: BL.t / 100, base: S.values });
   for (const [p, d] of BL.alt) { const e = sc.find((x) => x.par === p); if (e && out.has(p)) out.set(p, clamp(out.get(p) + d, 0, e.max)); }
+  for (const [p, x] of BL.mods) out.set(p, x);
   return out;
 }
-const blFrom = () => `${BL.a.name} ${100 - BL.t}% + ${BL.b.name} ${BL.t}%${BL.alt.size ? ' altered' : ''}`;
+const blFrom = () => `${BL.a.name} ${100 - BL.t}% + ${BL.b.name} ${BL.t}%${BL.alt.size ? ' altered' : ''}${BL.mods.size ? ' + mods' : ''}`;
+// a new A or B starts clean: no ALTER nudges, no RANDOM MODS
+const blClean = () => { BL.alt.clear(); BL.mods.clear(); BL.modText = ''; };
+// RANDOM MODS: 3 or 4 knobs, picked at random, each get a modulation source (LFO, velocity, amp env or pitch env) and an
+// amount either way (20 to 80 of 127). Pressed again, a new set replaces it (the routes A and B came with stay under
+// it). An LFO route on a sound whose LFO is too slow to hear gets the LFO sped up
+const RAND_MOD_DIALS = ['coarse', 'fine', 'pwm', 'afreq', 'again', 'bfreq', 'bgain', 'ncolour', 'nmix', 'decay', 'aslope', 'pdecay', 'pamt',
+  'clickvol', 'clickfreq', 'cutoff', 'reso', 'fdrive', 'rate', 'drive'];
+function randomMods() {
+  const v = blVoice(); BL.mods.clear();
+  const pool = RAND_MOD_DIALS.filter((u) => modOf(v, u)), n = 3 + (rnd() < 0.5 ? 1 : 0), picked = [];
+  while (picked.length < n && pool.length) picked.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+  const text = [];
+  for (const u of picked) {
+    const m = modOf(v, u), src = 1 + Math.floor(rnd() * 4), d = (rnd() < 0.5 ? -1 : 1) * (20 + Math.floor(rnd() * 61));
+    BL.mods.set(m.src, src); BL.mods.set(m.amt, MOD_AMT_ZERO + d);
+    text.push(`${VOICE_SCHEMAS[v].find((e) => e.ukey === u)?.label || u} ${MOD_SOURCES[src]} ${d > 0 ? '+' : ''}${d}`);
+  }
+  const f = ukeyPar(v, 'lfofreq');
+  if ([...BL.mods].some(([p, x]) => x === 1 && routeOf(p)?.src) && f !== undefined && blendNow().get(f) < 50) BL.mods.set(f, 50 + Math.floor(rnd() * 56));
+  BL.modText = text.join(' · ');
+}
 // the key on screen's patch with the blend over it, levelled to its engine as AUTO LEVEL would
 function blPatch(vals) {
   const sound = S.sel, v = blVoice(), m = keyPatch(sound, editKey[sound]).vals;
@@ -1726,14 +1775,14 @@ for (const side of ['a', 'b']) {
     <button class="btn sm" data-go="dice" title="Any sound from the bucket">DICE</button><button class="btn sm" data-go="play" title="Hear ${side.toUpperCase()} on its own">PLAY</button>`;
   const sel = box.querySelector('select');
   blSides[side] = sel;
-  sel.addEventListener('change', () => { BL[side] = blFind(sel.value); BL.alt.clear(); drawBlender(); blPlay(); });
+  sel.addEventListener('change', () => { BL[side] = blFind(sel.value); blClean(); drawBlender(); blPlay(); });
   box.addEventListener('click', (e) => {
     const go = e.target.closest('[data-go]')?.dataset.go; if (!go) return;
     if (go === 'play') { blPlayOne(BL[side]); return; }
     const all = blBucket();
     if (go === 'dice') BL[side] = blPick(BL[side === 'a' ? 'b' : 'a']);
     else { const i = all.indexOf(BL[side]); BL[side] = all[(i + Number(go) + all.length) % all.length]; }
-    BL.alt.clear(); drawBlender(); blPlay();
+    blClean(); drawBlender(); blPlay();
   });
 }
 function fillSides() {
@@ -1752,6 +1801,7 @@ function drawBlender() {
   blDrawBar(); drawBlendNames();
   $('bl-eng').textContent = `PLAYS ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} · ${blBucket().length} SOUNDS IN THE BUCKET`;
   $('bl-alter').title = `Nudge the blend by the ALTER amount (${S.rand.alter}%${S.rand.wild ? ', WILD' : ''}, set in the RANDOM menu); press again to go further. A new A or B starts clean`;
+  $('bl-modtext').textContent = $('bl-modtext').title = BL.modText ? `MODS: ${BL.modText}` : 'MODS: AS A AND B HAVE THEM';
   if (!BL.name) BL.name = blNewName();
   $('bl-name').value = BL.name;
   drawSaved();
@@ -1769,7 +1819,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') openBlender(false);
 });
 $('bl-play').addEventListener('click', () => blPlay());
-$('bl-pair').addEventListener('click', () => { BL.a = blPick(); BL.b = blPick(BL.a); BL.alt.clear(); drawBlender(); blPlay(); });
+$('bl-pair').addEventListener('click', () => { BL.a = blPick(); BL.b = blPick(BL.a); blClean(); drawBlender(); blPlay(); });
+$('bl-mods').addEventListener('click', () => { randomMods(); drawBlender(); blPlay(); });
 // ALTER: every control ALTER may move, nudged around the blend as it is now; the nudges stay as the slider moves
 $('bl-alter').addEventListener('click', () => {
   const v = blVoice(), now = blendNow(), base = (() => { const k = new Map(BL.alt); BL.alt.clear(); const b = blendNow(); BL.alt = k; return b; })();
@@ -1822,7 +1873,7 @@ $('bl-list').addEventListener('click', (e) => {
     savedSounds = savedSounds.filter((x) => x !== s); blStore(); pools.fill(null); fillSides(); drawBlender();
     detail(`<em>${s.name}</em> taken out of the saved list`); return;
   }
-  if (b.dataset.ab) { BL[b.dataset.ab] = blFind(s.name) || s; BL.alt.clear(); drawBlender(); blPlay(); return; }
+  if (b.dataset.ab) { BL[b.dataset.ab] = blFind(s.name) || s; blClean(); drawBlender(); blPlay(); return; }
   blPlayOne(s);
 });
 // EXPORT LIST: the saved sounds, as a file to hand over (tools/add-to-bucket.mjs adds it to bucket/)
