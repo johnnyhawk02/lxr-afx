@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmo73go';
-import { TABLE_NAMES, tableId, tableFor } from '../sound/tables.js?v=mwmo73go';
-import { presetName, jumble } from './names.js?v=mwmo73go';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmo73go';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmo73go';
-import { breed, isDud } from '../sound/breed.js?v=mwmo73go';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmo73go';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmo73go';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmo73go';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmo73go';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmo73go';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmp8s9g';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwmp8s9g';
+import { presetName, jumble } from './names.js?v=mwmp8s9g';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmp8s9g';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmp8s9g';
+import { breed, isDud } from '../sound/breed.js?v=mwmp8s9g';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmp8s9g';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmp8s9g';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmp8s9g';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmp8s9g';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmp8s9g';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,9 +106,9 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmo73go', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmp8s9g', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -617,6 +617,32 @@ function tablePicker(h3, voice) {
     b.textContent = TABLE_NAMES[i].toUpperCase(); b.classList.toggle('on', i > 0);
     b.title = `The tone's wavetable: ${TABLE_NAMES[i].toUpperCase()}. ${i ? 'The WAVE knob moves along it, smoothly' : 'CLASSIC: the WAVE knob picks sine, tri, saw, rec, pwm or noise'}. Click for the next (Shift: the one before)`;
   });
+  // the wave display: one cycle of what the tone plays, flat, the frames either side faint behind it. It follows the
+  // WAVE knob, and while a key sounds, where modulation has it now
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'wv'); svg.setAttribute('viewBox', `0 0 ${WV_W} ${WV_H}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = '<line class="ax"/><path class="nb"/><path class="nb"/><path class="cur"/>';
+  svg.querySelector('.ax').setAttribute('x1', 0); svg.querySelector('.ax').setAttribute('x2', WV_W); svg.querySelector('.ax').setAttribute('y1', WV_H / 2); svg.querySelector('.ax').setAttribute('y2', WV_H / 2);
+  h3.append(svg);
+  wave.svg = svg; wave.voice = voice; wave.last = '';
+  faderDraws.push(() => drawWave(null));
+}
+// the wave display's state: its svg, the voice, where modulation has the dial now (null: the knob), what's drawn
+const WV_W = 120, WV_H = 24, wave = { svg: null, voice: 0, live: null, liveAt: 0, last: '' };
+const wavePath = (pts) => { let d = ''; for (let j = 0; j <= pts.length; j++) { const y = pts[j % pts.length]; d += (j ? 'L' : 'M') + (j / pts.length * WV_W).toFixed(1) + ' ' + ((1 - y * 0.9) * WV_H / 2).toFixed(1); } return d; };
+function drawWave(live) {
+  const { svg, voice } = wave; if (!svg || !svg.isConnected) return;
+  const i = tableNow(voice), knob = valueNow(ukeyPar(voice, 'wave')) || 0, pwm = valueNow(ukeyPar(voice, 'pwm')) || 0;
+  const at = live ?? knob, key = `${i}/${at.toFixed(2)}/${pwm}`;
+  if (key === wave.last) return; wave.last = key;
+  const paths = svg.querySelectorAll('path'), step = frameStep(i);
+  paths[2].setAttribute('d', wavePath(waveShape(i, at, pwm)));
+  [-1, 1].forEach((s, k) => { const x = at + s * step; paths[k].setAttribute('d', step && x >= 0 && x <= WAVE_TOP ? wavePath(waveShape(i, x, pwm)) : ''); });
+}
+// from the audio: where each voice's dial is now; drawn while it moves (modulation), back to the knob when it stops
+function showWaves(w) {
+  const x = w[wave.voice]; if (x === undefined) return;
+  drawWave(x);
 }
 
 // ---- the key's 8-step sequencer: while the key is held and ACTIVE is on, it plays the lit steps in 1/16s on the BPM
@@ -1018,7 +1044,7 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); } }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); openTools(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 // ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
 // SCREEN COLOURS: the screen is drawn in two colours, a panel and an ink (css/lcd.css derives every other shade from
@@ -1047,15 +1073,16 @@ for (const [name, panel, ink] of THEMES) {
 for (const [id, k] of [['col-panel', 'panel'], ['col-ink', 'ink']]) $(id).addEventListener('input', (e) => { colours = { ...colours, [k]: e.target.value.toLowerCase() }; applyColours(true); });
 $('col-reset').addEventListener('click', () => { colours = { panel: THEMES[0][1], ink: THEMES[0][2] }; applyColours(true); detail('screen colours: back to the <em>LCD</em>'); });
 applyColours(false);
-function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); } }
+function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
 document.addEventListener('pointerdown', (e) => {
   if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
   if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
+  if (!$('tools-panel').hidden && !e.target.closest('#tmenu')) openTools(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openTools(false); } });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -1135,6 +1162,49 @@ async function randChange(fn, what, whole) {
   detail(what);
 }
 const selVoice = () => SOUNDS[S.sel].engineVoice;
+
+// ---- TOOLS: changes made to the whole key set at once ----
+function openTools(open) { $('tools-panel').hidden = !open; $('tools-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openSettings(false); } }
+$('tools-btn').addEventListener('click', () => openTools($('tools-panel').hidden));
+// ALL KEYS TO WAVETABLE: every key on CLASSIC moved onto the BASIC table at the place that plays its wave (sine,
+// triangle, saw, square, or the pulse of its PWM: sound/tables.js classicOnBasic), so it sounds as it did. A noise wave
+// has no frame and stays on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE
+// knob is padlocked. The engine's base sound (what a key with no sound of its own plays) moves too. AUTO LEVEL on,
+// each moved key is measured and levelled again. UNDO takes it back
+function keysToTable(sound, n) {
+  const v = SOUNDS[sound].engineVoice, w = ukeyPar(v, 'wave'), pw = ukeyPar(v, 'pwm'), t = tablePar(v), z = SOUNDS[sound].zone;
+  if (S.locks.has(w) || S.locks.has(t)) { n.padlock++; return; }
+  const moves = [], stay = [];
+  for (let note = z.lo; note <= z.hi; note++) {
+    const ed = S.keyEdits[sound][note];
+    if (ed && ed._lock) { n.locked++; continue; }
+    if (!ed) continue; // (plays the base sound, moved below)
+    const now = keyPatch(sound, note).vals;
+    if (now.get(t) !== 0) { n.table++; continue; }
+    const x = classicOnBasic(now.get(w), now.get(pw));
+    if (x === null) { n.noise++; stay.push(ed); } else moves.push([note, ed, x]);
+  }
+  const base = S.values[t] === 0 ? classicOnBasic(S.values[w], S.values[pw]) : null;
+  if (base !== null) {
+    S.values[w] = base; S.values[t] = BASIC;
+    for (const ed of stay) ed[t] ??= 0; // (a key with a noise wave of its own stays on CLASSIC)
+  }
+  const plain = [];
+  for (let note = z.lo; note <= z.hi; note++) if (!S.keyEdits[sound][note]) plain.push(note);
+  if (base !== null) n.moved += plain.length; else if (S.values[t] !== 0) n.table += plain.length; else n.noise += plain.length;
+  for (const [note, ed, x] of moves) { ed[w] = x; ed[t] = BASIC; levelKey(sound, note); n.moved++; }
+}
+async function allToTable() {
+  const n = { moved: 0, noise: 0, locked: 0, table: 0, padlock: 0 };
+  const left = () => [[n.noise, 'with a noise wave'], [n.table, 'on a table already'], [n.locked, 'locked']].filter(([k]) => k).map(([k, why]) => `${k} ${why}`);
+  await randChange(() => onSounds().forEach((i) => keysToTable(i, n)), 'all keys to <em>BASIC</em>');
+  drawKeymap();
+  const rest = left();
+  detail(n.moved ? `<em>${n.moved} key${n.moved === 1 ? '' : 's'}</em> moved onto the BASIC wavetable, each playing its wave as before${rest.length ? `; left on CLASSIC or as they were: ${rest.join(', ')}` : ''}${n.padlock ? `; ${n.padlock} engine${n.padlock === 1 ? '' : 's'} skipped (WAVE or TABLE padlocked)` : ''} (UNDO takes it back)`
+    : `no key to move: ${rest.join(', ') || 'none on CLASSIC'}${n.padlock ? `, ${n.padlock} engine${n.padlock === 1 ? '' : 's'} padlocked` : ''}`);
+  openTools(false);
+}
+$('to-table').addEventListener('click', () => allToTable());
 
 // ---- AUTO LEVEL: the kits' sounds are of very different loudness, so each sound a randomiser deals or alters is
 // played offline and measured (sound/level.js), and its key gets a TRIM: a gain of its own, beside LEVEL, that brings
@@ -1742,7 +1812,7 @@ function drawPreset() {
 }
 function openPresets(open) {
   $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
-  if (open) { openMenu(false); openSettings(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
+  if (open) { openMenu(false); openSettings(false); openTools(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
 }
 $('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
 $('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));
@@ -1862,7 +1932,7 @@ function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let
 function openBlender(open) {
   if (!open && phoneOn) return; // (on a phone the blender is the whole screen)
   $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); fillSides(); drawBlender(); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openTools(false); fillSides(); drawBlender(); }
 }
 $('blend-btn').addEventListener('click', () => openBlender($('blender').hidden));
 $('bl-close').addEventListener('click', () => openBlender(false));

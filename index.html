@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwmo73go">
+<link rel="stylesheet" href="css/lcd.css?v=mwmp8s9g">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -76,6 +76,16 @@
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
           <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
           <span class="dim note">LEARN: PRESS, CLICK A CONTROL ON SCREEN, TURN A KNOB</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu" id="tmenu">
+      <button class="btn" id="tools-btn" aria-haspopup="true" aria-expanded="false" title="Changes made to the whole key set at once">TOOLS ▾</button>
+      <div class="menupanel" id="tools-panel" hidden>
+        <h3>WAVETABLE</h3>
+        <div class="randrow">
+          <button class="btn" id="to-table" title="Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves stay on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
+          <span class="dim cap wide">EVERY KEY ONTO BASIC,<br>SOUNDING AS IT DID</span>
         </div>
       </div>
     </div>
@@ -238,6 +248,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwmo73go"></script>
+<script type="module" src="app/main.js?v=mwmp8s9g"></script>
 </body>
 </html>
