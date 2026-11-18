@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmri8vp';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmrwisq';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwmri8vp';
+import { TABLE_NAMES } from './tables.js?v=mwmrwisq';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -100,8 +100,11 @@ export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
 // then each voice's TABLE: the wavetable its tone plays (sound/tables.js: 0 CLASSIC, the firmware's waves). Last, so
 // every parameter number before it stays as it was (a store or preset saved before it plays CLASSIC)
 export const TABLE_BASE = MOD_BASE + 6 * NUM_MOD * 2;
-export const tablePar = (voice) => TABLE_BASE + voice;
-export const ALL_PARAMS = TABLE_BASE + 6;
+// then MOD A's and MOD B's wavetables (2 a voice, after the tone's 6, so older saves still line up). which: 0 the tone,
+// 1 MOD A, 2 MOD B
+export const MODTABLE_BASE = TABLE_BASE + 6;
+export const tablePar = (voice, which = 0) => (which ? MODTABLE_BASE + voice * 2 + which - 1 : TABLE_BASE + voice);
+export const ALL_PARAMS = MODTABLE_BASE + 12;
 // a knob's value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
 export const dec2 = (x) => Math.round(x * 100) / 100;
 export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
@@ -325,6 +328,11 @@ function buildSchema(voice) {
   // Part of the sound; ALTER leaves it alone unless WILD
   out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
     max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
+  // MOD A's and MOD B's (in their headings): on a table their WAVE knobs move along it, as the tone's does
+  for (const [which, ab] of [[1, 'a'], [2, 'b']]) {
+    out.push({ key: ab.toUpperCase() + 'TABLE' + (voice + 1), par: tablePar(voice, which), ukey: ab + 'table', label: ab + ' table', text: ab.toUpperCase() + '_TABLE', page: 'tone', section: 'table', min: 0,
+      max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
+  }
   return out;
 }
 

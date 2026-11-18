@@ -2,8 +2,8 @@
 // the WAVE dial, as always), 1 to 11 are METAMORF's built-in tables (engine/wavetables.js), made from maths when first
 // used. A table is plain data, so the page builds it and posts it to the AudioWorklet, which never builds one while it
 // plays (it plays CLASSIC until the table arrives).
-import { BUILTINS, need, holds, table, hold, drop, read, fromFrames } from '../engine/wavetables.js?v=mwmri8vp';
-import { NOISE_TABLES } from '../engine/noise-tables.js?v=mwmri8vp';
+import { BUILTINS, need, holds, table, hold, drop, read, fromFrames } from '../engine/wavetables.js?v=mwmrwisq';
+import { NOISE_TABLES } from '../engine/noise-tables.js?v=mwmrwisq';
 
 // (then LXR-AFX's own: NOISE and DUST, engine/noise-tables.js, read slower by their div)
 export const TABLE_IDS = [null, ...BUILTINS.map((b) => b[0]), ...NOISE_TABLES.map((b) => b[0])];
