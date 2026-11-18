@@ -1,7 +1,5 @@
 {
  "name": "THOPLER",
- "from": "kits/elixir-kits/SIRIUDO.SND drum 3",
- "n": 176,
  "type": "drum 3",
  "voice": 2,
  "params": {

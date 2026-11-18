@@ -1,7 +1,6 @@
 {
  "name": "KEZLAR",
  "type": "cymbal",
- "from": "GLORU 46% + TUDEREAL 54%",
  "voice": 3,
  "params": {
   "coarse": 77,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795028087486
+ }
 }

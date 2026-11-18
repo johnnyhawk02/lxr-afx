@@ -1,7 +1,5 @@
 {
  "name": "THELTHEX",
- "from": "kits/06-MANOR.SND snare",
- "n": 39,
  "type": "snare",
  "voice": 3,
  "params": {

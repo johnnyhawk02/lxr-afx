@@ -1,7 +1,5 @@
 {
  "name": "INTERESS",
- "from": "kits/factory/PROJ00-15-NYTURGUL.SND drum 1",
- "n": 270,
  "type": "drum 1",
  "voice": 0,
  "params": {

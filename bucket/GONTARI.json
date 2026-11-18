@@ -1,7 +1,6 @@
 {
  "name": "GONTARI",
  "type": "cymbal",
- "from": "NAMEXIE 77% + POPHAE 23%",
  "voice": 3,
  "params": {
   "coarse": 54,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795028097217
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "TITAZAN",
- "from": "kits/factory/PROJ05-07-BAQUENCY.SND hihat",
- "n": 683,
  "type": "hihat",
  "voice": 5,
  "params": {

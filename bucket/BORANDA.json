@@ -1,7 +1,5 @@
 {
  "name": "BORANDA",
- "from": "kits/factory/PROJ00-52-THROGDA.SND hihat",
- "n": 485,
  "type": "hihat",
  "voice": 5,
  "params": {

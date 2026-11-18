@@ -1,7 +1,6 @@
 {
  "name": "CYRGUL",
  "type": "drum 2",
- "from": "COROROME 49% + NOLADIN 51% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 43,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026588968
+ }
 }

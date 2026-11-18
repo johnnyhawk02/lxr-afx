@@ -1,7 +1,5 @@
 {
  "name": "ZAZYGY",
- "from": "kits/factory/PROJ05-08-PIORE.SND snare",
- "n": 687,
  "type": "snare",
  "voice": 3,
  "params": {

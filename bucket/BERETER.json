@@ -1,7 +1,5 @@
 {
  "name": "BERETER",
- "from": "kits/factory/PROJ00-07-TINTAURI.SND hihat",
- "n": 227,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "TERPHEUS",
- "from": "kits/factory/PROJ00-62-RUXANO.SND hihat",
- "n": 545,
  "type": "hihat",
  "voice": 5,
  "params": {

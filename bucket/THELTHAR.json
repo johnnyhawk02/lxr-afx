@@ -1,7 +1,5 @@
 {
  "name": "THELTHAR",
- "from": "kits/factory/PROJ00-61-PIGLUK.SND drum 1",
- "n": 534,
  "type": "drum 1",
  "voice": 0,
  "params": {

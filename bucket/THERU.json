@@ -1,7 +1,5 @@
 {
  "name": "THERU",
- "from": "kits/factory/PROJ00-19-PORIRY.SND snare",
- "n": 297,
  "type": "snare",
  "voice": 3,
  "params": {

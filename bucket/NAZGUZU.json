@@ -1,7 +1,5 @@
 {
  "name": "NAZGUZU",
- "from": "kits/factory/PROJ00-47-GYRONDOR.SND drum 1",
- "n": 456,
  "type": "drum 1",
  "voice": 0,
  "params": {

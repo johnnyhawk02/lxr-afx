@@ -1,7 +1,6 @@
 {
  "name": "FIKVAR",
  "type": "drum 1",
- "from": "THELTHEX 13% + LUXODIAC 87% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 114,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026126800
+ }
 }

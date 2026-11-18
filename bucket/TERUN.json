@@ -1,7 +1,5 @@
 {
  "name": "TERUN",
- "from": "kits/hrtl-untz/PROJ00-04-BLOSION.SND snare",
- "n": 717,
  "type": "snare",
  "voice": 3,
  "params": {

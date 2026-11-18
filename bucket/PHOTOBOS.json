@@ -1,7 +1,5 @@
 {
  "name": "PHOTOBOS",
- "from": "kits/factory/PROJ00-20-LELFIN.SND drum 3",
- "n": 302,
  "type": "drum 3",
  "voice": 2,
  "params": {

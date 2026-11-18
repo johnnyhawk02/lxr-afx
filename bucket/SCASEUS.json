@@ -1,7 +1,5 @@
 {
  "name": "SCASEUS",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND snare",
- "n": 291,
  "type": "snare",
  "voice": 3,
  "params": {

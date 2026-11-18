@@ -1,7 +1,5 @@
 {
  "name": "XITOFOLD",
- "from": "kits/factory/PROJ00-39-SVANUR.SND drum 2",
- "n": 409,
  "type": "drum 2",
  "voice": 1,
  "params": {

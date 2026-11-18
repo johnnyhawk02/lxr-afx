@@ -1,7 +1,5 @@
 {
  "name": "GALARION",
- "from": "kits/factory/PROJ00-20-LELFIN.SND snare",
- "n": 303,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "GOSMAN",
- "from": "kits/factory/PROJ00-23-ISITIC.SND drum 1",
- "n": 318,
  "type": "drum 1",
  "voice": 0,
  "params": {

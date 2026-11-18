@@ -1,7 +1,5 @@
 {
  "name": "ARTEZIMU",
- "from": "kits/08-THOMETER.SND drum 3",
- "n": 50,
  "type": "drum 3",
  "voice": 2,
  "params": {

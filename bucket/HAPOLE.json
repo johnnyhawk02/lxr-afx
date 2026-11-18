@@ -1,7 +1,5 @@
 {
  "name": "HAPOLE",
- "from": "kits/factory/PROJ00-53-RUNILAUS.SND hihat",
- "n": 491,
  "type": "hihat",
  "voice": 5,
  "params": {

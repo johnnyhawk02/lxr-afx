@@ -1,7 +1,5 @@
 {
  "name": "WEREKU",
- "from": "kits/factory/PROJ00-36-HANITH.SND hihat",
- "n": 401,
  "type": "hihat",
  "voice": 5,
  "params": {

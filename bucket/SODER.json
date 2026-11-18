@@ -1,7 +1,5 @@
 {
  "name": "SODER",
- "from": "kits/factory/PROJ00-43-HARIS.SND drum 1",
- "n": 432,
  "type": "drum 1",
  "voice": 0,
  "params": {

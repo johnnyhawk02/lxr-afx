@@ -1,7 +1,5 @@
 {
  "name": "WAYDHROS",
- "from": "kits/08-THOMETER.SND snare",
- "n": 51,
  "type": "snare",
  "voice": 3,
  "params": {

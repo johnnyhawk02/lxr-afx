@@ -1,7 +1,5 @@
 {
  "name": "PERIBLIX",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND drum 1",
- "n": 696,
  "type": "drum 1",
  "voice": 0,
  "params": {

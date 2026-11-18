@@ -1,7 +1,6 @@
 {
  "name": "JUNELOPE",
  "type": "drum 3",
- "from": "JAMESH 10% + MEDULYRI 90% + mods",
  "voice": 3,
  "params": {
   "coarse": 12,
@@ -126,6 +125,5 @@
   "modamt:rate": 103,
   "modsrc:drive": 2,
   "modamt:drive": 59
- },
- "t": 1795027881555
+ }
 }

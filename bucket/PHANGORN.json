@@ -1,7 +1,5 @@
 {
  "name": "PHANGORN",
- "from": "kits/factory/PROJ00-46-XENOCHO.SND cymbal",
- "n": 454,
  "type": "cymbal",
  "voice": 4,
  "params": {

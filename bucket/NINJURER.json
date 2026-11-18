@@ -1,7 +1,5 @@
 {
  "name": "NINJURER",
- "from": "kits/hrtl-untz/PROJ00-13-AGAMEMA.SND snare",
- "n": 771,
  "type": "snare",
  "voice": 3,
  "params": {

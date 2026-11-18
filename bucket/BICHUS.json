@@ -1,7 +1,5 @@
 {
  "name": "BICHUS",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND cymbal",
- "n": 700,
  "type": "cymbal",
  "voice": 4,
  "params": {

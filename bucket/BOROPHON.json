@@ -1,7 +1,5 @@
 {
  "name": "BOROPHON",
- "from": "kits/factory/PROJ00-32-SMEATE.SND hihat",
- "n": 377,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "FINGORRA",
- "from": "kits/factory/PROJ00-00-PASITION.SND drum 2",
- "n": 181,
  "type": "drum 2",
  "voice": 1,
  "params": {

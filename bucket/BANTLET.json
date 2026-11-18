@@ -1,7 +1,5 @@
 {
  "name": "BANTLET",
- "from": "kits/factory/PROJ00-56-IMPUNET.SND drum 3",
- "n": 506,
  "type": "drum 3",
  "voice": 2,
  "params": {

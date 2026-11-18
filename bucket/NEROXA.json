@@ -1,7 +1,5 @@
 {
  "name": "NEROXA",
- "from": "kits/factory/PROJ00-00-PASITION.SND hihat",
- "n": 185,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "ZHUDIA",
- "from": "kits/factory/PROJ00-58-ERATION.SND cymbal",
- "n": 520,
  "type": "cymbal",
  "voice": 4,
  "params": {

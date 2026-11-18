@@ -1,7 +1,6 @@
 {
  "name": "THUZZLOT",
  "type": "hihat",
- "from": "DEBBLE 48% + DENENO 52%",
  "voice": 3,
  "params": {
   "coarse": 54,
@@ -126,6 +125,5 @@
   "modamt:rate": 131,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026616333
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "JOURA",
- "from": "kits/factory/PROJ02-01-MONDELL.SND snare",
- "n": 609,
  "type": "snare",
  "voice": 3,
  "params": {

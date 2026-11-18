@@ -1,7 +1,5 @@
 {
  "name": "VOZHAMAN",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND drum 1",
- "n": 342,
  "type": "drum 1",
  "voice": 0,
  "params": {

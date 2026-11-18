@@ -1,7 +1,5 @@
 {
  "name": "APOSTOR",
- "from": "kits/E08-FADIA.SND drum 1",
- "n": 138,
  "type": "drum 1",
  "voice": 0,
  "params": {

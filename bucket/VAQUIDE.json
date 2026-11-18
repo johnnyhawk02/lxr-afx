@@ -1,7 +1,5 @@
 {
  "name": "VAQUIDE",
- "from": "kits/factory/PROJ00-12-THEREREN.SND drum 1",
- "n": 252,
  "type": "drum 1",
  "voice": 0,
  "params": {

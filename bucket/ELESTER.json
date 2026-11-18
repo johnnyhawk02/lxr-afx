@@ -1,7 +1,5 @@
 {
  "name": "ELESTER",
- "from": "kits/hrtl-untz/PROJ00-00-MEPSIS.SND drum 1",
- "n": 690,
  "type": "drum 1",
  "voice": 0,
  "params": {

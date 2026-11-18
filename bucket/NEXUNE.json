@@ -1,7 +1,5 @@
 {
  "name": "NEXUNE",
- "from": "kits/00-VAMET.SND drum 3",
- "n": 2,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "NENGEON",
- "from": "kits/hrtl-untz/PROJ00-14-EXCARATY.SND snare",
- "n": 777,
  "type": "snare",
  "voice": 3,
  "params": {

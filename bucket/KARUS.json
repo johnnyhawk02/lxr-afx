@@ -1,7 +1,5 @@
 {
  "name": "KARUS",
- "from": "kits/hrtl-untz/PROJ00-06-CEMWIRON.SND drum 3",
- "n": 728,
  "type": "drum 3",
  "voice": 2,
  "params": {

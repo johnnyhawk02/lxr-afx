@@ -1,7 +1,5 @@
 {
  "name": "CACTION",
- "from": "kits/02-REWYN.SND snare",
- "n": 15,
  "type": "snare",
  "voice": 3,
  "params": {

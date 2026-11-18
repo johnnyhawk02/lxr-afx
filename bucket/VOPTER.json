@@ -1,7 +1,5 @@
 {
  "name": "VOPTER",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND snare",
- "n": 627,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "RERIS",
- "from": "kits/hrtl-untz/PROJ00-05-EQUIDINE.SND drum 3",
- "n": 722,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SUPERAWN",
- "from": "kits/factory/PROJ00-20-LELFIN.SND drum 1",
- "n": 300,
  "type": "drum 1",
  "voice": 0,
  "params": {

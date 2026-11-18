@@ -1,7 +1,6 @@
 {
  "name": "CETRY",
  "type": "drum 2",
- "from": "CATHACA 71% + LARIDWEN 29% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 59,
@@ -126,6 +125,5 @@
   "modamt:rate": 52,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027663245
+ }
 }

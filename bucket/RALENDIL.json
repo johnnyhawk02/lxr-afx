@@ -1,7 +1,5 @@
 {
  "name": "RALENDIL",
- "from": "kits/07-DEMELEK.SND drum 2",
- "n": 43,
  "type": "drum 2",
  "voice": 1,
  "params": {

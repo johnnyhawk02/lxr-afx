@@ -1,7 +1,5 @@
 {
  "name": "JASORI",
- "from": "kits/E05-QELANTY.SND drum 3",
- "n": 122,
  "type": "drum 3",
  "voice": 2,
  "params": {

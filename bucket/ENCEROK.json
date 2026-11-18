@@ -1,7 +1,5 @@
 {
  "name": "ENCEROK",
- "from": "kits/factory/PROJ00-35-REATHOR.SND hihat",
- "n": 395,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "NEMELIEN",
- "from": "kits/factory/PROJ05-05-THRUTRY.SND drum 1",
- "n": 666,
  "type": "drum 1",
  "voice": 0,
  "params": {

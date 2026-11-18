@@ -1,7 +1,5 @@
 {
  "name": "SITER",
- "from": "kits/07-DEMELEK.SND snare",
- "n": 45,
  "type": "snare",
  "voice": 3,
  "params": {

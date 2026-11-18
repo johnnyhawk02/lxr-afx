@@ -1,7 +1,5 @@
 {
  "name": "GLORU",
- "from": "kits/factory/PROJ00-14-EURYLE.SND snare",
- "n": 267,
  "type": "snare",
  "voice": 3,
  "params": {

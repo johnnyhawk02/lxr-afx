@@ -1,7 +1,5 @@
 {
  "name": "VORNATON",
- "from": "kits/factory/PROJ00-54-AGAXA.SND drum 1",
- "n": 492,
  "type": "drum 1",
  "voice": 0,
  "params": {

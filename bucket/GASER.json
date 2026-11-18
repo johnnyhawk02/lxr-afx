@@ -1,7 +1,5 @@
 {
  "name": "GASER",
- "from": "kits/factory/PROJ00-45-MERINDOR.SND snare",
- "n": 447,
  "type": "snare",
  "voice": 3,
  "params": {

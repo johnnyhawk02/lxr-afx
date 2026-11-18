@@ -1,7 +1,5 @@
 {
  "name": "RACOMB",
- "from": "kits/hrtl-untz/PROJ00-15-TREARUS.SND hihat",
- "n": 785,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "PERIATHE",
- "from": "kits/factory/PROJ00-24-BARUBUR.SND snare",
- "n": 327,
  "type": "snare",
  "voice": 3,
  "params": {

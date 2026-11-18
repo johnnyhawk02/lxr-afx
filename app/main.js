@@ -1,17 +1,17 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmmf2iw';
-import { presetName, jumble } from './names.js?v=mwmmf2iw';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmmf2iw';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmmf2iw';
-import { breed, isDud } from '../sound/breed.js?v=mwmmf2iw';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmmf2iw';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmmf2iw';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmmf2iw';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmmf2iw';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmmf2iw';
+  voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmmzlre';
+import { presetName, jumble } from './names.js?v=mwmmzlre';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmmzlre';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmmzlre';
+import { breed, isDud } from '../sound/breed.js?v=mwmmzlre';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmmzlre';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmmzlre';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmmzlre';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmmzlre';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmmzlre';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -36,7 +36,7 @@ const S = {
   locks: new Set(), // the controls with a closed padlock: nothing random changes them (none as it comes)
   // alter: how far ALTER moves a control (%); rhythms: the share of keys (%) that play a running sequence; autoLevel:
   // the randomisers level each sound they deal or alter; source: where NEW SOUND, RANDOM and INIT PATCH get a sound,
-  // 'kit' (a kit sound as it is) or 'breed' (two kit sounds crossed, sound/breed.js)
+  // 'kit' (a bucket sound as it is) or 'breed' (two bucket sounds crossed, sound/breed.js)
   rand: { alter: 10, wild: false, rhythms: 0, autoLevel: true, source: 'kit' }, // (rhythms: always 0, the sequencer is gone)
   sel: 0, page: 0,
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
@@ -84,7 +84,7 @@ const onSounds = () => SOUNDS.map((_, i) => i).filter(engineOn);
 // BLENDER (kept in this browser until they're added to the repo's bucket/). Every new sound is made from these
 const BLEND_STORE = 'lxr-afx-blends-v1';
 let savedSounds = [];
-try { savedSounds = (JSON.parse(localStorage.getItem(BLEND_STORE)) || []).map((s) => { const x = tidySound(s); return x && { ...x, t: Number(s.t) || 0 }; }).filter(Boolean); } catch (e) { /* none */ }
+try { savedSounds = (JSON.parse(localStorage.getItem(BLEND_STORE)) || []).map(tidySound).filter(Boolean); } catch (e) { /* none */ }
 const inRepo = new Set(BUCKET.map((s) => s.name));
 const bucket = () => [...BUCKET, ...savedSounds.filter((s) => !inRepo.has(s.name))];
 
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmmf2iw', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmmzlre', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -121,7 +121,7 @@ function keyPatch(sound, note) {
     vals.set(seqOnPar(v), 0); // (no key runs a rhythm: the sequencer is gone, Johnny 2026-11-17)
     return { note: BASE_NOTE + Math.round(ed._st || 0), vals, semitones: ed._st || 0 };
   }
-  // a scattered key (a kit sound dealt onto it) plays that sound as it is: no morph under it
+  // a scattered key (a bucket sound dealt onto it) plays that sound as it is: no morph under it
   if (ed && ed._kit) { for (const [p] of m.params) vals.set(p, S.values[p]); }
   if (ed) for (const p in ed) if (p[0] !== '_') vals.set(Number(p), ed[p]);
   vals.set(seqOnPar(v), 0);
@@ -510,13 +510,13 @@ function drawSide() {
 // the editor: every parameter of the selected sound, on five pages
 // ---------------------------------------------------------------------------------------------------------------
 let faderDraws = [];
-// ---- NEW SOUND: the dice in the key's row of buttons (beside ALTER KEY and LOCK KEY). A press, or K, deals the key another kit sound of its engine and rolls the dice: it turns once while its
+// ---- NEW SOUND: the dice in the key's row of buttons (beside ALTER KEY and LOCK KEY). A press, or K, deals the key another bucket sound of its engine and rolls the dice: it turns once while its
 // face changes a few times, a third of a second. Flat, like the rest of the panel: seven pips, the lit ones the face ----
 const DICE_PIPS = { tl: [5, 5], tr: [19, 5], ml: [5, 12], mr: [19, 12], bl: [5, 19], br: [19, 19], c: [12, 12] };
 const DICE_FACES = [[], ['c'], ['tl', 'br'], ['tl', 'c', 'br'], ['tl', 'tr', 'bl', 'br'], ['tl', 'tr', 'c', 'bl', 'br'], ['tl', 'tr', 'ml', 'mr', 'bl', 'br']];
 const diceBtn = document.createElement('button');
 diceBtn.type = 'button'; diceBtn.className = 'dicebtn'; diceBtn.id = 'rand-key';
-diceBtn.title = 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button';
+diceBtn.title = 'NEW SOUND (K): a different bucket sound on this key only. UNDO takes it back; LEARN can put it on a button';
 diceBtn.setAttribute('aria-label', 'New sound on this key');
 diceBtn.innerHTML = `<span class="die"><svg viewBox="0 0 28 28" aria-hidden="true">${Object.entries(DICE_PIPS).map(([k, [x, y]]) => `<rect class="pip" data-p="${k}" x="${x}" y="${y}" width="4" height="4"/>`).join('')}</svg></span>`;
 let diceFace = 0, diceT = 0;
@@ -1031,7 +1031,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu
 let rngState = (Date.now() ^ 0x9e3779b9) >>> 0 || 1;
 const rnd = () => { rngState ^= rngState << 13; rngState >>>= 0; rngState ^= rngState >>> 17; rngState ^= rngState << 5; rngState >>>= 0; return rngState / 4294967296; };
 // what ALTER moves: not a locked control, a modulation target, the sequencer, LEVEL or a send ('mix'), and not a
-// switch or setting the kit sound brought ('still': waveforms, modes, the LFO, velocity, sample rate) unless WILD
+// switch or setting the bucket sound brought ('still': waveforms, modes, the LFO, velocity, sample rate) unless WILD
 const alters = (e, wild = S.rand.wild) => !(S.locks.has(e.par) || e.display.type === 'target' || e.seq || e.rand === 'mix' || (e.rand === 'still' && !wild));
 function randomiseVoice(voice, depth, wild) {
   const sc = kindSchema(voice, S.values[kindPar(voice)]);
@@ -1104,7 +1104,7 @@ const selVoice = () => SOUNDS[S.sel].engineVoice;
 
 // ---- AUTO LEVEL: the kits' sounds are of very different loudness, so each sound a randomiser deals or alters is
 // played offline and measured (sound/level.js), and its key gets a TRIM: a gain of its own, beside LEVEL, that brings
-// it to its engine's target (LEVEL_TARGET_DB: the middle loudness of that engine's kit sounds). The LEVEL knob and the
+// it to its engine's target (LEVEL_TARGET_DB: the middle loudness of that engine's bucket sounds). The LEVEL knob and the
 // zone levels stay yours, and LEVEL's lock has no say here: AUTO LEVEL in the RANDOM menu switches it. Off, a newly
 // dealt sound (fresh) plays as its kit made it and an altered one keeps the trim it had. Locked keys are left alone ----
 function levelKey(sound, note, fresh) {
@@ -1188,7 +1188,7 @@ function pool(sound) {
 // a new sound on a key leaves its locked controls as the key plays them now (now: the key's values before), and its
 // sends, which are part of the mix, not of the sound
 function keepLocked(ed, now) { for (const par of S.locks) if (now.has(par) && now.get(par) !== (ed[par] ?? S.values[par])) ed[par] = now.get(par); }
-// ---- BREED (NEW SOUNDS FROM in the RANDOM menu): instead of a kit sound as it is, two different kit sounds of the
+// ---- BREED (NEW SOUNDS FROM in the RANDOM menu): instead of a bucket sound as it is, two different bucket sounds of the
 // engine's type crossed section by section and nudged a little (sound/breed.js). Each child is played offline first
 // (level.js) and a dud (nearly silent, or still ringing at full after 1.5 s) is thrown away for another, up to
 // 8 tries; the last one stands if every try is a dud. NEW SOUND, RANDOM, RANDOM ALL and INIT PATCH all follow it ----
@@ -1204,13 +1204,13 @@ function bredSound(sound) {
   return s;
 }
 // ---- NEW SOUNDS FROM (the RANDOM menu): where the dice, RANDOM, RANDOM ALL and INIT PATCH get each new sound. KIT
-// deals a kit sound as it is; BREED crosses two (bredSound); MORPH, KIT-STYLE, FREE and RECIPE are sound/makers.js,
-// each made from the engine's kit sounds (pool) and, like BREED, played offline first so a dud is skipped (8 tries) ----
+// deals a bucket sound as it is; BREED crosses two (bredSound); MORPH, KIT-STYLE, FREE and RECIPE are sound/makers.js,
+// each made from the engine's bucket sounds (pool) and, like BREED, played offline first so a dud is skipped (8 tries) ----
 const SOURCES = {
-  kit: { name: 'KIT', dice: 'new sound', made: 'a new kit sound', cap: 'A KIT SOUND AS IT IS' },
-  breed: { name: 'BREED', dice: 'breed', made: 'a new bred sound', cap: 'TWO KIT SOUNDS CROSSED, SECTION BY SECTION' },
-  morph: { name: 'MORPH', dice: 'morph', made: 'a new morphed sound', cap: 'TWO KIT SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
-  kitstyle: { name: 'KIT-STYLE', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT KIT SOUND' },
+  kit: { name: 'BUCKET', dice: 'new sound', made: 'a new bucket sound', cap: 'A BUCKET SOUND AS IT IS' },
+  breed: { name: 'BREED', dice: 'breed', made: 'a new bred sound', cap: 'TWO BUCKET SOUNDS CROSSED, SECTION BY SECTION' },
+  morph: { name: 'MORPH', dice: 'morph', made: 'a new morphed sound', cap: 'TWO BUCKET SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
+  kitstyle: { name: 'KIT-STYLE', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT BUCKET SOUND' },
   free: { name: 'FREE', dice: 'free', made: 'a new free sound', cap: 'EVERY KNOB ANYWHERE IN ITS DRUM RANGE' },
   recipe: { name: 'RECIPE', dice: 'recipe', made: 'a new recipe sound', cap: 'KICK, TOM, SNARE, CLAP, RIM, HATS, CYMBAL, COWBELL, ZAP' },
 };
@@ -1258,7 +1258,7 @@ function makePanel(el) {
     for (const b of box.children) {
       const can = b.dataset.type ? ok.has(b.dataset.type) : ok.size > 0;
       b.disabled = locked || !can;
-      b.title = !can ? `No kit sound of that kind on this engine yet` : locked ? 'This key is locked' : `Make this key ${b.dataset.type ? 'a ' + b.dataset.type : 'a sound of any type'}: a new one each press (UNDO takes it back)`;
+      b.title = !can ? `No bucket sound of that kind on this engine yet` : locked ? 'This key is locked' : `Make this key ${b.dataset.type ? 'a ' + b.dataset.type : 'a sound of any type'}: a new one each press (UNDO takes it back)`;
     }
   });
 }
@@ -1268,9 +1268,9 @@ function drawSource() {
   for (const b of document.querySelectorAll('.srcrow .btn')) b.setAttribute('aria-pressed', b.dataset.src === src);
   for (const el of document.querySelectorAll('.dice-src')) el.textContent = d.dice;
   const cap = $('src-cap'); if (cap) cap.textContent = d.cap;
-  diceBtn.title = src === 'kit' ? 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button'
+  diceBtn.title = src === 'kit' ? 'NEW SOUND (K): a different bucket sound on this key only. UNDO takes it back; LEARN can put it on a button'
     : `${d.name} (K): a new sound on this key only (${d.cap.toLowerCase()}). UNDO takes it back; LEARN can put it on a button`;
-  const sc = $('scatter-cap'); if (sc) sc.innerHTML = src === 'kit' ? 'NEW KIT SOUND<br>ON EVERY KEY' : `NEW ${d.name} SOUND<br>ON EVERY KEY`;
+  const sc = $('scatter-cap'); if (sc) sc.innerHTML = src === 'kit' ? 'NEW BUCKET SOUND<br>ON EVERY KEY' : `NEW ${d.name} SOUND<br>ON EVERY KEY`;
 }
 function setSource(src) {
   S.rand.source = src; save(); drawSource();
@@ -1345,7 +1345,7 @@ function setRhythms(pc, press) { // press: a button's name (the phone's menu), n
   else detail(n ? `rhythms removed, but <em>${n} locked key${n === 1 ? ' keeps its' : 's keep their'}</em> rhythm · new sounds come without one`
     : `<em>all rhythms removed</em>: no key runs one, and new sounds come without one · UNDO takes it back`);
 }
-// NEW SOUND: one key (the last played, or picked on the key map) gets a different kit sound of its type, as RANDOM
+// NEW SOUND: one key (the last played, or picked on the key map) gets a different bucket sound of its type, as RANDOM
 // deals; every other key stays. Locked controls keep what the key plays now. It plays the key so you hear it
 function randKey(type) { // type: a recipe's name (the MAKE buttons), else the NEW SOUNDS FROM method
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
@@ -1374,7 +1374,7 @@ $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `
 $('kit-alter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => alterSound(i)), `all engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(onSounds())}`));
 $('level').addEventListener('click', () => randChange(() => levelZone(S.sel), `${SOUNDS[S.sel].name}: every key levelled to <em>${LEVEL_TARGET_DB[S.sel]} dB</em> (locked keys stay)`).then(sendTrim));
 $('kit-level').addEventListener('click', () => randChange(() => onSounds().forEach((i) => levelZone(i)), 'all zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
-// ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all zones gets a fresh kit sound as
+// ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all zones gets a fresh bucket sound as
 // RANDOM ALL deals them (levelled, panned and given rhythms the same way), locked keys and hand edits included. Then
 // the effects: INIT_REVERB % of the keys get a reverb send and INIT_ECHO % an echo send (which keys is random, and a
 // key can have both), the rest none. BPM, the effects and the master go back to their starting settings. A control
@@ -1405,7 +1405,7 @@ const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filt
 function drawInit() {
   const nl = lockedKeys();
   $('init-patch').setAttribute('aria-pressed', !!initArmed);
-  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH KIT SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO<br>BPM, FX + MASTER RESET`;
+  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH BUCKET SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO<br>BPM, FX + MASTER RESET`;
 }
 function disarmInit() { clearTimeout(initArmed); initArmed = 0; drawInit(); }
 $('init-patch').addEventListener('click', () => {
@@ -1425,7 +1425,7 @@ drawInit();
 // ---- MORPH KEYS (the RANDOM menu, under INIT PATCH): sounds on a few keys of the keyboard (the stops: the lowest
 // and highest key, or more spread evenly between them) and every key between two stops a step of the way from one to
 // the other (sound/makers.js blend), across every engine's zone. MORPH KEYS keeps the two end keys as they are (so you
-// can set them first) and only deals a kit sound to an end with no sound of its own. NEW ENDS makes a kick on the
+// can set them first) and only deals a bucket sound to an end with no sound of its own. NEW ENDS makes a kick on the
 // lowest key and something else (MORPH_TOPS) on the highest; KICK > HAT makes a kick, a snare, a perc and a closed
 // hat on four evenly spread keys (Johnny, 2026-11-18). Each made sound is a RECIPE sound (sound/makers.js), dud
 // filtered. Locked keys stay, and so do knobs with a closed padlock; each key keeps its sends, its pan stays in its
@@ -1868,17 +1868,17 @@ $('bl-name').addEventListener('input', () => { BL.name = $('bl-name').value.toUp
 $('bl-save').addEventListener('click', () => {
   const name = (BL.name || '').trim() || blNewName();
   if (blFind(name)) { detail(`<em>${name}</em> is in the bucket already: NEW NAME gives another`); return; }
-  const s = fromVoice(blendNow(), blVoice(), { name, type: (BL.t < 50 ? BL.a : BL.b).type, from: blFrom() });
+  const s = fromVoice(blendNow(), blVoice(), { name, type: (BL.t < 50 ? BL.a : BL.b).type });
   const same = blBucket().find((x) => blSig(x) === blSig(s));
   if (same) { detail(`this sound is in the bucket already, as <em>${same.name}</em>`); return; }
-  savedSounds.push({ ...s, t: Date.now() }); blStore(); pools.fill(null);
+  savedSounds.push(s); blStore(); pools.fill(null);
   BL.name = blNewName(); fillSides(); drawBlender();
   detail(`<em>${name}</em> saved: it's in the bucket now, and in the SAVED list for EXPORT`);
 });
 function drawSaved() {
   const n = savedSounds.length, fresh = savedSounds.filter((s) => !inRepo.has(s.name)).length;
   $('bl-count').textContent = n ? `${n} · ${fresh} NOT IN THE REPO YET` : 'NONE YET';
-  $('bl-list').innerHTML = savedSounds.map((s, i) => `<div class="blitem"><button class="blload" data-i="${i}" title="Play it (from ${cleanLabel(s.from)})">${s.name} <span class="dim">${s.type}${inRepo.has(s.name) ? ' · IN REPO' : ''}</span></button>
+  $('bl-list').innerHTML = savedSounds.map((s, i) => `<div class="blitem"><button class="blload" data-i="${i}" title="Play it">${s.name} <span class="dim">${s.type}${inRepo.has(s.name) ? ' · IN REPO' : ''}</span></button>
     <button data-ab="a" data-i="${i}" title="Make it sound A">A</button><button data-ab="b" data-i="${i}" title="Make it sound B">B</button>
     <button data-del="${i}" title="Take it out of the list (press twice)">X</button></div>`).reverse().join('');
   // (EXPORT and COPY stay pressable with nothing saved: they say so)
@@ -1983,7 +1983,7 @@ function moveZones(by) {
   detail(`lowest key <em>${noteName(to)} #${to}</em>`);
 }
 // ENGINES: how many mono engines share the 25 keys, 1 to 6, each on an even zone side by side (Johnny, 2026-11-17).
-// Every key that changes engine starts with a new kit sound of its engine; keys that stay keep theirs (UNDO takes it back)
+// Every key that changes engine starts with a new bucket sound of its engine; keys that stay keep theirs (UNDO takes it back)
 // switch to n engines as they are (a patch or UNDO brings its own keys)
 function showEngines(n) {
   if (n === S.engines) return;
@@ -1996,7 +1996,7 @@ function setEngineCount(n) {
   n = clamp(n, 1, MAX_ENGINES); if (n === S.engines) return;
   snapshot(`ENGINES ${S.engines} → ${n}`);
   showEngines(n);
-  // a key that left an engine's zone leaves its sound behind (UNDO brings it back), and a key new to one gets a kit sound
+  // a key that left an engine's zone leaves its sound behind (UNDO brings it back), and a key new to one gets a bucket sound
   S.keyEdits.forEach((ks, i) => { const z = SOUNDS[i].zone; for (const k in ks) if (!(k >= z.lo && k <= z.hi)) delete ks[k]; });
   for (const i of onSounds()) scatter(i, true);
   save(); drawKeymap(); drawFaders(); drawSide(); drawEditKey();
@@ -2087,7 +2087,7 @@ drawPhone = () => {
     b.classList.toggle('run', run); if (run) runs++; // (a dashed foot: held, it plays a rhythm)
   }
   { const z = SOUNDS[S.sel].zone, keys = `${z.hi - z.lo + 1} ${SOUNDS[S.sel].name} KEYS`; // the menu, as things are
-    $('pv-rand-eng').textContent = `RANDOM: ${SOUNDS[S.sel].name} KEYS`; $('pv-rand-eng-cap').textContent = `A NEW KIT SOUND ON EACH OF THE ${keys}`;
+    $('pv-rand-eng').textContent = `RANDOM: ${SOUNDS[S.sel].name} KEYS`; $('pv-rand-eng-cap').textContent = `A NEW BUCKET SOUND ON EACH OF THE ${keys}`;
     $('pv-alter-eng').textContent = `ALTER: ${SOUNDS[S.sel].name} KEYS`; $('pv-alter-eng-cap').textContent = `NUDGE THE SOUNDS OF THE ${keys}`; }
   const note = editKey[S.sel], locked = keyLocked(S.sel, note), kit = S.keyEdits[S.sel][note]?._kit;
   $('pv-key').textContent = noteName(note);

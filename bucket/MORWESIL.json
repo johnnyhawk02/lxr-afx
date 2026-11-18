@@ -1,7 +1,5 @@
 {
  "name": "MORWESIL",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND hihat",
- "n": 629,
  "type": "hihat",
  "voice": 5,
  "params": {

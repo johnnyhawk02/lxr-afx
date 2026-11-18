@@ -1,7 +1,5 @@
 {
  "name": "RATORY",
- "from": "kits/00-VAMET.SND hihat",
- "n": 5,
  "type": "hihat",
  "voice": 5,
  "params": {

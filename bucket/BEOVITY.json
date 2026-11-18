@@ -1,7 +1,5 @@
 {
  "name": "BEOVITY",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND cymbal",
- "n": 418,
  "type": "cymbal",
  "voice": 4,
  "params": {

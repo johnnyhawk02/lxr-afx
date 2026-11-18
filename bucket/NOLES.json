@@ -1,7 +1,5 @@
 {
  "name": "NOLES",
- "from": "kits/hrtl-untz/PROJ00-00-MEPSIS.SND hihat",
- "n": 695,
  "type": "hihat",
  "voice": 5,
  "params": {

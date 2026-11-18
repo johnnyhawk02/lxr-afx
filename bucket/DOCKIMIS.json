@@ -1,7 +1,5 @@
 {
  "name": "DOCKIMIS",
- "from": "kits/hrtl-untz/PROJ00-13-AGAMEMA.SND drum 2",
- "n": 769,
  "type": "drum 2",
  "voice": 1,
  "params": {

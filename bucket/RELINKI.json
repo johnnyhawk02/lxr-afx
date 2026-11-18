@@ -1,7 +1,6 @@
 {
  "name": "RELINKI",
  "type": "drum 2",
- "from": "SAURODEL 48% + FINGORRA 52%",
  "voice": 3,
  "params": {
   "coarse": 29,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026637907
+ }
 }

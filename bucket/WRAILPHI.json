@@ -1,7 +1,5 @@
 {
  "name": "WRAILPHI",
- "from": "kits/factory/PROJ02-01-MONDELL.SND drum 3",
- "n": 608,
  "type": "drum 3",
  "voice": 2,
  "params": {

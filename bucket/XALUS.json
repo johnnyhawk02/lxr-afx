@@ -1,7 +1,5 @@
 {
  "name": "XALUS",
- "from": "kits/hrtl-untz/PROJ00-10-NAZGULEK.SND cymbal",
- "n": 754,
  "type": "cymbal",
  "voice": 4,
  "params": {

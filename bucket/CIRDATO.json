@@ -1,7 +1,6 @@
 {
  "name": "CIRDATO",
  "type": "drum 2",
- "from": "ETHESTET 71% + SOLIDAS 29%",
  "voice": 3,
  "params": {
   "coarse": 37,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027757380
+ }
 }

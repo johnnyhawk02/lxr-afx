@@ -1,7 +1,5 @@
 {
  "name": "SIRTEMIS",
- "from": "kits/factory/PROJ00-59-CRONUTRY.SND hihat",
- "n": 527,
  "type": "hihat",
  "voice": 5,
  "params": {

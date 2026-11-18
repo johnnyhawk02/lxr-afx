@@ -1,7 +1,5 @@
 {
  "name": "BALROTON",
- "from": "kits/factory/PROJ00-61-PIGLUK.SND drum 3",
- "n": 536,
  "type": "drum 3",
  "voice": 2,
  "params": {

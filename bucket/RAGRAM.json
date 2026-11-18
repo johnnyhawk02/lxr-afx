@@ -1,7 +1,6 @@
 {
  "name": "RAGRAM",
  "type": "drum 3",
- "from": "SPRINA 75% + SCIGEE 25% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 40,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795028127943
+ }
 }

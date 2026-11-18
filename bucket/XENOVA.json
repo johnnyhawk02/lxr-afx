@@ -1,7 +1,5 @@
 {
  "name": "XENOVA",
- "from": "kits/factory/PROJ00-22-VEXIE.SND snare",
- "n": 315,
  "type": "snare",
  "voice": 3,
  "params": {

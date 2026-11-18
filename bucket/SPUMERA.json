@@ -1,7 +1,5 @@
 {
  "name": "SPUMERA",
- "from": "kits/factory/PROJ00-39-SVANUR.SND cymbal",
- "n": 412,
  "type": "cymbal",
  "voice": 4,
  "params": {

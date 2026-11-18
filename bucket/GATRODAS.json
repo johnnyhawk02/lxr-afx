@@ -1,7 +1,5 @@
 {
  "name": "GATRODAS",
- "from": "kits/factory/PROJ02-03-AZITER.SND cymbal",
- "n": 622,
  "type": "cymbal",
  "voice": 4,
  "params": {

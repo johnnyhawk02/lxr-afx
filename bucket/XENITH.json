@@ -1,7 +1,6 @@
 {
  "name": "XENITH",
  "type": "hihat",
- "from": "SIVVAX 13% + MODUBBLO 87% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 70,
@@ -126,6 +125,5 @@
   "modamt:rate": 155,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026105449
+ }
 }

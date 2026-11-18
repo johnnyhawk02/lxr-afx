@@ -1,7 +1,5 @@
 {
  "name": "ELALOTEN",
- "from": "kits/factory/PROJ05-04-KREMPEKE.SND hihat",
- "n": 665,
  "type": "hihat",
  "voice": 5,
  "params": {

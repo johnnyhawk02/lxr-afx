@@ -1,7 +1,5 @@
 {
  "name": "RECTORY",
- "from": "kits/factory/PROJ00-58-ERATION.SND hihat",
- "n": 521,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "PAYRE",
- "from": "kits/factory/PROJ03-01-ZELPY.SND drum 2",
- "n": 631,
  "type": "drum 2",
  "voice": 1,
  "params": {

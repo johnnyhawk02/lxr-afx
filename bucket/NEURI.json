@@ -1,7 +1,5 @@
 {
  "name": "NEURI",
- "from": "kits/factory/PROJ00-53-RUNILAUS.SND snare",
- "n": 489,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "BEOMATIC",
- "from": "kits/elixir-kits/SIRIUDO.SND snare",
- "n": 177,
  "type": "snare",
  "voice": 3,
  "params": {

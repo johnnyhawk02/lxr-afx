@@ -1,7 +1,5 @@
 {
  "name": "VYCTION",
- "from": "kits/hrtl-untz/PROJ00-10-NAZGULEK.SND drum 2",
- "n": 751,
  "type": "drum 2",
  "voice": 1,
  "params": {

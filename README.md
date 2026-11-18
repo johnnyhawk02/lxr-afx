@@ -9,7 +9,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
   keys (48-55), **snare** on the next 8 (56-63), **metal** on the top 9 (64-72). Each zone's base key is its middle key
   (52, 60, 68). LOW KEY (in **SETTINGS**, top bar) moves the whole layout by octaves; the sizes are `ZONE_SIZES` in `sound/schema.js`. Velocity is used.
-- **Every key has its own sound.** A zone starts with a different kit sound of its type on every key (RANDOM in the
+- **Every key has its own sound.** A zone starts with a different bucket sound of its type on every key (RANDOM in the
   RANDOM menu deals a fresh set); a key with nothing of its own plays the engine's base. (The auto-morph of earlier
   versions is gone: sound/morph.js is no longer used.)
 - **Layout, top down: the key, then its engine, then its synth settings.** The key header shows the key you last played
@@ -31,8 +31,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **Morphable switches**: the oscillator **WAVE**, **A WAVE** and **B WAVE**, the filter **TYPE** and **A MODE** (FM or
   MIX) are knobs, not menus, so a sound can blend into another. Each old setting is a detent the knob catches: WAVE runs
   sine, tri, saw, rec, pwm, noise; TYPE runs lp, bp, unity bp, hp, notch, peak, lp2, off; A MODE runs fm to mix. On a
-  detent the engine runs exactly the firmware's code, so every kit sound plays sample for sample as it did
-  (`node test/merged.test.mjs`). Between two detents the knob shows both and how far along (`tri>saw 40`): the two
+  detent the engine runs exactly the firmware's code. Between two detents the knob shows both and how far along (`tri>saw 40`): the two
   waves are read at the same point of the cycle from the same band-limited tables and crossfaded; the filter's LP, BP
   and HP outputs (one filter state) are mixed, with LP2 or the dry input crossfaded in at the far end; and mod A's FM
   depth fades out as it fades into the mix (`node test/switches.test.mjs`). An LFO or velocity aimed at one moves it
@@ -71,11 +70,11 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   drum / snare / metal levels. **LEARN** (in SETTINGS, with **BS2 MAP**, which puts the Bass Station 2 map back) maps any knob to any control: press it, click the control, turn the knob.
 - **SCREEN COLOURS** (in SETTINGS): six looks (LCD, BLUE LCD, PAPER, AMBER, GREEN CRT, NIGHT), or pick your own PANEL and TEXT colours;
   RESET goes back to the LCD. Every colour on the screen comes from those two (`--panel-rgb`, `--ink-rgb` in `css/lcd.css`). Kept in this browser, not in presets.
-- **Randomisers**: **RANDOM** deals a different real kit sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
-  learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
+- **Randomisers**: **RANDOM** deals a different bucket sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
+  learned button) swaps just the key you last played for another bucket sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,
   the other randomisers, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip, a key you edited by hand a dot.
-- **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit
+- **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh bucket
   sound, levelled and panned as RANDOM ALL deals them; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
   edits are replaced, so with locked keys it asks first (press again within four seconds). **BPM goes back to 120 and
@@ -101,7 +100,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   **myth** (Greek, Norse, Egyptian and other old gods and heroes). Every word is a mix: its start and its end always
   come from two different lists. To add a theme, add a list to `WORDS` there.
 - **RANDOM menu**: **RANDOM**, **ALTER** and **LEVEL** for the engine on screen, **RANDOM ALL**, **ALTER ALL** and
-  **LEVEL ALL** for all three, each with a line under it saying what it does. RANDOM gives every key a new kit sound;
+  **LEVEL ALL** for all three, each with a line under it saying what it does. RANDOM gives every key a new bucket sound;
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
   uses it too). ALTER moves the knobs of the sound and leaves alone what a kit sound is built on (waveforms, FM mode,
   filter type, the LFO, velocity, sample rate), LEVEL and the sends; **WILD** lets it take a control outside the
@@ -112,7 +111,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   every padlock, and the menu counts the closed ones. Only your own hand, UNDO and loading a preset change a locked
   knob. (Before, 17 knobs came locked, so NEW SOUND kept the old waveform and switches under a new sound's name, and
   RANDOM (then SCATTER) and INIT PATCH ignored the padlocks.) New sounds always keep a key's sends, locked or not.
-- **NEW SOUND is the dice** in the key header's row of buttons, beside ALTER KEY. Press it, or K, and the key gets a different kit sound of its engine; the dice
+- **NEW SOUND is the dice** in the key header's row of buttons, beside ALTER KEY. Press it, or K, and the key gets a different bucket sound of its engine; the dice
   turns once and its face changes a few times, a third of a second (with reduced motion set, the face just changes).
 - **Auto level**: the kits' sounds are of very different loudness (the loudest drum is 50 dB above the quietest), so
   every sound a randomiser deals or alters (NEW SOUND, RANDOM, ALTER, ALTER KEY, a paste onto another engine) is
@@ -156,17 +155,18 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 | `sound/morph.js` | the old key morph (no longer used by the page; kept with its tests) |
 | `sound/instrument.js` | the engine as an instrument: `voices[i].play(note, velocity, params)` and `render(left, right)`, no UI |
 | `sound/worklet.js` | the instrument in an AudioWorklet |
-| `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every kit sound and prints each engine's median) |
+| `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every bucket sound and prints each engine's median) |
 | `app/main.js`, `css/lcd.css` | the page |
 | `app/names.js` | the preset names: the themed word lists (`WORDS`) and the jumbler, no UI |
-| `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from, named by the preset namer (`kits/names.json` holds each kit's name, its six drums' names and its old file name; `node tools/name-kits.mjs` names new kits and rebuilds `kits.js`) |
+| `bucket/`, `sound/bucket.js`, `sound/bucket-sounds.js` | the SOUND BUCKET, the only source of sounds: one JSON file per sound (name, type, voice, params). The SOUND BLENDER (B, or BLENDER; the whole screen on a phone) blends two into a new one, SAVE keeps it, EXPORT LIST or COPY LIST hands the saved list over, and `node tools/add-to-bucket.mjs <file>` adds it to `bucket/` and rebuilds `bucket-sounds.js` |
 
 No build step: the page loads the ES modules directly.
 
 ```sh
 node test/morph.test.mjs                        # the morph and engine checks
-node test/level.test.mjs                        # AUTO LEVEL: every kit sound lands at its engine's target
+node test/level.test.mjs                        # AUTO LEVEL: every bucket sound lands at its engine's target
 node test/reverb.test.mjs                       # the stereo reverb: left as the firmware's, right as loud and unlike it
+node test/bucket.test.mjs                       # the sound bucket: every sound on every voice, saved back unchanged
 node test/names.test.mjs                        # the preset names: sayable, varied, never a list word, always a mix of lists
 python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: laptop sizes and the phone (needs Playwright)
 ```
@@ -175,5 +175,5 @@ python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: lap
 
 GPL-3.0-only (see [LICENSE](LICENSE)), like Elixir and the firmware its engine is ported from
 ([erica-synths/lxr-desktop-app](https://github.com/erica-synths/lxr-desktop-app)). Unofficial: not made, approved or
-endorsed by Erica Synths. "LXR" and "LXR-02" are trademarks of Erica Synths. The built-in kits include the Hrtl LXR-02
-DLC kits, by Hrtl, distributed free by Erica Synths.
+endorsed by Erica Synths. "LXR" and "LXR-02" are trademarks of Erica Synths. The sound bucket's first sounds were taken from
+LXR-02 kits, including the Hrtl LXR-02 DLC kits, by Hrtl, distributed free by Erica Synths.

@@ -1,7 +1,5 @@
 {
  "name": "LAPHECY",
- "from": "kits/factory/PROJ00-10-COROZZLE.SND drum 2",
- "n": 241,
  "type": "drum 2",
  "voice": 1,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SILON",
- "from": "kits/hrtl-untz/PROJ00-08-EAREBEK.SND cymbal",
- "n": 742,
  "type": "cymbal",
  "voice": 4,
  "params": {

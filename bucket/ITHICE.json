@@ -1,7 +1,5 @@
 {
  "name": "ITHICE",
- "from": "kits/03-CRYORIM.SND drum 1",
- "n": 18,
  "type": "drum 1",
  "voice": 0,
  "params": {

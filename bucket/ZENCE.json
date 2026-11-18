@@ -1,7 +1,5 @@
 {
  "name": "ZENCE",
- "from": "kits/factory/PROJ00-37-MNETE.SND drum 2",
- "n": 403,
  "type": "drum 2",
  "voice": 1,
  "params": {

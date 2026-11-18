@@ -1,7 +1,5 @@
 {
  "name": "XAPEKE",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND hihat",
- "n": 419,
  "type": "hihat",
  "voice": 5,
  "params": {

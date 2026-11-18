@@ -1,7 +1,5 @@
 {
  "name": "MOPIER",
- "from": "kits/E01-DILLEPUS.SND snare",
- "n": 99,
  "type": "snare",
  "voice": 3,
  "params": {

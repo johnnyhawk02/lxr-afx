@@ -1,7 +1,5 @@
 {
  "name": "RIGEPE",
- "from": "kits/hrtl-untz/PROJ00-11-ICANET.SND hihat",
- "n": 761,
  "type": "hihat",
  "voice": 5,
  "params": {

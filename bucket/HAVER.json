@@ -1,7 +1,5 @@
 {
  "name": "HAVER",
- "from": "kits/factory/PROJ00-39-SVANUR.SND snare",
- "n": 411,
  "type": "snare",
  "voice": 3,
  "params": {

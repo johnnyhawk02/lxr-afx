@@ -1,7 +1,5 @@
 {
  "name": "MEBBLO",
- "from": "kits/02-REWYN.SND hihat",
- "n": 17,
  "type": "hihat",
  "voice": 5,
  "params": {

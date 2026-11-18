@@ -1,7 +1,5 @@
 {
  "name": "TELROND",
- "from": "kits/factory/PROJ00-37-MNETE.SND hihat",
- "n": 407,
  "type": "hihat",
  "voice": 5,
  "params": {

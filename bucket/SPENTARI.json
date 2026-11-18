@@ -1,7 +1,5 @@
 {
  "name": "SPENTARI",
- "from": "kits/factory/PROJ00-08-XEDHRIM.SND drum 1",
- "n": 228,
  "type": "drum 1",
  "voice": 0,
  "params": {

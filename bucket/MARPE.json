@@ -1,7 +1,6 @@
 {
  "name": "MARPE",
  "type": "drum 1",
- "from": "VANSTONE 49% + VOZHAMAN 51%",
  "voice": 3,
  "params": {
   "coarse": 30,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026451102
+ }
 }

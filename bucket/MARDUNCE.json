@@ -1,7 +1,5 @@
 {
  "name": "MARDUNCE",
- "from": "kits/10-SKAVERAC.SND drum 3",
- "n": 62,
  "type": "drum 3",
  "voice": 2,
  "params": {

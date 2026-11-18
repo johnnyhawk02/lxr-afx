@@ -1,7 +1,5 @@
 {
  "name": "RIRCULES",
- "from": "kits/factory/PROJ00-04-BATON.SND drum 1",
- "n": 204,
  "type": "drum 1",
  "voice": 0,
  "params": {

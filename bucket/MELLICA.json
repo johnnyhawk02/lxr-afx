@@ -1,7 +1,5 @@
 {
  "name": "MELLICA",
- "from": "kits/factory/PROJ00-58-ERATION.SND drum 1",
- "n": 516,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SPUZZLOT",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND drum 2",
- "n": 709,
  "type": "drum 2",
  "voice": 1,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "INTEFRIT",
- "from": "kits/07-DEMELEK.SND drum 3",
- "n": 44,
  "type": "drum 3",
  "voice": 2,
  "params": {

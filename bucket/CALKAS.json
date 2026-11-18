@@ -1,7 +1,5 @@
 {
  "name": "CALKAS",
- "from": "kits/factory/PROJ00-05-PERGLE.SND drum 3",
- "n": 212,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "DENENO",
  "type": "hihat",
- "from": "WIZASIS 49% + GANYSUS 51%",
  "voice": 3,
  "params": {
   "coarse": 76,
@@ -126,6 +125,5 @@
   "modamt:rate": 135,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026504516
+ }
 }

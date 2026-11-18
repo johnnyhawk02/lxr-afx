@@ -1,7 +1,5 @@
 {
  "name": "MAETRY",
- "from": "kits/factory/PROJ05-08-PIORE.SND cymbal",
- "n": 688,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "WIZANET",
  "type": "drum 1",
- "from": "BERSEPE 67% + DILIDHEL 33%",
  "voice": 3,
  "params": {
   "coarse": 36,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027898772
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "QUIVENTY",
- "from": "kits/factory/PROJ01-05-PARIRIEL.SND hihat",
- "n": 587,
  "type": "hihat",
  "voice": 5,
  "params": {

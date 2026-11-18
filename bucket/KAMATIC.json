@@ -1,7 +1,6 @@
 {
  "name": "KAMATIC",
  "type": "hihat",
- "from": "SOSTAL 53% + IROTEUS 47%",
  "voice": 3,
  "params": {
   "coarse": 98,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026394991
+ }
 }

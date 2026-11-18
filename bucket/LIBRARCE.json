@@ -1,7 +1,5 @@
 {
  "name": "LIBRARCE",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND drum 2",
- "n": 289,
  "type": "drum 2",
  "voice": 1,
  "params": {

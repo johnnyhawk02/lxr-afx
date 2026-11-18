@@ -1,7 +1,5 @@
 {
  "name": "VEROPA",
- "from": "kits/E09-WETOR.SND cymbal",
- "n": 148,
  "type": "cymbal",
  "voice": 4,
  "params": {

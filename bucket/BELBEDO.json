@@ -1,7 +1,5 @@
 {
  "name": "BELBEDO",
- "from": "kits/hrtl-untz/PROJ00-14-EXCARATY.SND hihat",
- "n": 779,
  "type": "hihat",
  "voice": 5,
  "params": {

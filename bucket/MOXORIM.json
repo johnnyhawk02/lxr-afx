@@ -1,7 +1,5 @@
 {
  "name": "MOXORIM",
- "from": "kits/factory/PROJ05-01-VOROMU.SND drum 2",
- "n": 643,
  "type": "drum 2",
  "voice": 1,
  "params": {

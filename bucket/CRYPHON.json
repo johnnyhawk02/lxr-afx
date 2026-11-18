@@ -1,7 +1,5 @@
 {
  "name": "CRYPHON",
- "from": "kits/14-GROOSYNE.SND snare",
- "n": 87,
  "type": "snare",
  "voice": 3,
  "params": {

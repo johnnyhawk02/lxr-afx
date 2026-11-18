@@ -1,7 +1,5 @@
 {
  "name": "GAVELA",
- "from": "kits/factory/PROJ00-33-SYRMES.SND drum 2",
- "n": 379,
  "type": "drum 2",
  "voice": 1,
  "params": {

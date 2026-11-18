@@ -1,7 +1,5 @@
 {
  "name": "PHATAN",
- "from": "kits/factory/PROJ00-50-ANGBAXA.SND snare",
- "n": 477,
  "type": "snare",
  "voice": 3,
  "params": {

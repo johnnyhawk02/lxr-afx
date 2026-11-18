@@ -1,7 +1,5 @@
 {
  "name": "POSITOS",
- "from": "kits/factory/PROJ00-46-XENOCHO.SND snare",
- "n": 453,
  "type": "snare",
  "voice": 3,
  "params": {

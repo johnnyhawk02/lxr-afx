@@ -1,7 +1,5 @@
 {
  "name": "DRUINUS",
- "from": "kits/factory/PROJ00-21-TIRISER.SND snare",
- "n": 309,
  "type": "snare",
  "voice": 3,
  "params": {

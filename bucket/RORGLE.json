@@ -1,7 +1,5 @@
 {
  "name": "RORGLE",
- "from": "kits/factory/PROJ01-02-ENCHANIC.SND snare",
- "n": 567,
  "type": "snare",
  "voice": 3,
  "params": {

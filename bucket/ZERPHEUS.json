@@ -1,7 +1,5 @@
 {
  "name": "ZERPHEUS",
- "from": "kits/factory/PROJ05-00-SYTTER.SND hihat",
- "n": 641,
  "type": "hihat",
  "voice": 5,
  "params": {

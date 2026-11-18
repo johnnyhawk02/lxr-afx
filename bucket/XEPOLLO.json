@@ -1,7 +1,5 @@
 {
  "name": "XEPOLLO",
- "from": "kits/factory/PROJ00-05-PERGLE.SND hihat",
- "n": 215,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "MIMMETRY",
- "from": "kits/factory/PROJ00-60-WENCE.SND snare",
- "n": 531,
  "type": "snare",
  "voice": 3,
  "params": {

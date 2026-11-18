@@ -1,7 +1,5 @@
 {
  "name": "ETHESTET",
- "from": "kits/13-TITARI.SND drum 2",
- "n": 79,
  "type": "drum 2",
  "voice": 1,
  "params": {

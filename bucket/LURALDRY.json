@@ -1,7 +1,5 @@
 {
  "name": "LURALDRY",
- "from": "kits/factory/PROJ00-05-PERGLE.SND cymbal",
- "n": 214,
  "type": "cymbal",
  "voice": 4,
  "params": {

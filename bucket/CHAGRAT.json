@@ -1,7 +1,5 @@
 {
  "name": "CHAGRAT",
- "from": "kits/factory/PROJ00-53-RUNILAUS.SND cymbal",
- "n": 490,
  "type": "cymbal",
  "voice": 4,
  "params": {

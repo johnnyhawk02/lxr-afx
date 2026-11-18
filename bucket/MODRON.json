@@ -1,7 +1,5 @@
 {
  "name": "MODRON",
- "from": "kits/factory/PROJ00-13-ARCARAN.SND hihat",
- "n": 263,
  "type": "hihat",
  "voice": 5,
  "params": {

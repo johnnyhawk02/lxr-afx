@@ -1,7 +1,5 @@
 {
  "name": "NETHER",
- "from": "kits/E05-QELANTY.SND cymbal",
- "n": 124,
  "type": "cymbal",
  "voice": 4,
  "params": {

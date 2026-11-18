@@ -1,7 +1,6 @@
 {
  "name": "BODORAS",
  "type": "cymbal",
- "from": "LYSSUS 9% + MORBAG 91%",
  "voice": 3,
  "params": {
   "coarse": 66,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027588627
+ }
 }

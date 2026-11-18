@@ -1,7 +1,5 @@
 {
  "name": "MIRARERA",
- "from": "kits/factory/PROJ05-06-GOCLIPSE.SND cymbal",
- "n": 676,
  "type": "cymbal",
  "voice": 4,
  "params": {

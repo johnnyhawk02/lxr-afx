@@ -1,7 +1,5 @@
 {
  "name": "MATAFREY",
- "from": "kits/factory/PROJ00-12-THEREREN.SND snare",
- "n": 255,
  "type": "snare",
  "voice": 3,
  "params": {

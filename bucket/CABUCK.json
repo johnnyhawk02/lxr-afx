@@ -1,7 +1,5 @@
 {
  "name": "CABUCK",
- "from": "kits/factory/PROJ01-06-MAGNECE.SND snare",
- "n": 591,
  "type": "snare",
  "voice": 3,
  "params": {

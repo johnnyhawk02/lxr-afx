@@ -1,7 +1,5 @@
 {
  "name": "THEOGI",
- "from": "kits/hrtl-untz/PROJ00-10-NAZGULEK.SND hihat",
- "n": 755,
  "type": "hihat",
  "voice": 5,
  "params": {

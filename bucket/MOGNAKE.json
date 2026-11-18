@@ -1,7 +1,5 @@
 {
  "name": "MOGNAKE",
- "from": "kits/02-REWYN.SND drum 2",
- "n": 13,
  "type": "drum 2",
  "voice": 1,
  "params": {

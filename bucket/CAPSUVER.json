@@ -1,7 +1,5 @@
 {
  "name": "CAPSUVER",
- "from": "kits/factory/PROJ00-15-NYTURGUL.SND drum 3",
- "n": 272,
  "type": "drum 3",
  "voice": 2,
  "params": {

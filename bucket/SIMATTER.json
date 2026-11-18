@@ -1,7 +1,6 @@
 {
  "name": "SIMATTER",
  "type": "drum 3",
- "from": "XENOGON 49% + MARDUNCE 51%",
  "voice": 3,
  "params": {
   "coarse": 47,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026457787
+ }
 }

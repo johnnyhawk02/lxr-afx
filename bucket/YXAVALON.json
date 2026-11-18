@@ -1,7 +1,5 @@
 {
  "name": "YXAVALON",
- "from": "kits/hrtl-untz/PROJ00-07-PENDURE.SND drum 3",
- "n": 734,
  "type": "drum 3",
  "voice": 2,
  "params": {

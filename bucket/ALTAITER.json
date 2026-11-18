@@ -1,7 +1,5 @@
 {
  "name": "ALTAITER",
- "from": "kits/E03-XYHETTER.SND hihat",
- "n": 113,
  "type": "hihat",
  "voice": 5,
  "params": {

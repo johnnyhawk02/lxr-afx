@@ -1,7 +1,5 @@
 {
  "name": "GRAVIRPY",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND drum 3",
- "n": 626,
  "type": "drum 3",
  "voice": 2,
  "params": {

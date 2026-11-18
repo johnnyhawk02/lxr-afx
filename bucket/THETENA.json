@@ -1,7 +1,5 @@
 {
  "name": "THETENA",
- "from": "kits/14-GROOSYNE.SND drum 2",
- "n": 85,
  "type": "drum 2",
  "voice": 1,
  "params": {

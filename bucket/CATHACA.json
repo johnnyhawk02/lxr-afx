@@ -1,7 +1,5 @@
 {
  "name": "CATHACA",
- "from": "kits/factory/PROJ00-55-SIRAMIRU.SND drum 2",
- "n": 499,
  "type": "drum 2",
  "voice": 1,
  "params": {

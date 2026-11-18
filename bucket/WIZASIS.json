@@ -1,7 +1,6 @@
 {
  "name": "WIZASIS",
  "type": "snare",
- "from": "SOBENDIR 49% + MALASTIC 51%",
  "voice": 3,
  "params": {
   "coarse": 61,
@@ -126,6 +125,5 @@
   "modamt:rate": 143,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026498394
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "SILIPA",
- "from": "kits/factory/PROJ05-03-CELEPTON.SND drum 1",
- "n": 654,
  "type": "drum 1",
  "voice": 0,
  "params": {

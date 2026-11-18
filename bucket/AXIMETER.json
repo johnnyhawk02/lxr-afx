@@ -1,7 +1,5 @@
 {
  "name": "AXIMETER",
- "from": "kits/factory/PROJ00-12-THEREREN.SND drum 2",
- "n": 253,
  "type": "drum 2",
  "voice": 1,
  "params": {

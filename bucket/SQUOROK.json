@@ -1,7 +1,5 @@
 {
  "name": "SQUOROK",
- "from": "kits/factory/PROJ00-28-VORUTIC.SND drum 1",
- "n": 348,
  "type": "drum 1",
  "voice": 0,
  "params": {

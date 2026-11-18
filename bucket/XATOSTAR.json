@@ -1,7 +1,5 @@
 {
  "name": "XATOSTAR",
- "from": "kits/05-DRYARI.SND drum 1",
- "n": 30,
  "type": "drum 1",
  "voice": 0,
  "params": {

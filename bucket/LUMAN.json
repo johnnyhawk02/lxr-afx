@@ -1,7 +1,5 @@
 {
  "name": "LUMAN",
- "from": "kits/factory/PROJ00-17-XYRPHEUS.SND snare",
- "n": 285,
  "type": "snare",
  "voice": 3,
  "params": {

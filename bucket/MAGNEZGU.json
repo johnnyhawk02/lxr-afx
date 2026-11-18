@@ -1,7 +1,5 @@
 {
  "name": "MAGNEZGU",
- "from": "kits/09-NERES.SND snare",
- "n": 57,
  "type": "snare",
  "voice": 3,
  "params": {

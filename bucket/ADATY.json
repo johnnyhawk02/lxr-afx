@@ -1,7 +1,5 @@
 {
  "name": "ADATY",
- "from": "kits/factory/PROJ05-01-VOROMU.SND cymbal",
- "n": 646,
  "type": "cymbal",
  "voice": 4,
  "params": {

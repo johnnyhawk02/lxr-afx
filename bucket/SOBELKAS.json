@@ -1,7 +1,5 @@
 {
  "name": "SOBELKAS",
- "from": "kits/factory/PROJ00-30-ZORLIN.SND drum 1",
- "n": 360,
  "type": "drum 1",
  "voice": 0,
  "params": {

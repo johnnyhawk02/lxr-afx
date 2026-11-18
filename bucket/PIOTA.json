@@ -1,7 +1,5 @@
 {
  "name": "PIOTA",
- "from": "kits/02-REWYN.SND cymbal",
- "n": 16,
  "type": "cymbal",
  "voice": 4,
  "params": {

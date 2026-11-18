@@ -1,7 +1,5 @@
 {
  "name": "GOBLINDA",
- "from": "kits/factory/PROJ03-00-HOMURWEN.SND drum 1",
- "n": 624,
  "type": "drum 1",
  "voice": 0,
  "params": {

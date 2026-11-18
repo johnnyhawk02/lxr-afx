@@ -1,7 +1,5 @@
 {
  "name": "CAREWOLF",
- "from": "kits/00-VAMET.SND drum 2",
- "n": 1,
  "type": "drum 2",
  "voice": 1,
  "params": {

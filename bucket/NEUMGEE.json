@@ -1,7 +1,5 @@
 {
  "name": "NEUMGEE",
- "from": "kits/factory/PROJ00-21-TIRISER.SND cymbal",
- "n": 310,
  "type": "cymbal",
  "voice": 4,
  "params": {

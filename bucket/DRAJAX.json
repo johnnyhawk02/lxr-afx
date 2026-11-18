@@ -1,7 +1,5 @@
 {
  "name": "DRAJAX",
- "from": "kits/factory/PROJ00-02-VYLOC.SND hihat",
- "n": 197,
  "type": "hihat",
  "voice": 5,
  "params": {

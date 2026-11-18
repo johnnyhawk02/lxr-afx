@@ -1,7 +1,5 @@
 {
  "name": "ELERION",
- "from": "kits/factory/PROJ00-06-DURIRI.SND drum 3",
- "n": 218,
  "type": "drum 3",
  "voice": 2,
  "params": {

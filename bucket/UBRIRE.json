@@ -1,7 +1,5 @@
 {
  "name": "UBRIRE",
- "from": "kits/factory/PROJ00-46-XENOCHO.SND hihat",
- "n": 455,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "KLYREAL",
  "type": "drum 2",
- "from": "CYRGUL 71% + PHATAN 29%",
  "voice": 3,
  "params": {
   "coarse": 40,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027648614
+ }
 }

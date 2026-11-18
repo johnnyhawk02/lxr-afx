@@ -1,7 +1,5 @@
 {
  "name": "HORENDIL",
- "from": "kits/factory/PROJ00-00-PASITION.SND snare",
- "n": 183,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "PROBARU",
  "type": "drum 2",
- "from": "SHATHYST 48% + GANDAGER 52%",
  "voice": 3,
  "params": {
   "coarse": 89,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026609733
+ }
 }

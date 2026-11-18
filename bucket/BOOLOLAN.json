@@ -1,7 +1,5 @@
 {
  "name": "BOOLOLAN",
- "from": "kits/factory/PROJ00-45-MERINDOR.SND drum 3",
- "n": 446,
  "type": "drum 3",
  "voice": 2,
  "params": {

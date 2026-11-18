@@ -1,7 +1,5 @@
 {
  "name": "LOREUS",
- "from": "kits/03-CRYORIM.SND drum 2",
- "n": 19,
  "type": "drum 2",
  "voice": 1,
  "params": {

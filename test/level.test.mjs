@@ -1,14 +1,14 @@
 // node test/level.test.mjs: AUTO LEVEL (sound/level.js). Every sound of the built-in kits, measured and trimmed, lands
 // at its engine's target (or as near as full scale and the trim's range allow), and the instrument applies a key's
 // trim to its own voice only.
-import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice, trimPar, trimDb, TRIM_ZERO, VOICE_SCHEMAS, voiceOwned, ALL_PARAMS } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { SOUNDS, INIT_VALUES, PAR, mapVoice, trimPar, trimDb, TRIM_ZERO, VOICE_SCHEMAS, voiceOwned, ALL_PARAMS } from '../sound/schema.js';
+import { KITS } from './bucket-kits.mjs';
 import { measure, trimFor, autoTrim, LEVEL_TARGET_DB } from '../sound/level.js';
 import { LxrInstrument } from '../sound/instrument.js';
 import { LxrEngine, BLOCK, WAVE_MAX } from '../engine/lxr.js'; // (WAVE_MAX: the noise, last on the wave dial)
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
+const kits = KITS;
 const q = (a, f) => a[Math.min(a.length - 1, Math.floor(f * a.length))];
 
 // every kit sound of each engine

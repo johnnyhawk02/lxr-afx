@@ -1,7 +1,5 @@
 {
  "name": "ALBEDWEN",
- "from": "kits/factory/PROJ00-47-GYRONDOR.SND drum 3",
- "n": 458,
  "type": "drum 3",
  "voice": 2,
  "params": {

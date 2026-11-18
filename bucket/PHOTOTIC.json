@@ -1,7 +1,5 @@
 {
  "name": "PHOTOTIC",
- "from": "kits/factory/PROJ00-44-SHABUR.SND drum 2",
- "n": 439,
  "type": "drum 2",
  "voice": 1,
  "params": {

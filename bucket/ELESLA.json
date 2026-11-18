@@ -1,7 +1,5 @@
 {
  "name": "ELESLA",
- "from": "kits/factory/PROJ02-00-RHIARI.SND hihat",
- "n": 605,
  "type": "hihat",
  "voice": 5,
  "params": {

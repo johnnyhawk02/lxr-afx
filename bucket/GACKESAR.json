@@ -1,7 +1,5 @@
 {
  "name": "GACKESAR",
- "from": "kits/factory/PROJ00-48-SPENDUME.SND snare",
- "n": 465,
  "type": "snare",
  "voice": 3,
  "params": {

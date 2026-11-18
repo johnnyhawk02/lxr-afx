@@ -1,7 +1,5 @@
 {
  "name": "GALLATOR",
- "from": "kits/factory/PROJ00-10-COROZZLE.SND snare",
- "n": 243,
  "type": "snare",
  "voice": 3,
  "params": {

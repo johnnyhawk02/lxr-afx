@@ -1,7 +1,5 @@
 {
  "name": "VALIBLIN",
- "from": "kits/hrtl-untz/PROJ00-06-CEMWIRON.SND hihat",
- "n": 731,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "HERAS",
- "from": "kits/factory/PROJ00-14-EURYLE.SND hihat",
- "n": 269,
  "type": "hihat",
  "voice": 5,
  "params": {

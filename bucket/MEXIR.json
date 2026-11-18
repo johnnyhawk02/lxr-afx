@@ -1,7 +1,5 @@
 {
  "name": "MEXIR",
- "from": "kits/E01-DILLEPUS.SND hihat",
- "n": 101,
  "type": "hihat",
  "voice": 5,
  "params": {

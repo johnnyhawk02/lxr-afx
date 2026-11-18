@@ -1,7 +1,5 @@
 {
  "name": "THASTEPY",
- "from": "kits/11-PARAXURA.SND cymbal",
- "n": 70,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "FINWOOD",
- "from": "kits/hrtl-untz/PROJ00-08-EAREBEK.SND hihat",
- "n": 743,
  "type": "hihat",
  "voice": 5,
  "params": {

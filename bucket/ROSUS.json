@@ -1,7 +1,5 @@
 {
  "name": "ROSUS",
- "from": "kits/06-MANOR.SND cymbal",
- "n": 40,
  "type": "cymbal",
  "voice": 4,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "PHOTONE",
- "from": "kits/factory/PROJ00-37-MNETE.SND drum 1",
- "n": 402,
  "type": "drum 1",
  "voice": 0,
  "params": {

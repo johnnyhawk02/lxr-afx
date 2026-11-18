@@ -4,11 +4,11 @@
 // detent is close to the detent, the halfway point lies between the two ends, and nothing blows up.
 import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX, SRC, FILTER_PROBE } from '../engine/lxr.js';
 import { PAR } from '../engine/lxr-tables.js';
-import { parseSnd, mapVoice } from '../sound/schema.js';
-import { KIT_FILES } from '../sound/kits.js';
+import { mapVoice } from '../sound/schema.js';
+import { KITS } from './bucket-kits.mjs';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))).kit);
+const kits = KITS.map((k) => k.kit);
 
 // one voice of a kit, with some controls set, rendered for n blocks
 function render(kit, v, set, n = 120) {
@@ -96,6 +96,7 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
   const e = new LxrEngine({ seed: 9 });
   e.loadKit(kit);
   e.setParam(PAR.OSC_WAVE_DRUM1, 40);
+  e.setParam(PAR.SYNC_LFO1, 0); e.setParam(PAR.FREQ_LFO1, 90); e.setParam(PAR.WAVE_LFO1, 0); // (an LFO fast enough to see move, whatever the kit had)
   e.setRouteSrc(0, PAR.OSC_WAVE_DRUM1, SRC.LFO);
   e.setRouteAmt(0, PAR.OSC_WAVE_DRUM1, 0.5);
   e.trigger(0, 120, 60);

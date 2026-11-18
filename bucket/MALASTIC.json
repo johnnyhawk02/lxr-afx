@@ -1,7 +1,5 @@
 {
  "name": "MALASTIC",
- "from": "kits/factory/PROJ00-15-NYTURGUL.SND snare",
- "n": 273,
  "type": "snare",
  "voice": 3,
  "params": {

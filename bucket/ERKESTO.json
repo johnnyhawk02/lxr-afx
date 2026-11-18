@@ -1,7 +1,5 @@
 {
  "name": "ERKESTO",
- "from": "kits/factory/PROJ00-22-VEXIE.SND drum 1",
- "n": 312,
  "type": "drum 1",
  "voice": 0,
  "params": {

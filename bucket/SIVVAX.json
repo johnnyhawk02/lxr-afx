@@ -1,7 +1,5 @@
 {
  "name": "SIVVAX",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND drum 3",
- "n": 422,
  "type": "drum 3",
  "voice": 2,
  "params": {

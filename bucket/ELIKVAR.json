@@ -1,7 +1,5 @@
 {
  "name": "ELIKVAR",
- "from": "kits/E01-DILLEPUS.SND drum 3",
- "n": 98,
  "type": "drum 3",
  "voice": 2,
  "params": {

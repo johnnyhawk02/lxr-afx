@@ -1,7 +1,5 @@
 {
  "name": "KISINET",
- "from": "kits/factory/PROJ00-63-THEBBLIX.SND snare",
- "n": 549,
  "type": "snare",
  "voice": 3,
  "params": {

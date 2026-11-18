@@ -1,7 +1,6 @@
 {
  "name": "PADONNA",
  "type": "drum 1",
- "from": "SPADOR 49% + PEREVERE 51%",
  "voice": 3,
  "params": {
   "coarse": 60,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026454677
+ }
 }

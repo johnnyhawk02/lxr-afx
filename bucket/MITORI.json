@@ -1,7 +1,6 @@
 {
  "name": "MITORI",
  "type": "drum 3",
- "from": "VATROPIC 49% + BERUS 51%",
  "voice": 3,
  "params": {
   "coarse": 34,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026537640
+ }
 }

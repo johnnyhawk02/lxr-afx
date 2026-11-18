@@ -1,7 +1,5 @@
 {
  "name": "SYPNOS",
- "from": "kits/08-THOMETER.SND cymbal",
- "n": 52,
  "type": "cymbal",
  "voice": 4,
  "params": {

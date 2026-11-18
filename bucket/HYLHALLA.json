@@ -1,7 +1,5 @@
 {
  "name": "HYLHALLA",
- "from": "kits/factory/PROJ00-09-XIRPENT.SND cymbal",
- "n": 238,
  "type": "cymbal",
  "voice": 4,
  "params": {

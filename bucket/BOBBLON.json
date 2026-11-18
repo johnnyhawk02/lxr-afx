@@ -1,7 +1,5 @@
 {
  "name": "BOBBLON",
- "from": "kits/hrtl-untz/PROJ00-00-MEPSIS.SND snare",
- "n": 693,
  "type": "snare",
  "voice": 3,
  "params": {

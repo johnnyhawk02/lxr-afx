@@ -1,7 +1,5 @@
 {
  "name": "DRARPHON",
- "from": "kits/factory/PROJ05-06-GOCLIPSE.SND hihat",
- "n": 677,
  "type": "hihat",
  "voice": 5,
  "params": {

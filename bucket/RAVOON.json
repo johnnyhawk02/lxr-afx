@@ -1,7 +1,5 @@
 {
  "name": "RAVOON",
- "from": "kits/factory/PROJ05-05-THRUTRY.SND snare",
- "n": 669,
  "type": "snare",
  "voice": 3,
  "params": {

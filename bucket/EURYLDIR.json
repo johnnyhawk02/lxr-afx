@@ -1,7 +1,6 @@
 {
  "name": "EURYLDIR",
  "type": "snare",
- "from": "KNIBRIXA 49% + FERLIN 51%",
  "voice": 3,
  "params": {
   "coarse": 43,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026529400
+ }
 }

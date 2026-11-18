@@ -1,7 +1,5 @@
 {
  "name": "PLANENIC",
- "from": "kits/15-ORCRILE.SND drum 3",
- "n": 92,
  "type": "drum 3",
  "voice": 2,
  "params": {

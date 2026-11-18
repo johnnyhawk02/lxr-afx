@@ -1,7 +1,5 @@
 {
  "name": "KEZHAN",
- "from": "kits/factory/PROJ00-32-SMEATE.SND snare",
- "n": 375,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "TOSTER",
- "from": "kits/E10-ABSOBIS.SND drum 3",
- "n": 152,
  "type": "drum 3",
  "voice": 2,
  "params": {

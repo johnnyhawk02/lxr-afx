@@ -1,7 +1,5 @@
 {
  "name": "PARAMIME",
- "from": "kits/factory/PROJ00-01-LEROSIC.SND snare",
- "n": 189,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SINGULMO",
- "from": "kits/12-ISOTIONE.SND drum 1",
- "n": 72,
  "type": "drum 1",
  "voice": 0,
  "params": {

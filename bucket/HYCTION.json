@@ -1,7 +1,5 @@
 {
  "name": "HYCTION",
- "from": "kits/04-KUKULAR.SND drum 1",
- "n": 24,
  "type": "drum 1",
  "voice": 0,
  "params": {

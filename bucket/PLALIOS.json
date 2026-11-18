@@ -1,7 +1,5 @@
 {
  "name": "PLALIOS",
- "from": "kits/factory/PROJ00-29-HERANTUM.SND hihat",
- "n": 359,
  "type": "hihat",
  "voice": 5,
  "params": {

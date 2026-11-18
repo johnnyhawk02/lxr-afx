@@ -1,7 +1,5 @@
 {
  "name": "IMPUZOO",
- "from": "kits/elixir-kits/ISILAS.SND hihat",
- "n": 173,
  "type": "hihat",
  "voice": 5,
  "params": {

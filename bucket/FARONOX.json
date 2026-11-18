@@ -1,7 +1,5 @@
 {
  "name": "FARONOX",
- "from": "kits/factory/PROJ00-63-THEBBLIX.SND drum 3",
- "n": 548,
  "type": "drum 3",
  "voice": 2,
  "params": {

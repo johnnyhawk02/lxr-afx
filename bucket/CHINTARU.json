@@ -1,7 +1,5 @@
 {
  "name": "CHINTARU",
- "from": "kits/09-NERES.SND cymbal",
- "n": 58,
  "type": "cymbal",
  "voice": 4,
  "params": {

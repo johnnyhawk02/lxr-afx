@@ -1,7 +1,6 @@
 {
  "name": "BERSEPE",
  "type": "drum 1",
- "from": "PARDUK 76% + SETIORE 24% altered + mods",
  "voice": 3,
  "params": {
   "coarse": 30,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795025934964
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "MAMAN",
- "from": "kits/hrtl-untz/PROJ00-13-AGAMEMA.SND drum 3",
- "n": 770,
  "type": "drum 3",
  "voice": 2,
  "params": {

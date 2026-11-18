@@ -1,7 +1,6 @@
 {
  "name": "ARIERAS",
  "type": "snare",
- "from": "XENOVA 53% + GANYSUS 47%",
  "voice": 3,
  "params": {
   "coarse": 65,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026376763
+ }
 }

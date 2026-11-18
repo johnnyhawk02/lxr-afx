@@ -1,7 +1,5 @@
 {
  "name": "KLODRED",
- "from": "kits/factory/PROJ00-36-HANITH.SND drum 2",
- "n": 397,
  "type": "drum 2",
  "voice": 1,
  "params": {

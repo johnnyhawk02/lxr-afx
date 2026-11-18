@@ -1,7 +1,5 @@
 {
  "name": "TALLIX",
- "from": "kits/factory/PROJ00-37-MNETE.SND snare",
- "n": 405,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "ROREDE",
- "from": "kits/factory/PROJ00-23-ISITIC.SND snare",
- "n": 321,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "KLOWTON",
- "from": "kits/hrtl-untz/PROJ00-08-EAREBEK.SND drum 2",
- "n": 739,
  "type": "drum 2",
  "voice": 1,
  "params": {

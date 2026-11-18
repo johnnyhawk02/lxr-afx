@@ -1,7 +1,5 @@
 {
  "name": "CEMRAHIL",
- "from": "kits/factory/PROJ05-06-GOCLIPSE.SND drum 3",
- "n": 674,
  "type": "drum 3",
  "voice": 2,
  "params": {

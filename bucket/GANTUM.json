@@ -1,7 +1,5 @@
 {
  "name": "GANTUM",
- "from": "kits/factory/PROJ05-06-GOCLIPSE.SND drum 1",
- "n": 672,
  "type": "drum 1",
  "voice": 0,
  "params": {

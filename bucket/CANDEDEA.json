@@ -1,7 +1,5 @@
 {
  "name": "CANDEDEA",
- "from": "kits/11-PARAXURA.SND hihat",
- "n": 71,
  "type": "hihat",
  "voice": 5,
  "params": {

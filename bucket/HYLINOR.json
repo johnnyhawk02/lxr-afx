@@ -1,7 +1,5 @@
 {
  "name": "HYLINOR",
- "from": "kits/factory/PROJ00-08-XEDHRIM.SND hihat",
- "n": 233,
  "type": "hihat",
  "voice": 5,
  "params": {

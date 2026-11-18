@@ -1,7 +1,5 @@
 {
  "name": "VYNDIL",
- "from": "kits/factory/PROJ00-01-LEROSIC.SND hihat",
- "n": 191,
  "type": "hihat",
  "voice": 5,
  "params": {

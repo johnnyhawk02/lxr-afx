@@ -1,7 +1,5 @@
 {
  "name": "VERPE",
- "from": "kits/factory/PROJ00-19-PORIRY.SND drum 1",
- "n": 294,
  "type": "drum 1",
  "voice": 0,
  "params": {

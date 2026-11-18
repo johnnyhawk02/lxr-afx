@@ -1,7 +1,6 @@
 {
  "name": "COMENUS",
  "type": "drum 2",
- "from": "PRORI 75% + DILIDHEL 25%",
  "voice": 3,
  "params": {
   "coarse": 40,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795025957642
+ }
 }

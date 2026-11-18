@@ -1,7 +1,5 @@
 {
  "name": "GLUORAD",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND drum 1",
- "n": 708,
  "type": "drum 1",
  "voice": 0,
  "params": {

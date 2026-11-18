@@ -1,7 +1,5 @@
 {
  "name": "MINEBLO",
- "from": "kits/factory/PROJ00-44-SHABUR.SND cymbal",
- "n": 442,
  "type": "cymbal",
  "voice": 4,
  "params": {

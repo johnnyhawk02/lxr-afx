@@ -1,7 +1,5 @@
 {
  "name": "GANGORN",
- "from": "kits/hrtl-untz/PROJ00-11-ICANET.SND drum 3",
- "n": 758,
  "type": "drum 3",
  "voice": 2,
  "params": {

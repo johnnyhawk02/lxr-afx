@@ -1,7 +1,5 @@
 {
  "name": "SOSTAL",
- "from": "kits/13-TITARI.SND hihat",
- "n": 83,
  "type": "hihat",
  "voice": 5,
  "params": {

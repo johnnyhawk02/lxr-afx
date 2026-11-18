@@ -1,7 +1,5 @@
 {
  "name": "NOLDOPA",
- "from": "kits/hrtl-untz/PROJ00-04-BLOSION.SND cymbal",
- "n": 718,
  "type": "cymbal",
  "voice": 4,
  "params": {

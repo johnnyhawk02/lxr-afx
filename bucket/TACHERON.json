@@ -1,7 +1,5 @@
 {
  "name": "TACHERON",
- "from": "kits/factory/PROJ00-23-ISITIC.SND drum 2",
- "n": 319,
  "type": "drum 2",
  "voice": 1,
  "params": {

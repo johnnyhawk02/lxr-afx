@@ -1,7 +1,5 @@
 {
  "name": "FARES",
- "from": "kits/factory/PROJ02-02-FRORY.SND drum 1",
- "n": 612,
  "type": "drum 1",
  "voice": 0,
  "params": {

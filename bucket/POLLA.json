@@ -1,7 +1,5 @@
 {
  "name": "POLLA",
- "from": "kits/hrtl-untz/PROJ00-12-UNDODA.SND drum 1",
- "n": 762,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "SAUROLUS",
- "from": "kits/hrtl-untz/PROJ00-15-TREARUS.SND drum 3",
- "n": 782,
  "type": "drum 3",
  "voice": 2,
  "params": {

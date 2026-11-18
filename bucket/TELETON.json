@@ -1,7 +1,5 @@
 {
  "name": "TELETON",
- "from": "kits/factory/PROJ00-09-XIRPENT.SND drum 1",
- "n": 234,
  "type": "drum 1",
  "voice": 0,
  "params": {

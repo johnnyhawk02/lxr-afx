@@ -1,7 +1,5 @@
 {
  "name": "SPECLOPS",
- "from": "kits/hrtl-untz/PROJ00-02-OSCIRION.SND hihat",
- "n": 707,
  "type": "hihat",
  "voice": 5,
  "params": {

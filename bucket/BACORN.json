@@ -1,7 +1,5 @@
 {
  "name": "BACORN",
- "from": "kits/factory/PROJ00-60-WENCE.SND drum 3",
- "n": 530,
  "type": "drum 3",
  "voice": 2,
  "params": {

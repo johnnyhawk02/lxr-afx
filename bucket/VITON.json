@@ -1,7 +1,5 @@
 {
  "name": "VITON",
- "from": "kits/11-PARAXURA.SND drum 3",
- "n": 68,
  "type": "drum 3",
  "voice": 2,
  "params": {

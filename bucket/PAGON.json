@@ -1,7 +1,5 @@
 {
  "name": "PAGON",
- "from": "kits/factory/PROJ00-31-TITADO.SND snare",
- "n": 369,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "LONDRONI",
- "from": "kits/factory/PROJ00-50-ANGBAXA.SND drum 3",
- "n": 476,
  "type": "drum 3",
  "voice": 2,
  "params": {

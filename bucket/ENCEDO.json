@@ -1,7 +1,5 @@
 {
  "name": "ENCEDO",
- "from": "kits/factory/PROJ00-54-AGAXA.SND hihat",
- "n": 497,
  "type": "hihat",
  "voice": 5,
  "params": {

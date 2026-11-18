@@ -1,7 +1,5 @@
 {
  "name": "MOLKORA",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND drum 2",
- "n": 343,
  "type": "drum 2",
  "voice": 1,
  "params": {

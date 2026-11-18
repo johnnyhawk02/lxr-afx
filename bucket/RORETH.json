@@ -1,7 +1,6 @@
 {
  "name": "RORETH",
  "type": "drum 1",
- "from": "XEPOLLO 49% + PADONNA 51%",
  "voice": 3,
  "params": {
   "coarse": 58,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026467128
+ }
 }

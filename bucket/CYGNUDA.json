@@ -1,7 +1,5 @@
 {
  "name": "CYGNUDA",
- "from": "kits/factory/PROJ00-57-AURORLIN.SND drum 3",
- "n": 512,
  "type": "drum 3",
  "voice": 2,
  "params": {

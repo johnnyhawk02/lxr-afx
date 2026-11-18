@@ -1,7 +1,5 @@
 {
  "name": "ECLIXLOR",
- "from": "kits/10-SKAVERAC.SND snare",
- "n": 63,
  "type": "snare",
  "voice": 3,
  "params": {

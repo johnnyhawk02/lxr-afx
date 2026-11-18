@@ -1,7 +1,5 @@
 {
  "name": "MOLENOID",
- "from": "kits/06-MANOR.SND hihat",
- "n": 41,
  "type": "hihat",
  "voice": 5,
  "params": {

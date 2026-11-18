@@ -1,7 +1,5 @@
 {
  "name": "PEVLOK",
- "from": "kits/factory/PROJ00-09-XIRPENT.SND snare",
- "n": 237,
  "type": "snare",
  "voice": 3,
  "params": {

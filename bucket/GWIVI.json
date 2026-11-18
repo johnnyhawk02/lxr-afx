@@ -1,7 +1,5 @@
 {
  "name": "GWIVI",
- "from": "kits/E12-PETARBAG.SND drum 2",
- "n": 163,
  "type": "drum 2",
  "voice": 1,
  "params": {

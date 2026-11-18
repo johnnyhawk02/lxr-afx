@@ -1,7 +1,5 @@
 {
  "name": "TONGOL",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND drum 2",
- "n": 697,
  "type": "drum 2",
  "voice": 1,
  "params": {

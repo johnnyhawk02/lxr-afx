@@ -1,7 +1,5 @@
 {
  "name": "ELYRTAL",
- "from": "kits/factory/PROJ00-26-XORANDA.SND snare",
- "n": 339,
  "type": "snare",
  "voice": 3,
  "params": {

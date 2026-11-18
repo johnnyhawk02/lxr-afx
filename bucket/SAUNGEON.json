@@ -1,7 +1,5 @@
 {
  "name": "SAUNGEON",
- "from": "kits/01-HALLER.SND hihat",
- "n": 11,
  "type": "hihat",
  "voice": 5,
  "params": {

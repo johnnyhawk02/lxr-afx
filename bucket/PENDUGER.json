@@ -1,7 +1,5 @@
 {
  "name": "PENDUGER",
- "from": "kits/factory/PROJ00-43-HARIS.SND snare",
- "n": 435,
  "type": "snare",
  "voice": 3,
  "params": {

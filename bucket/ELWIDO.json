@@ -1,7 +1,6 @@
 {
  "name": "ELWIDO",
  "type": "snare",
- "from": "PHOTONE 49% + LUMETE 51% altered",
  "voice": 3,
  "params": {
   "coarse": 34,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026445462
+ }
 }

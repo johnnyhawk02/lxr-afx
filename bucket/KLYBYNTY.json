@@ -1,7 +1,5 @@
 {
  "name": "KLYBYNTY",
- "from": "kits/factory/PROJ00-45-MERINDOR.SND drum 1",
- "n": 444,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "BELLAROK",
  "type": "snare",
- "from": "KISINET 65% + BERETER 35%",
  "voice": 3,
  "params": {
   "coarse": 93,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795025970148
+ }
 }

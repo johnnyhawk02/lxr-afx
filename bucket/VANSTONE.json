@@ -1,7 +1,5 @@
 {
  "name": "VANSTONE",
- "from": "kits/hrtl-untz/PROJ00-02-OSCIRION.SND drum 3",
- "n": 704,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "GEOGIL",
- "from": "kits/E08-FADIA.SND cymbal",
- "n": 142,
  "type": "cymbal",
  "voice": 4,
  "params": {

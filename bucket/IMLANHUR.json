@@ -1,7 +1,5 @@
 {
  "name": "IMLANHUR",
- "from": "kits/factory/PROJ00-04-BATON.SND snare",
- "n": 207,
  "type": "snare",
  "voice": 3,
  "params": {

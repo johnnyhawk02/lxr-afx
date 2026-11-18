@@ -1,7 +1,5 @@
 {
  "name": "HYCITOR",
- "from": "kits/factory/PROJ00-42-ELACORE.SND hihat",
- "n": 431,
  "type": "hihat",
  "voice": 5,
  "params": {

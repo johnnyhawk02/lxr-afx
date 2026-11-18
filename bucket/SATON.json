@@ -1,7 +1,5 @@
 {
  "name": "SATON",
- "from": "kits/factory/PROJ00-53-RUNILAUS.SND drum 1",
- "n": 486,
  "type": "drum 1",
  "voice": 0,
  "params": {

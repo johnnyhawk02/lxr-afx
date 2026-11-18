@@ -1,7 +1,5 @@
 {
  "name": "VABEK",
- "from": "kits/factory/PROJ00-20-LELFIN.SND drum 2",
- "n": 301,
  "type": "drum 2",
  "voice": 1,
  "params": {

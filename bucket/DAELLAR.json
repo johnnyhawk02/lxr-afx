@@ -1,7 +1,5 @@
 {
  "name": "DAELLAR",
- "from": "kits/factory/PROJ00-59-CRONUTRY.SND snare",
- "n": 525,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "THRARTAL",
- "from": "kits/factory/PROJ00-28-VORUTIC.SND snare",
- "n": 351,
  "type": "snare",
  "voice": 3,
  "params": {

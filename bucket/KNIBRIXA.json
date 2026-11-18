@@ -1,7 +1,5 @@
 {
  "name": "KNIBRIXA",
- "from": "kits/factory/PROJ00-18-HEBENADU.SND drum 3",
- "n": 290,
  "type": "drum 3",
  "voice": 2,
  "params": {

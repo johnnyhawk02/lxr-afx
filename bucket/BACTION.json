@@ -1,7 +1,5 @@
 {
  "name": "BACTION",
- "from": "kits/factory/PROJ00-44-SHABUR.SND drum 1",
- "n": 438,
  "type": "drum 1",
  "voice": 0,
  "params": {

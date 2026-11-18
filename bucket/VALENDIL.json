@@ -1,7 +1,6 @@
 {
  "name": "VALENDIL",
  "type": "drum 1",
- "from": "VAZKAVI 48% + THELTHAR 52%",
  "voice": 3,
  "params": {
   "coarse": 27,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027533817
+ }
 }

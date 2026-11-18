@@ -1,7 +1,5 @@
 {
  "name": "THARORY",
- "from": "kits/E11-ZINSOR.SND drum 1",
- "n": 156,
  "type": "drum 1",
  "voice": 0,
  "params": {

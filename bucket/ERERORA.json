@@ -1,7 +1,5 @@
 {
  "name": "ERERORA",
- "from": "kits/factory/PROJ00-30-ZORLIN.SND drum 3",
- "n": 362,
  "type": "drum 3",
  "voice": 2,
  "params": {

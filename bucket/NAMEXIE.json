@@ -1,7 +1,5 @@
 {
  "name": "NAMEXIE",
- "from": "kits/factory/PROJ00-10-COROZZLE.SND cymbal",
- "n": 244,
  "type": "cymbal",
  "voice": 4,
  "params": {

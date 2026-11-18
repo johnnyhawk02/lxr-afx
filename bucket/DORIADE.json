@@ -1,7 +1,5 @@
 {
  "name": "DORIADE",
- "from": "kits/factory/PROJ00-17-XYRPHEUS.SND drum 3",
- "n": 284,
  "type": "drum 3",
  "voice": 2,
  "params": {

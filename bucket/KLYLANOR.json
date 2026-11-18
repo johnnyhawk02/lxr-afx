@@ -1,7 +1,5 @@
 {
  "name": "KLYLANOR",
- "from": "kits/E09-WETOR.SND hihat",
- "n": 149,
  "type": "hihat",
  "voice": 5,
  "params": {

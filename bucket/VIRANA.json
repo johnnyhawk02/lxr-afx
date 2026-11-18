@@ -1,7 +1,5 @@
 {
  "name": "VIRANA",
- "from": "kits/factory/PROJ00-23-ISITIC.SND cymbal",
- "n": 322,
  "type": "cymbal",
  "voice": 4,
  "params": {

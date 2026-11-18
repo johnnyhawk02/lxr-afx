@@ -1,7 +1,5 @@
 {
  "name": "ZYGONET",
- "from": "kits/hrtl-untz/PROJ00-01-WASIC.SND hihat",
- "n": 701,
  "type": "hihat",
  "voice": 5,
  "params": {

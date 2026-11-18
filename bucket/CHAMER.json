@@ -1,7 +1,5 @@
 {
  "name": "CHAMER",
- "from": "kits/factory/PROJ00-42-ELACORE.SND snare",
- "n": 429,
  "type": "snare",
  "voice": 3,
  "params": {

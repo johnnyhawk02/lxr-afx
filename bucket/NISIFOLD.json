@@ -1,7 +1,5 @@
 {
  "name": "NISIFOLD",
- "from": "kits/factory/PROJ00-56-IMPUNET.SND hihat",
- "n": 509,
  "type": "hihat",
  "voice": 5,
  "params": {

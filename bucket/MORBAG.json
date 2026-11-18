@@ -1,7 +1,5 @@
 {
  "name": "MORBAG",
- "from": "kits/factory/PROJ00-24-BARUBUR.SND cymbal",
- "n": 328,
  "type": "cymbal",
  "voice": 4,
  "params": {

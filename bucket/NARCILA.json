@@ -1,7 +1,5 @@
 {
  "name": "NARCILA",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND hihat",
- "n": 425,
  "type": "hihat",
  "voice": 5,
  "params": {

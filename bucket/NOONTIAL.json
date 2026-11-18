@@ -1,7 +1,5 @@
 {
  "name": "NOONTIAL",
- "from": "kits/01-HALLER.SND snare",
- "n": 9,
  "type": "snare",
  "voice": 3,
  "params": {

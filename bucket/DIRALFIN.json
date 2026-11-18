@@ -1,7 +1,5 @@
 {
  "name": "DIRALFIN",
- "from": "kits/15-ORCRILE.SND snare",
- "n": 93,
  "type": "snare",
  "voice": 3,
  "params": {

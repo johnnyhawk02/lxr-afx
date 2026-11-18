@@ -1,7 +1,5 @@
 {
  "name": "NIREAL",
- "from": "kits/00-VAMET.SND snare",
- "n": 3,
  "type": "snare",
  "voice": 3,
  "params": {

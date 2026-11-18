@@ -1,7 +1,5 @@
 {
  "name": "FARARUNG",
- "from": "kits/factory/PROJ00-14-EURYLE.SND cymbal",
- "n": 268,
  "type": "cymbal",
  "voice": 4,
  "params": {

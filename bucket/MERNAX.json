@@ -1,7 +1,5 @@
 {
  "name": "MERNAX",
- "from": "kits/hrtl-untz/PROJ00-13-AGAMEMA.SND cymbal",
- "n": 772,
  "type": "cymbal",
  "voice": 4,
  "params": {

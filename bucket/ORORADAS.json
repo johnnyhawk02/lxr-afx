@@ -1,7 +1,5 @@
 {
  "name": "ORORADAS",
- "from": "kits/12-ISOTIONE.SND drum 2",
- "n": 73,
  "type": "drum 2",
  "voice": 1,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "HATHOLOB",
- "from": "kits/factory/PROJ00-10-COROZZLE.SND drum 3",
- "n": 242,
  "type": "drum 3",
  "voice": 2,
  "params": {

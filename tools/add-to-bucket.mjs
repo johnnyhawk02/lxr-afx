@@ -20,12 +20,11 @@ for (const raw of list) {
   let s = tidy(raw);
   if (!s) { bad++; continue; }
   if (sigs.has(sig(s))) { same++; continue; }
-  s = { ...s, t: Number(raw.t) || Date.now() };
   const base = s.name; let k = 2;
   while (taken.has(fileOf(s))) s = { ...s, name: `${base}-${k++}` };
   taken.add(fileOf(s)); sigs.set(sig(s), s.name);
   writeFileSync(new URL(fileOf(s), dir), JSON.stringify(s, null, 1) + '\n'); added++;
-  console.log(`  + ${s.name} (${s.type}) from ${s.from}`);
+  console.log(`  + ${s.name} (${s.type})`);
 }
 console.log(`bucket/: ${added} added, ${same} in the bucket already${bad ? `, ${bad} not sounds` : ''}`);
 execFileSync(process.execPath, [new URL('build-bucket.mjs', import.meta.url).pathname], { stdio: 'inherit' });

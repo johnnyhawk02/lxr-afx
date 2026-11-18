@@ -1,7 +1,6 @@
 {
  "name": "BRANTUM",
  "type": "cymbal",
- "from": "MIMMETRY 49% + CARIDOR 51%",
  "voice": 3,
  "params": {
   "coarse": 37,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026518621
+ }
 }

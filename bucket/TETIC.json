@@ -1,7 +1,5 @@
 {
  "name": "TETIC",
- "from": "kits/E06-CUVAL.SND hihat",
- "n": 131,
  "type": "hihat",
  "voice": 5,
  "params": {

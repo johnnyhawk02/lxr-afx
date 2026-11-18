@@ -1,7 +1,5 @@
 {
  "name": "LYSSUS",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND snare",
- "n": 423,
  "type": "snare",
  "voice": 3,
  "params": {

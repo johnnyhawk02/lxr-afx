@@ -1,7 +1,5 @@
 {
  "name": "GANYSUS",
- "from": "kits/factory/PROJ05-05-THRUTRY.SND hihat",
- "n": 671,
  "type": "hihat",
  "voice": 5,
  "params": {

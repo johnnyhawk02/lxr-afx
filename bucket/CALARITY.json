@@ -1,7 +1,5 @@
 {
  "name": "CALARITY",
- "from": "kits/factory/PROJ00-03-CARALPIE.SND snare",
- "n": 201,
  "type": "snare",
  "voice": 3,
  "params": {

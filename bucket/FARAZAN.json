@@ -1,7 +1,6 @@
 {
  "name": "FARAZAN",
  "type": "cymbal",
- "from": "SPADOR 53% + TOXIRGON 47%",
  "voice": 3,
  "params": {
   "coarse": 57,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026387879
+ }
 }

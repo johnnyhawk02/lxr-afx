@@ -1,7 +1,5 @@
 {
  "name": "STOCTRON",
- "from": "kits/E11-ZINSOR.SND snare",
- "n": 159,
  "type": "snare",
  "voice": 3,
  "params": {

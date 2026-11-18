@@ -1,7 +1,5 @@
 {
  "name": "WELPIE",
- "from": "kits/factory/PROJ01-00-MARUS.SND drum 3",
- "n": 554,
  "type": "drum 3",
  "voice": 2,
  "params": {

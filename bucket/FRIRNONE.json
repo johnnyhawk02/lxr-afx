@@ -1,7 +1,5 @@
 {
  "name": "FRIRNONE",
- "from": "kits/factory/PROJ00-58-ERATION.SND snare",
- "n": 519,
  "type": "snare",
  "voice": 3,
  "params": {

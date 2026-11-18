@@ -1,7 +1,5 @@
 {
  "name": "HAMIRITH",
- "from": "kits/factory/PROJ00-31-TITADO.SND drum 3",
- "n": 368,
  "type": "drum 3",
  "voice": 2,
  "params": {

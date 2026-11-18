@@ -1,7 +1,5 @@
 {
  "name": "VALHARE",
- "from": "kits/E10-ABSOBIS.SND snare",
- "n": 153,
  "type": "snare",
  "voice": 3,
  "params": {

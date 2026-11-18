@@ -1,7 +1,5 @@
 {
  "name": "SOLOPE",
- "from": "kits/hrtl-untz/PROJ00-04-BLOSION.SND drum 3",
- "n": 716,
  "type": "drum 3",
  "voice": 2,
  "params": {

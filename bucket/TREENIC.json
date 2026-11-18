@@ -1,7 +1,5 @@
 {
  "name": "TREENIC",
- "from": "kits/hrtl-untz/PROJ00-03-ZWIGA.SND drum 3",
- "n": 710,
  "type": "drum 3",
  "voice": 2,
  "params": {

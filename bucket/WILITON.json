@@ -1,7 +1,5 @@
 {
  "name": "WILITON",
- "from": "kits/factory/PROJ00-40-BOMBARIS.SND drum 2",
- "n": 415,
  "type": "drum 2",
  "voice": 1,
  "params": {

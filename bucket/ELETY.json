@@ -1,7 +1,5 @@
 {
  "name": "ELETY",
- "from": "kits/15-ORCRILE.SND hihat",
- "n": 95,
  "type": "hihat",
  "voice": 5,
  "params": {

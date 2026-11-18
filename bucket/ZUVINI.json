@@ -1,7 +1,5 @@
 {
  "name": "ZUVINI",
- "from": "kits/factory/PROJ00-26-XORANDA.SND hihat",
- "n": 341,
  "type": "hihat",
  "voice": 5,
  "params": {

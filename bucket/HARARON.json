@@ -1,7 +1,5 @@
 {
  "name": "HARARON",
- "from": "kits/factory/PROJ05-02-MINIRGAL.SND drum 1",
- "n": 648,
  "type": "drum 1",
  "voice": 0,
  "params": {

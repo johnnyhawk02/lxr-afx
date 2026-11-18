@@ -1,7 +1,6 @@
 {
  "name": "VANDER",
  "type": "hihat",
- "from": "WEZATION 47% + KAMATIC 53%",
  "voice": 3,
  "params": {
   "coarse": 65,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027635360
+ }
 }

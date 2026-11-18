@@ -1,7 +1,6 @@
 {
  "name": "UBRINCE",
  "type": "drum 1",
- "from": "RORETH 89% + RABOLD 11%",
  "voice": 3,
  "params": {
   "coarse": 66,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795027826920
+ }
 }

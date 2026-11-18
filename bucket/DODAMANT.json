@@ -1,7 +1,5 @@
 {
  "name": "DODAMANT",
- "from": "kits/factory/PROJ00-21-TIRISER.SND drum 2",
- "n": 307,
  "type": "drum 2",
  "voice": 1,
  "params": {

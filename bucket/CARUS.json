@@ -1,7 +1,5 @@
 {
  "name": "CARUS",
- "from": "kits/factory/PROJ00-13-ARCARAN.SND drum 2",
- "n": 259,
  "type": "drum 2",
  "voice": 1,
  "params": {

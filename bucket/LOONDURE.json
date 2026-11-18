@@ -1,7 +1,5 @@
 {
  "name": "LOONDURE",
- "from": "kits/15-ORCRILE.SND drum 2",
- "n": 91,
  "type": "drum 2",
  "voice": 1,
  "params": {

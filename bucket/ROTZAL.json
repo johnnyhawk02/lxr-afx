@@ -1,7 +1,5 @@
 {
  "name": "ROTZAL",
- "from": "kits/factory/PROJ00-27-ZANZILLO.SND drum 3",
- "n": 344,
  "type": "drum 3",
  "voice": 2,
  "params": {

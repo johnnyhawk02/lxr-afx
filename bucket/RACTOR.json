@@ -1,7 +1,5 @@
 {
  "name": "RACTOR",
- "from": "kits/factory/PROJ05-01-VOROMU.SND drum 3",
- "n": 644,
  "type": "drum 3",
  "voice": 2,
  "params": {

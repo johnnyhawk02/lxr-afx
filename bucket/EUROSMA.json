@@ -1,7 +1,5 @@
 {
  "name": "EUROSMA",
- "from": "kits/factory/PROJ00-08-XEDHRIM.SND snare",
- "n": 231,
  "type": "snare",
  "voice": 3,
  "params": {

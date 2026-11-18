@@ -1,7 +1,6 @@
 {
  "name": "DRASAR",
  "type": "drum 3",
- "from": "VANSTONE 72% + DALARA 28%",
  "voice": 3,
  "params": {
   "coarse": 58,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795028251590
+ }
 }

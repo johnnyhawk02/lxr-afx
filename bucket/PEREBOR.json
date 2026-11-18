@@ -1,7 +1,5 @@
 {
  "name": "PEREBOR",
- "from": "kits/E09-WETOR.SND drum 1",
- "n": 144,
  "type": "drum 1",
  "voice": 0,
  "params": {

@@ -1,7 +1,6 @@
 {
  "name": "AMULENOS",
  "type": "drum 1",
- "from": "ICARUTY 49% + LONWE 51%",
  "voice": 3,
  "params": {
   "coarse": 31,
@@ -126,6 +125,5 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127
- },
- "t": 1795026591425
+ }
 }

@@ -1,7 +1,5 @@
 {
  "name": "QUIGRIFF",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND drum 2",
- "n": 421,
  "type": "drum 2",
  "voice": 1,
  "params": {

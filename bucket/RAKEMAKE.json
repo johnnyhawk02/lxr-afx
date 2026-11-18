@@ -1,7 +1,5 @@
 {
  "name": "RAKEMAKE",
- "from": "kits/hrtl-untz/PROJ00-04-BLOSION.SND hihat",
- "n": 719,
  "type": "hihat",
  "voice": 5,
  "params": {

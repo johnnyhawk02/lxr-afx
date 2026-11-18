@@ -1,7 +1,5 @@
 {
  "name": "MIRINA",
- "from": "kits/factory/PROJ00-11-GALATHAN.SND snare",
- "n": 249,
  "type": "snare",
  "voice": 3,
  "params": {

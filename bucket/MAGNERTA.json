@@ -1,7 +1,5 @@
 {
  "name": "MAGNERTA",
- "from": "kits/factory/PROJ05-02-MINIRGAL.SND hihat",
- "n": 653,
  "type": "hihat",
  "voice": 5,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "LUMETE",
- "from": "kits/12-ISOTIONE.SND snare",
- "n": 75,
  "type": "snare",
  "voice": 3,
  "params": {

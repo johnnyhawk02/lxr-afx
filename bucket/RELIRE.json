@@ -1,7 +1,5 @@
 {
  "name": "RELIRE",
- "from": "kits/factory/PROJ00-34-ANGBATER.SND cymbal",
- "n": 388,
  "type": "cymbal",
  "voice": 4,
  "params": {

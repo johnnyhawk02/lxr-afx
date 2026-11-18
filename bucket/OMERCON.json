@@ -1,7 +1,5 @@
 {
  "name": "OMERCON",
- "from": "kits/hrtl-untz/PROJ00-12-UNDODA.SND snare",
- "n": 765,
  "type": "snare",
  "voice": 3,
  "params": {

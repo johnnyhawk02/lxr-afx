@@ -1,7 +1,5 @@
 {
  "name": "MERISITY",
- "from": "kits/factory/PROJ00-47-GYRONDOR.SND hihat",
- "n": 461,
  "type": "hihat",
  "voice": 5,
  "params": {

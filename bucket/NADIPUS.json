@@ -1,7 +1,5 @@
 {
  "name": "NADIPUS",
- "from": "kits/E03-XYHETTER.SND drum 1",
- "n": 108,
  "type": "drum 1",
  "voice": 0,
  "params": {

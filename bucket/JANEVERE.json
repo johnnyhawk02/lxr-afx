@@ -1,7 +1,5 @@
 {
  "name": "JANEVERE",
- "from": "kits/factory/PROJ00-36-HANITH.SND drum 3",
- "n": 398,
  "type": "drum 3",
  "voice": 2,
  "params": {

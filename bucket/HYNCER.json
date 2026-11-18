@@ -1,7 +1,5 @@
 {
  "name": "HYNCER",
- "from": "kits/E07-HORIA.SND snare",
- "n": 135,
  "type": "snare",
  "voice": 3,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "VELECTRA",
- "from": "kits/factory/PROJ00-05-PERGLE.SND drum 1",
- "n": 210,
  "type": "drum 1",
  "voice": 0,
  "params": {

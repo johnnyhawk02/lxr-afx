@@ -1,7 +1,5 @@
 {
  "name": "TITADWEN",
- "from": "kits/factory/PROJ00-34-ANGBATER.SND hihat",
- "n": 389,
  "type": "hihat",
  "voice": 5,
  "params": {

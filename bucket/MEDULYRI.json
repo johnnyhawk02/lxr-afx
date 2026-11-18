@@ -1,7 +1,5 @@
 {
  "name": "MEDULYRI",
- "from": "kits/factory/PROJ00-49-WYMMA.SND drum 3",
- "n": 470,
  "type": "drum 3",
  "voice": 2,
  "params": {

@@ -1,7 +1,5 @@
 {
  "name": "BELUS",
- "from": "kits/factory/PROJ00-41-ARCTUPIC.SND cymbal",
- "n": 424,
  "type": "cymbal",
  "voice": 4,
  "params": {
