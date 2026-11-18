@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwlvscsk">
+<link rel="stylesheet" href="css/lcd.css?v=mwmf3bht">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -89,8 +89,9 @@
         </div>
         <div class="randrow">
           <button class="btn" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a kit sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
-          <button class="btn" id="morph-ends" title="Two different kit sounds on the lowest and highest keys, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
-          <span class="dim cap">LOWEST KEY TO<br>HIGHEST, STEP BY STEP</span>
+          <button class="btn" id="morph-ends" title="A new kick on the lowest key and something else (a snare, clap, rim, perc, cowbell, hat or cymbal) on the highest, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
+          <button class="btn" id="morph-run" title="A kick, a snare, a perc and a closed hat on four keys spread evenly from the lowest to the highest, every key between two of them morphed from one to the next. Press again for new ones. UNDO takes it back">KICK &gt; HAT</button>
+          <span class="dim cap">KEEP THE END KEYS,<br>MORPH BETWEEN</span><span class="dim cap">KICK AT THE BOTTOM,<br>ANOTHER AT THE TOP</span><span class="dim cap">KICK &gt; SNARE &gt;<br>PERC &gt; HAT</span>
         </div>
         <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
         <div class="randrow srcrow">
@@ -204,6 +205,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwlvscsk"></script>
+<script type="module" src="app/main.js?v=mwmf3bht"></script>
 </body>
 </html>
