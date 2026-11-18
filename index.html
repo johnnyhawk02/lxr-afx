@@ -76,11 +76,14 @@
           <span class="dim note" id="init-info"></span>
         </div>
         <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
-        <div class="randrow">
-          <button class="btn" id="src-kit" aria-pressed="true" title="New sounds are kit sounds as they are: one of the built-in kits' sounds of the engine's type">KIT</button>
-          <button class="btn" id="src-breed" aria-pressed="false" title="New sounds are bred: two kit sounds of the engine's type crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little. Duds (nearly silent, or ringing on) are skipped">BREED</button>
-          <span></span>
-          <span class="dim cap">A KIT SOUND<br>AS IT IS</span><span class="dim cap">TWO KIT SOUNDS<br>CROSSED</span>
+        <div class="randrow srcrow">
+          <button class="btn" id="src-kit" data-src="kit" aria-pressed="true" title="A kit sound as it is: one of the built-in kits' sounds of the engine's type">KIT</button>
+          <button class="btn" id="src-breed" data-src="breed" aria-pressed="false" title="Two kit sounds crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little">BREED</button>
+          <button class="btn" id="src-morph" data-src="morph" aria-pressed="false" title="Two kit sounds blended at a random point between them: every knob in between, every switch from the nearer one">MORPH</button>
+          <button class="btn" id="src-kitstyle" data-src="kitstyle" aria-pressed="false" title="One kit sound's switches, every knob a value another kit sound has for it: new sounds in the ranges the kits use">KIT-STYLE</button>
+          <button class="btn" id="src-free" data-src="free" aria-pressed="false" title="One kit sound's switches, every knob anywhere in its drum-safe range: the wildest">FREE</button>
+          <button class="btn" id="src-recipe" data-src="recipe" aria-pressed="false" title="A named sound: kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell or zap, from a kit sound of that type with its knobs set to the recipe">RECIPE</button>
+          <span class="dim cap wide" id="src-cap"></span>
         </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">

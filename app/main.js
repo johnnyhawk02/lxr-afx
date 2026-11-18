@@ -5,6 +5,7 @@ import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS,
   POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwleiyrl';
 import { presetName } from './names.js?v=mwleiyrl';
 import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwleiyrl';
+import { MAKERS } from '../sound/makers.js?v=mwleiyrl';
 import { breed, isDud } from '../sound/breed.js?v=mwleiyrl';
 import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwleiyrl';
 import { KIT_FILES } from '../sound/kits.js?v=mwleiyrl';
@@ -1124,7 +1125,6 @@ function keepLocked(ed, now) { for (const par of S.locks) if (now.has(par) && no
 // engine's type crossed section by section and nudged a little (sound/breed.js). Each child is played offline first
 // (level.js) and a dud (nearly silent, or still ringing at full after 1.5 s) is thrown away for another, up to
 // 8 tries; the last one stands if every try is a dud. NEW SOUND, RANDOM, RANDOM ALL and INIT PATCH all follow it ----
-function breeding() { return S.rand.source === 'breed'; }
 function bredSound(sound) {
   const p = pool(sound), v = SOUNDS[sound].engineVoice;
   let s;
@@ -1136,21 +1136,46 @@ function bredSound(sound) {
   }
   return s;
 }
+// ---- NEW SOUNDS FROM (the RANDOM menu): where the dice, RANDOM, RANDOM ALL and INIT PATCH get each new sound. KIT
+// deals a kit sound as it is; BREED crosses two (bredSound); MORPH, KIT-STYLE, FREE and RECIPE are sound/makers.js,
+// each made from the engine's kit sounds (pool) and, like BREED, played offline first so a dud is skipped (8 tries) ----
+const SOURCES = {
+  kit: { name: 'KIT', dice: 'new sound', made: 'a new kit sound', cap: 'A KIT SOUND AS IT IS' },
+  breed: { name: 'BREED', dice: 'breed', made: 'a new bred sound', cap: 'TWO KIT SOUNDS CROSSED, SECTION BY SECTION' },
+  morph: { name: 'MORPH', dice: 'morph', made: 'a new morphed sound', cap: 'TWO KIT SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
+  kitstyle: { name: 'KIT-STYLE', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT KIT SOUND' },
+  free: { name: 'FREE', dice: 'free', made: 'a new free sound', cap: 'EVERY KNOB ANYWHERE IN ITS DRUM RANGE' },
+  recipe: { name: 'RECIPE', dice: 'recipe', made: 'a new recipe sound', cap: 'KICK, TOM, SNARE, CLAP, RIM, HATS, CYMBAL, COWBELL, ZAP' },
+};
+const source = () => (SOURCES[S.rand.source] ? S.rand.source : 'kit');
+// a new sound for a key of this engine by the chosen method (KIT: null, the caller deals from the pool as it always did)
+function newSound(sound) {
+  const src = source();
+  if (src === 'kit') return null;
+  if (src === 'breed') return bredSound(sound);
+  const v = SOUNDS[sound].engineVoice, make = MAKERS[src];
+  let s;
+  for (let i = 0; i < 8; i++) {
+    s = make({ schema: VOICE_SCHEMAS[v], pool: pool(sound), rnd, base: S.values });
+    if (!isDud(measure(sound, S.values, s.vals), LEVEL_TARGET_DB[sound])) break;
+  }
+  return s;
+}
+const madeText = () => SOURCES[source()].made;
 function drawSource() {
-  const b = breeding();
-  $('src-kit').setAttribute('aria-pressed', !b); $('src-breed').setAttribute('aria-pressed', b);
-  for (const el of document.querySelectorAll('.dice-src')) el.textContent = b ? 'breed' : 'new sound';
-  diceBtn.title = b ? 'BREED (K): a new sound on this key only, bred from two kit sounds of its type. UNDO takes it back; LEARN can put it on a button'
-    : 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button';
-  for (const id of ['scatter-cap', 'kit-scatter-cap']) { const el = $(id); if (el) el.innerHTML = b ? 'NEW BRED SOUND<br>ON EVERY KEY' : 'NEW KIT SOUND<br>ON EVERY KEY'; }
+  const src = source(), d = SOURCES[src];
+  for (const b of document.querySelectorAll('.srcrow .btn')) b.setAttribute('aria-pressed', b.dataset.src === src);
+  for (const el of document.querySelectorAll('.dice-src')) el.textContent = d.dice;
+  const cap = $('src-cap'); if (cap) cap.textContent = d.cap;
+  diceBtn.title = src === 'kit' ? 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button'
+    : `${d.name} (K): a new sound on this key only (${d.cap.toLowerCase()}). UNDO takes it back; LEARN can put it on a button`;
+  const sc = $('scatter-cap'); if (sc) sc.innerHTML = src === 'kit' ? 'NEW KIT SOUND<br>ON EVERY KEY' : `NEW ${d.name} SOUND<br>ON EVERY KEY`;
 }
 function setSource(src) {
   S.rand.source = src; save(); drawSource();
-  detail(src === 'breed' ? 'NEW SOUNDS FROM <em>BREED</em>: the dice, RANDOM and INIT PATCH cross two kit sounds into a new one'
-    : 'NEW SOUNDS FROM <em>KIT</em>: the dice, RANDOM and INIT PATCH deal kit sounds as they are');
+  detail(`NEW SOUNDS FROM <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and INIT PATCH)`);
 }
-$('src-kit').addEventListener('click', () => setSource('kit'));
-$('src-breed').addEventListener('click', () => setSource('breed'));
+for (const b of document.querySelectorAll('.srcrow .btn')) b.addEventListener('click', () => setSource(b.dataset.src));
 function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
 // the padlocks that are holding something back on these engines, by name, for the message line
 function keptNote(sounds) {
@@ -1167,7 +1192,7 @@ function scatter(sound, blankOnly) { // blankOnly: only keys with no sound of th
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note) || (blankOnly && S.keyEdits[sound][note])) continue;
     const now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
-    const s = breeding() ? bredSound(sound) : p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    const s = newSound(sound) || p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
     ed._r = rnd(); ed[seqPatPar(v)] = randomPattern(); ed[panPar(v)] = randPan(v);
     keepSends(ed, now, v); keepLocked(ed, now);
     levelKey(sound, note, true);
@@ -1224,7 +1249,7 @@ function setRhythms(pc, press) { // press: a button's name (the phone's menu), n
 function randKey() {
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
-  let s; if (breeding()) s = bredSound(sound); else do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
+  let s = newSound(sound); if (!s) do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
   rollDice();
   randChange(() => {
@@ -1241,8 +1266,8 @@ function randKey() {
 diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
-$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key${levelled()}${keptNote(onSounds())}`));
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${madeText()} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${madeText()} on every key${levelled()}${keptNote(onSounds())}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
 $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
 $('kit-alter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => alterSound(i)), `all engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(onSounds())}`));
