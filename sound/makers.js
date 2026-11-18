@@ -104,5 +104,38 @@ export function recipe({ schema, pool, rnd, name }) {
   return { label: `${name} (${a.label})`, vals: [...out], recipe: name };
 }
 
+// ---- MORPH KEYS (the RANDOM menu): one sound on the lowest key, another on the highest, every key between a step
+// of the way from one to the other. blend() is one of those steps, t of the way from a (0) to b (1), both already
+// in this voice's parameters. Knobs (numbers, plus-minus, the morphable switches) slide; a menu or a modulation
+// target can't blend, so it flips at the halfway point. A part that's off on one side (its gain at 0) keeps the
+// settings of the side where it's on, so its gain fades it in or out without it passing through settings neither
+// sound has ----
+export const GATES = {
+  again: ['afreq', 'awave', 'amode', 'fmenv'], bgain: ['bfreq', 'bwave'], nmix: ['ncolour', 'rnoise'],
+  clickvol: ['click', 'clickfreq', 'rclick'], pamt: ['pdecay', 'pslope'], velamt: ['veldest'],
+  lfoamt: ['lfofreq', 'lfosync', 'lfowave', 'lforetrig', 'lfooffset', 'lfodest'],
+};
+export function blend({ schema, a, b, t, base }) {
+  const byPar = new Map(schema.map((e) => [e.par, e])), byU = new Map(schema.map((e) => [e.ukey, e]));
+  const get = (m, p) => valOf(m, p, base), side = new Map();
+  for (const [g, parts] of Object.entries(GATES)) {
+    const e = byU.get(g); if (!e) continue;
+    const x = get(a, e.par) > 0, y = get(b, e.par) > 0;
+    if (x === y) continue;
+    for (const u of parts) { const q = byU.get(u); if (q) side.set(q.par, x ? a : b); }
+  }
+  const flip = t < 0.5 ? a : b, lfo = byU.get('lfodest'), out = new Map();
+  for (const p of new Set([...a.keys(), ...b.keys()])) {
+    const e = byPar.get(p), x = get(a, p), y = get(b, p);
+    if (x === undefined || y === undefined) { out.set(p, x ?? y); continue; }
+    // (a parameter with no control, the LFO's voice, goes with the LFO's destination)
+    const from = side.get(p) || (!e && lfo && side.get(lfo.par));
+    if (from) out.set(p, get(from, p));
+    else if (e && isKnob(e)) out.set(p, clamp(Math.round(x + t * (y - x)), 0, e.max));
+    else out.set(p, get(flip, p));
+  }
+  return out;
+}
+
 // every method but KIT and BREED (which the page makes itself), by its NEW SOUNDS FROM name
 export const MAKERS = { morph, kitstyle: kitStyle, free, recipe };
