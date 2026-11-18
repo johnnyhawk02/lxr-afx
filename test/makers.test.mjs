@@ -8,13 +8,13 @@ import { isDud } from '../sound/breed.js';
 import { MAKERS, RECIPES, recipe, morph } from '../sound/makers.js';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; if (fails < 30) console.log('FAIL', m); } };
-const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
+const kits = KIT_FILES.map((k) => ({ ...parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))), drums: k.drums || [] }));
 let seed = 987; const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
 const VN = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
 [0, 1, 2].forEach((sound) => {
   const def = SOUNDS[sound], v = def.engineVoice, sc = VOICE_SCHEMAS[v], byPar = new Map(sc.map((e) => [e.par, e])), pool = [];
   const srcs = def.sources || [{ 0: [0, 1, 2], 1: [3], 2: [4, 5] }[sound]].flat();
-  for (const { name, kit } of kits) for (const src of srcs) pool.push({ label: `${name} ${VN[src]}`, vals: mapVoice(kit, src, v).filter(([p]) => p !== PAR.VOL1 + v) });
+  for (const { name, kit, drums } of kits) for (const src of srcs) pool.push({ label: `${drums[src] || name} ${VN[src]}`, vals: mapVoice(kit, src, v).filter(([p]) => p !== PAR.VOL1 + v) });
   const line = [];
   for (const [m, make] of Object.entries(MAKERS)) {
     let duds = 0; const N = 60;

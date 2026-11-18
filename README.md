@@ -160,7 +160,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 | `sound/level.js` | AUTO LEVEL: a sound's loudness, measured offline through the engine, and the trim that brings it to its engine's target (`node tools/levels.mjs` measures every kit sound and prints each engine's median) |
 | `app/main.js`, `css/lcd.css` | the page |
 | `app/names.js` | the preset names: the themed word lists (`WORDS`) and the jumbler, no UI |
-| `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from (`node tools/build-kits.mjs` rebuilds `kits.js`) |
+| `kits/`, `sound/kits.js` | the built-in kits the randomisers draw from, named by the preset namer (`kits/names.json` holds each kit's name, its six drums' names and its old file name; `node tools/name-kits.mjs` names new kits and rebuilds `kits.js`) |
 
 No build step: the page loads the ES modules directly.
 
