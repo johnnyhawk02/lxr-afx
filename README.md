@@ -27,6 +27,16 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   times. The two sides are equally loud and unlike each other, so the tail spreads between the speakers.
   The echo's **SYNC** switch turns TIME from milliseconds into a note length at the BPM (1/32 to 1/2, with triplets and
   dotted lengths, 1/8D by default), and it follows the BPM; switched off, TIME goes back to the milliseconds it had.
+- **Morphable switches**: the oscillator **WAVE**, **A WAVE** and **B WAVE**, the filter **TYPE** and **A MODE** (FM or
+  MIX) are knobs, not menus, so a sound can blend into another. Each old setting is a detent the knob catches: WAVE runs
+  sine, tri, saw, rec, pwm, noise; TYPE runs lp, bp, unity bp, hp, notch, peak, lp2, off; A MODE runs fm to mix. On a
+  detent the engine runs exactly the firmware's code, so every kit sound plays sample for sample as it did
+  (`node test/merged.test.mjs`). Between two detents the knob shows both and how far along (`tri>saw 40`): the two
+  waves are read at the same point of the cycle from the same band-limited tables and crossfaded; the filter's LP, BP
+  and HP outputs (one filter state) are mixed, with LP2 or the dry input crossfaded in at the far end; and mod A's FM
+  depth fades out as it fades into the mix (`node test/switches.test.mjs`). An LFO or velocity aimed at one moves it
+  the firmware's way from a detent, and along the dial from between two. Patches saved before the knobs were dials are
+  converted when they load.
 - **Master distortion** (`sound/dirt.js`, our own design after a dual-path bass distortion pedal's signal flow), before
   the compressor, off until its **ON** is pressed. A dirty path, PREGAIN, then a filter (FILTER: high-pass, or LP),
   GAIN into two anti-aliased clip stages (CLIP: diode, hard and early, or LED, louder and more open), then TONE (bass,

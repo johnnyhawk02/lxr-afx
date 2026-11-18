@@ -6,8 +6,8 @@
 // BS.1770 (a high-pass that takes out the sub rumble the ear hardly counts, and a shelf that lifts the presence
 // range it counts most), in dB below digital full scale. The correction is kept on the key as its TRIM (trimPar in
 // schema.js), a gain of its own that the instrument applies to the voice: the LEVEL knob stays yours.
-import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js';
-import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB } from './schema.js?v=mwlccuu3';
+import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js?v=mwle0w5j';
+import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB } from './schema.js?v=mwle0w5j';
 
 // each engine's target: the middle (median) loudness of all its sounds in the built-in kits, so a typical kit sound
 // plays as it always did and the drums, snares and metals keep the balance the kits were made with

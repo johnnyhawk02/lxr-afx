@@ -12,6 +12,7 @@
 //   display  { type: 'num' } | { type: 'pm', centre, lr? } (shown signed around centre, or as L/C/R for a pan; its knob
 //            has the centre at the top) | { type: 'menu', names }
 //            | { type: 'target', voices } (a modulation target menu)
+//            | { type: 'detent', names, step } (a morphable switch: a knob with names[k] at k * step, blends between)
 //   morph    how the key morph treats it: 'timbre' (moved around the base), or null (never morphed)
 //   weight   timbre morph: how far it may move, as a fraction of its rand range at full depth
 //   rand     drum-safe randomiser range: [lo, hi], 'pitch' (semitones around the base), 'still' (a switch or a setting
@@ -19,7 +20,8 @@
 //            not of the sound, so ALTER never moves them)
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
-import { OSC_WAVE_NAMES, FILTER_TYPE_NAMES, LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults } from '../engine/lxr.js';
+import { LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwle0w5j';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -71,13 +73,17 @@ export const EXTRA_BASE = NUM_PARAMS + 42, NUM_EXTRAS = EXTRAS.length;
 export const extraPar = (voice, k) => EXTRA_BASE + voice * NUM_EXTRAS + k;
 export const ALL_PARAMS = EXTRA_BASE + 6 * NUM_EXTRAS;
 export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
-for (let i = 8; i < NUM_PARAMS; i++) INIT_VALUES[i - 8] = INIT_KIT[i];
+{ const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
 for (let v = 0; v < 6; v++) INIT_VALUES[trimPar(v)] = TRIM_ZERO;
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
   'tom', 'snap 2', ...EXTRA_CLICK_NAMES];
+// the morphable switches' dials (engine/lxr.js WAVE_STEP)
+const WAVE_DIAL = { names: WAVE_DETENT_NAMES, step: WAVE_STEP, max: WAVE_MAX };
+const FILTER_DIAL = { names: FILTER_DETENT_NAMES, step: FILTER_STEP, max: FILTER_MAX };
+const MODE_DIAL = { names: ['fm', 'mix'], step: MODE_MAX, max: MODE_MAX };
 const LFO_WAVES = ['sin', 'tri', 'saw up', 'saw dn', 'square', 'random', 'exp up', 'exp dn'];
 const AROUND_60 = new Set(['COARSE1', 'COARSE2', 'COARSE3', 'COARSE4', 'COARSE5', 'COARSE6', 'FM_FREQ1', 'FM_FREQ2', 'FM_FREQ3',
   'MOD_OSC_F1_CYM', 'MOD_OSC_F2_CYM', 'MOD_OSC_F1', 'MOD_OSC_F2']);
@@ -86,16 +92,17 @@ const AROUND_60 = new Set(['COARSE1', 'COARSE2', 'COARSE3', 'COARSE4', 'COARSE5'
 function displayOf(key) {
   const t = PARAM_DTYPES[PAR[key]] || '0B127';
   const menu = (names) => ({ max: names.length - 1, display: { type: 'menu', names } });
+  const dial = (d) => ({ max: d.max, display: { type: 'detent', names: d.names, step: d.step } });
   switch (t) {
     case 'PM63': return { max: 127, display: { type: 'pm', centre: AROUND_60.has(key) ? 60 : 63, ...(key.startsWith('PAN') ? { lr: true } : {}) } };
     case 'ON_OFF': case '0b1': return menu(['off', 'on']);
-    case 'menu:WAVEFORM': return menu(OSC_WAVE_NAMES.map((s) => s.toLowerCase()));
-    case 'menu:FILTER': return menu(FILTER_TYPE_NAMES.map((s) => s.toLowerCase()));
+    case 'menu:WAVEFORM': return dial(WAVE_DIAL);
+    case 'menu:FILTER': return dial(FILTER_DIAL);
     case 'menu:TRANS': return menu(TRANSIENT_NAMES);
     case 'menu:LFO_WAVES': return menu(LFO_WAVES);
     case 'menu:SYNC_RATES': return menu(LFO_SYNC_NAMES.map((s) => s.toLowerCase()));
     case 'menu:RETRIGGER': return menu(['off', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6']);
-    case 'menu:MIX_FM': return menu(['fm', 'mix']);
+    case 'menu:MIX_FM': return dial(MODE_DIAL);
     case 'TARGET_SELECTION_VELO': case 'TARGET_SELECTION_LFO': return { max: MOD_TARGETS.length - 1, display: { type: 'target' } };
     default: return { max: 127, display: { type: 'num' } };
   }
@@ -195,7 +202,8 @@ function firmwareSchema(voice) {
 // ---- the merged voice: every engine voice has the same controls, in the same order and sections. Each control is
 // its firmware voice's parameter where it has one, else one of its extras. ukey: the control's name in the merged
 // voice; firmware: which firmware controls (section:TEXT, the nth of that name) it is; extra: its extra
-const WAVES = OSC_WAVE_NAMES.map((n) => n.toLowerCase()), ONOFF = ['off', 'on'];
+const ONOFF = ['off', 'on'];
+const dialOf = (d) => ({ type: 'detent', names: d.names, step: d.step, max: d.max });
 export const MERGED = [
   // [ukey, page, section, label, firmware names, extra, display of the extra]
   ['coarse', 'tone', 'osc', 'coarse', ['osc:COARSE']],
@@ -204,12 +212,12 @@ export const MERGED = [
   ['pwm', 'tone', 'osc', 'pwm', ['osc:PWM']],
   ['afreq', 'tone', 'mod a', 'a freq', ['fm:FM_FREQ', 'fm:MOD_OSC1_FREQ'], 'A_FREQ', { type: 'pm', centre: 60 }],
   ['again', 'tone', 'mod a', 'a gain', ['fm:FM_AMOUNT', 'fm:MOD_OSC1_GAIN'], 'A_GAIN'],
-  ['awave', 'tone', 'mod a', 'a wave', ['fm:WAVEFORM'], 'A_WAVE', { type: 'menu', names: WAVES }],
-  ['amode', 'tone', 'mod a', 'a mode', ['fm:MODE'], 'A_MODE', { type: 'menu', names: ['fm', 'mix'] }],
+  ['awave', 'tone', 'mod a', 'a wave', ['fm:WAVEFORM'], 'A_WAVE', dialOf(WAVE_DIAL)],
+  ['amode', 'tone', 'mod a', 'a mode', ['fm:MODE'], 'A_MODE', dialOf(MODE_DIAL)],
   ['fmenv', 'tone', 'mod a', 'fm env', [], 'FM_ENV'],
   ['bfreq', 'tone', 'mod b', 'b freq', ['fm:MOD_OSC2_FREQ'], 'B_FREQ', { type: 'pm', centre: 60 }],
   ['bgain', 'tone', 'mod b', 'b gain', ['fm:MOD_OSC2_GAIN'], 'B_GAIN'],
-  ['bwave', 'tone', 'mod b', 'b wave', ['fm:WAVEFORM#2'], 'B_WAVE', { type: 'menu', names: WAVES }],
+  ['bwave', 'tone', 'mod b', 'b wave', ['fm:WAVEFORM#2'], 'B_WAVE', dialOf(WAVE_DIAL)],
   ['ncolour', 'tone', 'noise', 'colour', ['osc:NOISE'], 'NOISE_COLOUR'],
   ['nmix', 'tone', 'noise', 'noise', ['osc:MIX'], 'NOISE_MIX'],
   ['attack', 'shape', 'amp', 'attack', ['amp:ATTACK']],
@@ -255,7 +263,7 @@ function buildSchema(voice) {
     const f = names.map((n) => byName.get(n)).find(Boolean);
     if (f) { out.push({ ...f, ukey, page, section, label }); continue; }
     const k = EX[extra], par = extraPar(voice, k), menu = disp && disp.type === 'menu';
-    out.push({ key: extra + (voice + 1), par, ukey, label, text: extra, page, section, min: 0, max: menu ? disp.names.length - 1 : 127,
+    out.push({ key: extra + (voice + 1), par, ukey, label, text: extra, page, section, min: 0, max: menu ? disp.names.length - 1 : disp && disp.max !== undefined ? disp.max : 127,
       def: INIT_VALUES[par], display: disp || { type: 'num' }, morph: null, weight: 0, rand: 'still', extra: k, ...(ukey === 'kind' ? { hidden: true } : {}) });
   }
   // a firmware control with no place in the merged voice (the hi-hat's open decay) stays, unseen, so a key keeps it
@@ -292,12 +300,18 @@ export const pitchPars = (voice) => ({ coarse: PAR['COARSE' + (voice + 1)], fine
 // which engine voice a modulation target (index into MOD_TARGETS) belongs to
 export const voiceOfTarget = (i) => Math.max(0, MOD_TARGET_VOICE_RANGES.findIndex(([a, b]) => i >= a && i <= b));
 
+// a dial's setting's short name, for between two (so both fit over the knob)
+const SHORT = { sine: 'sin', noise: 'nse', 'unity bp': 'ubp', notch: 'ntc', peak: 'pk' };
 // text for a value of a parameter entry
 export function showValue(e, v) {
   const d = e.display;
   if (d.type === 'pm' && d.lr) { const x = v - d.centre; return x ? (x < 0 ? 'L' + Math.round(-x / d.centre * 100) : 'R' + Math.round(x / (127 - d.centre) * 100)) : 'C'; } // pan: L100 .. C .. R100
   if (d.type === 'pm') { const x = v - d.centre; return (x > 0 ? '+' : '') + x; }
   if (d.type === 'menu') return d.names[v] ?? String(v);
+  if (d.type === 'detent') { // a name on a detent; between two, both (short) and how far along, in % (tri>saw 40)
+    const k = Math.floor(v / d.step), t = v - k * d.step, sh = (n) => SHORT[n] || n;
+    return t && d.names[k + 1] ? `${sh(d.names[k])}>${sh(d.names[k + 1])} ${Math.round(t / d.step * 100)}` : d.names[Math.min(k, d.names.length - 1)];
+  }
   if (d.type === 'target') { const t = MOD_TARGETS[v]; return t && v ? t[0].toLowerCase().replace(/_/g, ' ') : 'none'; }
   return String(v);
 }
@@ -317,7 +331,7 @@ export function parseSnd(bytes) {
     const tw = PAR['TRANS' + (i + 1) + '_WAVE'];
     if (kit[tw] >= 14) kit[tw] %= 14;
   }
-  return { name, kit };
+  return { name, kit: kitToPositions(kit) }; // (the waves, filter types and FM/MIX modes as knob positions)
 }
 
 // one voice's sound taken from a kit voice (any voice: the merged voice has every control): its values mapped control by
@@ -352,4 +366,25 @@ export function mapVoice(kit, src, dst) {
   }
   out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(val(PAR.TARGET_LFO1 + src)) === src ? dst + 1 : val(PAR.VOICE_LFO1 + src)]);
   return out;
+}
+
+// a value kept before the waves, filter types and FM/MIX modes were knobs (a menu index) as the knob's position
+const POS_OF = new Map();
+for (const sc of VOICE_SCHEMAS) for (const e of sc) {
+  if (e.display.type !== 'detent') continue;
+  POS_OF.set(e.par, e.display.names === WAVE_DETENT_NAMES ? wavePos : e.display.names === FILTER_DETENT_NAMES ? (r) => FILTER_STEP * FILTER_DETENT_NAMES.indexOf(OLD_FILTER[Math.min(r, 7)]) : modePos);
+}
+const OLD_FILTER = ['lp', 'hp', 'bp', 'unity bp', 'notch', 'peak', 'lp2', 'off'];
+export const POS_RULE = 1; // what a store or preset made since then says it holds (pos: POS_RULE)
+export const oldToPosition = (par, v) => (POS_OF.has(par) ? POS_OF.get(par)(v) : v);
+// a store's or preset's values (an array by parameter) and its keys' edits ({ parameter: value, _o: { ... } }), kept
+// before then, as knob positions (in place)
+export function valuesToPositions(values) { for (const p of POS_OF.keys()) if (p < values.length) values[p] = oldToPosition(p, values[p]); return values; }
+export function editsToPositions(edits) {
+  for (const k in edits || {}) {
+    const e = edits[k]; if (!e || typeof e !== 'object') continue;
+    for (const f in e) if (/^\d+$/.test(f)) e[f] = oldToPosition(Number(f), e[f]);
+    if (e._o) for (const f in e._o) if (/^\d+$/.test(f)) e._o[f] = oldToPosition(Number(f), e._o[f]);
+  }
+  return edits;
 }

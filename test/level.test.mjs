@@ -5,7 +5,7 @@ import { SOUNDS, INIT_VALUES, PAR, parseSnd, mapVoice, trimPar, trimDb, TRIM_ZER
 import { KIT_FILES } from '../sound/kits.js';
 import { measure, trimFor, autoTrim, LEVEL_TARGET_DB } from '../sound/level.js';
 import { LxrInstrument } from '../sound/instrument.js';
-import { LxrEngine, BLOCK } from '../engine/lxr.js';
+import { LxrEngine, BLOCK, WAVE_MAX } from '../engine/lxr.js'; // (WAVE_MAX: the noise, last on the wave dial)
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
 const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(Buffer.from(k.data, 'base64'))));
@@ -52,7 +52,7 @@ SOUNDS.forEach((def, sound) => {
 { let same = 0, n = 0;
   for (const kit of kits.slice(0, 16)) {
     const values = INIT_VALUES.slice(0, PAR.NUM_PARAMS); for (const [p, x] of mapVoice(kit.kit, 0, 0)) values[p] = x;
-    if (values[PAR.OSC_WAVE_DRUM1] === 4 || values[PAR.MOD_WAVE_DRUM1] === 4 || values[PAR.WAVE_LFO1] === 5) continue; // noise, or a random LFO: each run differs
+    if (values[PAR.OSC_WAVE_DRUM1] === WAVE_MAX || values[PAR.MOD_WAVE_DRUM1] === WAVE_MAX || values[PAR.WAVE_LFO1] === 5) continue; // noise, or a random LFO: each run differs
     const a = new LxrEngine(), b = new LxrEngine(); a.loadKit(values); b.loadKit(values); a.trigger(0, 100, 60); b.trigger(0, 100, 60);
     let diff = 0;
     for (let i = 0; i < 150; i++) { const x = a.renderBlock()[0], y = b.renderBlock(0)[0]; for (let j = 0; j < BLOCK; j++) if (x[j] !== y[j]) diff++; }

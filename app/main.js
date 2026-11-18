@@ -1,14 +1,15 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar } from '../sound/schema.js?v=mwlccuu3';
-import { presetName } from './names.js?v=mwlccuu3';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlccuu3';
-import { breed, isDud } from '../sound/breed.js?v=mwlccuu3';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlccuu3';
-import { KIT_FILES } from '../sound/kits.js?v=mwlccuu3';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlccuu3';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlccuu3';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwle0w5j';
+import { presetName } from './names.js?v=mwle0w5j';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwle0w5j';
+import { breed, isDud } from '../sound/breed.js?v=mwle0w5j';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwle0w5j';
+import { KIT_FILES } from '../sound/kits.js?v=mwle0w5j';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwle0w5j';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwle0w5j';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -48,6 +49,7 @@ const S = {
 try {
   const d = JSON.parse(localStorage.getItem(STORE));
   if (d && d.values && d.values.length >= NUM_PARAMS) {
+    if (d.posRule !== POS_RULE) { valuesToPositions(d.values); if (d.defaults) valuesToPositions(d.defaults); (d.keyEdits || []).forEach(editsToPositions); } // (kept while the waves, filter types and FM/MIX were menus)
     const fit = (a) => { const o = INIT_VALUES.slice(); o.set(a.slice(0, ALL_PARAMS)); return o; };
     S.values = fit(d.values); S.defaults = fit(d.defaults || d.values);
     if (d.fx) for (const k in S.fx) Object.assign(S.fx[k], d.fx[k]);
@@ -65,7 +67,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
@@ -82,7 +84,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlccuu3', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwle0w5j', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -790,8 +792,10 @@ function vfader(e) {
     lock.setAttribute('aria-pressed', locked);
     lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
   };
+  const step = e.display.type === 'detent' ? e.display.step : 0;
   const put = (x) => {
     x = clamp(Math.round(x), 0, e.max);
+    if (step) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
     if (x === valueNow(e.par)) return;
     editValue(e.par, x); draw();
 
@@ -1377,6 +1381,8 @@ function tidyPreset(p) {
   const d = p && p.data;
   if (!d || !Array.isArray(d.values) || d.values.length < NUM_PARAMS || !Array.isArray(d.keys)) return null;
   const values = [...INIT_VALUES]; d.values.slice(0, ALL_PARAMS).forEach((x, i) => { values[i] = intIn(x, 0, 255); });
+  const old = d.pos !== POS_RULE; // (saved while the waves, filter types and FM/MIX were menus: their menu numbers become knob positions)
+  if (old) valuesToPositions(values);
   const keys = SOUNDS.map((def, i) => {
     const out = {}, src = d.keys[i] && typeof d.keys[i] === 'object' ? d.keys[i] : {};
     for (const k in src) {
@@ -1391,11 +1397,11 @@ function tidyPreset(p) {
       }
       out[rel] = o;
     }
-    return out;
+    return old ? editsToPositions(out) : out;
   });
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
-  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx } };
+  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
 let presets = [];
@@ -1405,7 +1411,7 @@ function storePresets() { try { localStorage.setItem(PRESET_STORE, JSON.stringif
 const storeOr = (said) => { if (!storePresets()) said += ' · <em>the browser would not keep it</em> (storage full or blocked): EXPORT writes a file'; detail(said); };
 // the patch as a preset keeps it: the keys by their place in the layout
 const shiftKeys = (ks, by) => ks.map((k) => Object.fromEntries(Object.entries(k || {}).map(([n, e]) => [Number(n) + by, structuredClone(e)])));
-const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx) });
+const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE });
 // the same patch, whatever order its parts were written in
 const canon = (x) => (Array.isArray(x) ? '[' + x.map(canon).join() + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => k + ':' + canon(x[k])).join() + '}' : JSON.stringify(x));
 const presetSaved = () => presets.find((p) => p.id === S.preset.id);
