@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmfd9dt';
-import { presetName, jumble } from './names.js?v=mwmfd9dt';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmfd9dt';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmfd9dt';
-import { breed, isDud } from '../sound/breed.js?v=mwmfd9dt';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmfd9dt';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmfd9dt';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmfd9dt';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmfd9dt';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmfd9dt';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmlyv9o';
+import { presetName, jumble } from './names.js?v=mwmlyv9o';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmlyv9o';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmlyv9o';
+import { breed, isDud } from '../sound/breed.js?v=mwmlyv9o';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmlyv9o';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmlyv9o';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmlyv9o';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmlyv9o';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmlyv9o';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmfd9dt', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmlyv9o', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1881,7 +1881,7 @@ function drawSaved() {
   $('bl-list').innerHTML = savedSounds.map((s, i) => `<div class="blitem"><button class="blload" data-i="${i}" title="Play it (from ${cleanLabel(s.from)})">${s.name} <span class="dim">${s.type}${inRepo.has(s.name) ? ' · IN REPO' : ''}</span></button>
     <button data-ab="a" data-i="${i}" title="Make it sound A">A</button><button data-ab="b" data-i="${i}" title="Make it sound B">B</button>
     <button data-del="${i}" title="Take it out of the list (press twice)">X</button></div>`).reverse().join('');
-  $('bl-export').disabled = !n;
+  // (EXPORT and COPY stay pressable with nothing saved: they say so)
 }
 $('bl-list').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1895,20 +1895,42 @@ $('bl-list').addEventListener('click', (e) => {
   blPlayOne(s);
 });
 // EXPORT LIST: the saved sounds, as a file to hand over (tools/add-to-bucket.mjs adds it to bucket/)
-$('bl-export').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1)], { type: 'application/json' });
-  const name = `lxr-afx-new-sounds-${new Date().toISOString().slice(0, 10)}.json`, n = `<em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'}`;
-  // on a phone: the share sheet (save it to Files, AirDrop it, mail it), else a download
-  const file = phoneOn && typeof File === 'function' ? new File([blob], name, { type: 'application/json' }) : null;
-  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title: 'LXR-AFX new sounds' }).then(() => detail(`shared ${n} as ${name}: hand it over to add them to the bucket`)).catch(() => {});
-    return;
-  }
+// EXPORT LIST: the saved sounds as a file. On a phone the share sheet (save it to Files or Drive, AirDrop it, mail it,
+// send it in a chat), as a .txt (Android's Chrome shares only a few kinds of file, and JSON isn't one of them; the
+// add-to-bucket tool reads it all the same); if the phone can't share it, a download. COPY LIST puts the same text on
+// the clipboard, to paste into a message. Each says what happened, a failure too
+const blText = () => JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1);
+const blCount = () => `<em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'}`;
+function blDownload(text, name) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/octet-stream' }));
   a.download = name;
-  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  detail(`exported <em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'} to ${a.download}: hand it over to add them to the bucket`);
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  detail(`downloaded ${blCount()} as ${name}: hand it over to add them to the bucket (nothing came? COPY LIST and paste it into a message)`);
+}
+$('bl-export').addEventListener('click', async () => {
+  if (!savedSounds.length) { detail('nothing saved yet: SAVE a sound first'); return; }
+  const text = blText(), day = new Date().toISOString().slice(0, 10);
+  if (phoneOn && navigator.share && typeof File === 'function') {
+    const file = new File([text], `lxr-afx-new-sounds-${day}.txt`, { type: 'text/plain' });
+    if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'LXR-AFX new sounds' }); detail(`shared ${blCount()} as ${file.name}: hand it over to add them to the bucket`); return; }
+      catch (e) { if (e && e.name === 'AbortError') { detail('not shared (cancelled)'); return; } } // (any other failure: a download instead)
+    }
+  }
+  blDownload(text, `lxr-afx-new-sounds-${day}.json`);
+});
+$('bl-copy').addEventListener('click', async () => {
+  if (!savedSounds.length) { detail('nothing saved yet: SAVE a sound first'); return; }
+  const text = blText();
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) { // (no clipboard access: the old way, through a hidden text box)
+    const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.append(t); t.select(); t.setSelectionRange(0, text.length);
+    const ok = document.execCommand && document.execCommand('copy'); t.remove();
+    if (!ok) { detail('the phone wouldn\'t let me copy: try EXPORT LIST'); return; }
+  }
+  detail(`copied ${blCount()}: paste it into a message to hand them over`);
 });
 // what the status line says, said in the blender too (on a phone, where the status line isn't shown)
 new MutationObserver(() => { $('bl-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
