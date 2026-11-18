@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2 } from '../sound/schema.js?v=mwmmzlre';
-import { presetName, jumble } from './names.js?v=mwmmzlre';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmmzlre';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmmzlre';
-import { breed, isDud } from '../sound/breed.js?v=mwmmzlre';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmmzlre';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmmzlre';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmmzlre';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmmzlre';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmmzlre';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2 } from '../sound/schema.js?v=mwmntcdy';
+import { presetName, jumble } from './names.js?v=mwmntcdy';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmntcdy';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmntcdy';
+import { breed, isDud } from '../sound/breed.js?v=mwmntcdy';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmntcdy';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmntcdy';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmntcdy';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmntcdy';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmntcdy';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmmzlre', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmntcdy', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -412,6 +412,7 @@ let dragEnd = null;
 const endDrags = () => { if (dragEnd) dragEnd(); };
 window.addEventListener('blur', endDrags);
 document.addEventListener('visibilitychange', () => { if (document.hidden) endDrags(); });
+const FINE_SPEED = 0.1;
 function dragger(track, axis, o) {
   let d = null;
   track.addEventListener('pointerdown', (e) => {
@@ -431,8 +432,8 @@ function dragger(track, axis, o) {
     // menu, a tab switch), the next plain mouse move ends it instead of turning the control under the pointer
     if (!stillPressed(e)) { end(); return; }
     const p = axis === 'x' ? e.clientX : e.clientY, dp = axis === 'x' ? p - d.last : d.last - p;
-    d.last = p; d.acc = clamp(d.acc + dp / d.len * (o.max - o.min) * (e.shiftKey ? 0.25 : 1), o.min, o.max);
-    o.put(d.acc);
+    d.last = p; d.acc = clamp(d.acc + dp / d.len * (o.max - o.min) * (e.shiftKey ? FINE_SPEED : 1), o.min, o.max);
+    o.put(d.acc, e.shiftKey); // (held SHIFT: fine, a tenth of the speed; a knob then takes tenths of a step)
   });
   function end() { if (dragEnd === end) dragEnd = null; if (d) { d = null; o.held && o.held(false); } }
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) track.addEventListener(ev, end);
@@ -803,6 +804,7 @@ function vfader(e) {
   }
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
+  tr.title = 'Drag up or down. Hold Shift for fine: tenths of a step';
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
   if (e.display.lr) tr.querySelector('svg').insertAdjacentHTML('beforeend', LR_SVG);
   const draw = () => {
@@ -824,9 +826,9 @@ function vfader(e) {
     lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
   };
   const step = e.display.type === 'detent' ? e.display.step : 0;
-  const put = (x) => {
-    x = clamp(Math.round(x), 0, e.max);
-    if (step) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
+  const put = (x, fine) => {
+    x = clamp(fine ? Math.round(x * 10) / 10 : Math.round(x), 0, e.max); // (SHIFT held: tenths of a step)
+    if (step && !fine) { const k = Math.round(x / step) * step; if (Math.abs(x - k) <= 2) x = Math.min(k, e.max); } // (a morphable switch: its settings catch the knob)
     if (x === valueNow(e.par)) return;
     editValue(e.par, x); draw();
 

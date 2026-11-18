@@ -21,7 +21,7 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmmzlre';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmntcdy';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -358,18 +358,20 @@ export const voiceOfTarget = (i) => Math.max(0, MOD_TARGET_VOICE_RANGES.findInde
 
 // a dial's setting's short name, for between two (so both fit over the knob)
 const SHORT = { sine: 'sin', noise: 'nse', 'unity bp': 'ubp', notch: 'ntc', peak: 'pk' };
+// a knob's number: a whole number as it is, a decimal to one place (41.53 shows 41.5)
+const num = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 // text for a value of a parameter entry
 export function showValue(e, v) {
   const d = e.display;
   if (d.type === 'pm' && d.lr) { const x = v - d.centre; return x ? (x < 0 ? 'L' + Math.round(-x / d.centre * 100) : 'R' + Math.round(x / (127 - d.centre) * 100)) : 'C'; } // pan: L100 .. C .. R100
-  if (d.type === 'pm') { const x = v - d.centre; return (x > 0 ? '+' : '') + x; }
+  if (d.type === 'pm') { const x = v - d.centre; return (x > 0 ? '+' : '') + num(x); }
   if (d.type === 'menu') return d.names[v] ?? String(v);
   if (d.type === 'detent') { // a name on a detent; between two, both (short) and how far along, in % (tri>saw 40)
     const k = Math.floor(v / d.step), t = v - k * d.step, sh = (n) => SHORT[n] || n;
     return t && d.names[k + 1] ? `${sh(d.names[k])}>${sh(d.names[k + 1])} ${Math.round(t / d.step * 100)}` : d.names[Math.min(k, d.names.length - 1)];
   }
   if (d.type === 'target') { const t = MOD_TARGETS[v]; return t && v ? t[0].toLowerCase().replace(/_/g, ' ') : 'none'; }
-  return String(v);
+  return num(v);
 }
 
 // one voice's sound taken from a kit voice (any voice: the merged voice has every control): its values mapped control by
