@@ -436,98 +436,48 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   if (old.length < 50 || JSON.stringify(got[0]) !== JSON.stringify([D]) || got[1] !== '1 LOCKED' || after !== before) { errors++; console.log('kept settings:', old.length, JSON.stringify(got), after === before); }
   await p.close(); }
 // THE PHONE VIEW: a phone held upright (a Pixel 9a's 412 x 923, with and without the browser's bars, and a small
-// 360 x 640) gets 25 pads on a five-column grid and nothing scrolls; a pad plays and picks its key, held like a key,
-// several at once; NEW SOUND rolls the pad pressed last, UNDO takes it back; the ECHO and REVERB bars set that key's
-// sends; LOCK locks the key; INIT PATCH and RANDOM ALL deal new sounds; the message line says what happened. MENU (top
-// right) opens a menu of the RANDOM menu's presses. ?desktop keeps the big screen on a phone and ?phone
-// gives the phone view anywhere
+// phone) is the SOUND BLENDER alone (Johnny, 2026-11-18: the phone only makes sounds for the bucket): A and B, BLEND,
+// PLAY, ALTER, RANDOM MODS, NEW PAIR, SAVE, the SAVED list and EXPORT LIST. Nothing wider than the screen, only the
+// blender scrolls, no CLOSE or PUT ON KEY, and the message line says what happened. ?desktop keeps the big screen
 for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   const cx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2.625, hasTouch: true, isMobile: true });
-  const p = await cx.newPage(), cdp = await cx.newCDPSession(p), J = JSON.stringify;
+  const p = await cx.newPage(), J = JSON.stringify;
   const bad = (what, ...x) => { errors++; console.log(`phone ${w}x${h}, ${what}:`, J(x).slice(0, 500)); };
   p.on('pageerror', (e) => bad('page error', e.message));
   await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(400);
-  const lay = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), pads = [...document.querySelectorAll('#pv-pads .pad')], xs = [...new Set(pads.map((e) => Math.round(r(e).left)))];
-    return { phone: document.documentElement.classList.contains('phone'), pads: pads.length, xs, small: pads.filter((e) => r(e).width < 44 || r(e).height < 44).length,
-      scroll: [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight], inner: [innerWidth, innerHeight],
-      out: [...document.querySelectorAll('#pv > *, #pv button, #pv .track')].filter((e) => r(e).left < 0 || r(e).right > innerWidth + 0.5 || r(e).top < 0 || r(e).bottom > innerHeight + 0.5).map((e) => e.id || e.className),
-      offGrid: [...document.querySelectorAll('.pv-row > button, .pv-send .track')].filter((e) => !xs.includes(Math.round(r(e).left))).map((e) => e.id || e.className),
-      shown: [...document.querySelectorAll('.top, .main, .keyhead, #faders')].filter((e) => e.offsetParent !== null).length, start: getComputedStyle(document.getElementById('start-phone')).display !== 'none' && !document.getElementById('start').hidden,
-      labels: [pads[0], pads[8], pads[24]].map((e) => e.textContent) }; });
-  if (!lay.phone || lay.pads !== 25 || lay.xs.length !== 5 || lay.small || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.inner[0] !== w || lay.out.length || lay.offGrid.length || lay.shown || !lay.start
-    || J(lay.labels) !== J(['C2ENGINE 1', 'G#2ENGINE 2', 'C4ENGINE 3'])) bad('layout', lay);
+  const start = await p.evaluate(() => getComputedStyle(document.getElementById('start-phone')).display !== 'none' && !document.getElementById('start').hidden);
   await p.tap('#start-btn'); await p.waitForTimeout(500);
-  const mid = async (sel, n = 0, fx = 0.5) => { const r = await p.locator(sel).nth(n).boundingBox(); return { x: r.x + r.width * fx, y: r.y + r.height / 2 }; };
-  const st = () => p.evaluate(() => { const sel = document.querySelector('.pad.sel'), i = [...document.querySelectorAll('.pad')].indexOf(sel), s = i < 8 ? 0 : i < 16 ? 1 : 2, note = 48 + i, ed = afx.keyEdits()[s][note] || {}, m = new Map(afx.patch(s, note)), v = afx.sounds[s].engineVoice;
-    return { i, key: document.getElementById('pv-key').textContent, what: document.getElementById('pv-what').textContent, kit: ed._kit, lock: !!ed._lock, sends: [...afx.seqPars(v)].length && [m.get(afx.sendPars(v)[0]), m.get(afx.sendPars(v)[1])],
-      outs: [document.querySelector('#pv-echo output').textContent, document.querySelector('#pv-reverb output').textContent], msg: document.getElementById('pv-msg').textContent, undo: !document.getElementById('pv-undo').disabled,
-      down: document.querySelectorAll('.pad.down').length, name: document.getElementById('pv-name').textContent, big: document.getElementById('kh-note').textContent, dice: document.getElementById('pv-dice').disabled, lockBtn: document.getElementById('pv-lock').textContent }; });
-  // a tap plays and picks the pad
-  const at9 = await mid('.pad', 9); await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250); const a = await st();
-  if (a.i !== 9 || a.key !== 'A2' || a.big !== 'A2' || !/^ENGINE 2 · /.test(a.what) || a.down !== 0 || !/ENGINE 2/.test(await p.textContent('#last-text'))) bad('a tap', a, await p.textContent('#last-text'));
-  // two fingers hold two pads; letting go lets both go
-  const at2 = await mid('.pad', 2), at20 = await mid('.pad', 20);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at2.x, y: at2.y, id: 1 }] });
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at2.x, y: at2.y, id: 1 }, { x: at20.x, y: at20.y, id: 2 }] }); await p.waitForTimeout(200);
-  const two = await st(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(200); const none = await st();
-  if (two.down !== 2 || two.i !== 20 || two.key !== 'G#3' || none.down !== 0) bad('two fingers', two.down, two.i, two.key, none.down);
-  // NEW SOUND on the pad pressed last, and UNDO
-  await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(200); const b0 = await st();
-  await p.tap('#pv-dice'); await p.waitForTimeout(600); const b1 = await st();
-  await p.tap('#pv-undo'); await p.waitForTimeout(300); const b2 = await st();
-  if (!b0.kit || b1.kit === b0.kit || !b1.msg.includes(b1.kit) || !b1.undo || !b1.what.includes(b1.kit) || b2.kit !== b0.kit || !/undone/.test(b2.msg)) bad('new sound, undo', b0.kit, b1.kit, b1.msg, b2.kit, b2.msg);
-  // the sends: a touch on the bar sets it, a drag follows the finger
-  const e50 = await mid('#pv-echo .track', 0, 0.5); await p.touchscreen.tap(e50.x, e50.y); await p.waitForTimeout(150); const c1 = await st();
-  const r0 = await mid('#pv-reverb .track', 0, 0.2), r1 = await mid('#pv-reverb .track', 0, 1.2);
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r0.x, y: r0.y, id: 1 }] }); await p.waitForTimeout(60); const c2 = await st();
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: r1.x, y: r1.y, id: 1 }] }); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(150); const c3 = await st();
-  if (Math.abs(c1.sends[0] - 64) > 3 || c1.outs[0] !== String(c1.sends[0]) || Math.abs(c2.sends[1] - 25) > 4 || c3.sends[1] !== 127 || c3.outs[1] !== '127' || c3.sends[0] !== c1.sends[0] || !/REVERB send 127/.test(c3.msg)) bad('sends', c1.sends, c1.outs, c2.sends, c3.sends, c3.outs, c3.msg);
-  // LOCK: the pad shows it, NEW SOUND and the sends leave it alone; INIT PATCH asks first
-  await p.tap('#pv-lock'); await p.waitForTimeout(200); const d1 = await st(), padLocked = await p.evaluate(() => document.querySelectorAll('.pad.locked').length);
-  await p.touchscreen.tap(e50.x - 40, e50.y); await p.waitForTimeout(150); const d2 = await st();
-  await p.tap('#pv-init'); await p.waitForTimeout(200); const ask = await p.textContent('#pv-init'), d3 = await st();
-  await p.tap('#pv-init'); await p.waitForTimeout(700); const d4 = await st(), initBtn = await p.textContent('#pv-init');
-  if (!d1.lock || padLocked !== 1 || !d1.dice || d1.lockBtn !== 'LOCKED' || d2.sends[0] !== c1.sends[0] || ask !== 'PRESS AGAIN' || d3.kit !== d1.kit || d4.kit === d1.kit || d4.lock || d4.name === d3.name || initBtn !== 'INIT PATCH' || d4.dice || !/new patch/.test(d4.msg))
-    bad('lock, init patch', d1.lock, padLocked, d1.dice, d1.lockBtn, d2.sends, ask, d3.kit, d4.kit, d4.lock, d4.name, initBtn, d4.msg);
-  await p.tap('#pv-random'); await p.waitForTimeout(600); const f1 = await st(); await p.tap('#pv-alter'); await p.waitForTimeout(400); const f2 = await st();
-  if (f1.kit === d4.kit || !/all engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
-  // MENU, on the fifth column. It covers the pads and the buttons down to the message line; a press does its thing
-  // and closes it. No pad runs a rhythm (the sequencer is gone)
-  const menu = () => p.evaluate(() => ({ run: document.querySelectorAll('.pad.run').length, share: afx.rand().rhythms, open: !document.getElementById('pv-menu').hidden, btn: document.getElementById('pv-menu-btn').textContent,
-    msg: document.getElementById('pv-msg').textContent,
-    kits: [0, 1, 2].map((s) => Object.values(afx.keyEdits()[s]).map((e) => e._kit).join()), eng: [document.getElementById('pv-rand-eng').textContent, document.getElementById('pv-alter-eng').textContent, document.getElementById('pv-rand-eng-cap').textContent] }));
-  const press = async (id) => { await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); await p.tap(id); await p.waitForTimeout(450); return menu(); };
-  const m0 = await menu(); await p.tap('#pv-menu-btn'); await p.waitForTimeout(200); const m1 = await menu();
-  const ml = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), mid = (e) => { const x = r(e); return document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2); }, m = document.getElementById('pv-menu'),
-      items = [...m.querySelectorAll('button')], xs = [...new Set([...document.querySelectorAll('.pad')].map((e) => Math.round(r(e).left)))], msg = document.getElementById('pv-msg');
-    return { first: items[0].textContent, n: items.length, small: items.filter((e) => r(e).height < 44).length, out: [...m.children].filter((e) => r(e).bottom > r(m).bottom + 0.5 || r(e).right > innerWidth || r(e).left < 0).length,
-      covers: [document.querySelectorAll('.pad')[12], document.querySelectorAll('.pad')[24], document.getElementById('pv-init'), document.getElementById('pv-undo'), document.querySelector('#pv-echo .track')].every((e) => m.contains(mid(e))),
-      msgSeen: mid(msg) === msg || msg.contains(mid(msg)), onGrid: xs.includes(Math.round(r(document.getElementById('pv-menu-btn')).left)), btnH: Math.round(r(document.getElementById('pv-menu-btn')).height) }; });
-  if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-menu.png` });
-  if (m0.run || m0.open || m0.btn !== 'MENU' || !m1.open || m1.btn !== 'CLOSE' || !/^RANDOM: /.test(ml.first) || ml.n !== 3 || ml.small || ml.out || !ml.covers || !ml.msgSeen || !ml.onGrid || ml.btnH < 40)
-    bad('the menu', m0.run, m0.open, m0.btn, m1.open, m1.btn, ml);
-  await p.tap('#pv-menu-btn'); await p.waitForTimeout(150); const m7 = await menu();
-  // RANDOM and ALTER for the engine of the pad pressed last, and ALTER ALL
-  await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250);
-  const m8 = await press('#pv-rand-eng'), m9 = await press('#pv-alter-eng'), m10 = await press('#pv-alter-all');
-  if (J(m8.eng) !== J(['RANDOM: ENGINE 2 KEYS', 'ALTER: ENGINE 2 KEYS', 'A NEW KIT SOUND ON EACH OF THE 8 ENGINE 2 KEYS']) || m8.kits[1] === m7.kits[1] || m8.kits[0] !== m7.kits[0] || m8.kits[2] !== m7.kits[2] || !/^ENGINE 2: a new kit sound on every key/.test(m8.msg)
-    || !/^ENGINE 2: every key altered/.test(m9.msg) || !/^all engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
-  const end = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight, Math.round(document.getElementById('pv-msg').getBoundingClientRect().bottom) <= innerHeight]);
-  if (end[0] > 0 || end[1] > 0 || !end[2]) bad('it scrolls after use', end);
+  const lay = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), box = document.querySelector('.blbox');
+    const btns = [...box.querySelectorAll('button, select, input, .htrack')].filter((e) => e.offsetParent !== null);
+    return { phone: document.documentElement.classList.contains('phone'), open: !document.getElementById('blender').hidden,
+      scroll: [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight],
+      wide: btns.filter((e) => r(e).left < 0 || r(e).right > innerWidth + 0.5).map((e) => e.id || e.className),
+      small: btns.filter((e) => e.tagName === 'BUTTON' && !e.closest('.bllist') && r(e).height < 38).map((e) => e.id || e.textContent),
+      hiddenOk: ['bl-close', 'bl-key'].every((id) => document.getElementById(id).offsetParent === null),
+      shown: [...document.querySelectorAll('.top, .main, .keyhead, #faders, #pv')].filter((e) => e.offsetParent !== null).length }; });
+  if (!start || !lay.phone || !lay.open || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.wide.length || lay.small.length || !lay.hiddenOk || lay.shown) bad('layout', start, lay);
+  if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-blender.png` });
+  // a blend, altered, modulated, saved; Escape doesn't close it
+  const tr = await p.locator('#bl-bars .htrack').boundingBox(); await p.touchscreen.tap(tr.x + tr.width * 0.75, tr.y + tr.height / 2); await p.waitForTimeout(200);
+  await p.tap('#bl-alter'); await p.tap('#bl-mods'); await p.waitForTimeout(150);
+  await p.locator('#bl-save').scrollIntoViewIfNeeded(); await p.tap('#bl-save'); await p.waitForTimeout(300); await p.keyboard.press('Escape');
+  const s1 = await p.evaluate(() => ({ t: afx.blender.state.t, mods: afx.blender.state.mods.size, saved: afx.blender.saved().length, items: document.querySelectorAll('#bl-list .blitem').length,
+    msg: document.getElementById('bl-msg').textContent, open: !document.getElementById('blender').hidden, exp: !document.getElementById('bl-export').disabled }));
+  if (s1.t < 60 || s1.mods < 6 || s1.saved !== 1 || s1.items !== 1 || !/saved: it's in the bucket now/.test(s1.msg) || !s1.open || !s1.exp) bad('blend and save', s1);
   if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });
   // ?desktop: the big screen on the phone
   if (h === 780) { await p.goto(url + '?desktop'); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
-    const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), getComputedStyle(document.getElementById('pv')).display, document.querySelector('.top').offsetParent !== null]);
-    if (dk[0] || dk[1] !== 'none' || !dk[2]) bad('?desktop', dk); }
+    const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), document.getElementById('blender').hidden, document.querySelector('.top').offsetParent !== null]);
+    if (dk[0] || !dk[1] || !dk[2]) bad('?desktop', dk); }
   await cx.close();
 }
 // ?phone on a computer: the phone view, unscaled; without it the computer never gets the phone view
 { const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
   await p.goto(url + '?phone'); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
-  const ph = await p.evaluate(() => [document.documentElement.classList.contains('phone'), document.getElementById('screen').getAttribute('style'), document.querySelectorAll('.pad').length, Math.round(document.getElementById('screen').getBoundingClientRect().width)]);
+  const ph = await p.evaluate(() => [document.documentElement.classList.contains('phone'), document.getElementById('screen').getAttribute('style'), !document.getElementById('blender').hidden, Math.round(document.getElementById('screen').getBoundingClientRect().width)]);
   await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(300);
-  const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), getComputedStyle(document.getElementById('pv')).display]);
-  if (!ph[0] || ph[1] || ph[2] !== 25 || ph[3] > 520 || dk[0] || dk[1] !== 'none') { errors++; console.log('?phone on a computer:', JSON.stringify([ph, dk])); }
+  const dk = await p.evaluate(() => [document.documentElement.classList.contains('phone'), document.getElementById('blender').hidden]);
+  if (!ph[0] || ph[1] || !ph[2] || ph[3] > 520 || dk[0] || !dk[1]) { errors++; console.log('?phone on a computer:', JSON.stringify([ph, dk])); }
   await p.close(); }
 await b.close();
 console.log(errors ? `${errors} problems` : 'no errors');

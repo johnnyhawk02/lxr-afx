@@ -2,16 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmf8td0';
-import { presetName, jumble } from './names.js?v=mwmf8td0';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmf8td0';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmf8td0';
-import { breed, isDud } from '../sound/breed.js?v=mwmf8td0';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmf8td0';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmf8td0';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmf8td0';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmf8td0';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmf8td0';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar } from '../sound/schema.js?v=mwmfd9dt';
+import { presetName, jumble } from './names.js?v=mwmfd9dt';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmfd9dt';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmfd9dt';
+import { breed, isDud } from '../sound/breed.js?v=mwmfd9dt';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmfd9dt';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmfd9dt';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmfd9dt';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmfd9dt';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmfd9dt';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -96,7 +96,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmf8td0', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmfd9dt', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1816,7 +1816,7 @@ function drawBlender() {
   if (!BL.b || !blFind(BL.b.name)) BL.b = blPick(BL.a);
   blSides.a.value = BL.a.name; blSides.b.value = BL.b.name;
   blDrawBar(); drawBlendNames();
-  $('bl-eng').textContent = `PLAYS ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} · ${blBucket().length} SOUNDS IN THE BUCKET`;
+  $('bl-eng').textContent = `${phoneOn ? '' : `PLAYS ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} · `}${blBucket().length} SOUNDS IN THE BUCKET`;
   $('bl-alter').title = `Nudge the blend by the ALTER amount (${S.rand.alter}%${S.rand.wild ? ', WILD' : ''}, set in the RANDOM menu); press again to go further. A new A or B starts clean`;
   $('bl-modtext').textContent = $('bl-modtext').title = BL.modText ? `MODS: ${BL.modText}` : 'MODS: AS A AND B HAVE THEM';
   if (!BL.name) BL.name = blNewName();
@@ -1825,6 +1825,7 @@ function drawBlender() {
 }
 function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let n; do n = jumble(Math.random, 5, 8).toUpperCase(); while (taken.has(n)); return n; }
 function openBlender(open) {
+  if (!open && phoneOn) return; // (on a phone the blender is the whole screen)
   $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
   if (open) { openMenu(false); openPresets(false); openSettings(false); fillSides(); drawBlender(); }
 }
@@ -1895,12 +1896,22 @@ $('bl-list').addEventListener('click', (e) => {
 });
 // EXPORT LIST: the saved sounds, as a file to hand over (tools/add-to-bucket.mjs adds it to bucket/)
 $('bl-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1)], { type: 'application/json' });
+  const name = `lxr-afx-new-sounds-${new Date().toISOString().slice(0, 10)}.json`, n = `<em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'}`;
+  // on a phone: the share sheet (save it to Files, AirDrop it, mail it), else a download
+  const file = phoneOn && typeof File === 'function' ? new File([blob], name, { type: 'application/json' }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: 'LXR-AFX new sounds' }).then(() => detail(`shared ${n} as ${name}: hand it over to add them to the bucket`)).catch(() => {});
+    return;
+  }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1)], { type: 'application/json' }));
-  a.download = `lxr-afx-new-sounds-${new Date().toISOString().slice(0, 10)}.json`;
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   detail(`exported <em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'} to ${a.download}: hand it over to add them to the bucket`);
 });
+// what the status line says, said in the blender too (on a phone, where the status line isn't shown)
+new MutationObserver(() => { $('bl-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
 window.afx.blender = { open: openBlender, state: BL, now: blendNow, saved: () => savedSounds, bucket: blBucket };
 
 // with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
@@ -2058,6 +2069,8 @@ function setPhone() {
   const on = wantPhone(); if (on === phoneOn) return;
   phoneOn = on; document.documentElement.classList.toggle('phone', on);
   if (on && S.editAll) setEditAll(false); // (a pad's sends are its own)
+  // a phone only makes sounds for the bucket (Johnny, 2026-11-18): the blender is its whole screen
+  if (on) openBlender(true); else openBlender(false);
   drawPhone();
 }
 
