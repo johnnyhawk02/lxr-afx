@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwltmi9y';
-import { presetName } from './names.js?v=mwltmi9y';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwltmi9y';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwltmi9y';
-import { breed, isDud } from '../sound/breed.js?v=mwltmi9y';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwltmi9y';
-import { KIT_FILES } from '../sound/kits.js?v=mwltmi9y';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwltmi9y';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwltmi9y';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlur07d';
+import { presetName } from './names.js?v=mwlur07d';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlur07d';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwlur07d';
+import { breed, isDud } from '../sound/breed.js?v=mwlur07d';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlur07d';
+import { KIT_FILES } from '../sound/kits.js?v=mwlur07d';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlur07d';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlur07d';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -89,7 +89,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwltmi9y', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlur07d', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1382,54 +1382,61 @@ $('init-patch').addEventListener('click', () => {
   });
 });
 drawInit();
-// ---- MORPH KEYS (the RANDOM menu, under INIT PATCH): one sound on the lowest key of the keyboard, another on the
-// highest, and every key between them a step of the way from one to the other (sound/makers.js blend), across every
-// engine's zone. MORPH KEYS keeps the two end keys as they are (so you can set them first) and only deals a kit
-// sound to an end with no sound of its own; NEW ENDS deals two different kit sounds to the ends first. Locked keys
-// stay, and so do knobs with a closed padlock; each key keeps its sends, its pan stays in its engine's range, and
-// AUTO LEVEL levels it as RANDOM does. UNDO takes it back ----
-function dealEnd(sound, note, not) {
+// ---- MORPH KEYS (the RANDOM menu, under INIT PATCH): sounds on a few keys of the keyboard (the stops: the lowest
+// and highest key, or more spread evenly between them) and every key between two stops a step of the way from one to
+// the other (sound/makers.js blend), across every engine's zone. MORPH KEYS keeps the two end keys as they are (so you
+// can set them first) and only deals a kit sound to an end with no sound of its own. NEW ENDS makes a kick on the
+// lowest key and something else (MORPH_TOPS) on the highest; KICK > HAT makes a kick, a snare, a perc and a closed
+// hat on four evenly spread keys (Johnny, 2026-11-18). Each made sound is a RECIPE sound (sound/makers.js), dud
+// filtered. Locked keys stay, and so do knobs with a closed padlock; each key keeps its sends, its pan stays in its
+// engine's range, and AUTO LEVEL levels it as RANDOM does. UNDO takes it back ----
+const MORPH_TOPS = ['snare', 'clap', 'rim', 'mid perc', 'cowbell', 'closed hat', 'open hat', 'cymbal'];
+const MORPH_RUN = ['kick', 'snare', 'mid perc', 'closed hat'];
+function dealStop(sound, note, type, not) {
   const p = pool(sound), now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
-  let s; do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === not);
+  let s;
+  if (type) s = typeSound(sound, type);
+  else do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === not);
   const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
   ed[panPar(v)] = randPan(v); keepSends(ed, now, v); keepLocked(ed, now);
   S.keyEdits[sound][note] = ed; levelKey(sound, note, true);
-  return s.label;
 }
-function morphKeys(fresh) {
+function morphKeys(types) { // types: a recipe per stop (spread evenly), or none: keep the two ends
   const keys = [];
   for (const sound of onSounds()) { const z = SOUNDS[sound].zone; for (let n = z.lo; n <= z.hi; n++) keys.push([sound, n]); }
   keys.sort((x, y) => x[1] - y[1]);
-  const lo = keys[0], hi = keys[keys.length - 1], label = ([s, n]) => S.keyEdits[s][n]?._kit;
-  // the ends: kept, unless NEW ENDS (or an end has no sound of its own); a locked end always stays
-  const needs = (k) => !keyLocked(...k) && (fresh || !S.keyEdits[k[0]][k[1]]);
-  if (needs(lo)) dealEnd(...lo, label(hi));
-  if (needs(hi)) dealEnd(...hi, label(lo));
-  if (fresh && label(lo) === label(hi) && !keyLocked(...hi)) dealEnd(...hi, label(lo));
-  // each end as a whole kit (every parameter, by number), so mapVoice can put it on any engine's voice
-  const end = ([s, n]) => { const m = keyPatch(s, n), kit = Uint8Array.from(S.values); for (const [p, x] of m.vals) kit[p] = x;
+  const N = keys.length - 1, label = ([s, n]) => S.keyEdits[s][n]?._kit;
+  const at = types ? types.map((_, j) => Math.round(j * N / (types.length - 1))) : [0, N];
+  if (types) at.forEach((i, j) => { if (!keyLocked(...keys[i])) dealStop(...keys[i], types[j]); }); // (a locked stop keeps its sound)
+  else for (const [i, o] of [[0, N], [N, 0]]) if (!keyLocked(...keys[i]) && !S.keyEdits[keys[i][0]][keys[i][1]]) dealStop(...keys[i], null, label(keys[o]));
+  // each stop as a whole kit (every parameter, by number), so mapVoice can put it on any engine's voice
+  const stop = ([s, n]) => { const m = keyPatch(s, n), kit = Uint8Array.from(S.values); for (const [p, x] of m.vals) kit[p] = x;
     return { kit, v: SOUNDS[s].engineVoice, st: m.semitones || 0, name: label([s, n]) || 'base', on: [] }; };
-  const A = end(lo), B = end(hi), N = keys.length - 1;
+  const E = at.map((i) => stop(keys[i])), stops = new Set(at);
   const inVoice = (e, v) => (e.on[v] ||= new Map(mapVoice(e.kit, e.v, v)));
   let done = 0;
   keys.forEach(([sound, note], i) => {
-    if (i === 0 || i === N || keyLocked(sound, note)) return;
-    const v = SOUNDS[sound].engineVoice, t = i / N, now = keyPatch(sound, note).vals;
+    if (stops.has(i) || keyLocked(sound, note)) return;
+    const j = at.findIndex((x, k) => x < i && at[k + 1] > i), A = E[j], B = E[j + 1], t = (i - at[j]) / (at[j + 1] - at[j]);
+    const v = SOUNDS[sound].engineVoice, now = keyPatch(sound, note).vals;
     const vals = blend({ schema: VOICE_SCHEMAS[v], a: inVoice(A, v), b: inVoice(B, v), t, base: S.values });
     const ed = { _kit: `${A.name} ~ ${B.name} ${Math.round(t * 100)}%`, _st: Math.round(A.st + t * (B.st - A.st)), ...Object.fromEntries(vals) };
     const [plo, phi] = PAN_RANGE[v], pp = panPar(v); if (ed[pp] !== undefined) ed[pp] = clamp(ed[pp], plo, phi);
     keepSends(ed, now, v); keepLocked(ed, now);
     S.keyEdits[sound][note] = ed; levelKey(sound, note, true); done++;
   });
-  return { done, a: A.name, b: B.name, lo: lo[1], hi: hi[1] };
+  return { done, stops: at.map((i, j) => `<em>${E[j].name}</em> (${noteName(keys[i][1])})`) };
 }
-for (const [id, fresh] of [['morph-keys', false], ['morph-ends', true]]) $(id).addEventListener('click', () => {
+const morphPress = (what, types) => () => {
   let r;
-  randChange(() => { r = morphKeys(fresh); if (S.editAll) setEditAll(false); }, fresh ? 'NEW ENDS + MORPH KEYS' : 'MORPH KEYS').then(() => {
+  randChange(() => { r = morphKeys(types && types()); if (S.editAll) setEditAll(false); }, what).then(() => {
     drawKeymap(); sendTrim();
-    detail(`<em>${r.a}</em> (${noteName(r.lo)}) to <em>${r.b}</em> (${noteName(r.hi)}): ${r.done} keys between morphed${levelled()}${keptNote(onSounds())}`);
+    detail(`${r.stops.join(' to ')}: ${r.done} keys between morphed${levelled()}${keptNote(onSounds())}`);
   });
-});
+};
+$('morph-keys').addEventListener('click', morphPress('MORPH KEYS'));
+$('morph-ends').addEventListener('click', morphPress('NEW ENDS + MORPH KEYS', () => ['kick', MORPH_TOPS[Math.floor(rnd() * MORPH_TOPS.length)]]));
+$('morph-run').addEventListener('click', morphPress('KICK > HAT', () => MORPH_RUN));
 function undo() {
   const u = undoStack.pop();
   if (!u) { detail('nothing to undo'); return; }
