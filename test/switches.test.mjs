@@ -2,7 +2,7 @@
 // and mod A's FM/MIX mode as knobs. On a detent a sound plays as the menu setting did (test/merged.test.mjs checks that
 // against the firmware port); here, between two detents the sound moves smoothly from one to the other: one step off a
 // detent is close to the detent, the halfway point lies between the two ends, and nothing blows up.
-import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX } from '../engine/lxr.js';
+import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX, FILTER_PROBE } from '../engine/lxr.js';
 import { PAR } from '../engine/lxr-tables.js';
 import { parseSnd, mapVoice } from '../sound/schema.js';
 import { KIT_FILES } from '../sound/kits.js';
@@ -58,6 +58,37 @@ sweep('osc wave', WAVE_STEP, WAVE_MAX, (v) => (v < 3 ? PAR.OSC_WAVE_DRUM1 + v : 
 sweep('mod A wave', WAVE_STEP, WAVE_MAX, (v) => (v < 3 ? PAR.MOD_WAVE_DRUM1 + v : [undefined, PAR.WAVE2_CYM, PAR.WAVE2_HH][v - 3]), VOICES, () => {}, noiseEnd);
 sweep('filter', FILTER_STEP, FILTER_MAX, (v) => PAR['FILTER_TYPE_' + (v + 1)], VOICES);
 sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefined), VOICES, (e, v) => e.setParam(PAR['FMAMNT' + (v + 1)], 80));
+
+// turning the filter type dial while a note holds: no zipper (the blend glides over each block, so the steps between
+// samples at the block edges are no bigger than inside the blocks), and a blend into LP2 or out of it starts from a warm
+// filter (close to where it settles)
+{
+  const play = (path, reso, cut, n) => {
+    const v = { filter: FILTER_PROBE.make(), filterType: 0, filterB: 0, filterT: 0, fwTo: null, fwAt: null, fFirm: 0 };
+    FILTER_PROBE.setReso(v.filter, reso); FILTER_PROBE.setCutoff(v.filter, cut);
+    let ph = 0; const a = [];
+    for (let k = 0; k < n; k++) {
+      FILTER_PROBE.setPos(v, path(k));
+      const buf = new Int16Array(BLOCK);
+      for (let i = 0; i < BLOCK; i++) { ph = (ph + 0.0123) % 1; buf[i] = Math.round((Math.sin(2 * Math.PI * ph) + 0.4 * Math.sin(6 * Math.PI * ph + 1)) * 12000); }
+      FILTER_PROBE.block(v, buf); a.push(...buf);
+    }
+    return a;
+  };
+  for (const reso of [0.2, 0.8]) for (const cut of [0.15, 0.6]) for (const [name, path] of [['turned', (k) => Math.min(FILTER_MAX, k >> 1)], ['wiggled', (k) => ((k >> 3) % 2 ? 100 : 95)]]) {
+    const a = play(path, reso, cut, 2 * FILTER_MAX + 10);
+    let sb = 0, nb = 0, si = 0, ni = 0;
+    for (let i = 1; i < a.length; i++) { const d = Math.abs(a[i] - a[i - 1]); if (i % BLOCK === 0) { sb += d; nb++; } else { si += d; ni++; } }
+    const z = (sb / nb) / (si / ni);
+    ok(z < 1.03, `filter dial ${name} (reso ${reso}, cutoff ${cut}): steps at block edges ${z.toFixed(2)}x the others (zipper)`);
+  }
+  for (const [w, x, y] of [[108, 90, 97], [0, 108, 100], [108, 0, 100]]) { // (w first: what the filter not playing at x last held)
+    // (from the block after the move: the move itself glides over one block)
+    const moved = play((k) => (k < 100 ? w : k < 200 ? x : y), 0.5, 0.02, 205).slice(201 * BLOCK), sat = play(() => y, 0.5, 0.02, 205).slice(201 * BLOCK);
+    const err = rms(moved.map((m, i) => m - sat[i])) / rms(sat);
+    ok(err < 0.05, `filter dial ${w}, ${x} -> ${y}: ${(err * 100).toFixed(1)}% off where it settles (a cold filter)`);
+  }
+}
 
 // an LFO on a dial from between two detents sweeps along it (and stays in range)
 {
