@@ -69,6 +69,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   mod env decay → pitch decay, mod env depth → pitch amount, distortion → FM amount, osc 1 coarse/fine → coarse/fine,
   LFO 1 speed / portamento → the key's echo / reverb sends, osc 1 / osc 2 / sub levels → the
   drum / snare / metal levels. **LEARN** (in SETTINGS, with **BS2 MAP**, which puts the Bass Station 2 map back) maps any knob to any control: press it, click the control, turn the knob.
+- **SCREEN COLOURS** (in SETTINGS): six looks (LCD, BLUE LCD, PAPER, AMBER, GREEN CRT, NIGHT), or pick your own PANEL and TEXT colours;
+  RESET goes back to the LCD. Every colour on the screen comes from those two (`--panel-rgb`, `--ink-rgb` in `css/lcd.css`). Kept in this browser, not in presets.
 - **Randomisers**: **RANDOM** deals a different real kit sound of the engine's type onto every one of its keys. **NEW SOUND** (or K, or a
   learned button) swaps just the key you last played for another kit sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,

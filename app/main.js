@@ -2,14 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwleiyrl';
-import { presetName } from './names.js?v=mwleiyrl';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwleiyrl';
-import { breed, isDud } from '../sound/breed.js?v=mwleiyrl';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwleiyrl';
-import { KIT_FILES } from '../sound/kits.js?v=mwleiyrl';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwleiyrl';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwleiyrl';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlfb04i';
+import { presetName } from './names.js?v=mwlfb04i';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlfb04i';
+import { MAKERS } from '../sound/makers.js?v=mwlfb04i';
+import { breed, isDud } from '../sound/breed.js?v=mwlfb04i';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlfb04i';
+import { KIT_FILES } from '../sound/kits.js?v=mwlfb04i';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlfb04i';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlfb04i';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -87,7 +88,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwleiyrl', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlfb04i', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -944,6 +945,32 @@ document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.clo
 function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 // ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
+// SCREEN COLOURS: the screen is drawn in two colours, a panel and an ink (css/lcd.css derives every other shade from
+// them). A few looks to pick, or your own two; kept in this browser (not in presets). A dark panel loses the LCD's
+// backlight glow and shades towards black
+const COLOURS_STORE = 'lxr-afx-colours';
+const THEMES = [['LCD', '#a7b58c', '#17200e'], ['BLUE LCD', '#9cb6c6', '#0c1a28'], ['PAPER', '#e2ded0', '#1e1c18'],
+  ['AMBER', '#1c1408', '#ffaa32'], ['GREEN CRT', '#08140a', '#6eff8c'], ['NIGHT', '#14285a', '#e6eeff']];
+let colours = { panel: THEMES[0][1], ink: THEMES[0][2] };
+try { const c = JSON.parse(localStorage.getItem(COLOURS_STORE)); if (c && /^#[0-9a-f]{6}$/i.test(c.panel) && /^#[0-9a-f]{6}$/i.test(c.ink)) colours = c; } catch (e) { /* the LCD */ }
+function applyColours(keep) {
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16)), p = rgb(colours.panel), st = document.documentElement.style;
+  const dark = (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) / 255 < 0.4;
+  st.setProperty('--panel-rgb', p.join(' ')); st.setProperty('--ink-rgb', rgb(colours.ink).join(' '));
+  st.setProperty('--shade-rgb', dark ? '0 0 0' : 'var(--ink-rgb)'); st.setProperty('--glow', dark ? 0 : 1);
+  $('col-panel').value = colours.panel; $('col-ink').value = colours.ink;
+  for (const b of $('themes').children) b.setAttribute('aria-pressed', b.dataset.panel === colours.panel && b.dataset.ink === colours.ink);
+  if (keep) { try { localStorage.setItem(COLOURS_STORE, JSON.stringify(colours)); } catch (e) { /* not kept */ } }
+}
+for (const [name, panel, ink] of THEMES) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn theme'; b.textContent = name; b.dataset.panel = panel; b.dataset.ink = ink;
+  b.style.setProperty('--tp', panel); b.style.setProperty('--ti', ink); b.title = `The screen in ${name.toLowerCase()} colours`;
+  b.addEventListener('click', () => { colours = { panel, ink }; applyColours(true); detail(`screen colours: <em>${name}</em>`); });
+  $('themes').append(b);
+}
+for (const [id, k] of [['col-panel', 'panel'], ['col-ink', 'ink']]) $(id).addEventListener('input', (e) => { colours = { ...colours, [k]: e.target.value.toLowerCase() }; applyColours(true); });
+$('col-reset').addEventListener('click', () => { colours = { panel: THEMES[0][1], ink: THEMES[0][2] }; applyColours(true); detail('screen colours: back to the <em>LCD</em>'); });
+applyColours(false);
 function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
@@ -1124,7 +1151,6 @@ function keepLocked(ed, now) { for (const par of S.locks) if (now.has(par) && no
 // engine's type crossed section by section and nudged a little (sound/breed.js). Each child is played offline first
 // (level.js) and a dud (nearly silent, or still ringing at full after 1.5 s) is thrown away for another, up to
 // 8 tries; the last one stands if every try is a dud. NEW SOUND, RANDOM, RANDOM ALL and INIT PATCH all follow it ----
-function breeding() { return S.rand.source === 'breed'; }
 function bredSound(sound) {
   const p = pool(sound), v = SOUNDS[sound].engineVoice;
   let s;
@@ -1136,21 +1162,46 @@ function bredSound(sound) {
   }
   return s;
 }
+// ---- NEW SOUNDS FROM (the RANDOM menu): where the dice, RANDOM, RANDOM ALL and INIT PATCH get each new sound. KIT
+// deals a kit sound as it is; BREED crosses two (bredSound); MORPH, KIT-STYLE, FREE and RECIPE are sound/makers.js,
+// each made from the engine's kit sounds (pool) and, like BREED, played offline first so a dud is skipped (8 tries) ----
+const SOURCES = {
+  kit: { name: 'KIT', dice: 'new sound', made: 'a new kit sound', cap: 'A KIT SOUND AS IT IS' },
+  breed: { name: 'BREED', dice: 'breed', made: 'a new bred sound', cap: 'TWO KIT SOUNDS CROSSED, SECTION BY SECTION' },
+  morph: { name: 'MORPH', dice: 'morph', made: 'a new morphed sound', cap: 'TWO KIT SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
+  kitstyle: { name: 'KIT-STYLE', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT KIT SOUND' },
+  free: { name: 'FREE', dice: 'free', made: 'a new free sound', cap: 'EVERY KNOB ANYWHERE IN ITS DRUM RANGE' },
+  recipe: { name: 'RECIPE', dice: 'recipe', made: 'a new recipe sound', cap: 'KICK, TOM, SNARE, CLAP, RIM, HATS, CYMBAL, COWBELL, ZAP' },
+};
+const source = () => (SOURCES[S.rand.source] ? S.rand.source : 'kit');
+// a new sound for a key of this engine by the chosen method (KIT: null, the caller deals from the pool as it always did)
+function newSound(sound) {
+  const src = source();
+  if (src === 'kit') return null;
+  if (src === 'breed') return bredSound(sound);
+  const v = SOUNDS[sound].engineVoice, make = MAKERS[src];
+  let s;
+  for (let i = 0; i < 8; i++) {
+    s = make({ schema: VOICE_SCHEMAS[v], pool: pool(sound), rnd, base: S.values });
+    if (!isDud(measure(sound, S.values, s.vals), LEVEL_TARGET_DB[sound])) break;
+  }
+  return s;
+}
+const madeText = () => SOURCES[source()].made;
 function drawSource() {
-  const b = breeding();
-  $('src-kit').setAttribute('aria-pressed', !b); $('src-breed').setAttribute('aria-pressed', b);
-  for (const el of document.querySelectorAll('.dice-src')) el.textContent = b ? 'breed' : 'new sound';
-  diceBtn.title = b ? 'BREED (K): a new sound on this key only, bred from two kit sounds of its type. UNDO takes it back; LEARN can put it on a button'
-    : 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button';
-  for (const id of ['scatter-cap', 'kit-scatter-cap']) { const el = $(id); if (el) el.innerHTML = b ? 'NEW BRED SOUND<br>ON EVERY KEY' : 'NEW KIT SOUND<br>ON EVERY KEY'; }
+  const src = source(), d = SOURCES[src];
+  for (const b of document.querySelectorAll('.srcrow .btn')) b.setAttribute('aria-pressed', b.dataset.src === src);
+  for (const el of document.querySelectorAll('.dice-src')) el.textContent = d.dice;
+  const cap = $('src-cap'); if (cap) cap.textContent = d.cap;
+  diceBtn.title = src === 'kit' ? 'NEW SOUND (K): a different kit sound on this key only. UNDO takes it back; LEARN can put it on a button'
+    : `${d.name} (K): a new sound on this key only (${d.cap.toLowerCase()}). UNDO takes it back; LEARN can put it on a button`;
+  const sc = $('scatter-cap'); if (sc) sc.innerHTML = src === 'kit' ? 'NEW KIT SOUND<br>ON EVERY KEY' : `NEW ${d.name} SOUND<br>ON EVERY KEY`;
 }
 function setSource(src) {
   S.rand.source = src; save(); drawSource();
-  detail(src === 'breed' ? 'NEW SOUNDS FROM <em>BREED</em>: the dice, RANDOM and INIT PATCH cross two kit sounds into a new one'
-    : 'NEW SOUNDS FROM <em>KIT</em>: the dice, RANDOM and INIT PATCH deal kit sounds as they are');
+  detail(`NEW SOUNDS FROM <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and INIT PATCH)`);
 }
-$('src-kit').addEventListener('click', () => setSource('kit'));
-$('src-breed').addEventListener('click', () => setSource('breed'));
+for (const b of document.querySelectorAll('.srcrow .btn')) b.addEventListener('click', () => setSource(b.dataset.src));
 function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
 // the padlocks that are holding something back on these engines, by name, for the message line
 function keptNote(sounds) {
@@ -1167,7 +1218,7 @@ function scatter(sound, blankOnly) { // blankOnly: only keys with no sound of th
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
     if (keyLocked(sound, note) || (blankOnly && S.keyEdits[sound][note])) continue;
     const now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
-    const s = breeding() ? bredSound(sound) : p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
+    const s = newSound(sound) || p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
     ed._r = rnd(); ed[seqPatPar(v)] = randomPattern(); ed[panPar(v)] = randPan(v);
     keepSends(ed, now, v); keepLocked(ed, now);
     levelKey(sound, note, true);
@@ -1224,7 +1275,7 @@ function setRhythms(pc, press) { // press: a button's name (the phone's menu), n
 function randKey() {
   if (keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
   const sound = S.sel, note = editKey[sound], p = pool(sound), cur = S.keyEdits[sound][note]?._kit;
-  let s; if (breeding()) s = bredSound(sound); else do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
+  let s = newSound(sound); if (!s) do s = p[Math.floor(rnd() * p.length)]; while (p.length > 1 && s.label === cur);
   const now = keyPatch(sound, note).vals;
   rollDice();
   randChange(() => {
@@ -1241,8 +1292,8 @@ function randKey() {
 diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
-$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key${levelled()}${keptNote(onSounds())}`));
+$('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${madeText()} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${madeText()} on every key${levelled()}${keptNote(onSounds())}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
 $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
 $('kit-alter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => alterSound(i)), `all engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(onSounds())}`));

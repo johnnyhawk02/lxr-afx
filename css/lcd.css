@@ -3,10 +3,12 @@
    boxes that invert when pressed or chosen; sliders and meters are segmented bars. Laid out for a laptop screen
    (1440 x 900, 1280 x 800): nothing scrolls. */
 :root {
-  --panel: #a7b58c; --ink: #17200e; --muted: rgba(23, 32, 14, .62); --ghost: rgba(23, 32, 14, .11);
-  --tint: rgba(23, 32, 14, .07); --rule: 1px solid rgba(23, 32, 14, .32);
+  /* the screen's two colours, as r g b (SETTINGS > SCREEN COLOURS sets them on <html>); every other colour comes from them */
+  --panel-rgb: 167 181 140; --ink-rgb: 23 32 14; --shade-rgb: var(--ink-rgb); --glow: 1;
+  --panel: rgb(var(--panel-rgb)); --ink: rgb(var(--ink-rgb)); --muted: rgb(var(--ink-rgb) / .62); --ghost: rgb(var(--ink-rgb) / .11);
+  --tint: rgb(var(--ink-rgb) / .07); --rule: 1px solid rgb(var(--ink-rgb) / .32);
   --font: "VT323", ui-monospace, monospace;
-  --shadow: 2px 2.2px .3px rgba(23, 32, 14, .18);
+  --shadow: 2px 2.2px .3px rgb(var(--ink-rgb) / .18);
   --seg: 5px; --gap: 3px;
 }
 * { box-sizing: border-box; }
@@ -22,11 +24,11 @@ button { font: inherit; color: inherit; }
   background-color: var(--panel);
   background-image: linear-gradient(170deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .05)),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px),
-    radial-gradient(60% 34% at 12% 100%, rgba(255, 252, 195, .5), rgba(255, 252, 200, 0) 70%),
-    radial-gradient(52% 30% at 88% 102%, rgba(250, 255, 200, .4), rgba(250, 255, 205, 0) 70%),
-    radial-gradient(38% 22% at 72% 38%, rgba(40, 50, 25, .12), rgba(40, 50, 25, 0) 70%),
-    linear-gradient(180deg, rgba(30, 38, 20, .2) 0%, rgba(30, 38, 20, 0) 30%),
-    radial-gradient(130% 100% at 50% 60%, rgba(0, 0, 0, 0) 55%, rgba(20, 26, 12, .28) 100%);
+    radial-gradient(60% 34% at 12% 100%, rgb(255 252 195 / calc(.5 * var(--glow))), rgb(255 252 200 / 0) 70%),
+    radial-gradient(52% 30% at 88% 102%, rgb(250 255 200 / calc(.4 * var(--glow))), rgb(250 255 205 / 0) 70%),
+    radial-gradient(38% 22% at 72% 38%, rgb(var(--shade-rgb) / .12), rgb(var(--shade-rgb) / 0) 70%),
+    linear-gradient(180deg, rgb(var(--shade-rgb) / .2) 0%, rgb(var(--shade-rgb) / 0) 30%),
+    radial-gradient(130% 100% at 50% 60%, rgba(0, 0, 0, 0) 55%, rgb(var(--shade-rgb) / .28) 100%);
   box-shadow: inset 0 6px 16px rgba(0, 0, 0, .36), inset -8px 8px 18px rgba(0, 0, 0, .2), inset 0 0 0 1px rgba(255, 255, 255, .1);
 }
 .dim { color: var(--muted); }
@@ -36,7 +38,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 /* ---- buttons: an outlined box, inverted when pressed or chosen ---- */
 .btn { background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 3px 12px; min-height: 34px;
   text-transform: uppercase; letter-spacing: .06em; font-size: 19px; cursor: pointer; text-shadow: var(--shadow);
-  box-shadow: 2px 2.2px 0 rgba(23, 32, 14, .14); white-space: nowrap; }
+  box-shadow: 2px 2.2px 0 rgb(var(--ink-rgb) / .14); white-space: nowrap; }
 .btn:hover { background: var(--tint); }
 .btn:active, .btn[aria-pressed="true"], .btn[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .btn:disabled { opacity: .3; cursor: default; background: transparent; color: var(--ink); }
@@ -86,7 +88,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
   background: repeating-linear-gradient(to right, var(--ghost) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap))); }
 .htrack i { position: absolute; left: 0; top: 0; bottom: 0; width: round(down, calc(var(--f) * 100%), 8px);
   background: repeating-linear-gradient(to right, var(--ink) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap)));
-  filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+  filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 
 .seedrow { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; font-size: 19px; }
 .seed { font-weight: 400; font-size: 26px; letter-spacing: .14em; border: 2px solid var(--ink); padding: 0 8px; border-radius: 3px; min-width: 6.4em; text-align: center; }
@@ -124,7 +126,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
   background: repeating-linear-gradient(to top, var(--ghost) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap))); }
 .vtrack i { position: absolute; left: 0; right: 0; bottom: 0; height: round(down, calc(var(--f) * 100%), 8px);
   background: repeating-linear-gradient(to top, var(--ink) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap)));
-  filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+  filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 /* the last played key's morphed value: a notch beside the bar */
 .vtrack b { display: none; position: absolute; left: -7px; right: -7px; height: 3px; bottom: calc(var(--m) * (100% - 3px)); background: var(--ink);
   box-shadow: 0 0 0 2px var(--panel); }
@@ -134,7 +136,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .keymap canvas { cursor: pointer; }
 body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px; cursor: crosshair; }
 .lock { border: 2px solid var(--ink); border-radius: 2px; background: transparent; font-size: 14px; line-height: 1; padding: 1px 4px 0; cursor: pointer;
-  letter-spacing: .06em; color: var(--muted); border-color: rgba(23, 32, 14, .4); text-shadow: none; }
+  letter-spacing: .06em; color: var(--muted); border-color: rgb(var(--ink-rgb) / .4); text-shadow: none; }
 .lock[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
 .lock.na { visibility: hidden; }
 .vsel { display: flex; flex-direction: column; gap: 6px; min-width: 0; justify-content: center; }
@@ -147,7 +149,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* ---- start: audio needs a press before it can play ---- */
 .start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  background: rgba(167, 181, 140, .88); border-radius: 6px; z-index: 10; text-align: center; }
+  background: rgb(var(--panel-rgb) / .88); border-radius: 6px; z-index: 10; text-align: center; }
 .start p { max-width: 30em; font-size: 22px; margin: 0; }
 .start[hidden] { display: none; }
 
@@ -180,7 +182,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .vf output { font-size: 17px; }
 .vf .lab { font-size: 16px; }
 .knob { width: var(--ks); height: var(--ks); cursor: ns-resize; touch-action: none; }
-.knob svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(2px 2.2px 0 rgba(23, 32, 14, .17)); }
+.knob svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 .knob .tk { stroke: var(--ghost); stroke-width: 3.6; }
 .knob .tk.on { stroke: var(--ink); }
 .knob .ptr { stroke: var(--ink); stroke-width: 3.5; stroke-linecap: square; }
@@ -221,7 +223,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .kgroup .kz { font-size: 15px; letter-spacing: .12em; color: var(--muted); }
 .kgroup .keys { display: flex; gap: 2px; }
 .k { position: relative; width: 22px; height: 34px; padding: 0; border: 2px solid var(--ink); border-radius: 2px; background: transparent; cursor: pointer; color: var(--ink); }
-.k.blk { background: rgba(23, 32, 14, .3); }
+.k.blk { background: rgb(var(--ink-rgb) / .3); }
 .k.run::before { content: ""; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 4px;
   background: repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 6px); }
 .k.own::after { content: ""; position: absolute; left: 50%; top: 4px; width: 6px; height: 6px; margin-left: -3px; background: var(--ink); }
@@ -238,13 +240,13 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keylocked .keyhead .btn:disabled { opacity: .35; }
 .keylocked .keyhead .keylock { background: var(--panel); color: var(--ink); }
 .keylocked .keyhead .k { border-color: var(--panel); color: var(--panel); }
-.keylocked .keyhead .k.blk { background: rgba(167, 181, 140, .3); }
+.keylocked .keyhead .k.blk { background: rgb(var(--panel-rgb) / .3); }
 .keylocked .keyhead .k.own::after { background: var(--panel); }
 .keylocked .keyhead .k.sel { background: var(--panel); color: var(--ink); outline-color: var(--panel); }
 .editor { position: relative; }
 .faders, .lockveil { grid-area: 1 / 1; }
 .lockveil { display: none; z-index: 2; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none;
-  background: repeating-linear-gradient(135deg, rgba(23, 32, 14, .1) 0 3px, transparent 3px 11px); }
+  background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb) / .1) 0 3px, transparent 3px 11px); }
 .lockveil b { font-weight: 400; font-size: 34px; letter-spacing: .2em; background: var(--ink); color: var(--panel); padding: 2px 16px; text-shadow: none; }
 .lockveil span { background: var(--panel); padding: 0 8px; }
 .keylocked .lockveil { display: flex; }
@@ -276,7 +278,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .klhead { display: grid; grid-template-columns: 3.4em 1fr; margin: 12px 0 4px; font-size: 16px; font-weight: 400; letter-spacing: .14em; color: var(--muted); padding: 0 8px; }
 .keylist { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
 .kl { display: grid; grid-template-columns: 3.4em 1fr auto; align-items: center; gap: 6px; flex: 1 1 0; min-height: 0; max-height: 40px; padding: 0 8px;
-  background: transparent; border: 2px solid rgba(23, 32, 14, .35); border-radius: 3px; text-align: left; cursor: pointer; font-size: 19px; text-shadow: var(--shadow); }
+  background: transparent; border: 2px solid rgb(var(--ink-rgb) / .35); border-radius: 3px; text-align: left; cursor: pointer; font-size: 19px; text-shadow: var(--shadow); }
 .kl b { font-weight: 400; letter-spacing: .06em; }
 .kl span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kl i { font-style: normal; font-size: 15px; letter-spacing: .1em; }
@@ -334,7 +336,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* ---- tidy-up: bigger knobs that fill the panel, clearer section headings, the key's big LEVEL bottom right ---- */
 .faders { --kw: 78px; --ks: 54px; position: relative; row-gap: 18px; padding: 10px 8px; align-content: flex-start; }
-.faders .sect h3 { color: var(--ink); margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid rgba(23, 32, 14, .25); }
+.faders .sect h3 { color: var(--ink); margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid rgb(var(--ink-rgb) / .25); }
 .vf .lab { font-size: 15px; }
 .faders .vf.big { position: absolute; right: 18px; bottom: 14px; width: 132px; gap: 4px; }
 .faders .vf.big .knob { width: 104px; height: 104px; }
@@ -484,11 +486,11 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .menupanel .plist { max-height: min(232px, 30vh); overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
 .menupanel .plist p { margin: 0; padding: 10px; font-size: 15px; letter-spacing: 1px; line-height: 1.3; }
-.menupanel .prow { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-top: 1px solid rgba(23, 32, 14, .25); }
+.menupanel .prow { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-top: 1px solid rgb(var(--ink-rgb) / .25); }
 .menupanel .prow:first-child { border-top: 0; }
 .menupanel .prow button { font: inherit; font-size: 18px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; cursor: pointer; min-height: 28px; text-align: left; padding: 2px 10px; }
 .menupanel .prow .pload { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menupanel .prow .pdel { font-size: 15px; padding: 2px 10px; border-left: 1px solid rgba(23, 32, 14, .25); text-align: center; min-width: 36px; }
+.menupanel .prow .pdel { font-size: 15px; padding: 2px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); text-align: center; min-width: 36px; }
 .menupanel .prow button:hover { background: var(--tint); }
 .menupanel .prow[aria-current="true"] .pload, .menupanel .prow .pdel[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .menupanel .prow button:focus-visible { outline: 2px dashed var(--ink); outline-offset: -3px; }
@@ -511,7 +513,7 @@ html.phone .screen { display: block; height: calc(100vh - 8px); height: calc(100
 html.phone .screen > :not(.pv):not(.start) { display: none; }
 html.phone .dk, html.phone #start-text { display: none; }
 html.phone .ph { display: revert; }
-html.phone .start { gap: 14px; padding: 0 18px; background: rgba(167, 181, 140, .95); }
+html.phone .start { gap: 14px; padding: 0 18px; background: rgb(var(--panel-rgb) / .95); }
 html.phone .start p { font-size: 19px; line-height: 1.25; max-width: 20em; }
 html.phone .pv { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) repeat(6, auto); gap: 6px; height: 100%; }
 .pv > * { grid-column: 1 / -1; min-width: 0; }
@@ -531,8 +533,8 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pad { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 0; padding: 0;
   border: 2px solid var(--ink); border-radius: 4px; background: transparent; color: var(--ink); font: inherit; text-shadow: var(--shadow); cursor: pointer;
   touch-action: none; user-select: none; -webkit-user-select: none; }
-.pad.e0 { background: rgba(23, 32, 14, .2); } /* the three engines, by shade: drum, snare, metal */
-.pad.e1 { background: rgba(23, 32, 14, .09); }
+.pad.e0 { background: rgb(var(--ink-rgb) / .2); } /* the three engines, by shade: drum, snare, metal */
+.pad.e1 { background: rgb(var(--ink-rgb) / .09); }
 .pad b { font-weight: 400; font-size: 24px; line-height: 1; }
 .pad span { font-size: 13px; letter-spacing: 1px; line-height: 1; opacity: .62; }
 .pad svg { display: none; position: absolute; top: 5px; right: 5px; width: 11px; height: 13px; fill: currentColor; stroke: currentColor; stroke-width: 2.4; }
@@ -596,10 +598,15 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */
 
 /* ENGINES 4 to 6: the second drum, snare and metal, shaded like the first */
-.pad.e3 { background: rgba(23, 32, 14, .2); }
-.pad.e4 { background: rgba(23, 32, 14, .09); }
+.pad.e3 { background: rgb(var(--ink-rgb) / .2); }
+.pad.e4 { background: rgb(var(--ink-rgb) / .09); }
 .sounds .snd[hidden] { display: none; }
 /* a narrow engine button (5 or 6 engines): the name only, the LED above it */
 .sounds .snd.narrow { padding: 12px 2px 0; font-size: 17px; letter-spacing: 0; white-space: nowrap; }
 .sounds .snd.narrow .ch { display: none; }
 .sounds .snd.narrow i { left: 50%; top: 4px; margin: 0 0 0 -4px; width: 7px; height: 7px; border-width: 1.5px; }
+/* SCREEN COLOURS: each look a button in its own two colours, on the menu's three-column grid; then PANEL and TEXT */
+.menupanel.settings .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.menupanel.settings .btn.theme { background: var(--tp); color: var(--ti); border-color: var(--ti); text-shadow: none; padding: 3px 4px; }
+.menupanel.settings .btn.theme[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); }
+.menupanel.settings .lowkey.colour input, .menupanel.settings .lowkey.colour .btn { grid-column: 2 / 5; width: 100%; height: 34px; padding: 0 2px; border: 2px solid var(--ink); border-radius: 3px; background: transparent; cursor: pointer; }

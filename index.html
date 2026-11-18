@@ -8,13 +8,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwleiyrl">
+<link rel="stylesheet" href="css/lcd.css?v=mwlfb04i">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
 (function () {
   var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
+  // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
+  try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
+    var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
+    var dark = (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) / 255 < 0.4;
+    s.setProperty('--panel-rgb', p.join(' ')); s.setProperty('--ink-rgb', rgb(c.ink).join(' ')); s.setProperty('--shade-rgb', dark ? '0 0 0' : 'var(--ink-rgb)'); s.setProperty('--glow', dark ? 0 : 1);
+  } } catch (e) {}
 })();
 </script>
 </head>
@@ -59,6 +65,12 @@
         <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
         <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
         <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
+        <h3>SCREEN COLOURS</h3>
+        <div class="randrow themes" id="themes"></div>
+        <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
+        <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
+        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
+        <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
         <h3>HARDWARE KNOBS</h3>
         <div class="randrow">
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
@@ -76,11 +88,14 @@
           <span class="dim note" id="init-info"></span>
         </div>
         <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
-        <div class="randrow">
-          <button class="btn" id="src-kit" aria-pressed="true" title="New sounds are kit sounds as they are: one of the built-in kits' sounds of the engine's type">KIT</button>
-          <button class="btn" id="src-breed" aria-pressed="false" title="New sounds are bred: two kit sounds of the engine's type crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little. Duds (nearly silent, or ringing on) are skipped">BREED</button>
-          <span></span>
-          <span class="dim cap">A KIT SOUND<br>AS IT IS</span><span class="dim cap">TWO KIT SOUNDS<br>CROSSED</span>
+        <div class="randrow srcrow">
+          <button class="btn" id="src-kit" data-src="kit" aria-pressed="true" title="A kit sound as it is: one of the built-in kits' sounds of the engine's type">KIT</button>
+          <button class="btn" id="src-breed" data-src="breed" aria-pressed="false" title="Two kit sounds crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little">BREED</button>
+          <button class="btn" id="src-morph" data-src="morph" aria-pressed="false" title="Two kit sounds blended at a random point between them: every knob in between, every switch from the nearer one">MORPH</button>
+          <button class="btn" id="src-kitstyle" data-src="kitstyle" aria-pressed="false" title="One kit sound's switches, every knob a value another kit sound has for it: new sounds in the ranges the kits use">KIT-STYLE</button>
+          <button class="btn" id="src-free" data-src="free" aria-pressed="false" title="One kit sound's switches, every knob anywhere in its drum-safe range: the wildest">FREE</button>
+          <button class="btn" id="src-recipe" data-src="recipe" aria-pressed="false" title="A named sound: kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell or zap, from a kit sound of that type with its knobs set to the recipe">RECIPE</button>
+          <span class="dim cap wide" id="src-cap"></span>
         </div>
         <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
         <div class="randrow">
@@ -183,6 +198,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwleiyrl"></script>
+<script type="module" src="app/main.js?v=mwlfb04i"></script>
 </body>
 </html>
