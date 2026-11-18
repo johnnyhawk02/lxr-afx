@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwle0w5j">
+<link rel="stylesheet" href="css/lcd.css?v=mwle5uqd">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -56,6 +56,7 @@
         <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
         <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
         <h3>KEYBOARD</h3>
+        <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
         <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
         <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
         <h3>HARDWARE KNOBS</h3>
@@ -67,11 +68,11 @@
       </div>
     </div>
     <div class="menu" id="menu">
-      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all three, and how much">RANDOM ▾</button>
+      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
       <div class="menupanel" id="menu-panel" hidden>
         <h3>NEW PATCH</h3>
         <div class="randrow">
-          <button class="btn" id="init-patch" title="A new patch: every key of all three zones gets a fresh kit sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
+          <button class="btn" id="init-patch" title="A new patch: every key of all zones gets a fresh kit sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
           <span class="dim note" id="init-info"></span>
         </div>
         <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
@@ -90,9 +91,9 @@
         </div>
         <h3>ALL THREE ENGINES</h3>
         <div class="randrow">
-          <button class="btn" id="kit-scatter" title="Every key of all three engines gets a sound of its type from the built-in kits. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
-          <button class="btn" id="kit-alter" title="Nudge every key of all three engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
-          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all three engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
+          <button class="btn" id="kit-scatter" title="Every key of all engines gets a sound of its type from the built-in kits. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
+          <button class="btn" id="kit-alter" title="Nudge every key of all engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
+          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
           <span class="dim cap wide">THE SAME, FOR ALL 25 KEYS: DRUM, SNARE AND METAL</span>
         </div>
         <h3>HOW MUCH</h3>
@@ -101,7 +102,7 @@
         <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
         <h3>KNOB PADLOCKS <span class="dim" id="lock-count">NONE LOCKED</span></h3>
         <div class="randrow">
-          <button class="btn sm" id="lock-none" title="Open every knob's padlock, on all three engines">UNLOCK ALL</button>
+          <button class="btn sm" id="lock-none" title="Open every knob's padlock, on all engines">UNLOCK ALL</button>
           <span class="dim note">A LOCKED KNOB KEEPS ITS SETTING ON EVERY KEY, WHATEVER YOU PRESS HERE</span>
         </div>
       </div>
@@ -182,6 +183,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwle0w5j"></script>
+<script type="module" src="app/main.js?v=mwle5uqd"></script>
 </body>
 </html>

@@ -21,32 +21,46 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwle0w5j';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwle5uqd';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
 
-// AFX mode: three sounds, one per engine type, each on its own zone of the keyboard (MIDI channel 1), no overlap, all
-// three able to sound at once. The zones run up from the lowest key, ZONE_SIZES keys each, in this order, to fit the
-// 25 keys of a Bass Station 2 at its default octave; each zone's base key is its middle key. The lowest key can be moved
-// by octaves on the page (setZoneStart)
-export const ZONE_SIZES = [8, 8, 9];
+// AFX mode: up to six engines, each a monophonic merged voice on its own zone of the keyboard (MIDI channel 1), no
+// overlap, all able to sound at once. ENGINES (1 to 6, setEngines) splits the 25 keys of a Bass Station 2 at its
+// default octave into that many even zones, side by side from the lowest key (any keys left over go one each to the
+// last zones: three engines are 8, 8 and 9 keys); each zone's base key is its middle key. The lowest key can be moved
+// by octaves on the page (setZoneStart). An engine not in use has no keys (lo > hi)
+export const NUM_KEYS = 25, MAX_ENGINES = 6, DEFAULT_ENGINES = 3;
 export const DEFAULT_ZONE_START = 48; // the Bass Station 2's lowest key at its default octave (C2 with C3 = MIDI 60)
+export const zoneSizes = (n) => Array.from({ length: n }, (_, i) => Math.floor(NUM_KEYS / n) + (i >= n - NUM_KEYS % n ? 1 : 0));
+export let ZONE_SIZES = zoneSizes(DEFAULT_ENGINES);
+let zoneStart = DEFAULT_ZONE_START;
 function zonesFrom(start) {
   let lo = start;
-  return ZONE_SIZES.map((n) => { const z = { lo, hi: lo + n - 1, base: lo + Math.floor(n / 2) }; lo += n; return z; });
+  const z = ZONE_SIZES.map((n) => { const z = { lo, hi: lo + n - 1, base: lo + Math.floor(n / 2) }; lo += n; return z; });
+  while (z.length < MAX_ENGINES) z.push({ lo: start + NUM_KEYS, hi: start + NUM_KEYS - 1, base: start }); // (not in use)
+  return z;
 }
-const zone = (i) => zonesFrom(DEFAULT_ZONE_START)[i];
 // engineVoice: which of the engine's six voice instances makes it; trigger: the note-on index; sources: the kit voices
-// of the same engine type that the randomiser draws from
+// the randomiser draws from; level: its AUTO LEVEL target's type (sound/level.js LEVEL_TARGET_DB). The first three are
+// the drum, snare and metal they always were (saved keys hold their voices' parameters); then a second of each
 export const SOUNDS = [
-  { id: 'drum', name: 'DRUM', engineVoice: 0, trigger: 0, sources: [0, 1, 2], zone: zone(0) },
-  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], zone: zone(1) },
-  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], zone: zone(2) },
+  { id: 'drum', name: 'DRUM', engineVoice: 0, trigger: 0, sources: [0, 1, 2], type: 0 },
+  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], type: 1 },
+  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], type: 2 },
+  { id: 'drum2', name: 'DRUM 2', engineVoice: 1, trigger: 1, sources: [0, 1, 2], type: 0 },
+  { id: 'snare2', name: 'SNARE 2', engineVoice: 2, trigger: 2, sources: [3], type: 1 },
+  { id: 'metal2', name: 'METAL 2', engineVoice: 5, trigger: 5, sources: [4, 5], type: 2 },
 ];
+zonesFrom(DEFAULT_ZONE_START).forEach((z, i) => { SOUNDS[i].zone = z; });
 // move every zone so the lowest starts on start (a MIDI note)
-export function setZoneStart(start) { zonesFrom(start).forEach((z, i) => Object.assign(SOUNDS[i].zone, z)); }
+export function setZoneStart(start) { zoneStart = start; zonesFrom(start).forEach((z, i) => Object.assign(SOUNDS[i].zone, z)); }
+// how many engines are in use (1 to 6): the keys split again between them
+export let ENGINES = DEFAULT_ENGINES;
+export function setEngines(n) { ENGINES = Math.max(1, Math.min(MAX_ENGINES, n | 0)); ZONE_SIZES = zoneSizes(ENGINES); setZoneStart(zoneStart); }
+export const engineOn = (sound) => sound < ENGINES;
 // the sound whose zone holds a note, or -1
 export const soundOfNote = (note) => SOUNDS.findIndex((s) => note >= s.zone.lo && note <= s.zone.hi);
 
@@ -120,10 +134,10 @@ const SAFE = {
   FILTER_F: [45, 127], FILTER_RESO: [0, 60], FILTER_DRIVE: [0, 50], DRIVE: [30, 95],
 };
 // decay ranges differ per voice: kick/tom/snare, cymbal
-const DECAY = { 0: [3, 55], 1: [3, 55], 2: [3, 55], 3: [3, 50], 4: [20, 110] };
+const DECAY = { 0: [3, 55], 1: [3, 55], 2: [3, 50], 3: [3, 50], 4: [20, 110], 5: [20, 110] }; // (voice 2: SNARE 2, 5: METAL 2)
 // where the randomisers may put a sound's pan (63 is the centre): the drums always centre, the snare up to 20% left or
 // right, the metal anywhere. Strict: a randomiser always lands inside it, even WILD (a hand-set pan can go anywhere)
-export const PAN_RANGE = { 0: [63, 63], 1: [63, 63], 2: [63, 63], 3: [51, 76], 4: [0, 127], 5: [0, 127] }; // snare: L19 .. R20
+export const PAN_RANGE = { 0: [63, 63], 1: [63, 63], 2: [51, 76], 3: [51, 76], 4: [0, 127], 5: [0, 127] }; // snare: L19 .. R20 (voice 2: SNARE 2)
 function randRange(text, voice, key) {
   if (text === 'PAN') return PAN_RANGE[voice];
   if (key.startsWith('PITCH_SLOPE')) return [0, 90]; // steep pitch curves end up inaudible
@@ -361,7 +375,8 @@ export function mapVoice(kit, src, dst) {
   for (const [p, q] of parMap) {
     const e = S.find((x) => x.par === p);
     // the hi-hat's decay: its open one (as the cymbal's decay; the closed one is a different sound)
-    const v = src === 5 && dst !== 5 && e.ukey === 'decay' ? val(PAR.VELOD6_OPEN) : val(p);
+    let v = src === 5 && e.ukey === 'decay' ? val(PAR.VELOD6_OPEN) : val(p);
+    if (e.ukey === 'kind' && KINDS[v] === 'hat') v = KINDS.indexOf('cym'); // (a hi-hat plays as the cymbal, as it always did here)
     out.push([q, e.display.type === 'target' ? target(v) : v]);
   }
   out.push([PAR.VOICE_LFO1 + dst, voiceOfTarget(val(PAR.TARGET_LFO1 + src)) === src ? dst + 1 : val(PAR.VOICE_LFO1 + src)]);

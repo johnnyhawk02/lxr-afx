@@ -16,7 +16,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(x, y + (up ? -1 : 1) * dy * i / 4); await p.mouse.up(); };
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
   // LOW KEY, RETURN, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
-  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
+  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
     await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; } return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
@@ -180,6 +180,21 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (left > 14) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (14 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
+  // ENGINES (SETTINGS): 1 to 6 mono engines on even zones of the 25 keys; each engine in use shows its button, its keys
+  // in the strip, and a kit sound on every key; back to 3 as before
+  { const eng = async (n) => { for (let g = 0; g < 6 && Number(await p.textContent('#engines')) !== n; g++) {
+      const now = Number(await p.textContent('#engines')); await p.click(n > now ? '#eng-up' : '#eng-down'); } await p.waitForTimeout(150); };
+    for (const n of [6, 1, 3]) {
+      await eng(n);
+      const r = await p.evaluate(() => ({ btns: [...document.querySelectorAll('#sounds .snd')].filter((b) => !b.hidden).length, keys: document.querySelectorAll('#keystrip .k').length,
+        groups: document.querySelectorAll('#keystrip .kgroup').length,
+        dealt: afx.sounds.map((s, i) => { let k = 0; for (let x = s.zone.lo; x <= s.zone.hi; x++) if (afx.keyEdits()[i][x]?._kit) k++; return k; }).reduce((a, b) => a + b, 0) }));
+      if (r.btns !== n || r.groups !== n || r.keys !== 25 || r.dealt !== 25) { errors++; console.log(`ENGINES ${n}:`, r); }
+      if (n !== 3 && w === 1440 && h === 900) await p.screenshot({ path: `${out}/engines${n}-${w}x${h}.png` });
+      if (n === 6) { const clip = await p.evaluate(() => [...document.querySelectorAll('#sounds .snd:not([hidden])')].filter((b) => b.scrollWidth > b.clientWidth + 1).length);
+        if (clip) { errors++; console.log(`${w}x${h} ENGINES 6: ${clip} engine buttons cut off`); } }
+    }
+    await p.click('#sounds .snd >> nth=0'); }
   // legato, last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 goes back
   // to D2 (the key shown), letting go of the snare changes nothing in the drum zone; RETURN steps through its settings
   { const key = () => p.textContent('#kh-note');
@@ -273,7 +288,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const rev = all.filter((k) => k.rev > 0), ech = all.filter((k) => k.echo > 0), ons = st.map((z) => z.filter((k) => k.on).length);
     if (J(asked) !== J(before) || armed !== 'true' || !/1 LOCKED KEY/.test(info)) { errors++; console.log('init patch, asking:', armed, info, J(asked) === J(before)); }
     if (all.length !== 25 || all.some((k) => !k.kit || k.lock) || rev.length !== 8 || ech.length !== 5 || rev.some((k) => k.rev < 45 || k.rev > 95) || ech.some((k) => k.echo < 40 || k.echo > 85)
-      || !st[0].every((k) => k.pan === 63) || !st[1].every((k) => k.pan >= 51 && k.pan <= 76) || J(ons) !== J([0, 0, 0]) || all.filter((k) => k.trim !== 0).length < 18)
+      || !st[0].every((k) => k.pan === 63) || !st[1].every((k) => k.pan >= 51 && k.pan <= 76) || ons.some(Boolean) || all.filter((k) => k.trim !== 0).length < 18)
       { errors++; console.log('init patch:', 'reverb', rev.length, 'echo', ech.length, 'rhythms', J(ons), J(all.map((k) => [k.kit, k.lock, k.echo, k.rev, k.pan, k.trim]))); }
     await p.waitForTimeout(100); await press(); await p.waitForTimeout(600); const again = await state(); // nothing locked now: one press
     if (J(again.flat().map((k) => k.kit)) === J(all.map((k) => k.kit)) || again.flat().filter((k) => k.rev > 0).length !== 8) { errors++; console.log('init patch, second: the same patch again'); }
@@ -353,7 +368,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate((name) => [...document.querySelectorAll('#preset-list .pload')].find((x) => x.textContent === name).click(), a1.name); await p.waitForTimeout(600);
     const c1 = await P(), sC = await sig(), where = await p.evaluate(() => afx.sounds.map((s, i) => Object.keys(afx.keyEdits()[i]).every((n) => n >= s.zone.lo && n <= s.zone.hi) && Object.keys(afx.keyEdits()[i]).length));
     await press('undo'); await settle(); const c2 = await P(), sU = await sig(); await p.click('#low-down');
-    if (c1.id !== a1.id || c1.name !== a1.name || c1.bpm !== '120' || sC !== s2 || c1.mark !== '' || JSON.stringify(where) !== '[8,8,9]' || c2.name !== b1.name || c2.id !== b1.id || c2.bpm !== '121' || sU !== sB || c2.mark !== '')
+    if (c1.id !== a1.id || c1.name !== a1.name || c1.bpm !== '120' || sC !== s2 || c1.mark !== '' || JSON.stringify(where) !== '[8,8,9,0,0,0]' || c2.name !== b1.name || c2.id !== b1.id || c2.bpm !== '121' || sU !== sB || c2.mark !== '')
       bad('load, undo', c1, where, c2, sC === s2, sU === sB);
     await p.click('#preset-btn'); await p.waitForTimeout(100); const info0 = await p.textContent('#kh-info');
     await p.fill('#preset-input', ''); await p.click('#preset-input'); await p.keyboard.type('kazoo <b>1'); await p.keyboard.press('Enter'); await settle();
@@ -454,7 +469,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   if (!d1.lock || padLocked !== 1 || !d1.dice || d1.lockBtn !== 'LOCKED' || d2.sends[0] !== c1.sends[0] || ask !== 'PRESS AGAIN' || d3.kit !== d1.kit || d4.kit === d1.kit || d4.lock || d4.name === d3.name || initBtn !== 'INIT PATCH' || d4.dice || !/new patch/.test(d4.msg))
     bad('lock, init patch', d1.lock, padLocked, d1.dice, d1.lockBtn, d2.sends, ask, d3.kit, d4.kit, d4.lock, d4.name, initBtn, d4.msg);
   await p.tap('#pv-random'); await p.waitForTimeout(600); const f1 = await st(); await p.tap('#pv-alter'); await p.waitForTimeout(400); const f2 = await st();
-  if (f1.kit === d4.kit || !/all three engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
+  if (f1.kit === d4.kit || !/all engines/.test(f1.msg) || !/altered/.test(f2.msg) || f2.kit !== f1.kit) bad('random all, alter', d4.kit, f1.kit, f1.msg, f2.msg);
   // MENU, on the fifth column. It covers the pads and the buttons down to the message line; a press does its thing
   // and closes it. No pad runs a rhythm (the sequencer is gone)
   const menu = () => p.evaluate(() => ({ run: document.querySelectorAll('.pad.run').length, share: afx.rand().rhythms, open: !document.getElementById('pv-menu').hidden, btn: document.getElementById('pv-menu-btn').textContent,
@@ -475,7 +490,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250);
   const m8 = await press('#pv-rand-eng'), m9 = await press('#pv-alter-eng'), m10 = await press('#pv-alter-all');
   if (J(m8.eng) !== J(['RANDOM: SNARE KEYS', 'ALTER: SNARE KEYS', 'A NEW KIT SOUND ON EACH OF THE 8 SNARE KEYS']) || m8.kits[1] === m7.kits[1] || m8.kits[0] !== m7.kits[0] || m8.kits[2] !== m7.kits[2] || !/^SNARE: a new kit sound on every key/.test(m8.msg)
-    || !/^SNARE: every key altered/.test(m9.msg) || !/^all three engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
+    || !/^SNARE: every key altered/.test(m9.msg) || !/^all engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
   const end = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight, Math.round(document.getElementById('pv-msg').getBoundingClientRect().bottom) <= innerHeight]);
   if (end[0] > 0 || end[1] > 0 || !end[2]) bad('it scrolls after use', end);
   if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });

@@ -1,19 +1,29 @@
 // node test/morph.test.mjs: the key morph is deterministic, a zone's base key and depth 0 play the base sound, far keys
 // move more, kit voices map onto the three sounds, and every sound renders audio across its zone.
 import assert from 'node:assert/strict';
-import { SOUNDS, ZONE_SIZES, setZoneStart, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
+import { SOUNDS as ALL_SOUNDS, ZONE_SIZES, setZoneStart, setEngines, zoneSizes, soundOfNote as ofNote, VOICE_SCHEMAS, INIT_VALUES, schemaOf, soundOfNote, mapVoice, parseSnd } from '../sound/schema.js';
 import { morphKey, combinedAmount, BASE_NOTE } from '../sound/morph.js';
 import { LxrInstrument } from '../sound/instrument.js';
 import { KIT_FILES } from '../sound/kits.js';
 
 const base = INIT_VALUES;
 const full = { pitch: 1, timbre: 1 };
+const SOUNDS = ALL_SOUNDS.slice(0, 3); // (three engines, as it comes)
 const run = (s, note, seed, amount) => morphKey({ schema: schemaOf(s), base, note, seed, amount, voice: SOUNDS[s].engineVoice, zone: SOUNDS[s].zone });
 const differs = (m) => m.params.filter(([p, v]) => v !== base[p]).length;
 const isMorph = (s, q) => schemaOf(s).some((e) => e.par === q && e.morph);
 let n = 0;
 // zones: 8, 8 and 9 keys up from the Bass Station 2's lowest key (48), no gaps, no overlap
 assert.deepEqual(SOUNDS.map((s) => [s.zone.lo, s.zone.hi, s.zone.base]), [[48, 55, 52], [56, 63, 60], [64, 72, 68]]); n++;
+// ENGINES 1 to 6: the 25 keys split into that many even zones, side by side, every key in exactly one
+for (let e = 1; e <= 6; e++) {
+  setEngines(e);
+  assert.equal(zoneSizes(e).reduce((a, b) => a + b, 0), 25); n++;
+  for (let k = 48; k <= 72; k++) { const s = ofNote(k); assert.ok(s >= 0 && s < e, `ENGINES ${e}: key ${k} in engine ${s}`); n++; }
+  assert.equal(ofNote(47), -1); assert.equal(ofNote(73), -1); n += 2;
+  assert.ok(Math.max(...zoneSizes(e)) - Math.min(...zoneSizes(e)) <= 1); n++;
+}
+setEngines(3);
 assert.equal(soundOfNote(47), -1); assert.equal(soundOfNote(48), 0); assert.equal(soundOfNote(55), 0); assert.equal(soundOfNote(56), 1);
 assert.equal(soundOfNote(63), 1); assert.equal(soundOfNote(64), 2); assert.equal(soundOfNote(72), 2); assert.equal(soundOfNote(73), -1); n += 8;
 // moving the zones an octave keeps each key's variant

@@ -1,15 +1,15 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
-  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwle0w5j';
-import { presetName } from './names.js?v=mwle0w5j';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwle0w5j';
-import { breed, isDud } from '../sound/breed.js?v=mwle0w5j';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwle0w5j';
-import { KIT_FILES } from '../sound/kits.js?v=mwle0w5j';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwle0w5j';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwle0w5j';
+  voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwle5uqd';
+import { presetName } from './names.js?v=mwle5uqd';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwle5uqd';
+import { breed, isDud } from '../sound/breed.js?v=mwle5uqd';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwle5uqd';
+import { KIT_FILES } from '../sound/kits.js?v=mwle5uqd';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwle5uqd';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwle5uqd';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -44,6 +44,7 @@ const S = {
   fx: structuredClone(FX_DEFAULTS), // the three send effects' settings (the FX page)
   view: 'synth', // the editor shows the engine's knobs ('synth') or the effects ('fx')
   preset: { id: null, name: '' }, // the patch's name, and the saved preset it is (null: not saved yet)
+  engines: DEFAULT_ENGINES, // ENGINES: how many mono engines share the keys, 1 to 6 (Johnny, 2026-11-17)
   zoneStart: DEFAULT_ZONE_START, // the layout's lowest key (moved by octaves with LOW KEY) // the editor edits the last key pressed (false) or the base of every key (true)
 };
 try {
@@ -57,7 +58,7 @@ try {
     if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
     if (d.lockRule !== 2) { const was = new Set(VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par)); d.locks = d.locks.filter((p) => !was.has(p)); } // (these used to be locked as they came)
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.rand.rhythms = 0; /* (no sequencer any more: Johnny, 2026-11-17) */ S.sel = d.sel | 0; S.page = d.page | 0;
-    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; S.ccMap = d.ccMap || null;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; if (d.engines) S.engines = clamp(d.engines | 0, 1, MAX_ENGINES); S.ccMap = d.ccMap || null;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
   }
 } catch (e) { /* first visit, or storage blocked */ }
@@ -67,13 +68,15 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
 };
 
-setZoneStart(S.zoneStart);
+setEngines(S.engines); setZoneStart(S.zoneStart);
+// the engines in use, in order (the others have no keys)
+const onSounds = () => SOUNDS.map((_, i) => i).filter(engineOn);
 const kits = KIT_FILES.map((k) => parseSnd(Uint8Array.from(atob(k.data), (c) => c.charCodeAt(0))));
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -84,12 +87,13 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwle0w5j', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwle5uqd', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
+  send({ type: 'engines', n: S.engines });
   if (ctx.state !== 'running') await ctx.resume();
 }
 
@@ -151,7 +155,7 @@ const undoStack = [];
 function snapshot(what, merge, whole) { // whole: a new patch is coming (a preset, INIT PATCH), so the effects and the patch's name are kept too
   const now = performance.now(), top = undoStack[undoStack.length - 1], all = () => (whole ? { fx: structuredClone(S.fx), preset: { ...S.preset } } : {});
   if (top && (now - top.t0 < 60 || (merge && top.merge === merge && now - top.t < 1200))) { top.t = now; if (whole && !top.fx) Object.assign(top, all()); return; }
-  undoStack.push({ what, merge, t: now, t0: now, values: S.values.slice(), keys: structuredClone(S.keyEdits), ...all() });
+  undoStack.push({ what, merge, t: now, t0: now, engines: S.engines, values: S.values.slice(), keys: structuredClone(S.keyEdits), ...all() });
   if (undoStack.length > 40) undoStack.shift();
   drawUndo();
 }
@@ -250,7 +254,7 @@ function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0
 function noteOn(ch, note, vel) {
   if (ch !== 1) { showLastText(`CH ${ch} · ${noteName(note)} · only channel 1 plays`); return; }
   const sound = soundOfNote(note);
-  if (sound < 0) { showLastText(`${noteName(note)} #${note} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[SOUNDS.length - 1].zone.hi)})`); return; }
+  if (sound < 0) { showLastText(`${noteName(note)} #${note} · outside the zones (${noteName(SOUNDS[0].zone.lo)}-${noteName(SOUNDS[S.engines - 1].zone.hi)})`); return; }
   keyDown(sound, note, vel);
 }
 async function startMidi() {
@@ -903,6 +907,7 @@ const stripKeys = [];
 function buildStrip() {
   const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
   SOUNDS.forEach((s, i) => {
+    if (!engineOn(i)) return;
     const g = document.createElement('div'); g.className = 'kgroup';
     g.innerHTML = `<span class="kz">${s.name}</span><div class="keys"></div>`;
     for (let note = s.zone.lo; note <= s.zone.hi; note++) {
@@ -1155,11 +1160,11 @@ function keptNote(sounds) {
   const u = [...new Set(names)];
   return !u.length ? '' : u.join(', ').length <= 16 ? ` · locked <em>${u.join(', ')}</em> kept` : ` · <em>${u.length} locked knobs</em> kept`; // (short: the line must fit)
 }
-function scatter(sound) {
+function scatter(sound, blankOnly) { // blankOnly: only keys with no sound of their own yet (ENGINES)
   const z = SOUNDS[sound].zone, p = pool(sound), order = [];
   for (let note = z.lo; note <= z.hi; note++) {
     if (!order.length) { order.push(...p.keys()); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
-    if (keyLocked(sound, note)) continue;
+    if (keyLocked(sound, note) || (blankOnly && S.keyEdits[sound][note])) continue;
     const now = keyPatch(sound, note).vals, v = SOUNDS[sound].engineVoice;
     const s = breeding() ? bredSound(sound) : p[order.pop()], ed = S.keyEdits[sound][note] = { _kit: s.label, ...Object.fromEntries(s.vals) };
     ed._r = rnd(); ed[seqPatPar(v)] = randomPattern(); ed[panPar(v)] = randPan(v);
@@ -1235,15 +1240,14 @@ function randKey() {
 diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
-const ALL3 = [0, 1, 2];
 $('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => scatter(i)), `all three engines: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key${levelled()}${keptNote(ALL3)}`));
+$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${breeding() ? 'a new bred sound' : 'a new kit sound'} on every key${levelled()}${keptNote(onSounds())}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
 $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
-$('kit-alter').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => alterSound(i)), `all three engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(ALL3)}`));
+$('kit-alter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => alterSound(i)), `all engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(onSounds())}`));
 $('level').addEventListener('click', () => randChange(() => levelZone(S.sel), `${SOUNDS[S.sel].name}: every key levelled to <em>${LEVEL_TARGET_DB[S.sel]} dB</em> (locked keys stay)`).then(sendTrim));
-$('kit-level').addEventListener('click', () => randChange(() => SOUNDS.forEach((_, i) => levelZone(i)), 'all three zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
-// ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh kit sound as
+$('kit-level').addEventListener('click', () => randChange(() => onSounds().forEach((i) => levelZone(i)), 'all zones: <em>every key levelled</em> to its engine\'s level (locked keys stay)').then(sendTrim));
+// ---- INIT PATCH (the RANDOM menu): a new patch in one press. Every key of all zones gets a fresh kit sound as
 // RANDOM ALL deals them (levelled, panned and given rhythms the same way), locked keys and hand edits included. Then
 // the effects: INIT_REVERB % of the keys get a reverb send and INIT_ECHO % an echo send (which keys is random, and a
 // key can have both), the rest none. BPM, the effects and the master go back to their starting settings. A control
@@ -1287,7 +1291,7 @@ $('init-patch').addEventListener('click', () => {
   let n;
   randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
     drawKeymap(); sendTrim(); drawPreset();
-    detail(`new patch <em>${S.preset.name}</em>: reverb on ${n.reverb}, echo on ${n.echo} · BPM, FX, master reset${keptNote(ALL3)}`);
+    detail(`new patch <em>${S.preset.name}</em>: reverb on ${n.reverb}, echo on ${n.echo} · BPM, FX, master reset${keptNote(onSounds())}`);
   });
 });
 drawInit();
@@ -1297,6 +1301,7 @@ function undo() {
   for (let p = 0; p < ALL_PARAMS; p++) setValue(p, u.values[p], { quiet: true });
   if (!u.fx) S.keyEdits.forEach((ks, i) => { for (const k in ks) if (ks[k]._lock) u.keys[i][k] = ks[k]; }); // a key locked now stays as it is
   S.keyEdits = u.keys;
+  if (u.engines !== undefined) showEngines(u.engines);
   if (u.rhythms !== undefined) { S.rand.rhythms = u.rhythms; randDraws.forEach((d) => d()); } // the RHYTHMS share, where it was
   if (u.fx) { applyFx(u.fx); S.preset = u.preset; drawPreset(); } // a whole patch back: its effects and its name too
   for (const s of lastMorph.keys()) lastMorph[s] = null;
@@ -1307,7 +1312,7 @@ function undo() {
   detail(`undone: <em>${u.what}</em>${undoStack.length ? ` · ${undoStack.length} more` : ''}`);
 }
 $('undo').addEventListener('click', undo);
-// the knob padlocks, all three engines': how many are closed (the sequencer's two parts count as one), and UNLOCK ALL
+// the knob padlocks, all engines': how many are closed (the sequencer's two parts count as one), and UNLOCK ALL
 const lockCount = () => VOICE_SCHEMAS.flat().filter((e) => S.locks.has(e.par) && !/^SEQ_ON/.test(e.key)).length;
 function drawLocks() {
   const n = lockCount();
@@ -1335,7 +1340,7 @@ document.addEventListener('keydown', (e) => {
   }
   if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === 'z') { if (e.target.closest('input, textarea, [contenteditable]')) return; e.preventDefault(); undo(); return; }
   if (e.target.closest('select, input[type="text"]') || e.metaKey || e.ctrlKey || e.altKey) return; // (typing a name)
-  if (e.key >= '1' && e.key <= String(SOUNDS.length)) select(Number(e.key) - 1);
+  if (e.key >= '1' && e.key <= String(S.engines)) select(Number(e.key) - 1);
   else if (e.key === 'z' || e.key === 'Z') undo();
   else if (e.key === '[' || e.key === ']') stepKey(e.key === ']' ? 1 : -1);
   else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest('input, [role="slider"]')) { e.preventDefault(); stepKey(e.key === 'ArrowRight' ? 1 : -1); }
@@ -1383,11 +1388,13 @@ function tidyPreset(p) {
   const values = [...INIT_VALUES]; d.values.slice(0, ALL_PARAMS).forEach((x, i) => { values[i] = intIn(x, 0, 255); });
   const old = d.pos !== POS_RULE; // (saved while the waves, filter types and FM/MIX were menus: their menu numbers become knob positions)
   if (old) valuesToPositions(values);
+  const engines = intIn(d.engines || DEFAULT_ENGINES, 1, MAX_ENGINES), sizes = zoneSizes(engines); // (older presets: 3)
   const keys = SOUNDS.map((def, i) => {
+    const lo = sizes.slice(0, i).reduce((a, b) => a + b, 0), hi = i < engines ? lo + sizes[i] - 1 : -1;
     const out = {}, src = d.keys[i] && typeof d.keys[i] === 'object' ? d.keys[i] : {};
     for (const k in src) {
       const rel = Number(k), e = src[k], o = {};
-      if (!Number.isInteger(rel) || rel < def.zone.lo - S.zoneStart || rel > def.zone.hi - S.zoneStart || !e || typeof e !== 'object') continue;
+      if (!Number.isInteger(rel) || rel < lo || rel > hi || !e || typeof e !== 'object') continue;
       for (const f in e) {
         if (f === '_kit') o._kit = cleanLabel(e._kit);
         else if (f === '_lock') { if (e._lock) o._lock = true; }
@@ -1401,7 +1408,7 @@ function tidyPreset(p) {
   });
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
-  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE } };
+  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, engines } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
 let presets = [];
@@ -1411,7 +1418,7 @@ function storePresets() { try { localStorage.setItem(PRESET_STORE, JSON.stringif
 const storeOr = (said) => { if (!storePresets()) said += ' · <em>the browser would not keep it</em> (storage full or blocked): EXPORT writes a file'; detail(said); };
 // the patch as a preset keeps it: the keys by their place in the layout
 const shiftKeys = (ks, by) => ks.map((k) => Object.fromEntries(Object.entries(k || {}).map(([n, e]) => [Number(n) + by, structuredClone(e)])));
-const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE });
+const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE, engines: S.engines });
 // the same patch, whatever order its parts were written in
 const canon = (x) => (Array.isArray(x) ? '[' + x.map(canon).join() + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => k + ':' + canon(x[k])).join() + '}' : JSON.stringify(x));
 const presetSaved = () => presets.find((p) => p.id === S.preset.id);
@@ -1425,6 +1432,8 @@ function applyFx(fx) {
 function applyPatch(d) {
   d.values.forEach((x, p) => { if (p < ALL_PARAMS) setValue(p, x, { quiet: true }); });
   S.keyEdits = shiftKeys(d.keys, S.zoneStart);
+  while (S.keyEdits.length < SOUNDS.length) S.keyEdits.push({});
+  showEngines(clamp(d.engines || DEFAULT_ENGINES, 1, MAX_ENGINES)); // a patch keeps its ENGINES (older ones had 3)
   for (const k in homes) delete homes[k];
   applyFx(d.fx);
 }
@@ -1533,13 +1542,15 @@ drawPreset();
 window.afx.presets = { list: () => presets, now: () => S.preset, dirty: presetDirty, import: importPresets, name: newName };
 
 // with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
-SOUNDS.forEach((_, i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
+onSounds().forEach((i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
 buildStrip();
-select(clamp(S.sel, 0, SOUNDS.length - 1));
+select(clamp(S.sel, 0, S.engines - 1));
 // the layout: three zones up from the lowest key, moved by octaves with LOW KEY (the keys' edits move with them)
 function drawZones() {
   const zoneText = (s) => `${s.name} ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`;
-  $('zones').textContent = 'MIDI CH 1 · C3 = #60'; $('zones').title = SOUNDS.map(zoneText).join(' · ');
+  $('zones').textContent = 'MIDI CH 1 · C3 = #60'; $('zones').title = onSounds().map((i) => zoneText(SOUNDS[i], i)).join(' · ');
+  soundBtns.forEach((b, i) => { b.hidden = !engineOn(i); b.title = `${SOUNDS[i].name}: keys ${noteName(SOUNDS[i].zone.lo)} to ${noteName(SOUNDS[i].zone.hi)} on MIDI channel 1 (key ${i + 1})`; });
+  $('engines').textContent = S.engines; $('eng-down').disabled = S.engines <= 1; $('eng-up').disabled = S.engines >= MAX_ENGINES;
   $('low-key').textContent = `${noteName(S.zoneStart)} #${S.zoneStart}`;
   soundBtns.forEach((b, i) => { b.querySelector('.ch').textContent = `${noteName(SOUNDS[i].zone.lo)}-${noteName(SOUNDS[i].zone.hi)}`; });
   $('low-down').disabled = S.zoneStart - 12 < 0; $('low-up').disabled = S.zoneStart + 12 + 24 > 127;
@@ -1566,10 +1577,32 @@ function moveZones(by) {
   save(); buildStrip(); drawZones(); drawSide(); drawFaders(); drawEditKey();
   detail(`lowest key <em>${noteName(to)} #${to}</em>`);
 }
+// ENGINES: how many mono engines share the 25 keys, 1 to 6, each on an even zone side by side (Johnny, 2026-11-17).
+// Every key that changes engine starts with a new kit sound of its engine; keys that stay keep theirs (UNDO takes it back)
+// switch to n engines as they are (a patch or UNDO brings its own keys)
+function showEngines(n) {
+  if (n === S.engines) return;
+  allOff(); S.engines = n; setEngines(n); send({ type: 'engines', n });
+  if (S.sel >= n) S.sel = n - 1;
+  for (const i of onSounds()) { const z = SOUNDS[i].zone; editKey[i] = clamp(editKey[i], z.lo, z.hi); lastMorph[i] = null; }
+  buildStrip(); buildPads(); drawZones(); select(S.sel); fitScreen();
+}
+function setEngineCount(n) {
+  n = clamp(n, 1, MAX_ENGINES); if (n === S.engines) return;
+  snapshot(`ENGINES ${S.engines} → ${n}`);
+  showEngines(n);
+  // a key that left an engine's zone leaves its sound behind (UNDO brings it back), and a key new to one gets a kit sound
+  S.keyEdits.forEach((ks, i) => { const z = SOUNDS[i].zone; for (const k in ks) if (!(k >= z.lo && k <= z.hi)) delete ks[k]; });
+  for (const i of onSounds()) scatter(i, true);
+  save(); drawKeymap(); drawFaders(); drawSide(); drawEditKey();
+  detail(`ENGINES <em>${n}</em>: ${onSounds().map((i) => `${SOUNDS[i].name} ${noteName(SOUNDS[i].zone.lo)}-${noteName(SOUNDS[i].zone.hi)}`).join(' · ')}`);
+}
+$('eng-down').addEventListener('click', () => setEngineCount(S.engines - 1));
+$('eng-up').addEventListener('click', () => setEngineCount(S.engines + 1));
 $('low-down').addEventListener('click', () => moveZones(-12));
 $('low-up').addEventListener('click', () => moveZones(12));
 drawZones();
-$('start-text').textContent = `MIDI channel 1: ${SOUNDS.map((s) => `${s.name.toLowerCase()} on ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`).join(', ')}, all three at once. `
+$('start-text').textContent = `MIDI channel 1: ${onSounds().map((i) => SOUNDS[i]).map((s) => `${s.name.toLowerCase()} on ${noteName(s.zone.lo)}-${noteName(s.zone.hi)}`).join(', ')}, ${S.engines === 1 ? 'one engine' : 'all at once'}. `
   + 'Every key has its own sound: play one and the screen shows it, ready to edit.';
 if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots
 
@@ -1584,7 +1617,10 @@ const asked = new URLSearchParams(location.search);
 const wantPhone = () => (asked.has('desktop') ? false : asked.has('phone') || ((Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700) && innerHeight > innerWidth));
 let phoneOn = false;
 const pads = [];
+function buildPads() {
+$('pv-pads').innerHTML = ''; pads.length = 0;
 SOUNDS.forEach((s, i) => {
+  if (!engineOn(i)) return;
   for (let j = 0; j <= s.zone.hi - s.zone.lo; j++) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pad e' + i;
     b.innerHTML = `<b></b><span>${s.name}</span><svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>`;
@@ -1600,6 +1636,8 @@ SOUNDS.forEach((s, i) => {
     $('pv-pads').append(b); pads.push({ b, i, j });
   }
 });
+}
+buildPads();
 // a send of the pad pressed last: the bar follows the finger
 const sendBars = [['pv-echo', 0, 'ECHO'], ['pv-reverb', 1, 'REVERB']].map(([id, k, name]) => {
   const el = $(id), track = el.querySelector('.track'), fill = track.querySelector('i'), out = el.querySelector('output'), par = () => sendPar(selVoice(), k);
@@ -1669,7 +1707,7 @@ const FIT_W = 1264, FIT_H = 850;
 function alignEngines() {
   const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;
   const base = row.getBoundingClientRect().left;
-  const place = (b, el) => { const r = el.getBoundingClientRect(); Object.assign(b.style, { left: `${(r.left - base) / k}px`, width: `${r.width / k}px` }); };
+  const place = (b, el) => { const r = el.getBoundingClientRect(); Object.assign(b.style, { left: `${(r.left - base) / k}px`, width: `${r.width / k}px` }); b.classList.toggle('narrow', r.width / k < 150); };
   document.querySelectorAll('#keystrip .kgroup').forEach((g, i) => place(soundBtns[i], g));
   const tag = row.querySelector('.tag'); tag.style.left = `${parseFloat(soundBtns[0].style.left) - tag.offsetWidth - 12}px`;
 }

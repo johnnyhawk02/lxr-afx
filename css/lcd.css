@@ -594,3 +594,12 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 @media (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
 .faders .sect.off > .row { opacity: .42; }
 .faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */
+
+/* ENGINES 4 to 6: the second drum, snare and metal, shaded like the first */
+.pad.e3 { background: rgba(23, 32, 14, .2); }
+.pad.e4 { background: rgba(23, 32, 14, .09); }
+.sounds .snd[hidden] { display: none; }
+/* a narrow engine button (5 or 6 engines): the name only, the LED above it */
+.sounds .snd.narrow { padding: 12px 2px 0; font-size: 17px; letter-spacing: 0; white-space: nowrap; }
+.sounds .snd.narrow .ch { display: none; }
+.sounds .snd.narrow i { left: 50%; top: 4px; margin: 0 0 0 -4px; width: 7px; height: 7px; border-width: 1.5px; }

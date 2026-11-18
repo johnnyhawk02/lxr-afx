@@ -6,12 +6,13 @@
 // BS.1770 (a high-pass that takes out the sub rumble the ear hardly counts, and a shelf that lifts the presence
 // range it counts most), in dB below digital full scale. The correction is kept on the key as its TRIM (trimPar in
 // schema.js), a gain of its own that the instrument applies to the voice: the LEVEL knob stays yours.
-import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js?v=mwle0w5j';
-import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB } from './schema.js?v=mwle0w5j';
+import { LxrEngine, REAL_FS, BLOCK } from '../engine/lxr.js?v=mwle5uqd';
+import { SOUNDS, NUM_PARAMS, PAR, TRIM_ZERO, TRIM_STEP_DB, EXTRA_BASE, EXTRA_LIVE, NUM_EXTRAS, INIT_VALUES, voiceOwned } from './schema.js?v=mwle5uqd';
 
 // each engine's target: the middle (median) loudness of all its sounds in the built-in kits, so a typical kit sound
 // plays as it always did and the drums, snares and metals keep the balance the kits were made with
-export const LEVEL_TARGET_DB = [-17.0, -11.5, -16.0]; // drum, snare, metal (measured by tools/levels.mjs)
+// (the drum's was -17 until 2026-11-17, measured while a kit load left its filter drive at a stray value: see measure)
+export const LEVEL_TARGET_DB = [-11.5, -11.5, -15.5, -11.5, -11.5, -15.5]; // drum, snare, metal (measured by tools/levels.mjs), then DRUM 2, SNARE 2, METAL 2
 // a hit is played for 0.4 s; a sound still swelling then (a slow attack) is followed until it stops, 1.5 s at most
 const MAX_BOOST_DB = 12, MAX_CUT_DB = 16, WINDOW = Math.round(0.1 * REAL_FS / BLOCK), BLOCKS = Math.round(0.4 * REAL_FS / BLOCK),
   MAX_BLOCKS = Math.round(1.5 * REAL_FS / BLOCK);
@@ -45,6 +46,14 @@ export function measure(sound, kit, vals, note = 60) {
   values[PAR.VOL1 + v] = 127; // the sound itself, whatever its LEVEL
   const e = new LxrEngine();
   e.loadKit(values);
+  // the voice's own parameters sent again, as the page sends them with every note (a kit load can leave the drum's
+  // filter drive where a stray NRPN put it, the firmware's way: measured like that, a driven drum read too quiet)
+  for (const p of voiceOwned(v)) if (p < NUM_PARAMS) e.setParam(p, values[p]);
+  // the voice's extras (the merged voice's controls its firmware voice lacks, and its kind): the key's, else the kit's
+  const ex = new Map(); for (const [p, x] of vals) if (p >= EXTRA_BASE) ex.set(p, x);
+  for (const p of EXTRA_LIVE) if (Math.floor((p - EXTRA_BASE) / NUM_EXTRAS) === v) {
+    e.setExtra(v, (p - EXTRA_BASE) % NUM_EXTRAS, ex.has(p) ? ex.get(p) : p < kit.length ? kit[p] : INIT_VALUES[p]);
+  }
   e.trigger(def.trigger, 100, note);
   const k = kWeight(), energy = new Float64Array(MAX_BLOCKS);
   let peak = 0, win = 0, best = 0, b = 0;

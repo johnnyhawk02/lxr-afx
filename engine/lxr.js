@@ -1341,6 +1341,10 @@ export class FxBus {
 // ---------------------------------------------------------------------------------------
 // The engine
 // ---------------------------------------------------------------------------------------
+// A kit's bytes for the MIDI NRPN controls: sent like the sound's parameters, the data entry byte went through the
+// NRPN handler to whatever NRPN was last chosen (at load: number 0, drum 1's filter drive), so loading a kit left drum
+// 1's filter drive at a stray value. A kit load skips them (not in the firmware port before 2026-11-17)
+const NRPN_PARS = new Set([PAR.NRPN_DATA_ENTRY_COARSE, PAR.NRPN_FINE, PAR.NRPN_COARSE].filter((p) => p !== undefined));
 export class LxrEngine {
   constructor({ seed } = {}) {
     this.rng = new Rng(seed);
@@ -1370,6 +1374,7 @@ export class LxrEngine {
     this.fx = new FxBus(); // FxBus_init()
     this.fxOut = new Int16Array(BLOCK * 2);
     this.xmod = null; // crossfeed matrix, see setCrossMod(); null = the firmware's signal path
+    this.only = null; // the voices in use (renderBlock); null = all six
   }
 
   /**
@@ -1454,6 +1459,7 @@ export class LxrEngine {
     }
     for (let i = 0; i < PAR.END_OF_SOUND_PARAMETERS; i++) {
       const p = PARAMETER_ORDER[i];
+      if (NRPN_PARS.has(p)) continue; // (not in the firmware: see NRPN_PARS)
       this.setParam(p, this.activeParameters[p]);
     }
   }
@@ -1711,10 +1717,13 @@ export class LxrEngine {
       SVF_recalcFreq(v.filter); this._async(v); this._sync(only, b); this._decimate(only, b);
       return o;
     }
+    // only (not in the firmware): the voices in use, a list of six flags (null: all six, as the firmware runs them); a
+    // voice not in use makes silence and costs nothing (its LFO still runs)
+    const on = this.only;
     for (const v of V) SVF_recalcFreq(v.filter);
     if (this.xmod) this._xmodBefore();
-    for (const v of V) this._async(v);
-    for (let n = 0; n < 6; n++) { this._sync(n, o[n]); this._decimate(n, o[n]); }
+    for (let n = 0; n < 6; n++) if (!on || on[n]) this._async(V[n]);
+    for (let n = 0; n < 6; n++) { if (on && !on[n]) { o[n].fill(0); continue; } this._sync(n, o[n]); this._decimate(n, o[n]); }
     if (this.xmod) this._xmodAfter();
     return o;
   }

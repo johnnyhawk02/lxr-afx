@@ -9,9 +9,9 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwle0w5j';
-import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE } from './schema.js?v=mwle0w5j';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwle0w5j';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwle5uqd';
+import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines } from './schema.js?v=mwle5uqd';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwle5uqd';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -76,6 +76,13 @@ export class LxrInstrument {
     this.m = { ...FX_DEFAULTS.master }; this.env = 0; this.gr = 0;
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
+  }
+  /** ENGINES: how many engines are in use (1..6); only their voices are made */
+  setEngines(n) {
+    setEngines(n);
+    const on = [0, 0, 0, 0, 0, 0];
+    SOUNDS.forEach((s, i) => { if (i < n) on[s.engineVoice] = 1; else { this.held[i] = null; this.backs[i] = null; } });
+    this.e.only = on;
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
