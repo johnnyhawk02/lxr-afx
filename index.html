@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwlfqpjr">
+<link rel="stylesheet" href="css/lcd.css?v=mwlrkddp">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -86,6 +86,11 @@
         <div class="randrow">
           <button class="btn" id="init-patch" title="A new patch: every key of all zones gets a fresh kit sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
           <span class="dim note" id="init-info"></span>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a kit sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
+          <button class="btn" id="morph-ends" title="Two different kit sounds on the lowest and highest keys, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
+          <span class="dim cap">LOWEST KEY TO<br>HIGHEST, STEP BY STEP</span>
         </div>
         <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
         <div class="randrow srcrow">
@@ -198,6 +203,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwlfqpjr"></script>
+<script type="module" src="app/main.js?v=mwlrkddp"></script>
 </body>
 </html>
