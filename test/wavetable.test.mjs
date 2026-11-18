@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { LxrInstrument } from '../sound/instrument.js';
 import { SOUNDS, INIT_VALUES, ALL_PARAMS, tablePar, ukeyPar, modOf, extraPar, VOICE_SCHEMAS } from '../sound/schema.js';
-import { TABLE_NAMES, tableFor } from '../sound/tables.js';
+import { TABLE_NAMES, tableFor, classicOnBasic, BASIC, waveShape, frameStep, WAVE_TOP } from '../sound/tables.js';
 import { BUCKET } from '../sound/bucket-sounds.js';
 import { toVoice, fromVoice, tidy } from '../sound/bucket.js';
 import { measure } from '../sound/level.js';
@@ -95,5 +95,30 @@ for (let v = 0; v < 6; v++) {
   const kit = Float64Array.from(INIT_VALUES.subarray(0, ALL_PARAMS)), vals = new Map(toVoice(drum, 0));
   const a = measure(0, kit, vals), b = measure(0, kit, new Map([...vals, [tablePar(0), 6]]));
   ok(Number.isFinite(b.db) && b.db !== a.db, `AUTO LEVEL hears the table (${a.db.toFixed(1)} / ${b.db.toFixed(1)} dB)`);
+}
+
+// TOOLS > ALL KEYS TO WAVETABLE: each classic wave's place on BASIC (frames sine 0, tri 10, saw 20, square 30, pulse to
+// 40), noise has none
+{
+  const at = (w, pwm = 0) => classicOnBasic(w, pwm), fr = (k) => Math.round(k / 40 * WAVE_TOP * 100) / 100;
+  assert.equal(TABLE_NAMES[BASIC], 'basic'); n++;
+  assert.equal(at(0), fr(0)); assert.equal(at(25), fr(10)); assert.equal(at(50), fr(20)); assert.equal(at(75), fr(30)); n += 4;
+  assert.equal(at(12.5), fr(5)); n++; // (a blend of sine and triangle: halfway between their frames)
+  ok(at(100, 127) === fr(30) && at(100, 0) === fr(40) && at(100, 60) > fr(30) && at(100, 60) < fr(40), 'the PWM wave lands on the narrowing pulses: square at full PWM, narrower with less');
+  ok(at(WAVE_TOP) === null && at(WAVE_TOP - 10) === null, 'noise has no place on BASIC');
+  // moved over, a plain sine plays as it did (the tables are read a quarter cycle behind, in the firmware's phase)
+  const snd = { voice: 0, params: { coarse: 69, fine: 64, wave: 0, decay: 120, attack: 0, nmix: 0, again: 0, clickvol: 0, pamt: 0, cutoff: 127, ftype: 0, level: 127 } };
+  const s = tidy({ name: 'TONE', type: 'drum 1', ...snd }) || snd;
+  const a = play(s, 0, 0, 0).out, b = play(s, 0, BASIC, at(0)).out;
+  let e = 0, d = 0; for (let i = 0; i < a.length; i++) { e += a[i] * a[i]; d += (a[i] - b[i]) ** 2; }
+  ok(Math.sqrt(d / e) < 0.03, `a sine moved onto BASIC sounds the same (${(100 * Math.sqrt(d / e)).toFixed(1)}% apart)`);
+}
+
+// the picture in the OSC heading: one cycle, -1..1, the classic sine and BASIC's first frame the same shape
+{
+  const c = waveShape(0, 0), t = waveShape(BASIC, 0);
+  ok(c.length === 96 && c.every((x) => Math.abs(x) <= 1.01), 'the picture is one cycle within -1..1');
+  ok(c.every((x, i) => Math.abs(x - t[i]) < 0.02), 'CLASSIC sine and BASIC sine draw alike');
+  ok(frameStep(0) === 0 && Math.abs(frameStep(BASIC) - WAVE_TOP / 40) < 1e-9, 'neighbour frames: none on CLASSIC, one frame apart on BASIC');
 }
 console.log(`wavetable: ${n} checks pass`);

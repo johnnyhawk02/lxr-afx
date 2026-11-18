@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwmo73go';
+import { read as readTable } from './wavetables.js?v=mwmp8s9g';
 
 export { PAR, CC, CC2 };
 
@@ -301,13 +301,24 @@ function calcBlendBlock(osc, mod, buf, size, gain, pwm, rng) {
 // between frames by the WAVE knob. FM from mod A / B moves the read point as it does in the firmware's tables
 // ---------------------------------------------------------------------------------------
 const PHASE_ONE = 4294967296;
+// BASIC's first frames run from the sine to the triangle, as the CLASSIC dial does: there the FM is as deep as on the
+// firmware's sine (a quarter of its tables' depth), deepening to the tables' by the triangle, so a classic sound moved
+// onto BASIC (TOOLS) keeps its FM
+const BASIC_ID = 'builtin:basic';
+// the firmware's sine and triangle start a quarter cycle earlier than METAMORF's frames (at their low point), so the
+// tables are read a quarter behind: a sound moved onto BASIC starts and runs in the same phase
+const LAG = PHASE_ONE * 3 / 4;
 function calcWtBlock(osc, mod, buf, size, gain) {
   const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767);
+  const sine = mod && t.id === BASIC_ID ? Math.max(0, 1 - pos * (t.frames - 1) / 10) : 0; // (how much of the sine's FM depth)
   for (let i = 0; i < size; i++) {
     const phase = osc.phase;
-    let p = pm ? (phase + pm[i]) >>> 0 : phase;
-    if (mod) p = (p + ((toU32(f(mod[i] * osc.fmMod)) << 19) >>> 0)) >>> 0;
-    const out = readTable(t, pos, p / PHASE_ONE, hz, REAL_FS);
+    let p = ((pm ? phase + pm[i] : phase) + LAG) >>> 0, out;
+    if (mod) {
+      const m = toU32(f(mod[i] * osc.fmMod)), pT = (p + ((m << 19) >>> 0)) >>> 0;
+      out = readTable(t, pos, pT / PHASE_ONE, hz, REAL_FS);
+      if (sine > 0) { const pS = (p + ((m << 17) >>> 0)) >>> 0, s = readTable(t, pos, pS / PHASE_ONE, hz, REAL_FS); out = s + (out - s) * (1 - sine); }
+    } else out = readTable(t, pos, p / PHASE_ONE, hz, REAL_FS);
     osc.phase = (phase + osc.phaseInc) >>> 0;
     osc.output = out * 32767;
     buf[i] = toI16(f(out * g));
@@ -962,7 +973,7 @@ function updatePan(v) {
 // oscillator start phase on trigger; "offset" transient mode (1) starts it later in the cycle
 // (between two waves, the nearer one's start)
 function resetPhase(osc, offset, sineStart) {
-  if (osc.wtab) { osc.phase = 0; return; } // (a wavetable starts its cycle at the start)
+  if (osc.wtab) { osc.phase = toU32(f((0xff << 22) * offset)); return; } // (a wavetable starts where the firmware's tables do: a quarter cycle in)
   const w = osc.wB >= 0 && osc.wt >= 0.5 ? osc.wB : osc.waveform;
   if (w === SINE) osc.phase = toU32(sineStart(offset));
   else if (w > SINE && w <= REC) osc.phase = toU32(f((0xff << 22) * offset));
