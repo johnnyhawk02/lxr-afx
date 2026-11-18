@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwmri8vp';
+import { read as readTable } from './wavetables.js?v=mwmrwisq';
 
 export { PAR, CC, CC2 };
 
@@ -1467,6 +1467,9 @@ export class LxrEngine {
     [this.snare, this.cymbal, this.hat] = this.voices.slice(3);
     // (not in the firmware) each voice's tone WAVE parameter and its oscillator, for the wavetables (setTable)
     this.toneWave = new Map([PAR.OSC_WAVE_DRUM1, PAR.OSC_WAVE_DRUM2, PAR.OSC_WAVE_DRUM3, PAR.OSC_WAVE_SNARE, PAR.WAVE1_CYM, PAR.WAVE1_HH].map((p, n) => [p, this.voices[n].osc]));
+    // (and the firmware's MOD A / MOD B wave parameters: they move along a table too)
+    [['MOD_WAVE_DRUM1', 0, 'modOsc'], ['MOD_WAVE_DRUM2', 1, 'modOsc'], ['MOD_WAVE_DRUM3', 2, 'modOsc'], ['WAVE2_CYM', 4, 'modOsc'], ['WAVE3_CYM', 4, 'modOsc2'],
+      ['WAVE2_HH', 5, 'modOsc'], ['WAVE3_HH', 5, 'modOsc2']].forEach(([p, n, o]) => this.toneWave.set(PAR[p], this.voices[n][o]));
     this.lfos = this.voices.map((v) => v.lfo);
     this.out = Array.from({ length: 6 }, () => new Int16Array(BLOCK));
     this._bA = new Int16Array(BLOCK); // mod A (with mod B summed in)
@@ -1573,8 +1576,8 @@ export class LxrEngine {
    * A voice's wavetable (not in the firmware): a table made by wavetables.js, or null for the firmware's waves. With a
    * table the tone's WAVE knob moves along it (0 its first frame, WAVE_MAX its last), smoothly, modulated too.
    */
-  setTable(n, t) {
-    const osc = this.voices[n].osc;
+  setTable(n, t, which = 0) { // (which: 0 the tone, 1 MOD A, 2 MOD B)
+    const v = this.voices[n], osc = which === 2 ? v.modOsc2 : which === 1 ? v.modOsc : v.osc;
     if (osc.wtab === (t || null)) return;
     osc.wtab = t || null;
     osc_setPos(osc, osc.wraw);

@@ -138,4 +138,20 @@ for (let v = 0; v < 6; v++) {
   ok(Math.abs(zc(a) - zc(b)) <= 0.2 * zc(a) + 4 && rms(b) > 0.5 * rms(a) && rms(b) < 2 * rms(a), `NOISE plays like the classic noise (${zc(a)} / ${zc(b)} crossings, ${rms(a).toFixed(0)} / ${rms(b).toFixed(0)} rms)`);
   for (const [tab, pos] of [[NOISE, 0], [NOISE, 90], [NOISE, 125], [NOISE + 1, 0], [NOISE + 1, 125]]) { const o = play(snd, snd.voice, tab, pos, { blocks: 40 }).out; ok(o.every(Number.isFinite) && rms(o) > 0, `${TABLE_NAMES[tab]} at ${pos} sounds`); }
 }
+
+// MOD A and MOD B: a table each (tablePar(v, 1 / 2)), their WAVE knobs moving along it; CLASSIC as they come
+{
+  const fm = BUCKET.find((s) => s.params.again > 40 && s.params.bgain > 40), v = fm.voice;
+  const run = (setup) => play(fm, v, fm.params.table, undefined, { blocks: 60, setup }).out;
+  const plain = run(), a = run((inst) => { inst.setParam(tablePar(v, 1), 7); inst.setParam(ukeyPar(v, 'awave'), 80); }), b = run((inst) => { inst.setParam(tablePar(v, 2), NOISE); });
+  ok(tablePar(0, 1) === tablePar(5) + 1 && tablePar(5, 2) === ALL_PARAMS - 1, 'MOD A and B tables come after the tones\' (older saves line up)');
+  ok(!same(plain, a) && a.every(Number.isFinite), `MOD A on a table changes the FM (${fm.name})`);
+  ok(!same(plain, b) && b.every(Number.isFinite), 'MOD B on a table changes it too');
+  ok(same(plain, run((inst) => inst.setParam(tablePar(v, 1), 0))), 'MOD A back on CLASSIC plays as before');
+  const sch = VOICE_SCHEMAS[v].filter((e) => e.table).map((e) => e.ukey);
+  assert.deepEqual(sch, ['table', 'atable', 'btable']); n++;
+  const vals = new Map(toVoice(fm, v)); vals.set(tablePar(v, 1), 9); vals.set(tablePar(v, 2), 3);
+  const s2 = fromVoice(vals, v, { name: 'T', type: fm.type });
+  ok(s2.params.atable === 9 && s2.params.btable === 3 && new Map(toVoice(s2, 0)).get(tablePar(0, 1)) === 9, 'the bucket keeps MOD A and B tables, on any voice');
+}
 console.log(`wavetable: ${n} checks pass`);
