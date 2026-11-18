@@ -2,15 +2,15 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlfifiz';
-import { presetName } from './names.js?v=mwlfifiz';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlfifiz';
-import { MAKERS, recipe, recipesFor } from '../sound/makers.js?v=mwlfifiz';
-import { breed, isDud } from '../sound/breed.js?v=mwlfifiz';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlfifiz';
-import { KIT_FILES } from '../sound/kits.js?v=mwlfifiz';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlfifiz';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlfifiz';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlfqpjr';
+import { presetName } from './names.js?v=mwlfqpjr';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlfqpjr';
+import { MAKERS, recipe, recipesFor } from '../sound/makers.js?v=mwlfqpjr';
+import { breed, isDud } from '../sound/breed.js?v=mwlfqpjr';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlfqpjr';
+import { KIT_FILES } from '../sound/kits.js?v=mwlfqpjr';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlfqpjr';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlfqpjr';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -88,7 +88,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlfifiz', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlfqpjr', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -735,7 +735,7 @@ function buildDirt() {
     hbtn('on', ['OFF', 'ON'], '', 'Switch the master distortion in or out'));
   const env = document.createElement('div'); env.className = 'envm';
   env.innerHTML = `<output></output><div class="segs">${'<i></i>'.repeat(12)}</div><span class="lab">env</span>`;
-  const side = sect(6, [[sw('src', 'source', ['MIX', 'DRUM', 'SNARE', 'METAL'], 'What the sidechain listens to: the whole mix, or one engine on its own'),
+  const side = sect(6, [[sw('src', 'source', ['MIX', 'ENG 1', 'ENG 2', 'ENG 3'], 'What the sidechain listens to: the whole mix, or one engine on its own'),
     sw('scfilt', 'filter', ['LP', 'BP', 'HP'], "The sidechain's filter: low-pass, band-pass or high-pass at FREQ"),
     knob('freq', 'freq', 127, (v) => hz(scHz(v))), knob('sens', 'sens', 127), knob('decay', 'decay', 127, (v) => { const ms = decayMs(v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }), env]]);
   const h = side.querySelector('h3');

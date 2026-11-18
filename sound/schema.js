@@ -21,7 +21,7 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwlfifiz';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwlfqpjr';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
@@ -47,12 +47,12 @@ function zonesFrom(start) {
 // the randomiser draws from; level: its AUTO LEVEL target's type (sound/level.js LEVEL_TARGET_DB). The first three are
 // the drum, snare and metal they always were (saved keys hold their voices' parameters); then a second of each
 export const SOUNDS = [
-  { id: 'drum', name: 'DRUM', engineVoice: 0, trigger: 0, sources: [0, 1, 2], type: 0 },
-  { id: 'snare', name: 'SNARE', engineVoice: 3, trigger: 3, sources: [3], type: 1 },
-  { id: 'metal', name: 'METAL', engineVoice: 4, trigger: 4, sources: [4, 5], type: 2 },
-  { id: 'drum2', name: 'DRUM 2', engineVoice: 1, trigger: 1, sources: [0, 1, 2], type: 0 },
-  { id: 'snare2', name: 'SNARE 2', engineVoice: 2, trigger: 2, sources: [3], type: 1 },
-  { id: 'metal2', name: 'METAL 2', engineVoice: 5, trigger: 5, sources: [4, 5], type: 2 },
+  { id: 'drum', name: 'ENGINE 1', engineVoice: 0, trigger: 0, sources: [0, 1, 2], type: 0 },
+  { id: 'snare', name: 'ENGINE 2', engineVoice: 3, trigger: 3, sources: [3], type: 1 },
+  { id: 'metal', name: 'ENGINE 3', engineVoice: 4, trigger: 4, sources: [4, 5], type: 2 },
+  { id: 'drum2', name: 'ENGINE 4', engineVoice: 1, trigger: 1, sources: [0, 1, 2], type: 0 },
+  { id: 'snare2', name: 'ENGINE 5', engineVoice: 2, trigger: 2, sources: [3], type: 1 },
+  { id: 'metal2', name: 'ENGINE 6', engineVoice: 5, trigger: 5, sources: [4, 5], type: 2 },
 ];
 zonesFrom(DEFAULT_ZONE_START).forEach((z, i) => { SOUNDS[i].zone = z; });
 // move every zone so the lowest starts on start (a MIDI note)

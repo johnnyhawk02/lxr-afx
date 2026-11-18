@@ -136,7 +136,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const k0 = await at(); await p.keyboard.press(']'); await p.waitForTimeout(250); const k1 = await at();
     await p.keyboard.press('ArrowRight'); await p.waitForTimeout(250); const k2 = await at();
     await p.keyboard.press('['); await p.waitForTimeout(150); await p.keyboard.press('['); await p.waitForTimeout(250); const k3 = await at();
-    if (k0 !== 'DRUM #55' || k1 !== 'SNARE #56' || k2 !== 'SNARE #57' || k3 !== 'DRUM #55') { errors++; console.log('key steps:', k0, k1, k2, k3); }
+    if (k0 !== 'ENGINE 1 #55' || k1 !== 'ENGINE 2 #56' || k2 !== 'ENGINE 2 #57' || k3 !== 'ENGINE 1 #55') { errors++; console.log('key steps:', k0, k1, k2, k3); }
   }
   // LOCK KEY: a locked key keeps its sound through SCATTER, RE-ROLL and a base edit
   { const k = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).keyEdits[0]['51']);
@@ -454,7 +454,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
       shown: [...document.querySelectorAll('.top, .main, .keyhead, #faders')].filter((e) => e.offsetParent !== null).length, start: getComputedStyle(document.getElementById('start-phone')).display !== 'none' && !document.getElementById('start').hidden,
       labels: [pads[0], pads[8], pads[24]].map((e) => e.textContent) }; });
   if (!lay.phone || lay.pads !== 25 || lay.xs.length !== 5 || lay.small || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.inner[0] !== w || lay.out.length || lay.offGrid.length || lay.shown || !lay.start
-    || J(lay.labels) !== J(['C2DRUM', 'G#2SNARE', 'C4METAL'])) bad('layout', lay);
+    || J(lay.labels) !== J(['C2ENGINE 1', 'G#2ENGINE 2', 'C4ENGINE 3'])) bad('layout', lay);
   await p.tap('#start-btn'); await p.waitForTimeout(500);
   const mid = async (sel, n = 0, fx = 0.5) => { const r = await p.locator(sel).nth(n).boundingBox(); return { x: r.x + r.width * fx, y: r.y + r.height / 2 }; };
   const st = () => p.evaluate(() => { const sel = document.querySelector('.pad.sel'), i = [...document.querySelectorAll('.pad')].indexOf(sel), s = i < 8 ? 0 : i < 16 ? 1 : 2, note = 48 + i, ed = afx.keyEdits()[s][note] || {}, m = new Map(afx.patch(s, note)), v = afx.sounds[s].engineVoice;
@@ -463,7 +463,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
       down: document.querySelectorAll('.pad.down').length, name: document.getElementById('pv-name').textContent, big: document.getElementById('kh-note').textContent, dice: document.getElementById('pv-dice').disabled, lockBtn: document.getElementById('pv-lock').textContent }; });
   // a tap plays and picks the pad
   const at9 = await mid('.pad', 9); await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250); const a = await st();
-  if (a.i !== 9 || a.key !== 'A2' || a.big !== 'A2' || !/^SNARE · /.test(a.what) || a.down !== 0 || !/SNARE/.test(await p.textContent('#last-text'))) bad('a tap', a, await p.textContent('#last-text'));
+  if (a.i !== 9 || a.key !== 'A2' || a.big !== 'A2' || !/^ENGINE 2 · /.test(a.what) || a.down !== 0 || !/ENGINE 2/.test(await p.textContent('#last-text'))) bad('a tap', a, await p.textContent('#last-text'));
   // two fingers hold two pads; letting go lets both go
   const at2 = await mid('.pad', 2), at20 = await mid('.pad', 20);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at2.x, y: at2.y, id: 1 }] });
@@ -509,8 +509,8 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   // RANDOM and ALTER for the engine of the pad pressed last, and ALTER ALL
   await p.touchscreen.tap(at9.x, at9.y); await p.waitForTimeout(250);
   const m8 = await press('#pv-rand-eng'), m9 = await press('#pv-alter-eng'), m10 = await press('#pv-alter-all');
-  if (J(m8.eng) !== J(['RANDOM: SNARE KEYS', 'ALTER: SNARE KEYS', 'A NEW KIT SOUND ON EACH OF THE 8 SNARE KEYS']) || m8.kits[1] === m7.kits[1] || m8.kits[0] !== m7.kits[0] || m8.kits[2] !== m7.kits[2] || !/^SNARE: a new kit sound on every key/.test(m8.msg)
-    || !/^SNARE: every key altered/.test(m9.msg) || !/^all engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
+  if (J(m8.eng) !== J(['RANDOM: ENGINE 2 KEYS', 'ALTER: ENGINE 2 KEYS', 'A NEW KIT SOUND ON EACH OF THE 8 ENGINE 2 KEYS']) || m8.kits[1] === m7.kits[1] || m8.kits[0] !== m7.kits[0] || m8.kits[2] !== m7.kits[2] || !/^ENGINE 2: a new kit sound on every key/.test(m8.msg)
+    || !/^ENGINE 2: every key altered/.test(m9.msg) || !/^all engines: every key altered/.test(m10.msg) || J(m10.kits) !== J(m8.kits) || m10.open) bad('the menu\'s random and alter', m8.eng, m8.msg, m9.msg, m10.msg, m10.open);
   const end = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, document.documentElement.scrollHeight - innerHeight, Math.round(document.getElementById('pv-msg').getBoundingClientRect().bottom) <= innerHeight]);
   if (end[0] > 0 || end[1] > 0 || !end[2]) bad('it scrolls after use', end);
   if (w === 412) await p.screenshot({ path: `${out}/phone-${w}x${h}.png` });
