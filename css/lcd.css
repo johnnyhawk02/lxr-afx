@@ -636,3 +636,37 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .keymake .mkl { grid-row: 1 / 3; align-self: center; font-size: 13px; line-height: 1; letter-spacing: .12em; padding-right: 4px; }
 .keymake .mk { display: contents; }
 .keymake .btn { min-height: 0; height: 24px; padding: 0 4px; font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; }
+
+/* ---- SOUND BLENDER: a popup over the screen, on the same 4-column grid throughout ---- */
+.blender { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgb(var(--panel-rgb) / .55); }
+.blender[hidden] { display: none; }
+.blbox { width: 640px; max-height: calc(100% - 24px); overflow-y: auto; padding: 14px 16px 16px; background: var(--panel); border: 2px solid var(--ink);
+  border-radius: 3px; box-shadow: 6px 7px 0 rgba(11, 12, 10, .35); }
+.blbox h3 { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 8px; font-size: 18px; font-weight: 400; letter-spacing: .14em; border-top: var(--rule); padding-top: 10px; }
+.blbox h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; font-size: 22px; }
+.blbox h3 .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blbox h3 .btn { margin-left: auto; }
+.blpick { display: grid; grid-template-columns: 34px 1fr 40px 40px 72px 72px; gap: 8px; align-items: center; margin-top: 8px; }
+.blpick .bl-tag { font-weight: 400; font-size: 26px; text-align: center; }
+.blpick select { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 2px solid var(--ink); border-radius: 3px; min-height: 34px; padding: 0 6px; }
+.blpick select option, .blpick select optgroup { color: var(--ink); background: var(--panel); }
+.blpick .btn { padding: 1px 4px; min-width: 0; }
+.blbox .bars { margin-top: 14px; }
+.blbox .hb { grid-template-columns: 74px 1fr 64px; }
+.blnames { display: grid; grid-template-columns: 74px 1fr 1fr 64px; gap: 10px; font-size: 16px; letter-spacing: 1px; margin-top: 4px; }
+.blnames span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blnames span:first-child { grid-column: 2; }
+.blnames span:last-child { text-align: right; }
+.blrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; align-items: center; }
+.blrow .btn { padding: 4px 6px; min-width: 0; }
+.blrow .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+  border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
+.blrow .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.blrow .note { grid-column: span 3; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+.bllist { max-height: min(196px, 24vh); min-height: 34px; overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
+.blitem { display: grid; grid-template-columns: 1fr 40px 40px 64px; border-top: 1px solid rgb(var(--ink-rgb) / .25); }
+.blitem:first-child { border-top: 0; }
+.blitem button { font: inherit; font-size: 18px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; border-left: 1px solid rgb(var(--ink-rgb) / .25);
+  cursor: pointer; min-height: 28px; padding: 2px 10px; text-align: center; }
+.blitem .blload { border-left: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blitem button:hover { background: var(--tint); }

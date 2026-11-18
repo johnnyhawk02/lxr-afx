@@ -2,15 +2,16 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, parseSnd, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwlvh9a5';
-import { presetName } from './names.js?v=mwlvh9a5';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwlvh9a5';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwlvh9a5';
-import { breed, isDud } from '../sound/breed.js?v=mwlvh9a5';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwlvh9a5';
-import { KIT_FILES } from '../sound/kits.js?v=mwlvh9a5';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwlvh9a5';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwlvh9a5';
+  POS_RULE, valuesToPositions, editsToPositions } from '../sound/schema.js?v=mwmej0jy';
+import { presetName, jumble } from './names.js?v=mwmej0jy';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmej0jy';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmej0jy';
+import { breed, isDud } from '../sound/breed.js?v=mwmej0jy';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmej0jy';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmej0jy';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmej0jy';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmej0jy';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmej0jy';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -78,8 +79,13 @@ const save = () => {
 setEngines(S.engines); setZoneStart(S.zoneStart);
 // the engines in use, in order (the others have no keys)
 const onSounds = () => SOUNDS.map((_, i) => i).filter(engineOn);
-// (drums: each kit drum's own name, from kits/names.json)
-const kits = KIT_FILES.map((k) => ({ ...parseSnd(Uint8Array.from(atob(k.data), (c) => c.charCodeAt(0))), drums: k.drums || [] }));
+// the SOUND BUCKET (sound/bucket.js): every sound of every kit, taken out one by one, and the sounds saved in the SOUND
+// BLENDER (kept in this browser until they're added to the repo's bucket/). Every new sound is made from these
+const BLEND_STORE = 'lxr-afx-blends-v1';
+let savedSounds = [];
+try { savedSounds = (JSON.parse(localStorage.getItem(BLEND_STORE)) || []).map((s) => { const x = tidySound(s); return x && { ...x, t: Number(s.t) || 0 }; }).filter(Boolean); } catch (e) { /* none */ }
+const inRepo = new Set(BUCKET.map((s) => s.name));
+const bucket = () => [...BUCKET, ...savedSounds.filter((s) => !inRepo.has(s.name))];
 
 // ---------------------------------------------------------------------------------------------------------------
 // audio
@@ -89,7 +95,7 @@ const send = (m) => { if (node) node.port.postMessage(m); };
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwlvh9a5', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmej0jy', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); } };
   node.connect(ctx.destination);
@@ -1126,21 +1132,20 @@ function autoPress() {
   save(); drawFaders(); drawKeymap(); drawEditKey();
 }
 
-// ---- scatter: every voice of a sound's type from all the kits (every drum 1-3 for the drum, every snare, every cymbal
-// and hi-hat for the metal), the same sound only once, dealt at random one per key across the sound's zone. Each key
-// then plays its kit sound as it is (no morph), kept as that key's edits, so it can still be edited or cleared. The
-// level stays the sound's own; each key gets a pan in its range (unless pan is locked). Repeats only if a type has
-// fewer distinct sounds than the zone has keys ----
+// ---- scatter: every sound in the bucket (every kit's six voices, and the sounds saved in the SOUND BLENDER), the
+// same sound only once, dealt at random one per key across the sound's zone. Each key then plays its sound as it is
+// (no morph), kept as that key's edits, so it can still be edited or cleared. The level stays the sound's own; each key
+// gets a pan in its range (unless pan is locked). Repeats only if there are fewer sounds than the zone has keys ----
 const pools = SOUNDS.map(() => null);
 function pool(sound) {
   if (pools[sound]) return pools[sound];
   const def = SOUNDS[sound], v = def.engineVoice, skip = new Set([PAR.VOL1 + v, panPar(v)]), seen = new Set(), out = [];
-  for (const { name, kit, drums } of kits) for (const src of [0, 1, 2, 3, 4, 5]) { // (every kit voice: any engine plays any kit sound)
-    const vals = mapVoice(kit, src, v).filter(([p]) => !skip.has(p));
+  for (const snd of bucket()) { // (any engine plays any bucket sound)
+    const vals = toVoice(snd, v).filter(([p]) => !skip.has(p));
     const sig = vals.map(([p, x]) => x).join(',');
     if (seen.has(sig)) continue;
     seen.add(sig);
-    out.push({ label: `${drums[src] || name} ${['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'][src]}`, vals }); // ("NEXUNE drum 3": the type last, as RECIPES look for it)
+    out.push({ label: labelOf(snd), vals, snd }); // ("NEXUNE drum 3": the type last, as RECIPES look for it)
   }
   return (pools[sound] = out);
 }
@@ -1674,6 +1679,161 @@ S.preset = { id: typeof S.preset.id === 'string' ? S.preset.id : null, name: cle
 if (S.preset.id && !presetSaved()) S.preset.id = null; // (its preset was deleted somewhere else)
 drawPreset();
 window.afx.presets = { list: () => presets, now: () => S.preset, dirty: presetDirty, import: importPresets, name: newName };
+
+// ---------------------------------------------------------------------------------------------------------------
+// SOUND BLENDER (B, or BLENDER in the top bar): a popup that makes a new sound from two bucket sounds. Pick A and B
+// (the list, the arrows, or the dice), slide BLEND from one to the other (MORPH KEYS' rules: knobs slide, switches
+// flip halfway, a part that's off on one side fades in with the other side's settings), ALTER nudges the result by the
+// ALTER amount (the RANDOM menu's), PLAY hears it on the engine on screen, PUT ON KEY puts it on the key on screen.
+// SAVE keeps it under a made-up name: it joins the bucket at once (RANDOM, the dice and the blender all draw from it)
+// and the SAVED list. EXPORT LIST writes the saved sounds to a file; tools/add-to-bucket.mjs adds that file to the
+// repo's bucket/, so they stay a source for new sounds everywhere
+// ---------------------------------------------------------------------------------------------------------------
+const BL = { a: null, b: null, t: 50, alt: new Map(), name: '' };
+const blVoice = () => SOUNDS[S.sel].engineVoice;
+const blBucket = () => bucket();
+const blFind = (name) => blBucket().find((s) => s.name === name) || null;
+const blPick = (not) => { const all = blBucket(); let s; do s = all[Math.floor(rnd() * all.length)]; while (all.length > 1 && s === not); return s; };
+// the blend as the engine on screen plays it: a Map of parameter -> value (no LEVEL or pan: those stay the key's)
+function blendNow() {
+  const v = blVoice(), sc = VOICE_SCHEMAS[v], skip = new Set([PAR.VOL1 + v, panPar(v)]);
+  const on = (s) => new Map(toVoice(s, v).filter(([p]) => !skip.has(p)));
+  const out = blend({ schema: sc, a: on(BL.a), b: on(BL.b), t: BL.t / 100, base: S.values });
+  for (const [p, d] of BL.alt) { const e = sc.find((x) => x.par === p); if (e && out.has(p)) out.set(p, clamp(out.get(p) + d, 0, e.max)); }
+  return out;
+}
+const blFrom = () => `${BL.a.name} ${100 - BL.t}% + ${BL.b.name} ${BL.t}%${BL.alt.size ? ' altered' : ''}`;
+// the key on screen's patch with the blend over it, levelled to its engine as AUTO LEVEL would
+function blPatch(vals) {
+  const sound = S.sel, v = blVoice(), m = keyPatch(sound, editKey[sound]).vals;
+  for (const [p, x] of vals) m.set(p, x);
+  m.set(trimPar(v), autoTrim(sound, S.values, m, BASE_NOTE));
+  return m;
+}
+async function blPlay(vals = blendNow()) {
+  await startAudio();
+  send({ type: 'play', sound: S.sel, note: BASE_NOTE, vel: 100, params: [...blPatch(vals)], hold: false });
+}
+// one bucket sound on its own, on the engine on screen
+const blPlayOne = (s) => blPlay(new Map(toVoice(s, blVoice()).filter(([p]) => p !== PAR.VOL1 + blVoice() && p !== panPar(blVoice()))));
+
+// A and B: a list of every bucket sound (by type, the saved ones last), arrows, the dice and PLAY
+const blSides = {};
+for (const side of ['a', 'b']) {
+  const box = $(`bl-${side}`);
+  box.innerHTML = `<b class="bl-tag">${side.toUpperCase()}</b><select aria-label="Sound ${side.toUpperCase()}"></select>
+    <button class="btn sm" data-go="-1" title="The sound before in the list">◀</button><button class="btn sm" data-go="1" title="The next sound in the list">▶</button>
+    <button class="btn sm" data-go="dice" title="Any sound from the bucket">DICE</button><button class="btn sm" data-go="play" title="Hear ${side.toUpperCase()} on its own">PLAY</button>`;
+  const sel = box.querySelector('select');
+  blSides[side] = sel;
+  sel.addEventListener('change', () => { BL[side] = blFind(sel.value); BL.alt.clear(); drawBlender(); blPlay(); });
+  box.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]')?.dataset.go; if (!go) return;
+    if (go === 'play') { blPlayOne(BL[side]); return; }
+    const all = blBucket();
+    if (go === 'dice') BL[side] = blPick(BL[side === 'a' ? 'b' : 'a']);
+    else { const i = all.indexOf(BL[side]); BL[side] = all[(i + Number(go) + all.length) % all.length]; }
+    BL.alt.clear(); drawBlender(); blPlay();
+  });
+}
+function fillSides() {
+  const all = blBucket(), groups = new Map();
+  for (const s of all) { const g = inRepo.has(s.name) ? s.type : 'saved here'; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(s); }
+  const html = [...groups].map(([g, list]) => `<optgroup label="${g.toUpperCase()}">${list.map((s) => `<option value="${s.name}">${s.name}</option>`).join('')}</optgroup>`).join('');
+  for (const side of ['a', 'b']) blSides[side].innerHTML = html;
+}
+const blDrawBar = hbar($('bl-bars'), 'BLEND', { min: 0, max: 100, get: () => BL.t, set: (v) => { BL.t = v; drawBlendNames(); }, show: (v) => `${v}%`, dflt: 50,
+  held: (down) => { if (!down) blPlay(); } });
+function drawBlendNames() { $('bl-an').textContent = `A ${BL.a.name} ${100 - BL.t}%`; $('bl-bn').textContent = `${BL.t}% B ${BL.b.name}`; }
+function drawBlender() {
+  if (!BL.a || !blFind(BL.a.name)) BL.a = blPick();
+  if (!BL.b || !blFind(BL.b.name)) BL.b = blPick(BL.a);
+  blSides.a.value = BL.a.name; blSides.b.value = BL.b.name;
+  blDrawBar(); drawBlendNames();
+  $('bl-eng').textContent = `PLAYS ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} · ${blBucket().length} SOUNDS IN THE BUCKET`;
+  $('bl-alter').title = `Nudge the blend by the ALTER amount (${S.rand.alter}%${S.rand.wild ? ', WILD' : ''}, set in the RANDOM menu); press again to go further. A new A or B starts clean`;
+  if (!BL.name) BL.name = blNewName();
+  $('bl-name').value = BL.name;
+  drawSaved();
+}
+function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let n; do n = jumble(Math.random, 5, 8).toUpperCase(); while (taken.has(n)); return n; }
+function openBlender(open) {
+  $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
+  if (open) { openMenu(false); openPresets(false); openSettings(false); fillSides(); drawBlender(); }
+}
+$('blend-btn').addEventListener('click', () => openBlender($('blender').hidden));
+$('bl-close').addEventListener('click', () => openBlender(false));
+$('blender').addEventListener('pointerdown', (e) => { if (e.target === $('blender')) openBlender(false); });
+document.addEventListener('keydown', (e) => {
+  if ($('blender').hidden) { if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, select, textarea')) openBlender(true); return; }
+  if (e.key === 'Escape') openBlender(false);
+});
+$('bl-play').addEventListener('click', () => blPlay());
+$('bl-pair').addEventListener('click', () => { BL.a = blPick(); BL.b = blPick(BL.a); BL.alt.clear(); drawBlender(); blPlay(); });
+// ALTER: every control ALTER may move, nudged around the blend as it is now; the nudges stay as the slider moves
+$('bl-alter').addEventListener('click', () => {
+  const v = blVoice(), now = blendNow(), base = (() => { const k = new Map(BL.alt); BL.alt.clear(); const b = blendNow(); BL.alt = k; return b; })();
+  for (const e of kindSchema(v, now.get(kindPar(v)))) {
+    if (!alters(e) || !now.has(e.par) || e.ukey === 'pan') continue;
+    const x = vary(e, now.get(e.par), alterDepth(), S.rand.wild);
+    if (x !== base.get(e.par)) BL.alt.set(e.par, x - base.get(e.par)); else BL.alt.delete(e.par);
+  }
+  drawBlender(); blPlay();
+});
+// PUT ON KEY: the blend on the key on screen (UNDO takes it back)
+$('bl-key').addEventListener('click', () => {
+  const sound = S.sel, note = editKey[sound], v = blVoice();
+  if (keyLocked(sound, note)) { lockedMsg(); return; }
+  const vals = blendNow(), label = blFrom();
+  randChange(() => {
+    const now = keyPatch(sound, note).vals, ed = { _kit: label, ...Object.fromEntries(vals) };
+    ed[panPar(v)] = randPan(v); keepSends(ed, now, v); keepLocked(ed, now);
+    S.keyEdits[sound][note] = ed; levelKey(sound, note, true);
+  }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${label}</em> (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
+});
+// SAVE: into the bucket (this browser) and the SAVED list
+const blStore = () => { try { localStorage.setItem(BLEND_STORE, JSON.stringify(savedSounds)); } catch (e) { /* not kept */ } };
+const blSig = (s) => `${s.voice}|${JSON.stringify(s.params)}`;
+$('bl-roll').addEventListener('click', () => { BL.name = blNewName(); $('bl-name').value = BL.name; });
+$('bl-name').addEventListener('input', () => { BL.name = $('bl-name').value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); });
+$('bl-save').addEventListener('click', () => {
+  const name = (BL.name || '').trim() || blNewName();
+  if (blFind(name)) { detail(`<em>${name}</em> is in the bucket already: NEW NAME gives another`); return; }
+  const s = fromVoice(blendNow(), blVoice(), { name, type: (BL.t < 50 ? BL.a : BL.b).type, from: blFrom() });
+  const same = blBucket().find((x) => blSig(x) === blSig(s));
+  if (same) { detail(`this sound is in the bucket already, as <em>${same.name}</em>`); return; }
+  savedSounds.push({ ...s, t: Date.now() }); blStore(); pools.fill(null);
+  BL.name = blNewName(); fillSides(); drawBlender();
+  detail(`<em>${name}</em> saved: it's in the bucket now, and in the SAVED list for EXPORT`);
+});
+function drawSaved() {
+  const n = savedSounds.length, fresh = savedSounds.filter((s) => !inRepo.has(s.name)).length;
+  $('bl-count').textContent = n ? `${n} · ${fresh} NOT IN THE REPO YET` : 'NONE YET';
+  $('bl-list').innerHTML = savedSounds.map((s, i) => `<div class="blitem"><button class="blload" data-i="${i}" title="Play it (from ${cleanLabel(s.from)})">${s.name} <span class="dim">${s.type}${inRepo.has(s.name) ? ' · IN REPO' : ''}</span></button>
+    <button data-ab="a" data-i="${i}" title="Make it sound A">A</button><button data-ab="b" data-i="${i}" title="Make it sound B">B</button>
+    <button data-del="${i}" title="Take it out of the list (press twice)">X</button></div>`).reverse().join('');
+  $('bl-export').disabled = !n;
+}
+$('bl-list').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const s = savedSounds[Number(b.dataset.i ?? b.dataset.del)]; if (!s) return;
+  if (b.dataset.del !== undefined) {
+    if (b.textContent !== 'SURE?') { b.textContent = 'SURE?'; return; }
+    savedSounds = savedSounds.filter((x) => x !== s); blStore(); pools.fill(null); fillSides(); drawBlender();
+    detail(`<em>${s.name}</em> taken out of the saved list`); return;
+  }
+  if (b.dataset.ab) { BL[b.dataset.ab] = blFind(s.name) || s; BL.alt.clear(); drawBlender(); blPlay(); return; }
+  blPlayOne(s);
+});
+// EXPORT LIST: the saved sounds, as a file to hand over (tools/add-to-bucket.mjs adds it to bucket/)
+$('bl-export').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1)], { type: 'application/json' }));
+  a.download = `lxr-afx-new-sounds-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  detail(`exported <em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'} to ${a.download}: hand it over to add them to the bucket`);
+});
+window.afx.blender = { open: openBlender, state: BL, now: blendNow, saved: () => savedSounds, bucket: blBucket };
 
 // with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
 onSounds().forEach((i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
