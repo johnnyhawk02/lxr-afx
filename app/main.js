@@ -1450,7 +1450,7 @@ function morphKeys(types) { // types: a recipe per stop (spread evenly), or none
   if (types) at.forEach((i, j) => { if (!keyLocked(...keys[i])) dealStop(...keys[i], types[j]); }); // (a locked stop keeps its sound)
   else for (const [i, o] of [[0, N], [N, 0]]) if (!keyLocked(...keys[i]) && !S.keyEdits[keys[i][0]][keys[i][1]]) dealStop(...keys[i], null, label(keys[o]));
   // each stop as a whole kit (every parameter, by number), so mapVoice can put it on any engine's voice
-  const stop = ([s, n]) => { const m = keyPatch(s, n), kit = Uint8Array.from(S.values); for (const [p, x] of m.vals) kit[p] = x;
+  const stop = ([s, n]) => { const m = keyPatch(s, n), kit = S.values.slice(); for (const [p, x] of m.vals) kit[p] = x;
     return { kit, v: SOUNDS[s].engineVoice, st: m.semitones || 0, name: label([s, n]) || 'base', on: [] }; };
   const E = at.map((i) => stop(keys[i])), stops = new Set(at);
   const inVoice = (e, v) => (e.on[v] ||= new Map(mapVoice(e.kit, e.v, v)));
@@ -1563,11 +1563,12 @@ const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level
 const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
 const cleanLabel = (s) => String(s ?? '').replace(/[<>&\u0000-\u001f]/g, '').slice(0, 48); // (labels are shown as HTML)
 const intIn = (x, lo, hi) => clamp(Math.round(Number(x)) || 0, lo, hi);
+const numIn = (x, lo, hi) => clamp(Math.round(Number(x) * 100) / 100 || 0, lo, hi); // (a knob's value: a decimal kept to two places)
 // a preset from storage or a file, checked and tidied: only what a patch can hold gets in (null: not a preset)
 function tidyPreset(p) {
   const d = p && p.data;
   if (!d || !Array.isArray(d.values) || d.values.length < NUM_PARAMS || !Array.isArray(d.keys)) return null;
-  const values = [...INIT_VALUES]; d.values.slice(0, ALL_PARAMS).forEach((x, i) => { values[i] = intIn(x, 0, 255); });
+  const values = [...INIT_VALUES]; d.values.slice(0, ALL_PARAMS).forEach((x, i) => { values[i] = numIn(x, 0, 255); });
   const old = d.pos !== POS_RULE; // (saved while the waves, filter types and FM/MIX were menus: their menu numbers become knob positions)
   if (old) valuesToPositions(values);
   const engines = intIn(d.engines || DEFAULT_ENGINES, 1, MAX_ENGINES), sizes = zoneSizes(engines); // (older presets: 3)
@@ -1581,8 +1582,8 @@ function tidyPreset(p) {
         if (f === '_kit') o._kit = cleanLabel(e._kit);
         else if (f === '_lock') { if (e._lock) o._lock = true; }
         else if (f === '_st' || f === '_r') o[f] = Number(e[f]) || 0;
-        else if (f === '_o' && e._o && typeof e._o === 'object') { const h = {}; for (const q in e._o) if (/^\d+$/.test(q) && Number(q) < ALL_PARAMS) h[q] = intIn(e._o[q], 0, 255); if (Object.keys(h).length) o._o = h; }
-        else if (/^\d+$/.test(f) && Number(f) < ALL_PARAMS) o[f] = intIn(e[f], 0, 255);
+        else if (f === '_o' && e._o && typeof e._o === 'object') { const h = {}; for (const q in e._o) if (/^\d+$/.test(q) && Number(q) < ALL_PARAMS) h[q] = numIn(e._o[q], 0, 255); if (Object.keys(h).length) o._o = h; }
+        else if (/^\d+$/.test(f) && Number(f) < ALL_PARAMS) o[f] = numIn(e[f], 0, 255);
       }
       out[rel] = o;
     }

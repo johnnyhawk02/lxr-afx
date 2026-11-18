@@ -97,7 +97,7 @@ export const NUM_MOD = MOD_DIALS.length, MOD_BASE = EXTRA_BASE + 6 * NUM_EXTRAS,
 export const modSrcPar = (voice, i) => MOD_BASE + (voice * NUM_MOD + i) * 2;
 export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
 export const ALL_PARAMS = MOD_BASE + 6 * NUM_MOD * 2;
-export const INIT_VALUES = new Uint8Array(ALL_PARAMS);
+export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
 for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) INIT_VALUES[modAmtPar(v, i)] = MOD_AMT_ZERO;
 { const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));

@@ -40,7 +40,7 @@ function kWeight() {
  * (0..1), and held: true when it is still about as loud as it got after 1.5 s. A silent sound gives db -Infinity.
  */
 export function measure(sound, kit, vals, note = 60) {
-  const def = SOUNDS[sound], v = def.engineVoice, values = new Uint8Array(NUM_PARAMS);
+  const def = SOUNDS[sound], v = def.engineVoice, values = new Float64Array(NUM_PARAMS);
   values.set(kit.subarray ? kit.subarray(0, NUM_PARAMS) : kit.slice(0, NUM_PARAMS));
   for (const [p, x] of vals) if (p < NUM_PARAMS) values[p] = x;
   values[PAR.VOL1 + v] = 127; // the sound itself, whatever its LEVEL

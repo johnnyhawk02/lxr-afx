@@ -117,6 +117,7 @@ function makeOsc() {
   return {
     output: 0, pm: null, phaseInc: 0, phase: 0, freq: 0, waveform: 0, tableOffset: 0,
     pitchMod: 0, fmMod: 0, modNodeValue: 0, midiFreq: 0, baseNote: 0,
+    coarseFrac: 0, fineFrac: 0, // (not in the firmware) the part of a decimal coarse or fine tune past its whole number
     wB: -1, wt: 0, // between two waves (not in the firmware): the next wave on the dial (-1: none) and how far towards it
   };
 }
@@ -351,11 +352,13 @@ function calcDetune(value) {
 }
 
 function osc_recalcFreq(osc) {
-  const cent = calcDetune(osc.midiFreq & 0xff);
+  const cent = calcDetune((osc.midiFreq & 0xff) + osc.fineFrac);
   let note = (osc.midiFreq >> 8) + (osc.baseNote - SEQ_DEFAULT_NOTE);
   if (note > 127) note = 127;
   if (note < 0) note = 0;
   osc.freq = f(MIDI_NOTE_FREQ[note] * cent);
+  // (not in the firmware) a decimal coarse tune: the part past the whole note, as a fraction of a semitone up
+  if (osc.coarseFrac && note < 127) osc.freq = f(osc.freq * f(2 ** (osc.coarseFrac / 12)));
 }
 
 function osc_setBaseNote(osc, baseNote) {
@@ -363,8 +366,9 @@ function osc_setBaseNote(osc, baseNote) {
   osc_recalcFreq(osc);
 }
 
-const setCoarse = (osc, v) => { osc.midiFreq = (osc.midiFreq & 0x00ff) | ((v << 8) & 0xffff); osc_recalcFreq(osc); };
-const setFine = (osc, v) => { osc.midiFreq = (osc.midiFreq & 0xff00) | v; osc_recalcFreq(osc); };
+// (a knob's value may be a decimal: the whole number goes where the firmware keeps it, the rest in coarseFrac / fineFrac)
+const setCoarse = (osc, v) => { const w = Math.floor(v); osc.coarseFrac = v - w; osc.midiFreq = (osc.midiFreq & 0x00ff) | ((w << 8) & 0xffff); osc_recalcFreq(osc); };
+const setFine = (osc, v) => { const w = Math.floor(v); osc.fineFrac = v - w; osc.midiFreq = (osc.midiFreq & 0xff00) | w; osc_recalcFreq(osc); };
 
 // ---------------------------------------------------------------------------------------
 // Envelopes: Decay.c (pitch EG, float), SlopeEg2.c (amp EG, double), snapEg.c
@@ -860,7 +864,7 @@ export const EX = Object.fromEntries(EXTRAS.map((n, i) => [n, i]));
 // what a voice of each kind has (its firmware voice's parts) and its extras' settings as it comes
 const HAS = { drum: { A: 1, B: 0, N: 0, P: 1 }, snare: { A: 0, B: 0, N: 1, P: 1 }, cym: { A: 1, B: 1, N: 0, P: 0 }, hat: { A: 1, B: 1, N: 0, P: 0 } };
 export function extraDefaults(kind) {
-  const d = new Uint8Array(EXTRAS.length);
+  const d = new Float64Array(EXTRAS.length); // (a knob's value may be a decimal)
   d[EX.KIND] = KINDS.indexOf(kind);
   d[EX.PITCH_DECAY] = 20; d[EX.PITCH_SLOPE] = 0; d[EX.PITCH_AMOUNT] = 0;
   d[EX.A_FREQ] = 60; d[EX.A_GAIN] = 0; d[EX.A_WAVE] = 0; d[EX.A_MODE] = 0;
@@ -1406,7 +1410,7 @@ export class LxrEngine {
     this.rng = new Rng(seed);
     this.bpm = 120;
     this.faderVolume = [1, 1, 1, 1, 1, 1];
-    this.activeParameters = new Uint8Array(PAR.NUM_PARAMS);
+    this.activeParameters = new Float64Array(PAR.NUM_PARAMS); // (a knob's value may be a decimal: 0..127, or 0..255)
     this.activeNrpnNumber = 0;
     // mixer_init()
     this.decimationRate = new Float32Array(7).fill(1);
@@ -1528,7 +1532,7 @@ export class LxrEngine {
     const v = this.voices[n], flt = f(value / 127);
     switch (k) {
       case EX.KIND: { // (and the smoothing its finishing stage was made with, as makeVoice sets it for that kind)
-        v.kind = KINDS[value] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1;
+        v.kind = KINDS[Math.round(value)] || 'drum'; v.carrierGain = v.kind === 'hat' ? f(0.5) : 1;
         const d = v.kind === 'drum';
         if (!HAS[v.kind].P) v.osc.pitchMod = 1; // (no pitch envelope: the pitch as it is, as Cymbal_init() sets it)
         v.faderFilter.r = d ? 0.01 : 0.1; v.mixerVolFilter.r = d ? 0.01 : MIXER_R0; v.distortion.driveFilter.r = d ? 0.01 : DRIVE_R0;
@@ -1550,7 +1554,7 @@ export class LxrEngine {
       case EX.ROUTE_TONE: v.routeT = value ? 1 : 0; break;
       case EX.ROUTE_NOISE: v.routeN = value ? 1 : 0; break;
       case EX.ROUTE_CLICK: v.routeC = value ? 1 : 0; break;
-      case EX.REPEAT: v.oscVolEg.repeat = value; break;
+      case EX.REPEAT: v.oscVolEg.repeat = Math.round(value); break;
       default: break;
     }
   }
@@ -1878,7 +1882,10 @@ export class LxrEngine {
   ccHandler(isCC2, num, data2, isFloatModulator, v) {
     let itg, flt;
     if (isFloatModulator) { itg = toU8(f(v * 127)); flt = f(v); }
-    else { itg = data2 & 0xff; flt = f(itg / 127); }
+    else { itg = data2 & 0xff; flt = f(data2 / 127); }
+    // a knob's value as a number (not in the firmware: an edit may be a decimal; a whole number is itg). Menus, counts
+    // and switches keep itg
+    const val = isFloatModulator ? itg : data2;
     const [d0, d1, d2] = this.drums;
     const drums = this.drums, sn = this.snare, cy = this.cymbal, hh = this.hat;
     const wave = (count) => {
@@ -1888,8 +1895,8 @@ export class LxrEngine {
     };
     const pitchModAmount = (x) => { const val = f(x / 127); return f(f(val * val) * 32); };
     const filterValue = () => valueShaperF2F(flt, FILTER_SHAPER);
-    const transPitch = () => f(1 + f(f(itg / f(33.9)) - f(0.75)));
-    const pos = () => (isFloatModulator ? f(flt * 127) : itg); // a morphable switch's position (see _modPos)
+    const transPitch = () => f(1 + f(f(val / f(33.9)) - f(0.75)));
+    const pos = () => (isFloatModulator ? f(flt * 127) : data2); // a morphable switch's position (see _modPos)
     const wpos = (osc) => osc_setPos(osc, pos());
 
     if (!isCC2) {
@@ -1900,29 +1907,29 @@ export class LxrEngine {
           return;
         case CC.NRPN_FINE: this.activeNrpnNumber = (this.activeNrpnNumber & ~0x7f) | (itg & 0x7f); break;
         case CC.NRPN_COARSE: this.activeNrpnNumber = ((this.activeNrpnNumber & 0x7f) | (itg << 7)) & 0xffff; break;
-        case CC.VOL_SLOPE1: slopeEg2_setSlope(d0.oscVolEg, itg); break;
-        case CC.PITCH_SLOPE1: decayEg_setSlope(d0.oscPitchEg, itg); break;
-        case CC.VOL_SLOPE2: slopeEg2_setSlope(d1.oscVolEg, itg); break;
-        case CC.PITCH_SLOPE2: decayEg_setSlope(d1.oscPitchEg, itg); break;
-        case CC.VOL_SLOPE3: slopeEg2_setSlope(d2.oscVolEg, itg); break;
-        case CC.PITCH_SLOPE3: decayEg_setSlope(d2.oscPitchEg, itg); break;
-        case CC.PITCH_SLOPE4: decayEg_setSlope(sn.oscPitchEg, itg); break;
-        case CC.VOL_SLOPE6: slopeEg2_setSlope(hh.oscVolEg, itg); break;
+        case CC.VOL_SLOPE1: slopeEg2_setSlope(d0.oscVolEg, val); break;
+        case CC.PITCH_SLOPE1: decayEg_setSlope(d0.oscPitchEg, val); break;
+        case CC.VOL_SLOPE2: slopeEg2_setSlope(d1.oscVolEg, val); break;
+        case CC.PITCH_SLOPE2: decayEg_setSlope(d1.oscPitchEg, val); break;
+        case CC.VOL_SLOPE3: slopeEg2_setSlope(d2.oscVolEg, val); break;
+        case CC.PITCH_SLOPE3: decayEg_setSlope(d2.oscPitchEg, val); break;
+        case CC.PITCH_SLOPE4: decayEg_setSlope(sn.oscPitchEg, val); break;
+        case CC.VOL_SLOPE6: slopeEg2_setSlope(hh.oscVolEg, val); break;
         case CC.FILTER_FREQ_DRUM1: case CC.FILTER_FREQ_DRUM2: case CC.FILTER_FREQ_DRUM3:
           SVF_directSetFilterValue(drums[num - CC.FILTER_FREQ_DRUM1].filter, filterValue()); break;
         case CC.RESO_DRUM1: case CC.RESO_DRUM2: case CC.RESO_DRUM3:
           SVF_setReso(drums[num - CC.RESO_DRUM1].filter, flt); break;
-        case CC.F_OSC1_COARSE: setCoarse(d0.osc, itg); break;
-        case CC.F_OSC2_COARSE: setCoarse(d1.osc, itg); break;
-        case CC.F_OSC3_COARSE: setCoarse(d2.osc, itg); break;
-        case CC.F_OSC4_COARSE: setCoarse(sn.osc, itg); break;
-        case CC.F_OSC5_COARSE: setCoarse(cy.osc, itg); break;
-        case CC.F_OSC1_FINE: setFine(d0.osc, itg); break;
-        case CC.F_OSC2_FINE: setFine(d1.osc, itg); break;
-        case CC.F_OSC3_FINE: setFine(d2.osc, itg); break;
-        case CC.F_OSC4_FINE: setFine(sn.osc, itg); break;
-        case CC.F_OSC5_FINE: setFine(cy.osc, itg); break;
-        case CC.F_OSC6_FINE: setFine(hh.osc, itg); break;
+        case CC.F_OSC1_COARSE: setCoarse(d0.osc, val); break;
+        case CC.F_OSC2_COARSE: setCoarse(d1.osc, val); break;
+        case CC.F_OSC3_COARSE: setCoarse(d2.osc, val); break;
+        case CC.F_OSC4_COARSE: setCoarse(sn.osc, val); break;
+        case CC.F_OSC5_COARSE: setCoarse(cy.osc, val); break;
+        case CC.F_OSC1_FINE: setFine(d0.osc, val); break;
+        case CC.F_OSC2_FINE: setFine(d1.osc, val); break;
+        case CC.F_OSC3_FINE: setFine(d2.osc, val); break;
+        case CC.F_OSC4_FINE: setFine(sn.osc, val); break;
+        case CC.F_OSC5_FINE: setFine(cy.osc, val); break;
+        case CC.F_OSC6_FINE: setFine(hh.osc, val); break;
         case CC.OSC_WAVE_DRUM1: wpos(d0.osc); break;
         case CC.MOD_WAVE_DRUM1: wpos(d0.modOsc); break;
         case CC.OSC_WAVE_DRUM2: wpos(d1.osc); break;
@@ -1933,72 +1940,72 @@ export class LxrEngine {
         case CC.OSC1_DIST: d0.distortion.shape = distShape(flt); break;
         case CC.OSC2_DIST: d1.distortion.shape = distShape(flt); break;
         case CC.OSC3_DIST: d2.distortion.shape = distShape(flt); break;
-        case CC.VELOA1: d0.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
-        case CC.VELOD1: d0.oscVolEg.decay = slopeEg2_calcTime(itg, TIME_K_DECAY); break;
-        case CC.PITCHD1: d0.oscPitchEg.decay = decayEg_calcTime(itg); break;
-        case CC.MODAMNT1: d0.egPitchModAmount = pitchModAmount(itg); break;
+        case CC.VELOA1: d0.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
+        case CC.VELOD1: d0.oscVolEg.decay = slopeEg2_calcTime(val, TIME_K_DECAY); break;
+        case CC.PITCHD1: d0.oscPitchEg.decay = decayEg_calcTime(val); break;
+        case CC.MODAMNT1: d0.egPitchModAmount = pitchModAmount(val); break;
         case CC.FMAMNT1: d0.fmModAmount = flt; break;
-        case CC.FMDTN1: setCoarse(d0.modOsc, itg); break;
+        case CC.FMDTN1: setCoarse(d0.modOsc, val); break;
         case CC.VOL1: d0.vol = flt; break;
-        case CC.PAN1: d0.pan = itg; break;
-        case CC.VELOA2: d1.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
-        case CC.VELOD2: d1.oscVolEg.decay = slopeEg2_calcTime(itg, TIME_K_DECAY); break;
-        case CC.PITCHD2: d1.oscPitchEg.decay = decayEg_calcTime(itg); break;
-        case CC.MODAMNT2: d1.egPitchModAmount = pitchModAmount(itg); break;
+        case CC.PAN1: d0.pan = val; break;
+        case CC.VELOA2: d1.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
+        case CC.VELOD2: d1.oscVolEg.decay = slopeEg2_calcTime(val, TIME_K_DECAY); break;
+        case CC.PITCHD2: d1.oscPitchEg.decay = decayEg_calcTime(val); break;
+        case CC.MODAMNT2: d1.egPitchModAmount = pitchModAmount(val); break;
         case CC.FMAMNT2: d1.fmModAmount = flt; break;
-        case CC.FMDTN2: setCoarse(d1.modOsc, itg); break;
+        case CC.FMDTN2: setCoarse(d1.modOsc, val); break;
         case CC.VOL2: d1.vol = flt; break;
-        case CC.PAN2: d1.pan = itg; break;
-        case CC.VELOA3: d2.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
-        case CC.VELOD3: d2.oscVolEg.decay = slopeEg2_calcTime(itg, TIME_K_DECAY); break;
-        case CC.PITCHD3: d2.oscPitchEg.decay = decayEg_calcTime(itg); break;
-        case CC.MODAMNT3: d2.egPitchModAmount = pitchModAmount(itg); break;
+        case CC.PAN2: d1.pan = val; break;
+        case CC.VELOA3: d2.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
+        case CC.VELOD3: d2.oscVolEg.decay = slopeEg2_calcTime(val, TIME_K_DECAY); break;
+        case CC.PITCHD3: d2.oscPitchEg.decay = decayEg_calcTime(val); break;
+        case CC.MODAMNT3: d2.egPitchModAmount = pitchModAmount(val); break;
         case CC.FMAMNT3: d2.fmModAmount = flt; break;
-        case CC.FMDTN3: setCoarse(d2.modOsc, itg); break;
+        case CC.FMDTN3: setCoarse(d2.modOsc, val); break;
         case CC.VOL3: d2.vol = flt; break;
-        case CC.PAN3: d2.pan = itg; break;
+        case CC.PAN3: d2.pan = val; break;
         case CC.VOL4: sn.vol = flt; break;
-        case CC.PAN4: sn.pan = itg; break;
+        case CC.PAN4: sn.pan = val; break;
         case CC.SNARE_NOISE_F: sn.noiseOsc.freq = f(flt * 22000); break;
-        case CC.VELOA4: sn.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
-        case CC.VELOD4: sn.oscVolEg.decay = slopeEg2_calcTime(itg, TIME_K_DECAY); break;
-        case CC.PITCHD4: sn.oscPitchEg.decay = decayEg_calcTime(itg); break;
-        case CC.MODAMNT4: sn.egPitchModAmount = pitchModAmount(itg); break;
+        case CC.VELOA4: sn.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
+        case CC.VELOD4: sn.oscVolEg.decay = slopeEg2_calcTime(val, TIME_K_DECAY); break;
+        case CC.PITCHD4: sn.oscPitchEg.decay = decayEg_calcTime(val); break;
+        case CC.MODAMNT4: sn.egPitchModAmount = pitchModAmount(val); break;
         case CC.SNARE_FILTER_F: SVF_directSetFilterValue(sn.filter, filterValue()); break;
         case CC.SNARE_RESO: SVF_setReso(sn.filter, flt); break;
         case CC.SNARE_MIX: sn.mix = flt; break;
         case CC.VOL5: cy.vol = flt; break;
-        case CC.PAN5: cy.pan = itg; break;
-        case CC.VELOA5: cy.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
-        case CC.VELOD5: cy.oscVolEg.decay = slopeEg2_calcTime(itg, TIME_K_DECAY); break;
+        case CC.PAN5: cy.pan = val; break;
+        case CC.VELOA5: cy.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
+        case CC.VELOD5: cy.oscVolEg.decay = slopeEg2_calcTime(val, TIME_K_DECAY); break;
         case CC.CYM_WAVE1: wpos(cy.osc); break;
         case CC.CYM_WAVE2: wpos(cy.modOsc); break;
         case CC.CYM_WAVE3: wpos(cy.modOsc2); break;
-        case CC.CYM_MOD_OSC_F1: setCoarse(cy.modOsc, itg); break;
-        case CC.CYM_MOD_OSC_F2: setCoarse(cy.modOsc2, itg); break;
+        case CC.CYM_MOD_OSC_F1: setCoarse(cy.modOsc, val); break;
+        case CC.CYM_MOD_OSC_F2: setCoarse(cy.modOsc2, val); break;
         case CC.CYM_MOD_OSC_GAIN1: cy.fmModAmount = flt; break;
         case CC.CYM_MOD_OSC_GAIN2: cy.fmModAmount2 = flt; break;
         case CC.CYM_FIL_FREQ: SVF_directSetFilterValue(cy.filter, filterValue()); break;
         case CC.CYM_RESO: SVF_setReso(cy.filter, flt); break;
         case CC.CYM_REPEAT: cy.oscVolEg.repeat = itg; break;
-        case CC.CYM_SLOPE: slopeEg2_setSlope(cy.oscVolEg, itg); break;
+        case CC.CYM_SLOPE: slopeEg2_setSlope(cy.oscVolEg, val); break;
         case CC.WAVE1_HH: wpos(hh.osc); break;
         case CC.WAVE2_HH: wpos(hh.modOsc); break;
         case CC.WAVE3_HH: wpos(hh.modOsc2); break;
-        case CC.VELOD6: hh.decayClosed = f(slopeEg2_calcTime(itg, TIME_K_DECAY)); break;
-        case CC.VELOD6_OPEN: hh.decayOpen = f(slopeEg2_calcTime(itg, TIME_K_DECAY)); break;
+        case CC.VELOD6: hh.decayClosed = f(slopeEg2_calcTime(val, TIME_K_DECAY)); break;
+        case CC.VELOD6_OPEN: hh.decayOpen = f(slopeEg2_calcTime(val, TIME_K_DECAY)); break;
         case CC.HAT_FILTER_F: SVF_directSetFilterValue(hh.filter, filterValue()); break;
         case CC.HAT_RESO: SVF_setReso(hh.filter, flt); break;
         case CC.VOL6: hh.vol = flt; break;
-        case CC.PAN6: hh.pan = itg; break;
-        case CC.F_OSC6_COARSE: setCoarse(hh.osc, itg); break;
-        case CC.MOD_OSC_F1: setCoarse(hh.modOsc, itg); break;
-        case CC.MOD_OSC_F2: setCoarse(hh.modOsc2, itg); break;
+        case CC.PAN6: hh.pan = val; break;
+        case CC.F_OSC6_COARSE: setCoarse(hh.osc, val); break;
+        case CC.MOD_OSC_F1: setCoarse(hh.modOsc, val); break;
+        case CC.MOD_OSC_F2: setCoarse(hh.modOsc2, val); break;
         case CC.MOD_OSC_GAIN1: hh.fmModAmount = flt; break;
         case CC.MOD_OSC_GAIN2: hh.fmModAmount2 = flt; break;
-        case CC.VELOA6: hh.oscVolEg.attack = slopeEg2_calcTime(itg, TIME_K_ATTACK); break;
+        case CC.VELOA6: hh.oscVolEg.attack = slopeEg2_calcTime(val, TIME_K_ATTACK); break;
         case CC.REPEAT1: sn.oscVolEg.repeat = itg; break;
-        case CC.EG_SNARE1_SLOPE: slopeEg2_setSlope(sn.oscVolEg, itg); break;
+        case CC.EG_SNARE1_SLOPE: slopeEg2_setSlope(sn.oscVolEg, val); break;
         case CC.SNARE_DISTORTION: sn.distortion.shape = distShape(flt); break;
         case CC.CYMBAL_DISTORTION: cy.distortion.shape = distShape(flt); break;
         case CC.HAT_DISTORTION: hh.distortion.shape = distShape(flt); break;
