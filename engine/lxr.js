@@ -11,11 +11,11 @@
 // hihat with closed + open triggers), mono per voice before panning.
 
 import {
-  SINE_TABLE, TRANSIENT_DATA, MIDI_NOTE_FREQ,
+  SINE_TABLE, MIDI_NOTE_FREQ,
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
-import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwmt9v3r';
+import { Click, clickTone, clickLen } from './click.js?v=mwmugadb';
+import { read as readTable } from './wavetables.js?v=mwmugadb';
 
 export { PAR, CC, CC2 };
 
@@ -225,7 +225,7 @@ const setCoarse = (osc, v) => { const w = Math.floor(v); osc.coarseFrac = v - w;
 const setFine = (osc, v) => { const w = Math.floor(v); osc.fineFrac = v - w; osc.midiFreq = (osc.midiFreq & 0xff00) | w; osc_recalcFreq(osc); };
 
 // ---------------------------------------------------------------------------------------
-// Envelopes: Decay.c (pitch EG, float), SlopeEg2.c (amp EG, double), snapEg.c
+// Envelopes: Decay.c (pitch EG, float), SlopeEg2.c (amp EG, double)
 // ---------------------------------------------------------------------------------------
 const decaySlope = (val, slope) => f(f(f(1 + slope) * val) / f(1 + f(slope * Math.abs(val))));
 const TIME_K = f(f(2 * f(0.99)) / f(1 - f(0.99)));
@@ -307,53 +307,18 @@ function slopeEg2_calc(eg) {
   return 0;
 }
 
-function snapEg_calc(eg, time) {
-  let ret = 0;
-  if (eg.value > 0) {
-    ret = f(f(eg.value * eg.value) * 24);
-    eg.value = f(eg.value - f(f(0.2) * time));
-  }
-  return ret;
-}
 
 // ---------------------------------------------------------------------------------------
-// transientGenerator.c: 12 one-shot click/attack samples, plus "snap" (0) and "offset" (1)
+// the click (engine/click.js: METAMORF's, in place of transientGenerator.c's samples since 2026-11-19). Its settings:
+// level 0..1, shape 0..1, tone Hz, len ms, direct 0..1 (the share added after the drive, skipping filter and drive)
 // ---------------------------------------------------------------------------------------
-export const NUM_TRANSIENTS = 12;
-const TRANSIENT_LEN = 2205;
-const TRANSIENT_END = 2311061504; // 2204 << 20
-
-function makeTransient() { return { phase: 0, pitch: 1, waveform: 0, volume: 1 }; }
-// Mobile: waves past the firmware's 14 are the extra int16 clicks in lxr-clicks.js.
-export const NUM_WAVES = NUM_TRANSIENTS + 2 + EXTRA_CLICKS.length;
-function transient_setWaveform(t, w) { t.waveform = w < NUM_WAVES ? w : 0; }
-// Extra clicks: same phase field (u32, 20-bit fraction) but each sample has its own length.
-function extra_calcBlock(t, buf, size) {
-  const d = EXTRA_CLICKS[t.waveform - NUM_TRANSIENTS - 2], end = d.length - 1;
-  const inc = t.pitch * 1048576;
-  for (let i = 0; i < size; i++) {
-    const idx = t.phase / 1048576;
-    if (idx < end) {
-      const k = idx | 0, fr = idx - k;
-      buf[i] = toI16(t.volume * (d[k] + (d[k + 1] - d[k]) * fr));
-      t.phase += inc;
-    } else buf[i] = 0;
-  }
-}
-function transient_calcBlock(t, buf, size) {
-  if (t.waveform >= NUM_TRANSIENTS + 2) { extra_calcBlock(t, buf, size); return; }
-  if (t.waveform <= 1 || t.phase >= TRANSIENT_END) { buf.fill(0, 0, size); return; }
-  const base = (t.waveform - 2) * TRANSIENT_LEN;
-  const inc = f(t.pitch * 1048576);
-  for (let i = 0; i < size; i++) {
-    if (t.phase < TRANSIENT_END) {
-      const idx = t.phase >>> 20;
-      buf[i] = toI16(f(f(t.volume * (TRANSIENT_DATA[base + idx] << 8)) * (idx < TRANSIENT_LEN ? 1 : 0)));
-      t.phase = toU32(f(f(t.phase) + inc)); // phase += float: the add happens in float
-    } else {
-      buf[i] = 0;
-    }
-  }
+function makeClick() { const c = new Click(REAL_FS); Object.assign(c, { level: 0, shape: 0, tone: clickTone(63.5), len: clickLen(63.5), direct: 0 }); return c; }
+// a block of the click: its through part (int16, into the filter) in C, its direct part (float) in D
+function click_calcBlock(c, C, D, size) {
+  if (!c.on || c.level <= 0) { C.fill(0, 0, size); D.fill(0, 0, size); return false; }
+  const th = 1 - c.direct, di = c.direct;
+  for (let i = 0; i < size; i++) { const x = 32767 * c.next(c.level, c.shape, c.tone, c.len); C[i] = toI16(x * th); D[i] = x * di; }
+  return true;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -695,7 +660,7 @@ export const toPosition = (par, value) => { const k = POS_KIND.get(par); return 
 //   mod B  a second modulator (modOsc2, gain fmModAmount2), summed with mod A, always FM
 //   noise  sample-and-hold noise (noiseOsc), crossfaded with the tone by mix
 //   click  the transient
-// The filter takes whichever of tone, noise and click are routed to it (routeT, routeN, routeC);
+// The filter takes whichever of tone and noise are routed to it (routeT, routeN), and the click's through part;
 // the rest is added after it. A part is only made if the voice has it (srcA, srcB, srcN).
 // fmEnv: the FM depth follows mod A's gain and the pitch envelope (the drum's FM) instead of
 // staying at full (the metal's).
@@ -735,13 +700,13 @@ const MIXER_R0 = makeOnePole().r, DRIVE_R0 = makeOnePole().r;
 function makeVoice(kind, i) {
   const v = {
     kind, osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), noiseOsc: makeOsc(),
-    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, extra: extraDefaults(kind), routeT: 1, routeN: 1, routeC: 1,
+    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, extra: extraDefaults(kind), routeT: 1, routeN: 1,
     fmModAmount: 0, fmModAmount2: 0, mixAmt: 0, mix: 0, carrierGain: 1,
     vol: f(0.8), velo: 0, pan: 0, triggeredPanL: 0, triggeredPanR: 0,
     oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
-    transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
+    click: makeClick(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
     distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0, filterB: 0, filterT: 0, fwTo: null, fwAt: null, fFirm: 0,
-    ampFilterInput: 0, egPitchNow: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
+    ampFilterInput: 0, egPitchNow: 0, lastGain: 0, volumeMod: 1, combinedVolume: 0,
     faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
     hatDecays: 0, decayClosed: 0, decayOpen: 0, isOpen: 0,
   };
@@ -756,12 +721,12 @@ function makeVoice(kind, i) {
     Object.assign(v.modOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, modNodeValue: 1, waveform: TRI + i, fmMod: 0, midiFreq: 70 << 8 | 64 });
   } else if (kind === 'snare') { // Snare_init()
-    Object.assign(v, { srcN: 1, pitchEg: 1, fmEnv: 1, routeT: 0, routeC: 0 });
+    Object.assign(v, { srcN: 1, pitchEg: 1, fmEnv: 1, routeT: 0 });
     v.faderFilter.r = 0.1;
     Object.assign(v.noiseOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, modNodeValue: 1 });
   } else { // Cymbal_init(), HiHat_init(): an FM oscillator driven by two mod oscillators
-    Object.assign(v, { srcA: 1, srcB: 1, routeC: 0, carrierGain: kind === 'hat' ? f(0.5) : 1, egPitchModAmount: 0,
+    Object.assign(v, { srcA: 1, srcB: 1, carrierGain: kind === 'hat' ? f(0.5) : 1, egPitchModAmount: 0,
       fmModAmount: f(0.5), fmModAmount2: f(0.5) });
     v.faderFilter.r = 0.1;
     Object.assign(v.modOsc, { freq: 440, waveform: SINE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
@@ -1282,7 +1247,8 @@ export class LxrEngine {
     this._bA = new Int16Array(BLOCK); // mod A (with mod B summed in)
     this._bB = new Int16Array(BLOCK); // mod B
     this._bN = new Int16Array(BLOCK); // noise
-    this._bC = new Int16Array(BLOCK); // click
+    this._bC = new Int16Array(BLOCK); // the click's through part
+    this._bD = new Float64Array(BLOCK); // its direct part
     this._bT = new Int16Array(BLOCK); // the tone, when it skips the filter
     this._bM = new Int16Array(BLOCK); // mod A, scaled down for FM between FM and MIX
     this.fx = new FxBus(); // FxBus_init()
@@ -1378,6 +1344,11 @@ export class LxrEngine {
    * pitch envelope on the metal, FM on the snare, noise on the drum, ...), its filter routing, and its kind.
    */
   setExtra(n, k, value) { this.voices[n].extra[k] = value; this._extra(n, k, value); }
+  /** the click's LENGTH (k 0) and DIRECT (k 1), 0..127: not in the firmware, kept beside its other three */
+  setClick(n, k, value) {
+    const c = this.voices[n].click, x = Math.max(0, Math.min(127, +value || 0));
+    if (k === 0) c.len = clickLen(x); else c.direct = x / 127;
+  }
 
   /**
    * A voice's wavetable (not in the firmware): a table made by wavetables.js, or null for the firmware's waves. With a
@@ -1416,7 +1387,7 @@ export class LxrEngine {
       case EX.FM_ENV: v.fmEnv = flt; break;
       case EX.ROUTE_TONE: v.routeT = value >= 0.5 ? 1 : 0; break; // (a modulated switch: on from halfway, as the nearest step was)
       case EX.ROUTE_NOISE: v.routeN = value >= 0.5 ? 1 : 0; break;
-      case EX.ROUTE_CLICK: v.routeC = value >= 0.5 ? 1 : 0; break;
+      case EX.ROUTE_CLICK: break; // (gone: the click's DIRECT knob, setClick)
       case EX.REPEAT: v.oscVolEg.repeat = Math.round(value); break;
       default: break;
     }
@@ -1520,9 +1491,7 @@ export class LxrEngine {
     this._lfoRetrigger(n);
     this.velLast[n] = f(vel / 127);
     this._routesFrom(n, SRC.VEL, this.velLast[n]);
-    let offset = 1;
-    if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
-    resetPhase(v.osc, offset);
+    resetPhase(v.osc, 1);
     if (drum) resetPhase(v.modOsc, 1); else v.modOsc.phase = 0;
     v.modOsc2.phase = 0;
     osc_setBaseNote(v.osc, note);
@@ -1532,8 +1501,7 @@ export class LxrEngine {
     if (v.hatDecays) { v.isOpen = open; v.oscVolEg.decay = open ? v.decayOpen : v.decayClosed; }
     slopeEg2_trigger(v.oscVolEg);
     v.velo = f(vel / 127);
-    v.transGen.phase = 0;
-    v.snapEg.value = 1;
+    v.click.trigger();
     if (drum) SVF_reset(v.filter);
     if (v.fwTo) v.fwAt.set(v.fwTo); // (a filter type set before the note sounds from the start: no glide into it)
     updatePan(v);
@@ -1545,10 +1513,6 @@ export class LxrEngine {
     let egPitch = 0;
     if (v.pitchEg) { egPitch = decayEg_calc(v.oscPitchEg); v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount)); }
     v.egPitchNow = egPitch;
-    if (v.transGen.waveform === 0) {
-      const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
-      v.osc.pitchMod = f((v.pitchEg ? v.osc.pitchMod : 1) + f(snap * v.transGen.volume));
-    }
     // the FM depth: full (fmEnv 0, the metal's), following mod A's gain and the pitch envelope (1, the drum's), or between
     if (v.fmEnv === 1) v.osc.fmMod = f(v.fmModAmount * egPitch);
     else if (v.fmEnv > 0) v.osc.fmMod = f(f(1 - v.fmEnv) + f(v.fmEnv * f(v.fmModAmount * egPitch)));
@@ -1572,7 +1536,7 @@ export class LxrEngine {
 
   // ----- audio rate (calc*SyncBlock) -----
   _sync(n, buf) {
-    const v = this.voices[n], size = BLOCK, rng = this.rng, A = this._bA, B = this._bB, N = this._bN, C = this._bC;
+    const v = this.voices[n], size = BLOCK, rng = this.rng, A = this._bA, B = this._bB, N = this._bN, C = this._bC, D = this._bD;
     // the parts, in the order the firmware's voices draw their noise: mod A, mod B, noise, tone
     if (v.srcA) calcNextOscSampleBlock(v.modOsc, A, size, v.fmModAmount);
     if (v.srcB) {
@@ -1580,7 +1544,10 @@ export class LxrEngine {
       if (v.srcA) for (let i = 0; i < size; i++) A[i] = qadd16(A[i], B[i]);
       else A.set(B);
     }
-    const snare = v.kind === 'snare' && !v.routeT && v.routeN && !v.routeC && v.srcN;
+    const ck = click_calcBlock(v.click, C, D, size), thru = ck && v.click.direct < 1, direct = ck && v.click.direct > 0;
+    // (the firmware's snare finish: only while nothing but the noise goes into the filter. Whether the click does is its
+    // settings', not whether it's sounding now, so a note keeps one path from start to end)
+    const snare = v.kind === 'snare' && !v.routeT && v.routeN && !(v.click.level > 0 && v.click.direct < 1) && v.srcN;
     if (v.srcN) calcNoiseBlock(v.noiseOsc, N, size, snare ? f(0.9) : f(f(0.9) * v.mix), rng);
     const m = v.srcA ? v.mixAmt : 0, mixA = m >= 1;
     let g = mixA ? f(1 - v.fmModAmount) : v.carrierGain;
@@ -1596,46 +1563,47 @@ export class LxrEngine {
       for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], toI16(f(A[i] * m)));
     } else if (v.srcA || v.srcB) calcNextOscSampleFmBlock(v.osc, A, buf, size, g);
     else calcNextOscSampleBlock(v.osc, buf, size, g);
-    transient_calcBlock(v.transGen, C, size);
-    if (snare) { this._snareFinish(n, v, buf); return; } // (only while it's routed like the firmware's snare)
-    // the filter, on the parts routed to it; the others are added after it
-    const T = this._bT, toFilter = v.routeT || v.routeC || (v.srcN && v.routeN);
+    if (snare) { this._snareFinish(n, v, buf, direct); return; } // (only while it's routed like the firmware's snare)
+    // the filter, on the parts routed to it (and the click's through part); the others are added after it
+    const T = this._bT, toFilter = v.routeT || thru || (v.srcN && v.routeN);
     if (!v.routeT) { T.set(buf); buf.fill(0); }
-    if (v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
+    if (thru) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
     if (v.srcN && v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
     if (toFilter) filterBlock(v, buf);
     if (!v.routeT) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], T[i]);
-    if (!v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
     if (v.srcN && !v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
     if (v.kind === 'drum') {
       // amp EG, interpolated over the block (bufferTool_addGainInterpolated)
       const gain = f(v.ampFilterInput), last = f(v.lastGain), d = f(gain - last);
       for (let i = 0; i < size; i++) buf[i] = toI16(buf[i] * (last + f(i / f(size - 1)) * d));
       if (v.volumeMod) for (let i = 0; i < size; i++) buf[i] = toI16(f(buf[i] * v.velo));
+      // the click's direct part: the amp envelope and velocity too, then past the drive
+      if (direct) for (let i = 0; i < size; i++) D[i] *= (last + f(i / f(size - 1)) * d) * (v.volumeMod ? v.velo : 1);
       // drive, with the drive amount smoothed per sample (calcDistBlockFiltered)
       for (let i = 0; i < size; i++) buf[i] = distortSample(buf[i], calcOnePole(v.distortion.driveFilter, v.distortion.shape));
       for (let i = 0; i < size; i++) {
         const mixVol = calcOnePole(v.mixerVolFilter, v.vol);
         v.combinedVolume = f(mixVol * calcOnePole(v.faderFilter, this.faderVolume[n]));
-        buf[i] = toI16(f(buf[i] * v.combinedVolume));
+        buf[i] = toI16(f((direct ? buf[i] + D[i] : buf[i]) * v.combinedVolume));
       }
     } else {
       v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
-      for (let j = 0; j < size; j++) buf[j] = toI16(f(buf[j] * f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n]))));
+      for (let j = 0; j < size; j++) { const g = f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n])); buf[j] = toI16(f(buf[j] * g)); if (direct) D[j] *= g; }
       for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
+      if (direct) for (let j = 0; j < size; j++) buf[j] = toI16(buf[j] + D[j]); // (the click's direct part, past the drive)
     }
   }
   // the snare's last steps: the noise filtered alone, crossfaded with the tone in float, one gain, the drive
-  _snareFinish(n, v, buf) {
-    const N = this._bN, C = this._bC, size = BLOCK;
+  _snareFinish(n, v, buf, direct) {
+    const N = this._bN, D = this._bD, size = BLOCK;
     filterBlock(v, N);
     v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
     for (let j = 0; j < size; j++) {
-      let tmp = fmaf(N[j], v.mix, buf[j]);
-      tmp = f(tmp + C[j]);
-      buf[j] = toI16(f(f(v.combinedVolume * tmp) * calcOnePole(v.faderFilter, this.faderVolume[n])));
+      const tmp = fmaf(N[j], v.mix, buf[j]), g = f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n]));
+      buf[j] = toI16(f(tmp * g)); if (direct) D[j] *= g;
     }
     for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
+    if (direct) for (let j = 0; j < size; j++) buf[j] = toI16(buf[j] + D[j]); // (the click, past the drive)
   }
   _decimate(n, buf) {
     const inc = f(this.decimationRate[n] * this.decimationRate[6]);
@@ -1758,7 +1726,7 @@ export class LxrEngine {
     };
     const pitchModAmount = (x) => { const val = f(x / 127); return f(f(val * val) * 32); };
     const filterValue = () => valueShaperF2F(flt, FILTER_SHAPER);
-    const transPitch = () => f(1 + f(f(val / f(33.9)) - f(0.75)));
+    const clk = () => Math.max(0, Math.min(127, isFloatModulator ? v * 127 : data2)), clickShape = () => clk() / 127, clickLevel = () => clk() / 127;
     const pos = () => (isFloatModulator ? f(flt * 127) : data2); // a morphable switch's position (see _modPos)
     const wpos = (osc) => osc_setPos(osc, pos());
 
@@ -1886,20 +1854,20 @@ export class LxrEngine {
 
     switch (num) {
       case CC2.TRANS1_WAVE: case CC2.TRANS2_WAVE: case CC2.TRANS3_WAVE:
-        transient_setWaveform(drums[num - CC2.TRANS1_WAVE].transGen, wave(NUM_WAVES)); break;
-      case CC2.TRANS4_WAVE: transient_setWaveform(sn.transGen, wave(NUM_WAVES)); break;
-      case CC2.TRANS5_WAVE: transient_setWaveform(cy.transGen, wave(NUM_WAVES)); break;
-      case CC2.TRANS6_WAVE: transient_setWaveform(hh.transGen, wave(NUM_WAVES)); break;
+        drums[num - CC2.TRANS1_WAVE].click.shape = clickShape(); break; // (the click's SHAPE: was its sample)
+      case CC2.TRANS4_WAVE: sn.click.shape = clickShape(); break;
+      case CC2.TRANS5_WAVE: cy.click.shape = clickShape(); break;
+      case CC2.TRANS6_WAVE: hh.click.shape = clickShape(); break;
       case CC2.TRANS1_VOL: case CC2.TRANS2_VOL: case CC2.TRANS3_VOL:
-        drums[num - CC2.TRANS1_VOL].transGen.volume = flt; break;
-      case CC2.TRANS4_VOL: sn.transGen.volume = flt; break;
-      case CC2.TRANS5_VOL: cy.transGen.volume = flt; break;
-      case CC2.TRANS6_VOL: hh.transGen.volume = flt; break;
+        drums[num - CC2.TRANS1_VOL].click.level = clickLevel(); break; // (its LEVEL)
+      case CC2.TRANS4_VOL: sn.click.level = clickLevel(); break;
+      case CC2.TRANS5_VOL: cy.click.level = clickLevel(); break;
+      case CC2.TRANS6_VOL: hh.click.level = clickLevel(); break;
       case CC2.TRANS1_FREQ: case CC2.TRANS2_FREQ: case CC2.TRANS3_FREQ:
-        drums[num - CC2.TRANS1_FREQ].transGen.pitch = transPitch(); break;
-      case CC2.TRANS4_FREQ: sn.transGen.pitch = transPitch(); break;
-      case CC2.TRANS5_FREQ: cy.transGen.pitch = transPitch(); break;
-      case CC2.TRANS6_FREQ: hh.transGen.pitch = transPitch(); break;
+        drums[num - CC2.TRANS1_FREQ].click.tone = clickTone(clk()); break; // (its TONE)
+      case CC2.TRANS4_FREQ: sn.click.tone = clickTone(clk()); break;
+      case CC2.TRANS5_FREQ: cy.click.tone = clickTone(clk()); break;
+      case CC2.TRANS6_FREQ: hh.click.tone = clickTone(clk()); break;
       case CC2.FILTER_TYPE_1: case CC2.FILTER_TYPE_2: case CC2.FILTER_TYPE_3:
       case CC2.FILTER_TYPE_4: case CC2.FILTER_TYPE_5: case CC2.FILTER_TYPE_6: {
         voice_setFilterPos([d0, d1, d2, sn, cy, hh][num - CC2.FILTER_TYPE_1], pos()); // (a dial: see voice_setFilterPos)

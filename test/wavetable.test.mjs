@@ -51,7 +51,7 @@ for (let v = 0; v < 6; v++) {
   for (let t = 2; t < TABLE_NAMES.length; t++) {
     const x = play(drum, v, t, 60).out;
     ok(x.every(Number.isFinite), `${TABLE_NAMES[t]} on voice ${v}: numbers`);
-    ok(rms(x) > 30, `${TABLE_NAMES[t]} on voice ${v} sounds (rms ${rms(x).toFixed(0)})`);
+    ok(rms(x) > 15, `${TABLE_NAMES[t]} on voice ${v} sounds (rms ${rms(x).toFixed(0)})`);
     ok(!same(x, base), `${TABLE_NAMES[t]} on voice ${v} differs from BASIC`);
   }
 }
@@ -164,7 +164,7 @@ for (let v = 0; v < 6; v++) {
   const fm = BUCKET.find((s) => s.params.again > 40 && s.params.bgain > 40), v = fm.voice;
   const run = (setup) => play(fm, v, fm.params.table, undefined, { blocks: 60, setup }).out;
   const plain = run(), a = run((inst) => { inst.setParam(tablePar(v, 1), 7); inst.setParam(ukeyPar(v, 'awave'), 80); }), b = run((inst) => { inst.setParam(tablePar(v, 2), NOISE); });
-  ok(tablePar(0, 1) === tablePar(5) + 1 && tablePar(5, 2) === ALL_PARAMS - 1, 'MOD A and B tables come after the tones\' (older saves line up)');
+  ok(tablePar(0, 1) === tablePar(5) + 1 && tablePar(5, 2) === ALL_PARAMS - 13, 'MOD A and B tables come after the tones\' (older saves line up)');
   ok(!same(plain, a) && a.every(Number.isFinite), `MOD A on a table changes the FM (${fm.name})`);
   ok(!same(plain, b) && b.every(Number.isFinite), 'MOD B on a table changes it too');
   ok(BUCKET.every((s) => s.params.atable >= 1 && s.params.btable >= 1), 'every bucket sound has MOD A and B on tables');

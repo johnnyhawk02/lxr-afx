@@ -3,8 +3,8 @@
 // made from maths when first used. A table is plain data, so the page builds it and posts it to the AudioWorklet, which
 // never builds one while it plays (an oscillator is silent until its table arrives). TABLE 0 was CLASSIC: a patch saved
 // then is moved onto tables when it loads (schema.js upgradeTables); a 0 that's left plays BASIC
-import { BUILTINS, need, holds, table, hold, drop, read, fromFrames } from '../engine/wavetables.js?v=mwmt9v3r';
-import { NOISE_TABLES } from '../engine/noise-tables.js?v=mwmt9v3r';
+import { BUILTINS, need, holds, table, hold, drop, read, fromFrames } from '../engine/wavetables.js?v=mwmugadb';
+import { NOISE_TABLES } from '../engine/noise-tables.js?v=mwmugadb';
 
 // (then LXR-AFX's own: NOISE and DUST, engine/noise-tables.js, read slower by their div)
 export const TABLE_IDS = [null, ...BUILTINS.map((b) => b[0]), ...NOISE_TABLES.map((b) => b[0])];
