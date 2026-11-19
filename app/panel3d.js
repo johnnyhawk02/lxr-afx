@@ -195,6 +195,25 @@ function makeRocker() {
 }
 const PART_MAT = { mark2: 'mark' };
 
+// LEVEL's fader cap (app/main.js FADER_SVG: a 40 x 200 box, the cap 30 x 24 round its middle): a black mixer cap with
+// a white line across its top, standing over the printed slot. In the SVG's units, y up
+const fcapGeo = (() => {
+  const g = new THREE.ExtrudeGeometry(roundRect(28, 22, 2.6), { depth: 7, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 1, bevelSegments: 4, curveSegments: 8 });
+  g.translate(0, 0, 1.2);
+  g.computeVertexNormals(); return g;
+})();
+const fcapLineGeo = new THREE.BoxGeometry(24, 1.8, 0.3).translate(0, 0, 9.5);
+const slotGeo = (() => { const g = new THREE.ShapeGeometry(roundRect(6, 206, 3), 6); g.translate(0, 0, 0.05); return g; })();
+Object.assign(MAT, { slot: new THREE.MeshStandardMaterial({ color: 0x111213, roughness: 0.9, metalness: 0 }) });
+function makeFader() { // (the group sits at the box's middle; the cap rides up and down the slot in it)
+  const g = new THREE.Group(), ride = new THREE.Group();
+  const slot = new THREE.Mesh(slotGeo, MAT.slot), cap = new THREE.Mesh(fcapGeo, MAT.black), line = new THREE.Mesh(fcapLineGeo, MAT.line);
+  cap.castShadow = line.castShadow = true; cap.receiveShadow = slot.receiveShadow = true;
+  slot.userData.mat = 'slot'; cap.userData.mat = 'black'; line.userData.mat = 'line';
+  ride.add(cap, line); g.add(slot, ride); g.userData = { ride, parts: { slot, cap, line }, fader: true };
+  scene.add(g); return g;
+}
+
 const knobs = new Map(); // each .knob element: its three.js knob (and each .tog: its rocker)
 let W = 0, H = 0;
 function sync() {
@@ -213,7 +232,7 @@ function sync() {
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
   const style = knobStyle();
   const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}/${lensKey}:${style}`;
-  for (const el of screen.querySelectorAll('.knob')) {
+  for (const el of screen.querySelectorAll('.knob:not(.fslide)')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;
     seen.add(el);
@@ -227,6 +246,19 @@ function sync() {
     if (k.userData.o !== o) { k.userData.o = o; for (const mesh of Object.values(k.userData.parts)) mesh.material = matAt(mesh.userData.mat, o); }
     k.visible = true;
     sig += `|${x.toFixed(1)},${y.toFixed(1)},${size.toFixed(1)},${m ? m[1] : 0},${o}`;
+  }
+  for (const el of screen.querySelectorAll('.knob.fslide')) { // (LEVEL's fader: its cap where the page has it)
+    const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
+    if (!r || !r.width) continue;
+    seen.add(el);
+    let k = knobs.get(el); if (!k) knobs.set(el, (k = makeFader()));
+    const u = r.width / s / 40, m = /translate\(0 ([-\d.e]+)/.exec(el.querySelector('.cap')?.getAttribute('transform') || ''), ty = m ? +m[1] : 200;
+    const x = (r.left - ox) / s + 20 * u, y = (r.top - oy) / s + 100 * u;
+    k.position.set(x, -y, 0); k.scale.setScalar(u); k.userData.ride.position.y = 100 - ty;
+    let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
+    if (k.userData.o !== o) { k.userData.o = o; for (const mesh of Object.values(k.userData.parts)) mesh.material = matAt(mesh.userData.mat, o); }
+    k.visible = true;
+    sig += `|f${x.toFixed(1)},${y.toFixed(1)},${u.toFixed(3)},${ty},${o}`;
   }
   for (const el of screen.querySelectorAll('.tog')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
@@ -259,7 +291,7 @@ const draw = () => {
   });
 };
 const relevant = (r) => r.type === 'childList' || r.attributeName === 'class' || r.attributeName === 'hidden'
-  || r.attributeName === 'aria-checked' || (r.attributeName === 'transform' && r.target.classList?.contains('rot')) || (r.attributeName === 'style' && r.target.id === 'stage');
+  || r.attributeName === 'aria-checked' || (r.attributeName === 'transform' && (r.target.classList?.contains('rot') || r.target.classList?.contains('cap'))) || (r.attributeName === 'style' && r.target.id === 'stage');
 new MutationObserver((rs) => { if (rs.some(relevant)) draw(); }).observe(document.getElementById('stage'),
   { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden', 'aria-checked'] });
 new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['class', 'style', 'data-lens'] });
