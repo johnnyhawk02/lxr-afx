@@ -420,8 +420,9 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (file.app !== 'lxr-afx' || file.presets.length !== 2 || im1 !== 0 || f0.n !== 1 || im2 !== 1 || f1.n !== 2 || f1.stored !== 2 || im3 !== 0 || im4 !== 1 || !got || /[<>=()]/.test(got[0]) || got[0].length > 18
       || /[<>]/.test(got[1]._kit) || got[1][5] !== 255 || got[1]._lock !== true || got[2].join() !== '0') bad('export, import', file.presets.length, im1, f0, im2, f1, im3, im4, got);
     await p.keyboard.press('Escape'); const shut = await p.evaluate(() => document.getElementById('preset-panel').hidden);
-    const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), l = r('last'), lt = document.getElementById('last-text'); return [b.left > r('screen').left, document.getElementById('last').offsetWidth, [...document.getElementById('last').parentElement.children].map((c) => (c.id || c.className) + ' ' + c.offsetWidth).join(' | ') + ' · ' + lt.textContent]; });
-    if (!shut || !bar[0] || bar[1] < 175) bad('top bar', shut, bar); } // (room left for the last note, whatever the name's length)
+    const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), m = r('midi-status'), lg = (() => { const g = document.createRange(); g.selectNodeContents(document.querySelector('.top .logo')); return g.getBoundingClientRect(); })();
+      return [b.left > r('screen').left, Math.round(b.width), m.left >= lg.right - 1 && m.right <= b.left, !document.getElementById('last')]; });
+    if (!shut || !bar[0] || bar[1] < 600 || !bar[2] || !bar[3]) bad('top bar', shut, bar); } // (PRESET has the patch's cells; the MIDI lamp sits right of the logo; no LAST box)
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
