@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnqtj6r';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnqtj6r';
-import { presetName, jumble } from './names.js?v=mwnqtj6r';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnqtj6r';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnqtj6r';
-import { breed, isDud } from '../sound/breed.js?v=mwnqtj6r';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnqtj6r';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnqtj6r';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnqtj6r';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnqtj6r';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnqtj6r';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnr1vyf';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnr1vyf';
+import { presetName, jumble } from './names.js?v=mwnr1vyf';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnr1vyf';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnr1vyf';
+import { breed, isDud } from '../sound/breed.js?v=mwnr1vyf';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnr1vyf';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnr1vyf';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnr1vyf';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnr1vyf';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnr1vyf';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnqtj6r', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnr1vyf', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -961,7 +961,7 @@ const KNOB_SVG = (() => {
   }
   const head = '<circle class="skirt" cx="32" cy="32" r="15.5"/><circle class="skirt-top" cx="32" cy="32" r="13.5"/>'
     + '<path class="chh" d="M54 32C47 35 40 39.5 33 42.6A11 11 0 1 1 33 21.4C40 24.5 47 29 54 32Z"/><line class="chl" x1="35" y1="32" x2="51.5" y2="32"/>';
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}${sc}<path class="mrange"/><g class="rot">${head}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}${sc}<path class="mrange"/><g class="rot"><g class="body">${head}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g></g><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
 })();
 // a plus-minus knob (centre given: pan, coarse, fine, pregain, bass, tone) has its centre at the top, each half of its
 // range on its own side, and its ring lit from the top out to the value; any other knob lights from the bottom left
@@ -1396,25 +1396,26 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnqtj6r').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnr1vyf').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
 applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'lcd', false);
-// KNOB SIZE: a slider from M (the usual size) to XL scales only the knobs and switches drawn inside their cells (a CSS
-// transform, so the cells and the grid never move; the three.js knobs follow the drawing's size). XL is as big as a knob
-// gets before its scale runs into its value and name. Kept in this browser. Johnny, 2026-11-19: "make the knob size in
-// settings a slider going from medium to extra large"
-const KNOB_SIZE_STORE = 'lxr-afx-knob-size', KNOB_ZOOM_MAX = 1.35;
-function knobSizeName(z) { return z <= 1.001 ? 'M' : z >= KNOB_ZOOM_MAX - 0.001 ? 'XL' : z < 1.2 ? 'M+' : 'L'; }
-function applyKnobSize(z, keep) {
-  z = Math.min(KNOB_ZOOM_MAX, Math.max(1, Number(z) || 1));
-  document.documentElement.style.setProperty('--knob-zoom', z);
-  $('knob-size').value = z; $('knob-size-val').textContent = knobSizeName(z);
-  if (keep) { try { localStorage.setItem(KNOB_SIZE_STORE, String(z)); } catch (e) { /* not kept */ } }
+// KNOB SIZE: the printed scale round each knob sits at a fixed size, tight inside its cell (css/lcd.css --ring), and the
+// slider grows only the knob itself inside it, from XL (the left end, the default) to XXL, where its skirt meets the
+// scale and its pointer the scale's outer edge. A transform, so the cells and the grid never move; the three.js knobs
+// read --knob-body too. Kept in this browser. Johnny, 2026-11-19: "i want the knobs this size or even bigger"
+const KNOB_SIZE_STORE = 'lxr-afx-knob-body', KNOB_BODY = [1.04, 1.3]; // (at --ring 1.3: 1.35x and 1.69x the old knob)
+const knobBody = (v) => KNOB_BODY[0] + (KNOB_BODY[1] - KNOB_BODY[0]) * v / 10;
+const knobSizeName = (v) => (v <= 0 ? 'XL' : v >= 10 ? 'XXL' : `XL+${v}`);
+function applyKnobSize(v, keep) {
+  v = Math.round(Math.min(10, Math.max(0, Number(v) || 0)));
+  document.documentElement.style.setProperty('--knob-body', knobBody(v).toFixed(3));
+  $('knob-size').value = v; $('knob-size-val').textContent = knobSizeName(v);
+  if (keep) { try { localStorage.setItem(KNOB_SIZE_STORE, String(v)); } catch (e) { /* not kept */ } }
 }
 $('knob-size').addEventListener('input', (e) => { applyKnobSize(e.target.value, true); detail(`knob size: <em>${knobSizeName(+e.target.value)}</em>`); });
-{ let z = 1; try { const v = localStorage.getItem(KNOB_SIZE_STORE); z = v === 'l' ? 1.2 : +v || 1; } catch (e) { /* M */ } applyKnobSize(z, false); }
+{ let v = 0; try { v = +localStorage.getItem(KNOB_SIZE_STORE) || 0; } catch (e) { /* XL */ } applyKnobSize(v, false); }
 function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
