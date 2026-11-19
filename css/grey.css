@@ -48,17 +48,24 @@ html.panel3d .knob svg { filter: none; }
 html.panel3d .knob .skirt, html.panel3d .knob .skirt-top, html.panel3d .knob .chh, html.panel3d .knob .chl { display: none; }
 html.panel3d .start { background-color: rgb(172 174 172); }
 
-/* a rocker switch (vtoggle in app/main.js): a black rocker in a dark bezel, seen from above; the half pressed in is
-   dark and shadowed at the pivot, the raised half lighter with its outer edge catching the light, I on the top half,
-   O on the bottom. Drawn the same with the three.js panel on, which puts no knob in its cell */
-html.look-grey .tog svg { filter: drop-shadow(0 2px 1.5px rgb(0 0 0 / .4)); }
-html.look-grey .tog .rbez { fill: #1e1f21; stroke: #0a0a0b; stroke-width: 1; }
-html.look-grey .tog .rup, html.look-grey .tog .rdn { fill: #45474b; stroke: #0d0e0f; stroke-width: .6; }
-html.look-grey .tog[aria-checked="true"] .rup, html.look-grey .tog[aria-checked="false"] .rdn { fill: #121314; }
-html.look-grey .tog .rhl { display: inline; stroke: #fff; stroke-width: 1.4; stroke-linecap: round; opacity: .45; }
-html.look-grey .tog[aria-checked="true"] .rhl-up, html.look-grey .tog[aria-checked="false"] .rhl-dn { display: none; }
-html.look-grey .tog .rpiv { stroke: #000; stroke-width: 1.6; }
-html.look-grey .tog .rmk { stroke: #f4f3ee; stroke-width: 2; opacity: .95; }
-html.look-grey .tog[aria-checked="true"] line.rmk, html.look-grey .tog[aria-checked="false"] circle.rmk { opacity: .6; }
+/* a rocker switch (vtoggle in app/main.js), like a black KCD1: a matte black rocker in a black bezel, seen from above,
+   O and I printed white. The raised end is lit along its edge and the rocker's face falls away from it; the pressed end
+   sinks into a shadow. With the three.js panel on, app/panel3d.js builds it in 3D instead (html.panel3d below) */
+html.look-grey .tog svg { filter: drop-shadow(0 2.4px 1.8px rgb(0 0 0 / .45)); }
+html.look-grey .tog .rbz2, html.look-grey .tog .rgap, html.look-grey .tog .rface, html.look-grey .tog .rsh, html.look-grey .tog .rhl { display: inline; }
+html.look-grey .tog .rbez { fill: #1d1e20; stroke: #070708; stroke-width: .8; }
+html.look-grey .tog .rbz2 { fill: #131415; }
+html.look-grey .tog .rgap { fill: #030303; }
+html.look-grey .tog .rface { fill: #232427; }
+html.look-grey .tog .rup, html.look-grey .tog .rdn { fill: #fff; opacity: .08; }
+html.look-grey .tog[aria-checked="true"] .rdn, html.look-grey .tog[aria-checked="false"] .rup { fill: #000; opacity: .42; }
+html.look-grey .tog .rsh { fill: #000; opacity: .75; }
+html.look-grey .tog[aria-checked="true"] .rsh-up, html.look-grey .tog[aria-checked="false"] .rsh-dn { display: none; }
+html.look-grey .tog .rhl { stroke: #fff; stroke-width: 1.3; stroke-linecap: round; opacity: .38; }
+html.look-grey .tog[aria-checked="true"] .rhl-dn, html.look-grey .tog[aria-checked="false"] .rhl-up { display: none; }
+html.look-grey .tog .rmk { fill: none; stroke: #f4f3ee; stroke-width: 1.7; stroke-linecap: butt; }
+html.look-grey .tog[aria-checked="true"] line.rmk, html.look-grey .tog[aria-checked="false"] circle.rmk { opacity: .7; }
 html.look-grey .tog .mrange { stroke: var(--accent); stroke-width: 2.6; opacity: .95; }
 html.look-grey .tog .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }
+html.panel3d .tog svg { filter: none; }
+html.panel3d .tog svg > :not(.mrange):not(.mdot) { display: none; }

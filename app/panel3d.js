@@ -100,7 +100,56 @@ function makeKnob() {
   scene.add(g); return g;
 }
 
-const knobs = new Map(); // each .knob element: its three.js knob
+
+// a rocker switch (a two-way control's .tog, app/main.js vtoggle), like a black KCD1: a matte black bezel standing a
+// little proud of the panel, a dark opening, and in it the rocker, its top two shallow slopes meeting in the middle,
+// tipped on its pivot so one end stands up out of the bezel and the other sinks in. O printed on the top end, I on the
+// bottom; ON has the I end pressed. In the SVG's units (64 wide, centre 32,32), y up, z out of the panel
+const roundRect = (w, h, r) => {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
+};
+const bezelGeo = (() => {
+  const s = roundRect(34.5, 48.5, 2.2), hole = roundRect(26.6, 40.6, 1);
+  s.holes.push(hole);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 2.2, bevelEnabled: true, bevelThickness: 0.9, bevelSize: 0.9, bevelSegments: 3, curveSegments: 6 });
+  g.translate(0, 0, 0.9); return g;
+})();
+const wellGeo = new THREE.PlaneGeometry(26.6, 40.6).translate(0, 0, 0.6);
+const RK_L = 19.6, RK_W = 24.4, RK_END = 6.4, RK_MID = 4.6; // half its length, its width, its height at the ends and the middle
+const rockerGeo = (() => {
+  const s = new THREE.Shape(); // its side: along its length (y) and up (z)
+  s.moveTo(-RK_L, -3); s.lineTo(RK_L, -3); s.lineTo(RK_L, RK_END - 0.6); s.quadraticCurveTo(RK_L, RK_END, RK_L - 0.7, RK_END);
+  s.lineTo(0, RK_MID); s.lineTo(-RK_L + 0.7, RK_END); s.quadraticCurveTo(-RK_L, RK_END, -RK_L, RK_END - 0.6); s.lineTo(-RK_L, -3);
+  const g = new THREE.ExtrudeGeometry(s, { depth: RK_W - 1.2, bevelEnabled: true, bevelThickness: 0.6, bevelSize: 0.5, bevelSegments: 2, curveSegments: 4 });
+  g.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, -(RK_W - 1.2) / 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1)); // (its width across x)
+  g.computeVertexNormals(); return g;
+})();
+const RK_SLOPE = Math.atan2(RK_END - RK_MID, RK_L); // each half of its top
+const markO = new THREE.RingGeometry(3.3, 4.6, 40), markI = new THREE.PlaneGeometry(1.35, 8.2);
+const RK_TILT = 0.19; // how far it tips each way, radians
+Object.assign(MAT, {
+  bezel: new THREE.MeshStandardMaterial({ color: 0x16171a, roughness: 0.82, metalness: 0, envMapIntensity: 0.5 }),
+  well: new THREE.MeshBasicMaterial({ color: 0x030303 }),
+  rocker: new THREE.MeshStandardMaterial({ color: 0x1d1e21, roughness: 0.78, metalness: 0, envMapIntensity: 0.6 }),
+  mark: new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.7, metalness: 0 }),
+});
+function makeRocker() {
+  const g = new THREE.Group(), tip = new THREE.Group();
+  const bezel = new THREE.Mesh(bezelGeo, MAT.bezel), well = new THREE.Mesh(wellGeo, MAT.well), rocker = new THREE.Mesh(rockerGeo, MAT.rocker);
+  const o = new THREE.Mesh(markO, MAT.mark), i = new THREE.Mesh(markI, MAT.mark);
+  const along = (m, y, up) => { m.position.set(0, y, RK_MID + (RK_END - RK_MID) * Math.abs(y) / RK_L + 0.62); m.rotation.x = up ? RK_SLOPE : -RK_SLOPE; };
+  along(o, 10, true); along(i, -10, false);
+  for (const m of [bezel, rocker]) { m.castShadow = true; m.receiveShadow = true; }
+  tip.position.z = 1.2; tip.add(rocker, o, i);
+  g.add(bezel, well, tip); g.userData = { tip, parts: { bezel, well, rocker, mark: o, mark2: i } };
+  scene.add(g); return g;
+}
+const PART_MAT = { mark2: 'mark' };
+
+const knobs = new Map(); // each .knob element: its three.js knob (and each .tog: its rocker)
 let W = 0, H = 0;
 function sync() {
   const sr = screen.getBoundingClientRect(), s = sr.width / screen.offsetWidth || 1;
@@ -130,6 +179,19 @@ function sync() {
     k.visible = true;
     sig += `|${x.toFixed(1)},${y.toFixed(1)},${size.toFixed(1)},${m ? m[1] : 0},${o}`;
   }
+  for (const el of screen.querySelectorAll('.tog')) {
+    const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
+    if (!r || !r.width) continue;
+    seen.add(el);
+    let k = knobs.get(el); if (!k) knobs.set(el, (k = makeRocker()));
+    const size = r.width / s, x = (r.left - ox) / s + size / 2, y = (r.top - oy) / s + size / 2, on = el.getAttribute('aria-checked') === 'true';
+    k.position.set(x, -y, 0); k.scale.setScalar(size / 64);
+    k.userData.tip.rotation.x = on ? RK_TILT : -RK_TILT; // (ON: the O end up, the I end pressed in)
+    let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
+    if (k.userData.o !== o) { k.userData.o = o; for (const [n, mesh] of Object.entries(k.userData.parts)) mesh.material = matAt(PART_MAT[n] || n, o); }
+    k.visible = true;
+    sig += `|r${x.toFixed(1)},${y.toFixed(1)},${size.toFixed(1)},${on},${o}`;
+  }
   for (const [el, k] of knobs) if (!seen.has(el)) { k.visible = false; if (!el.isConnected) { scene.remove(k); knobs.delete(el); } }
   return sig;
 }
@@ -148,9 +210,9 @@ const draw = () => {
   });
 };
 const relevant = (r) => r.type === 'childList' || r.attributeName === 'class' || r.attributeName === 'hidden'
-  || (r.attributeName === 'transform' && r.target.classList?.contains('rot')) || (r.attributeName === 'style' && r.target.id === 'stage');
+  || r.attributeName === 'aria-checked' || (r.attributeName === 'transform' && r.target.classList?.contains('rot')) || (r.attributeName === 'style' && r.target.id === 'stage');
 new MutationObserver((rs) => { if (rs.some(relevant)) draw(); }).observe(document.getElementById('stage'),
-  { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden'] });
+  { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden', 'aria-checked'] });
 new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
 addEventListener('resize', draw);
 document.fonts?.ready.then(draw);
