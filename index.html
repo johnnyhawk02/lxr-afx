@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnus9ak">
-<link rel="stylesheet" href="css/grey.css?v=mwnus9ak">
+<link rel="stylesheet" href="css/lcd.css?v=mwnux9ic">
+<link rel="stylesheet" href="css/grey.css?v=mwnux9ic">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -23,7 +23,7 @@
     var st = document.documentElement.style; st.setProperty('--grey-panel', q.join(' ')); st.setProperty('--grey-ink', (0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2]) / 255 < 0.45 ? '236 236 230' : '24 25 27');
     document.documentElement.classList.add('panel-own'); } } catch (e) {}
   // the knob size (SETTINGS > KNOB SIZE): grows only the knob inside its printed scale, never the cell
-  try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 7 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.85 + 0.05 * kv).toFixed(3));
+  try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 7 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.87 + 0.058 * kv).toFixed(3));
     var ks = localStorage.getItem('lxr-afx-knob-style') || 'ribbed'; if (/^(round|ribbed|rubber)$/.test(ks)) document.documentElement.classList.add('knob-' + ks); } catch (e) { /* the defaults */ }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
@@ -330,6 +330,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnus9ak"></script>
+<script type="module" src="app/main.js?v=mwnux9ic"></script>
 </body>
 </html>
