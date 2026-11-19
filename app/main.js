@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwna7moh';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwna7moh';
-import { presetName, jumble } from './names.js?v=mwna7moh';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwna7moh';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwna7moh';
-import { breed, isDud } from '../sound/breed.js?v=mwna7moh';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwna7moh';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwna7moh';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwna7moh';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwna7moh';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwna7moh';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwncebde';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwncebde';
+import { presetName, jumble } from './names.js?v=mwncebde';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwncebde';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwncebde';
+import { breed, isDud } from '../sound/breed.js?v=mwncebde';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwncebde';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwncebde';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwncebde';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwncebde';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwncebde';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -63,7 +63,10 @@ try {
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.rand.rhythms = 0; /* (no sequencer any more: Johnny, 2026-11-17) */ S.sel = d.sel | 0; S.page = d.page | 0;
     if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; if (d.engines) S.engines = clamp(d.engines | 0, 1, MAX_ENGINES); S.ccMap = d.ccMap || null;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
-    if (d.modRule !== MOD_RULE) { upgradeMod(S.defaults); upgradeMod(S.values, S.keyEdits); } // (kept with the firmware's one LFO and one velocity target: now routes on the knobs)
+    if (d.modRule !== MOD_RULE) {
+      if (d.modRule !== 1) { upgradeMod(S.defaults); upgradeMod(S.values, S.keyEdits); } // (kept with the firmware's one LFO and one velocity target: now routes on the knobs)
+      pairsToDepths(S.defaults); pairsToDepths(S.values, S.keyEdits); // (kept with one source a knob: now a depth from each)
+    }
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -106,9 +109,9 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwna7moh', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwncebde', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -877,7 +880,7 @@ const KNOB_SVG = (() => {
     const a = KNOB_A0 + i / (KNOB_N - 1) * KNOB_SWEEP, c = Math.cos(a), s = Math.sin(a);
     t += `<line class="tk" x1="${(32 + 20 * c).toFixed(2)}" y1="${(32 + 20 * s).toFixed(2)}" x2="${(32 + 28 * c).toFixed(2)}" y2="${(32 + 28 * s).toFixed(2)}"/>`;
   }
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/></svg>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}<path class="mrange"/><line class="ptr" x1="32" y1="32" x2="46" y2="32"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
 })();
 // a plus-minus knob (centre given: pan, coarse, fine, pregain, bass, tone) has its centre at the top, each half of its
 // range on its own side, and its ring lit from the top out to the value; any other knob lights from the bottom left
@@ -897,7 +900,8 @@ function vfader(e) {
   el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
-  // its modulation (a right-click picks the source): the source's short name in the middle of the ring
+  // its modulation (a right-click sets each source's depth): the sources' short name in the middle of the ring, the
+  // range they can move it over as an arc outside the ring, and a dot where they have it now (modLive)
   const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey), tag = mod && document.createElement('span');
   if (mod) {
     tag.className = 'modtag'; tr.append(tag);
@@ -924,7 +928,11 @@ function vfader(e) {
     if (mv !== undefined) notch.setAttribute('transform', `rotate(${knobDeg(mv, e.max, c)} 32 32)`);
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
-    if (mod) { const src = valueNow(mod.src) || 0; tag.textContent = MOD_SHORT[src]; el.classList.toggle('modded', !!src); }
+    if (mod) {
+      const on = modDepths(mod).map((a, s) => (a && s ? s : 0)).filter(Boolean);
+      tag.textContent = on.length ? MOD_SHORT[on[0]] + (on.length > 1 ? '+' : '') : ''; el.classList.toggle('modded', on.length > 0);
+      drawModRange(tr, v, e.max, c, mod);
+    }
     const locked = S.locks.has(e.par);
     lock.setAttribute('aria-pressed', locked);
     lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
@@ -954,42 +962,101 @@ function vfader(e) {
     detail(on ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);
   });
   faderDraws.push(draw);
+  if (mod) modDots.push({ tr, el, e, mod, c });
   return el;
 }
-// ---- a knob's modulation: a right-click on a knob picks what moves it, for the key being edited: OFF, the engine's
-// LFO, the key's VELOCITY, the AMP ENV or the PITCH ENV, and how much (AMOUNT, either way from its centre). A knob
-// that's modulated shows its source's short name in the middle of its ring. One source a knob, as many knobs as you like ----
-const MOD_NAMES = ['OFF', 'LFO', 'VELOCITY', 'AMP ENV', 'PITCH ENV'], MOD_SHORT = ['', 'LFO', 'VEL', 'AMP', 'PIT'];
-const MOD_SAYS = ['Not modulated: the knob stays where you set it',
-  'The LFO swings it either way of where it is set, at its LFO SPEED, WAVE and SYNC', 'Hits harder than halfway push it up, softer ones down (below zero: the other way round)',
-  'Follows the amp envelope: the amount at its peak, back to where it is set as the sound dies away', 'Follows the pitch envelope: the amount at the hit, back as the pitch settles'];
+// ---- a knob's modulation: a right-click on a knob opens its DEPTHS, for the key being edited. Every source is always
+// on, each with a depth of its own (0 to start: the knob stays where it's set), either way from the middle: the LFO,
+// the key's VELOCITY, the AMP ENV, the PITCH ENV and STEP SEQ, eight levels of the key's own (one each hit, in turn;
+// every knob of the key that STEP SEQ moves follows the same steps). A knob that's modulated shows the sources' short
+// name in its ring, the range they swing it over outside the ring, and a dot where they have it now ----
+const MOD_NAMES = ['OFF', 'LFO', 'VELOCITY', 'AMP ENV', 'PITCH ENV', 'STEP SEQ'], MOD_SHORT = ['', 'LFO', 'VEL', 'AMP', 'PIT', 'SEQ'];
+const MOD_SAYS = ['', 'Swings it either way of where it is set, at the LFO SPEED, WAVE and SYNC', 'Hits harder than halfway push it up, softer ones down',
+  'Follows the amp envelope: the depth at its peak, back as the sound dies away', 'Follows the pitch envelope: the depth at the hit, back as the pitch settles',
+  'Each hit takes the next step: the step\'s level times the depth, held until the next hit'];
+// a knob's depths now (-1..1 by source, MOD_SOURCES index; 0 unused)
+const modDepths = (mod) => mod.depths.map((p, s) => (s ? ((valueNow(p) ?? MOD_AMT_ZERO) - MOD_AMT_ZERO) / 127 : 0));
+// how far the sources can move a knob, in its 0..1 range: [down, up] (the LFO and velocity either way, the others one way)
+function modSpan(mod) {
+  let lo = 0, hi = 0;
+  modDepths(mod).forEach((a, s) => { if (!s || !a) return; if (s <= 2) { lo -= Math.abs(a); hi += Math.abs(a); } else if (a < 0) lo += a; else hi += a; });
+  return [lo, hi];
+}
+// the range arc, just outside the ring
+function drawModRange(tr, v, max, c, mod) {
+  const path = tr.querySelector('.mrange'), [lo, hi] = modSpan(mod);
+  if (!lo && !hi) { path.setAttribute('d', ''); return; }
+  const at = (x) => KNOB_A0 + knobF(clamp(x, 0, max), max, c) * KNOB_SWEEP, R = 31;
+  const a0 = at(v + lo * max), a1 = at(v + hi * max), pt = (a) => `${(32 + R * Math.cos(a)).toFixed(2)} ${(32 + R * Math.sin(a)).toFixed(2)}`;
+  path.setAttribute('d', a1 - a0 < 0.02 ? '' : `M${pt(a0)} A${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(a1)}`);
+}
+// the dots: where the engine has each modulated knob now (the worklet's mods, about 30 times a second)
+let modDots = [], modNow = null, stepAt = null;
+function modLive(mods, steps) {
+  modNow = mods; stepAt = steps;
+  const voice = SOUNDS[S.sel].engineVoice, m = new Map(mods[voice] || []);
+  modDots = modDots.filter((k) => k.el.isConnected);
+  for (const k of modDots) {
+    const d = m.get(k.mod.dest), dot = k.tr.querySelector('.mdot');
+    k.el.classList.toggle('modlive', d !== undefined);
+    if (d === undefined) continue;
+    const v = clamp(valueNow(k.e.par) + d * k.e.max, 0, k.e.max);
+    dot.setAttribute('transform', `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
+  }
+  if (!modPop.hidden && modPop._steps) modPop._steps(steps ? steps[voice] : -1);
+}
 const modPop = document.createElement('div'); modPop.className = 'menupanel modpop'; modPop.hidden = true; $('screen').append(modPop);
-function closeMod() { if (modPop.hidden) return; modPop.hidden = true; modPop.innerHTML = ''; faderDraws = faderDraws.filter((d) => !d.mod); }
+function closeMod() { if (modPop.hidden) return; modPop.hidden = true; modPop.innerHTML = ''; modPop._steps = null; faderDraws = faderDraws.filter((d) => !d.mod); }
+// a bar either way from its middle (a depth: 0..254, MOD_AMT_ZERO none)
+function pmBar(box, o) {
+  const tr = document.createElement('div'); tr.className = 'htrack pm'; tr.setAttribute('role', 'slider'); tr.innerHTML = '<i></i><b></b>';
+  tr.setAttribute('aria-label', o.label); tr.setAttribute('aria-valuemin', -127); tr.setAttribute('aria-valuemax', 127);
+  const fill = tr.querySelector('i'), out = document.createElement('output');
+  const draw = () => {
+    const v = o.get(), f = v / MOD_AMT_MAX, h = MOD_AMT_ZERO / MOD_AMT_MAX;
+    fill.style.setProperty('--l', (Math.min(f, h) * 100) + '%'); fill.style.setProperty('--r', ((1 - Math.max(f, h)) * 100) + '%');
+    const d = Math.round(v - MOD_AMT_ZERO); out.textContent = d > 0 ? '+' + d : d; tr.setAttribute('aria-valuenow', d);
+    o.row.classList.toggle('on', d !== 0);
+  };
+  const put = (x) => { x = clamp(Math.round(x), 0, MOD_AMT_MAX); if (x !== o.get()) { o.set(x); draw(); } };
+  dragger(tr, 'x', { min: 0, max: MOD_AMT_MAX, get: o.get, put });
+  tr.addEventListener('dblclick', () => put(MOD_AMT_ZERO));
+  box.append(tr, out);
+  return draw;
+}
 function openMod(e, el, m) {
   closeMod();
-  const voice = SOUNDS[S.sel].engineVoice, amtE = VOICE_SCHEMAS[voice].find((x) => x.par === m.amt);
-  modPop.innerHTML = `<h3>MODULATE <span></span></h3><div class="srcs"></div><div class="amtrow"></div>`;
+  const voice = SOUNDS[S.sel].engineVoice, name = `${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${e.label.toUpperCase()}`;
+  modPop.innerHTML = `<h3>MODULATE <span></span></h3><div class="mrows"></div><p class="cap"></p>`;
   modPop.querySelector('h3 span').textContent = e.label.toUpperCase();
-  const srcs = modPop.querySelector('.srcs'), row = modPop.querySelector('.amtrow');
-  const btns = MOD_NAMES.map((name, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = name;
-    b.addEventListener('click', () => {
-      if (valueNow(m.src) !== i) editValue(m.src, i);
-      drawFaders();
-      detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${e.label.toUpperCase()} <em>${i ? 'moved by ' + name : 'not modulated'}</em>`);
-    });
-    srcs.append(b); return b;
-  });
-  const knob = vfader({ ...amtE, label: 'amount', ukey: undefined });
-  knob.querySelector('.lock').remove(); faderDraws[faderDraws.length - 1].mod = true;
-  const says = document.createElement('p'); says.className = 'cap';
-  row.append(knob, says);
-  const draw = () => {
-    const src = valueNow(m.src) || 0;
-    btns.forEach((b, i) => b.setAttribute('aria-pressed', i === src));
-    knob.classList.toggle('off', !src); says.textContent = MOD_SAYS[src];
-  };
+  const rows = modPop.querySelector('.mrows'), cap = modPop.querySelector('.cap'), draws = [];
+  cap.textContent = 'Every source is on: drag its depth away from 0, either way. Double-click a depth for 0';
+  for (let s = 1; s < MOD_NAMES.length; s++) {
+    const row = document.createElement('div'); row.className = 'mrow'; row.title = MOD_SAYS[s];
+    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = MOD_NAMES[s]; row.append(lab);
+    draws.push(pmBar(row, { label: `${e.label} ${MOD_NAMES[s]} depth`, row, get: () => valueNow(m.depths[s]) ?? MOD_AMT_ZERO,
+      set: (x) => { editValue(m.depths[s], x); drawFaders(); const d = Math.round(x - MOD_AMT_ZERO); detail(`${name} <em>${MOD_NAMES[s]} ${d > 0 ? '+' : ''}${d}</em>`); } }));
+    rows.append(row);
+    row.addEventListener('pointerenter', () => { cap.textContent = MOD_SAYS[s]; });
+  }
+  // STEP SEQ's eight levels, under its depth: drag a step up or down
+  const srow = document.createElement('div'); srow.className = 'mrow steps';
+  srow.innerHTML = '<span class="lab">STEPS</span><div class="stepbox"></div><span></span>';
+  const sbox = srow.querySelector('.stepbox'), bars = [];
+  for (let k = 0; k < NUM_STEPS; k++) {
+    const par = stepPar(voice, k), b = document.createElement('div'); b.className = 'step'; b.setAttribute('role', 'slider');
+    b.setAttribute('aria-label', 'step ' + (k + 1)); b.innerHTML = '<i></i>';
+    const get = () => valueNow(par) ?? 0;
+    const drawB = () => { b.style.setProperty('--f', get() / 127); b.setAttribute('aria-valuenow', Math.round(get())); };
+    dragger(b, 'y', { min: 0, max: 127, get, put: (x) => { x = clamp(Math.round(x), 0, 127); if (x !== get()) { editValue(par, x); drawB(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEP ${k + 1} ${x}</em>`); } } });
+    sbox.append(b); bars.push(b); draws.push(drawB);
+  }
+  srow.addEventListener('pointerenter', () => { cap.textContent = 'The key\'s eight steps: each hit plays the next one. Every knob STEP SEQ moves on this key follows them'; });
+  rows.append(srow);
+  modPop._steps = (at) => bars.forEach((b, k) => b.classList.toggle('now', k === at));
+  const draw = () => draws.forEach((d) => d());
   draw.mod = true; faderDraws.push(draw); draw();
+  modPop._steps(stepAt ? stepAt[voice] : -1);
   // under the knob, inside the screen (the screen may be scaled down to fit)
   modPop.hidden = false;
   const sc = $('screen'), sr = sc.getBoundingClientRect(), k = sr.width / sc.offsetWidth || 1, r = el.getBoundingClientRect();
@@ -1740,7 +1807,10 @@ function tidyPreset(p) {
     }
     return old ? editsToPositions(out) : out;
   });
-  if (d.mod !== MOD_RULE) upgradeMod(values, keys); // (saved with the firmware's one LFO and one velocity target: now routes on the knobs)
+  if (d.mod !== MOD_RULE) {
+    if (d.mod !== 1) upgradeMod(values, keys); // (saved with the firmware's one LFO and one velocity target: now routes on the knobs)
+    pairsToDepths(values, keys); // (saved with one source a knob: now a depth from each)
+  }
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
   if (fx.echo.duck === undefined) fx.echo.duck = 0; // (saved before the echo had DUCK: off)
@@ -1915,11 +1985,11 @@ function randomMods() {
   const text = [];
   for (const u of picked) {
     const m = modOf(v, u), src = 1 + Math.floor(rnd() * 4), d = (rnd() < 0.5 ? -1 : 1) * (20 + Math.floor(rnd() * 61));
-    BL.mods.set(m.src, src); BL.mods.set(m.amt, MOD_AMT_ZERO + d);
+    for (let s = 1; s <= NUM_SRC; s++) BL.mods.set(m.depths[s], s === src ? MOD_AMT_ZERO + d : MOD_AMT_ZERO);
     text.push(`${VOICE_SCHEMAS[v].find((e) => e.ukey === u)?.label || u} ${MOD_SOURCES[src]} ${d > 0 ? '+' : ''}${d}`);
   }
   const f = ukeyPar(v, 'lfofreq');
-  if ([...BL.mods].some(([p, x]) => x === 1 && routeOf(p)?.src) && f !== undefined && blendNow().get(f) < 50) BL.mods.set(f, 50 + Math.floor(rnd() * 56));
+  if ([...BL.mods].some(([p, x]) => x !== MOD_AMT_ZERO && routeOf(p)?.src === 1) && f !== undefined && blendNow().get(f) < 50) BL.mods.set(f, 50 + Math.floor(rnd() * 56));
   BL.modText = text.join(' · ');
 }
 // the key on screen's patch with the blend over it, levelled to its engine as AUTO LEVEL would

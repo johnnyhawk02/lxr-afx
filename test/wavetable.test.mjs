@@ -64,7 +64,7 @@ for (let v = 0; v < 6; v++) {
 
 // an LFO on WAVE sweeps smoothly along the table (not wave to wave as on CLASSIC)
 {
-  const { inst } = play(drum, 0, 6, 60, { blocks: 1, setup: (i) => { const m = modOf(0, 'wave'); i.setParam(m.src, 1); i.setParam(m.amt, 127 + 60); i.setParam(ukeyPar(0, 'lfofreq'), 90); } });
+  const { inst } = play(drum, 0, 6, 60, { blocks: 1, setup: (i) => { const m = modOf(0, 'wave'); i.setParam(m.depths[1], 127 + 60); i.setParam(ukeyPar(0, 'lfofreq'), 90); } });
   const seen = new Set(); for (let b = 0; b < 1500; b++) { inst.e.renderBlock(0); seen.add(inst.e.voices[0].osc.wpos.toFixed(3)); }
   ok(seen.size > 50, `an LFO on WAVE moves smoothly along the table (${seen.size} places)`);
 }

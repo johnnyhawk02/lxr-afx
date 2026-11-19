@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwna7moh';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwncebde';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwna7moh';
+import { TABLE_NAMES } from './tables.js?v=mwncebde';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -97,15 +97,33 @@ export const MOD_DIALS = ['coarse', 'fine', 'wave', 'pwm', 'afreq', 'again', 'aw
 export const NUM_MOD = MOD_DIALS.length, MOD_BASE = EXTRA_BASE + 6 * NUM_EXTRAS, MOD_AMT_ZERO = 127, MOD_AMT_MAX = 254;
 export const modSrcPar = (voice, i) => MOD_BASE + (voice * NUM_MOD + i) * 2;
 export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
+// a depth's merged name (bucket sounds): 'mod:<source>:<knob>', e.g. 'mod:lfo:cutoff', 'mod:step seq:decay'
+export const depthKey = (src, u) => `mod:${MOD_SOURCES[src]}:${u}`;
 // then each voice's TABLE: the wavetable its tone plays (sound/tables.js: 0 CLASSIC, the firmware's waves). Last, so
 // every parameter number before it stays as it was (a store or preset saved before it plays CLASSIC)
 export const TABLE_BASE = MOD_BASE + 6 * NUM_MOD * 2;
 export const tablePar = (voice) => TABLE_BASE + voice;
-export const ALL_PARAMS = TABLE_BASE + 6;
+// then each knob's DEPTH from every source (2026-11-19: every source is always on, each with a depth of its own, 0 by
+// default): per voice, per knob (MOD_DIALS), one a source (MOD_SOURCES 1..: LFO, VELOCITY, AMP ENV, PITCH ENV, STEP
+// SEQ), 0..254 with MOD_AMT_ZERO none, as the amounts were. The old one-source pairs above (modSrcPar, modAmtPar) are
+// read only to bring a store, preset or bucket sound across (pairsToDepths); nothing plays them now
+export const NUM_SRC = MOD_SOURCES.length - 1;
+export const DEPTH_BASE = TABLE_BASE + 6;
+export const depthPar = (voice, i, src) => DEPTH_BASE + (voice * NUM_MOD + i) * NUM_SRC + (src - 1);
+// then each voice's STEP SEQ: eight levels, 0..127 (each hit of the voice plays the next one)
+export const NUM_STEPS = 8;
+export const STEP_BASE = DEPTH_BASE + 6 * NUM_MOD * NUM_SRC;
+export const stepPar = (voice, k) => STEP_BASE + voice * NUM_STEPS + k;
+export const STEP_DEFAULTS = [127, 32, 80, 32, 110, 0, 64, 32];
+export const ALL_PARAMS = STEP_BASE + 6 * NUM_STEPS;
 // a knob's value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
 export const dec2 = (x) => Math.round(x * 100) / 100;
 export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
-for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) INIT_VALUES[modAmtPar(v, i)] = MOD_AMT_ZERO;
+for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
+  INIT_VALUES[modAmtPar(v, i)] = MOD_AMT_ZERO;
+  for (let s = 1; s <= NUM_SRC; s++) INIT_VALUES[depthPar(v, i, s)] = MOD_AMT_ZERO;
+}
+for (let v = 0; v < 6; v++) STEP_DEFAULTS.forEach((x, k) => { INIT_VALUES[stepPar(v, k)] = x; });
 { const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
@@ -313,18 +331,23 @@ function buildSchema(voice) {
     def: TRIM_ZERO, display: { type: 'num' }, morph: null, weight: 0, rand: 'seq', seq: true });
   // each knob's modulation (unseen as knobs: a right-click on the knob sets them). Part of the sound (a kit sound brings
   // its own, MORPH KEYS and BREED carry them), but ALTER and the drum-safe randomisers leave them alone ('mix')
+  // (each knob's depth from every source: after the tables, see DEPTH_BASE)
   MOD_DIALS.forEach((u, i) => {
     const d = out.find((e) => e.ukey === u), dest = d ? (d.extra !== undefined ? EXTRA_DEST + d.extra : d.par) : -1;
-    const base = { page: 'mod', section: 'mod', min: 0, morph: null, weight: 0, rand: 'mix', hidden: true, mod: { dial: u, dest } };
-    out.push({ ...base, key: 'MODSRC_' + u + (voice + 1), par: modSrcPar(voice, i), ukey: 'modsrc:' + u, label: (d ? d.label : u) + ' mod', text: 'MOD_SRC',
-      max: MOD_SOURCES.length - 1, def: 0, display: { type: 'menu', names: MOD_SOURCES } });
-    out.push({ ...base, key: 'MODAMT_' + u + (voice + 1), par: modAmtPar(voice, i), ukey: 'modamt:' + u, label: (d ? d.label : u) + ' mod amt', text: 'MOD_AMT',
-      max: MOD_AMT_MAX, def: MOD_AMT_ZERO, display: { type: 'pm', centre: MOD_AMT_ZERO } });
+    const base = { page: 'mod', section: 'mod', min: 0, morph: null, weight: 0, rand: 'mix', hidden: true };
+    for (let s = 1; s <= NUM_SRC; s++) {
+      out.push({ ...base, key: 'MODDEPTH_' + MOD_SOURCES[s].replace(/ /g, '_').toUpperCase() + '_' + u + (voice + 1), par: depthPar(voice, i, s),
+        ukey: depthKey(s, u), label: `${d ? d.label : u} ${MOD_SOURCES[s]}`, text: 'MOD_DEPTH', max: MOD_AMT_MAX, def: MOD_AMT_ZERO,
+        display: { type: 'pm', centre: MOD_AMT_ZERO }, mod: { dial: u, dest, src: s } });
+    }
   });
   // the tone's wavetable (chosen in the OSC section's heading, not a knob: section 'table' has no place in the grid).
   // Part of the sound; ALTER leaves it alone unless WILD
   out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
     max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
+  // STEP SEQ's eight levels (edited in a knob's modulation pop-up). Part of the sound, like the depths
+  for (let k = 0; k < NUM_STEPS; k++) out.push({ key: 'STEP' + (k + 1) + '_' + (voice + 1), par: stepPar(voice, k), ukey: 'step' + (k + 1), label: 'step ' + (k + 1),
+    text: 'STEP', page: 'mod', section: 'mod', min: 0, max: 127, def: STEP_DEFAULTS[k], display: { type: 'num' }, morph: null, weight: 0, rand: 'mix', hidden: true, step: k });
   return out;
 }
 
@@ -446,10 +469,50 @@ export function routesFromOld(get, v) {
   if (vd !== undefined) r.set(vd, [2, get(o.va)]);
   if (ld !== undefined) r.set(ld, [1, get(o.la)]);
   const out = [];
-  for (let i = 0; i < NUM_MOD; i++) { const x = r.get(i); out.push([modSrcPar(v, i), x ? x[0] : 0], [modAmtPar(v, i), MOD_AMT_ZERO + (x ? x[1] : 0)]); }
+  for (let i = 0; i < NUM_MOD; i++) { const x = r.get(i); for (let s = 1; s <= NUM_SRC; s++) out.push([depthPar(v, i, s), MOD_AMT_ZERO + (x && x[0] === s ? x[1] : 0)]); }
   return out;
 }
-export const MOD_RULE = 1; // what a store or preset made since then says (mod: MOD_RULE)
+// 1: routes on the knobs, one source a knob (modSrcPar, modAmtPar); 2: a depth from every source (depthPar)
+export const MOD_RULE = 2; // what a store or preset made since then says (mod: MOD_RULE)
+// a sound saved with one source a knob (MOD_RULE 1), as depths: the knob's amount becomes its depth from that source,
+// every other depth 0, in place (values, and the keys' edits as upgradeMod takes them). The old pairs are cleared
+export function pairsToDepths(values, keys) {
+  // knob i's depths from its pair (get: a parameter's value)
+  const conv = (get, v, i) => { const src = Math.round(get(modSrcPar(v, i)) || 0), amt = get(modAmtPar(v, i)), out = [];
+    for (let s = 1; s <= NUM_SRC; s++) out.push([depthPar(v, i, s), src === s && Number.isFinite(amt) ? amt : MOD_AMT_ZERO]); return out; };
+  const has = (ed, v, i) => modSrcPar(v, i) in ed || modAmtPar(v, i) in ed;
+  const base = Array.from(values);
+  if (keys) SOUNDS.forEach((def, s) => {
+    const v = def.engineVoice, ks = keys[s]; if (!ks) return;
+    for (const n in ks) {
+      const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
+      const o = ed._o && typeof ed._o === 'object' ? ed._o : null;
+      for (let i = 0; i < NUM_MOD; i++) {
+        if (!has(ed, v, i) && !(o && has(o, v, i))) continue;
+        const now = conv((p) => ed[p] ?? base[p], v, i);
+        const was = o && has(o, v, i) ? conv((p) => o[p] ?? ed[p] ?? base[p], v, i) : null;
+        now.forEach(([p, x], j) => { ed[p] = x; if (was && was[j][1] !== x) o[p] = was[j][1]; });
+        for (const p of [modSrcPar(v, i), modAmtPar(v, i)]) { delete ed[p]; if (o) delete o[p]; }
+      }
+      if (o && !Object.keys(o).length) delete ed._o;
+    }
+  });
+  for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
+    if (Math.round(base[modSrcPar(v, i)] || 0)) for (const [p, x] of conv((p) => base[p], v, i)) values[p] = x;
+    values[modSrcPar(v, i)] = 0; values[modAmtPar(v, i)] = MOD_AMT_ZERO;
+  }
+  return values;
+}
+// a bucket sound's params ({ control: value }) saved with one source a knob ('modsrc:<knob>', 'modamt:<knob>'), as
+// depths ('mod:<source>:<knob>'), in place
+export function pairsToDepthKeys(params) {
+  for (const u of MOD_DIALS) {
+    const s = Math.round(params['modsrc:' + u] || 0), a = params['modamt:' + u];
+    if (s > 0 && s <= NUM_SRC && Number.isFinite(a) && params[depthKey(s, u)] === undefined) params[depthKey(s, u)] = a;
+    delete params['modsrc:' + u]; delete params['modamt:' + u];
+  }
+  return params;
+}
 const OLD_TARGETS = (v) => { const o = OLD_MOD(v); return [o.vd, o.va, o.ld, o.la]; };
 // a sound's values (an array by parameter: a kit, a store's, a preset's) with its old targets as routes, in place, and
 // its keys' edits with it (keys: per sound, { note: { parameter: value, _o: { ... } } }: a key that set a target or an
@@ -484,7 +547,13 @@ export function upgradeMod(values, keys) {
 upgradeMod(INIT_VALUES);
 // a route's parameter: { voice, dest (the engine's: a parameter number, or EXTRA_DEST + an extra), src (true: its source,
 // false: its amount) }, or null
-const ROUTES = new Map(VOICE_SCHEMAS.flatMap((sc, voice) => sc.filter((e) => e.mod).map((e) => [e.par, { voice, dest: e.mod.dest, src: e.text === 'MOD_SRC' }])));
+// a depth's parameter: { voice, dest (the engine's: a parameter number, or EXTRA_DEST + an extra), src (MOD_SOURCES) }, or null
+const ROUTES = new Map(VOICE_SCHEMAS.flatMap((sc, voice) => sc.filter((e) => e.mod).map((e) => [e.par, { voice, dest: e.mod.dest, src: e.mod.src }])));
 export const routeOf = (par) => ROUTES.get(par) || null;
-// a knob's modulation parameters ({ src, amt }), by its merged name, or null if it can't be modulated
-export function modOf(voice, ukey) { const i = MOD_DIALS.indexOf(ukey); return i < 0 ? null : { src: modSrcPar(voice, i), amt: modAmtPar(voice, i) }; }
+// a knob's modulation: { depths: [parameter of each source's depth, by MOD_SOURCES index (0 unused)], dest }, by its
+// merged name, or null if it can't be modulated
+export function modOf(voice, ukey) {
+  const i = MOD_DIALS.indexOf(ukey); if (i < 0) return null;
+  const depths = [0]; for (let s = 1; s <= NUM_SRC; s++) depths.push(depthPar(voice, i, s));
+  return { depths, dest: ROUTES.get(depths[1]).dest };
+}

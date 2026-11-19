@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwna7moh';
+import { read as readTable } from './wavetables.js?v=mwncebde';
 
 export { PAR, CC, CC2 };
 
@@ -804,10 +804,13 @@ function lfo_calcPhaseInc(freq, sync, bpm) {
 // source of its own, at an amount of its own (setRouteSrc, setRouteAmt). As in modulationNode.c, a modulated control
 // is re-sent through the parameter handler with a modulated 0..1 value, once a block: the LFO and velocity swing it
 // either way (base + amount * (2 * value - 1), the firmware's sum, so a kit's old LFO and velocity targets play as they
-// did), the two envelopes push it one way (base + amount * envelope). Amounts are -1..1
+// did), the two envelopes push it one way (base + amount * envelope). Amounts are -1..1. Not in the firmware: STEP SEQ,
+// eight levels a voice (setStep, 0..1), one a hit: each trigger of the voice takes the next step's level and holds it
+// until the next hit, pushing its knobs one way like the envelopes (base + amount * level)
 // ---------------------------------------------------------------------------------------
-export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env'];
-export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4 };
+export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env', 'step seq'];
+export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4, STEP: 5 };
+export const NUM_STEPS = 8;
 // a route's destination: a parameter number, or EXTRA_DEST + an extra (EXTRAS)
 export const EXTRA_DEST = 1000;
 
@@ -1460,6 +1463,11 @@ export class LxrEngine {
     // its envelopes' values from the last block
     this.routes = Array.from({ length: 6 }, () => new Map());
     this.velLast = new Float32Array(6);
+    // STEP SEQ: each voice's eight levels, the step its next hit plays, and the level its last hit took
+    this.stepLevels = new Float32Array(6 * NUM_STEPS);
+    this.stepNext = new Uint8Array(6);
+    this.stepNow = new Float32Array(6);
+    this.stepPlayed = new Int8Array(6).fill(-1);
     // initDrumVoice(), Snare_init(), HiHat_init(), Cymbal_init()
     // the six voices, all one merged voice (VOICE_KINDS: what each firmware voice was), and their firmware names
     this.voices = VOICE_KINDS.map(makeVoice);
@@ -1626,18 +1634,23 @@ export class LxrEngine {
     else this.ccHandler(true, (par - 128) & 0x7f, data2, isFloatModulator, v);
   }
 
-  /** a control's modulation source (voice 0..5; dest: a parameter number, or EXTRA_DEST + an extra; src: SRC) */
-  setRouteSrc(voice, dest, src) {
-    const m = this.routes[voice], r = m.get(dest);
-    if (r && r.src === src) return;
-    if (r && r.src) this._routeReset(voice, dest);
-    if (r) r.src = src; else m.set(dest, { src, amt: 0 });
+  /** how much one source moves a control, -1..1 (voice 0..5; dest: a parameter number, or EXTRA_DEST + an extra; src: SRC).
+   * Every source is always on: a control with a depth of 0 from all of them is left where it is set */
+  setRouteAmt(voice, dest, src, amount) {
+    const m = this.routes[voice];
+    let r = m.get(dest);
+    if (!r) { r = { a: new Float32Array(6), c: new Float32Array(6), on: false, d: 0 }; m.set(dest, r); }
+    if (r.a[src] === f(amount)) return;
+    r.a[src] = f(amount);
+    const on = r.a.some((x) => x !== 0);
+    if (r.on && !on) { this._routeReset(voice, dest); r.c.fill(0); r.d = 0; }
+    r.on = on;
   }
-  /** and how much it moves it, -1..1 */
-  setRouteAmt(voice, dest, amount) {
-    const m = this.routes[voice], r = m.get(dest);
-    if (r) r.amt = f(amount); else m.set(dest, { src: 0, amt: f(amount) });
-  }
+  /** each voice's modulated controls now: [[dest, how far it is moved (-1..1)], ...] a voice (for the page's knobs) */
+  readMods() { return this.routes.map((m) => { const o = []; for (const [dest, r] of m) if (r.on) o.push([dest, r.d]); return o; }); }
+
+  /** a STEP SEQ level (voice 0..5, step 0..7, level 0..1) */
+  setStep(voice, step, level) { this.stepLevels[voice * NUM_STEPS + step] = f(level); }
 
   /** voiceControl_noteOn: voice 0..2 drums, 3 snare, 4 cymbal, 5 closed hat, 6 open hat */
   trigger(voice, velocity = 127, note = SEQ_DEFAULT_NOTE) {
@@ -1666,9 +1679,16 @@ export class LxrEngine {
     if (dest >= EXTRA_DEST) { const k = dest - EXTRA_DEST; this._extra(n, k, this.voices[n].extra[k]); return; }
     this._setOriginal(dest);
   }
-  // a voice's routes from one source: the LFO and velocity swing either way, the envelopes push one way
+  // a voice's routes from one source: the LFO and velocity swing either way, the envelopes and STEP SEQ push one way.
+  // A control moved by more than one source takes their sum (each source's share is kept, c, so a source that moves
+  // on its own, velocity and STEP SEQ at a hit, adds to the others as they were)
   _routesFrom(n, src, val) {
-    for (const [dest, r] of this.routes[n]) if (r.src === src) this._modTo(n, dest, src <= SRC.VEL ? f(r.amt * f(f(val * 2) - 1)) : f(r.amt * val));
+    for (const [dest, r] of this.routes[n]) {
+      const a = r.a[src]; if (!a) continue;
+      r.c[src] = src <= SRC.VEL ? f(a * f(f(val * 2) - 1)) : f(a * val);
+      let d = r.c[SRC.LFO]; for (let s = SRC.VEL; s <= SRC.STEP; s++) d = f(d + r.c[s]);
+      r.d = d; this._modTo(n, dest, d);
+    }
   }
   // a morphable switch, modulated: from a detent, as the firmware modulates its menu (so a kit sound plays as it did)
   // landing on a detent; from between two, along the dial
@@ -1692,7 +1712,7 @@ export class LxrEngine {
     this._dispatch(par, this.activeParameters[par], false, 0);
   }
   _resetTargets() {
-    for (let n = 0; n < 6; n++) for (const [dest, r] of this.routes[n]) if (r.src) this._routeReset(n, dest);
+    for (let n = 0; n < 6; n++) for (const [dest, r] of this.routes[n]) if (r.on) { this._routeReset(n, dest); r.c.fill(0); }
   }
   _lfoRetrigger(voice) {
     for (const lfo of this.lfos) if (lfo.retrigger === voice + 1) lfo.phase = lfo.phaseOffset;
@@ -1711,6 +1731,10 @@ export class LxrEngine {
     this._lfoRetrigger(n);
     this.velLast[n] = f(vel / 127);
     this._routesFrom(n, SRC.VEL, this.velLast[n]);
+    // STEP SEQ: this hit's step
+    const k = this.stepNext[n]; this.stepPlayed[n] = k; this.stepNext[n] = (k + 1) % NUM_STEPS;
+    this.stepNow[n] = this.stepLevels[n * NUM_STEPS + k];
+    this._routesFrom(n, SRC.STEP, this.stepNow[n]);
     let offset = 1;
     if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
     resetPhase(v.osc, offset, drum ? drumSineStart : otherSineStart);
@@ -1850,7 +1874,7 @@ export class LxrEngine {
     // every modulated control back to its setting, then moved: velocity, the LFOs (each runs every block, in voice
     // order, as the firmware's), the envelopes (as they were at the end of the last block)
     this._resetTargets();
-    for (let n = 0; n < 6; n++) this._routesFrom(n, SRC.VEL, this.velLast[n]);
+    for (let n = 0; n < 6; n++) { this._routesFrom(n, SRC.VEL, this.velLast[n]); this._routesFrom(n, SRC.STEP, this.stepNow[n]); }
     for (let n = 0; n < 6; n++) { const x = lfo_calc(this.lfos[n], this.rng); this._routesFrom(n, SRC.LFO, x); }
     for (let n = 0; n < 6; n++) {
       const v = this.voices[n];

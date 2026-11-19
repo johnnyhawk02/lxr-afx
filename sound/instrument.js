@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwna7moh';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwncebde';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE } from './schema.js?v=mwna7moh';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwna7moh';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwna7moh';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS } from './schema.js?v=mwncebde';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwncebde';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwncebde';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -102,16 +102,22 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
+    if (par >= STEP_BASE) { // a STEP SEQ level
+      const i = par - STEP_BASE; if (i >= 6 * NUM_STEPS) return;
+      this.e.setStep(Math.floor(i / NUM_STEPS), i % NUM_STEPS, value / 127);
+      return;
+    }
+    if (par >= DEPTH_BASE) { // a knob's depth from one source
+      const r = routeOf(par); if (!r || r.dest < 0) return;
+      this.e.setRouteAmt(r.voice, r.dest, r.src, (value - MOD_AMT_ZERO) / 127);
+      return;
+    }
     if (par >= TABLE_BASE) { // a voice's wavetable (0: CLASSIC)
       const v = par - TABLE_BASE; if (v >= 6) return;
       this.tableOf[v] = value; this.e.setTable(v, tableFor(value, this.build));
       return;
     }
-    if (par >= MOD_BASE) { // a knob's modulation: its source, or its amount
-      const r = routeOf(par); if (!r || r.dest < 0) return;
-      if (r.src) this.e.setRouteSrc(r.voice, r.dest, value); else this.e.setRouteAmt(r.voice, r.dest, (value - MOD_AMT_ZERO) / 127);
-      return;
-    }
+    if (par >= MOD_BASE) return; // (the old one-source pairs: brought across as depths, schema.js pairsToDepths)
     if (par >= EXTRA_BASE) { // a voice's extra (only the ones it uses: the others shadow a firmware parameter)
       if (EXTRA_LIVE.has(par)) { const i = par - EXTRA_BASE, n = Math.floor(i / NUM_EXTRAS), k = i % NUM_EXTRAS; if (this.e.voices[n].extra[k] !== value) this.e.setExtra(n, k, value); }
       return;
