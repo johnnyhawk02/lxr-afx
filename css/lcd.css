@@ -66,8 +66,8 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 html:not(.phone) { --tog-zoom: 1.175; }
 /* the value above stays put (the section's name sits right over it); the knob moves down by half its growth, so its
    scale's top stays under the value, and its name and padlock move down with it, into the room under each row */
-html:not(.phone) .knob svg { transform: translateY(calc(var(--grow, 0px) / 2)) scale(calc(1.25 * var(--knob-body, 1.04))); }
-html:not(.phone) .vf:has(> .knob, > .tog) { --grow: calc((var(--knob-body, 1.04) - 1.04) * 1.25 * var(--ks)); } /* (px a knob grows past XL) */
+html:not(.phone) .knob svg { transform: translateY(calc(var(--grow, 0px) / 2)) scale(calc(1.25 * var(--knob-body, 1.17))); }
+html:not(.phone) .vf:has(> .knob, > .tog) { --grow: calc((var(--knob-body, 1.17) - 1.04) * 1.25 * var(--ks)); } /* (px a knob grows past XL) */
 html:not(.phone) .vf:has(> .knob, > .tog) > .lab { transform: translateY(var(--grow)); }
 html:not(.phone) .vf:has(> .tog) > .tog svg { transform: translateY(calc(var(--grow, 0px) / 2)) scale(var(--tog-zoom, 1)); } /* (a switch keeps its size, in line with the knobs) */
 html:not(.phone) .vf:has(> .knob, > .tog) > .lock { transform: translateY(calc(var(--grow, 0px) / 2)); }
