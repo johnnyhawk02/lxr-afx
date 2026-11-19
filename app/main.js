@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwncebde';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwncebde';
-import { presetName, jumble } from './names.js?v=mwncebde';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwncebde';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwncebde';
-import { breed, isDud } from '../sound/breed.js?v=mwncebde';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwncebde';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwncebde';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwncebde';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwncebde';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwncebde';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnclevf';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnclevf';
+import { presetName, jumble } from './names.js?v=mwnclevf';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnclevf';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnclevf';
+import { breed, isDud } from '../sound/breed.js?v=mwnclevf';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnclevf';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnclevf';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnclevf';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnclevf';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnclevf';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwncebde', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnclevf', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -392,18 +392,34 @@ function showLast(sound, note, vel, st) {
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
-// the master compressor's gain reduction: a segment per dB (up to 24), held a moment and falling back
-let grShown = 0;
+// the master compressor's gain reduction on a VU meter (Johnny): the needle rests at 0 on the right and swings left as
+// the compressor pulls the level down, to 20 dB, easing like a real needle (about 300 ms to settle)
+const VU_MAX = 20, VU_ANG = 45; // dB at full swing; degrees each side of upright
+const vuAng = (db) => VU_ANG - 2 * VU_ANG * Math.pow(Math.min(VU_MAX, Math.max(0, db)) / VU_MAX, 0.6);
+let grShown = 0, grNeedle = 0;
 function showGr(db) {
   grShown = Math.max(db, grShown * 0.8);
-  const n = Math.round(Math.min(24, grShown));
-  document.querySelectorAll('.grm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
-  const o = document.querySelector('.grm output'); if (o) o.textContent = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
+  grNeedle += (grShown - grNeedle) * 0.3;
+  const n = document.querySelector('.vu .needle'); if (n) n.setAttribute('transform', `rotate(${vuAng(grNeedle).toFixed(2)} 60 82)`);
+  const o = document.querySelector('.vu output'); if (o) o.textContent = grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0.0';
 }
-// the output meter: what goes out of the page, each side's peak on a bar from -48 to 0 dB (a segment per 2 dB, falling
+function vuFace() {
+  const at = (deg, r) => { const a = deg * Math.PI / 180; return [(60 + r * Math.sin(a)).toFixed(1), (82 - r * Math.cos(a)).toFixed(1)]; };
+  const [x0, y0] = at(-VU_ANG, 60), [x1, y1] = at(VU_ANG, 60), [h0, k0] = at(vuAng(3), 60);
+  let marks = '';
+  for (const d of [0, 1, 2, 3, 5, 7, 10, 15, 20]) {
+    const big = [0, 3, 5, 10, 20].includes(d), g = vuAng(d), [ax, ay] = at(g, 60), [bx, by] = at(g, big ? 53 : 56);
+    marks += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`;
+    if (big) { const [tx, ty] = at(g, 69); marks += `<text x="${tx}" y="${ty}">${d}</text>`; }
+  }
+  return `<svg viewBox="0 0 120 66" aria-hidden="true"><path class="arc" d="M${x0} ${y0} A60 60 0 0 1 ${x1} ${y1}"/>`
+    + `<path class="hot" d="M${h0} ${k0} A60 60 0 0 1 ${x1} ${y1}"/>${marks}<text class="vul" x="60" y="46">GAIN RED.</text>`
+    + `<line class="needle" x1="60" y1="82" x2="60" y2="18" transform="rotate(${VU_ANG} 60 82)"/></svg>`;
+}
+// the output meter: what goes out of the page, each side's peak on a bar from -48 to 0 dB (a segment per 3 dB, falling
 // back about 27 dB a second), the highest held a moment and read out in dB; CLIP lights for 3 s when the mix goes over
 // full scale (the last soft limit squashing it), or until it's pressed
-const METER_LO = -48, METER_SEGS = 24, METER_HOLD = 1500, CLIP_HOLD = 3000;
+const METER_LO = -48, METER_SEGS = 16, METER_HOLD = 1500, CLIP_HOLD = 3000;
 const meter = [0, 1].map(() => ({ db: -120, pk: -120, pkAt: 0 }));
 let clipAt = -1e9;
 function showOut([l, r, cl, cr]) {
@@ -801,18 +817,21 @@ function buildFx() {
           : gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
     box.append(el);
   }
-  // beside the output level: the compressor's gain reduction
-  const gm = document.createElement('div'); gm.className = 'grm';
-  gm.innerHTML = `<span class="dim">GAIN REDUCTION</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
-  box.lastChild.querySelector('.row').append(gm); box.lastChild.classList.add('mout');
-  // under it: the output meter (showOut), left and right on the same cells as the gain reduction, a scale beneath
-  const om = document.createElement('div'); om.className = 'sect outm';
-  const ticks = [-48, -36, -24, -12, -6, 0].map((d) => `<span style="left:${(d - METER_LO) / -METER_LO * 100}%">${d}</span>`).join('');
-  om.innerHTML = `<h3><span class="t">METER</span> <button type="button" class="btn sm hdb clip" aria-pressed="false" title="Lights when the output goes over full scale (the last soft limit squashing it); press to clear">CLIP</button></h3>`
-    + ['L', 'R'].map((c) => `<div class="row mrow"><span class="ch">${c}</span><output>-\u221e</output><div class="segs">${'<i></i>'.repeat(METER_SEGS)}</div></div>`).join('')
-    + `<div class="row"><div class="scale">${ticks}</div></div>`;
-  om.querySelector('.clip').addEventListener('click', (e) => { clipAt = -1e9; e.currentTarget.setAttribute('aria-pressed', false); });
-  box.append(om);
+  // OUTPUT: the LEVEL knob in the first cell, the output's L and R bars (showOut) over their dB scale on cells 2 to 4,
+  // each with its name on the left and its held peak on the right, and the compressor's gain reduction VU meter
+  // (showGr) on cells 5 and 6. CLIP sits in the header
+  const out = box.lastChild; out.classList.add('mout', 'outm');
+  const clip = document.createElement('button'); clip.type = 'button'; clip.className = 'btn sm hdb clip'; clip.textContent = 'CLIP';
+  clip.setAttribute('aria-pressed', 'false'); clip.title = 'Lights when the output goes over full scale (the last soft limit squashing it); press to clear';
+  clip.addEventListener('click', () => { clipAt = -1e9; clip.setAttribute('aria-pressed', 'false'); });
+  const h3 = out.querySelector('h3'); h3.innerHTML = '<span class="t">OUTPUT</span>'; h3.append(clip);
+  const ticks = [-48, -24, -12, -6, 0].map((d) => `<span style="left:${(d - METER_LO) / -METER_LO * 100}%">${d}</span>`).join('');
+  const bars = document.createElement('div'); bars.className = 'meters';
+  bars.innerHTML = ['L', 'R'].map((c) => `<div class="mrow"><span class="ch">${c}</span><div class="segs">${'<i></i>'.repeat(METER_SEGS)}</div><output>-\u221e</output></div>`).join('')
+    + `<div class="mscale"><span></span><div class="scale">${ticks}</div><span class="ch">dB</span></div>`;
+  const vu = document.createElement('div'); vu.className = 'vu'; vu.title = 'The compressor\'s gain reduction: the needle swings left as it turns the level down';
+  vu.innerHTML = vuFace() + '<output>0.0</output>';
+  out.querySelector('.row').append(bars, vu);
 }
 // ---- the master distortion (sound/dirt.js): a dual-path bass drive. Its input stage, clip stages, tone and the two
 // path volumes on two rows; the sidechain under it, its header reading as a sentence (SIDECHAIN ON TURNS CUTOFF UP).

@@ -174,7 +174,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   await p.click('#fx-tab'); await p.waitForTimeout(150);
   { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
     const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3')?.textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
-    if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT,METER' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
+    if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
     const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
       return [...document.querySelectorAll('.fxside .vf, .fxside .envm, .fxside .hdb')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
     if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
