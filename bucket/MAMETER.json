@@ -14,7 +14,7 @@
   "fmenv": 127,
   "bfreq": 94,
   "bgain": 0,
-  "bwave": 64,
+  "bwave": 80,
   "ncolour": 127,
   "nmix": 0,
   "attack": 0,
@@ -125,6 +125,8 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127,
-  "table": 1
+  "table": 1,
+  "atable": 1,
+  "btable": 1
  }
 }

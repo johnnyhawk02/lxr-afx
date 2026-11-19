@@ -64,12 +64,13 @@ export function free({ schema, pool, rnd }) {
 
 // ---- RECIPES ----
 // from: which kit voices it starts from (by the end of the pool's label); set: merged control (ukey) -> [lo, hi]
-// (a single number for an exact value). Waves: 0 sine, 25 tri, 50 saw, 75 rec, 100 pwm, 125 noise. Filter types:
+// (a single number for an exact value). Waves are places on the BASIC table (table 1): 0 sine, 31 tri, 62 saw, 94
+// square, 125 narrow pulse. Filter types:
 // 0 lp, 18 bp, 36 unity bp, 54 hp, 72 notch, 90 peak, 108 lp2, 126 off. Ranges from the kits' own sounds of that kind
 export const RECIPES = {
-  kick: { from: /drum \d$/, set: { coarse: [22, 32], wave: 0, pamt: [55, 115], pdecay: [30, 75], pslope: [2, 20], decay: [15, 45], attack: 0,
+  kick: { from: /drum \d$/, set: { coarse: [22, 32], table: 1, wave: 0, pamt: [55, 115], pdecay: [30, 75], pslope: [2, 20], decay: [15, 45], attack: 0,
     cutoff: [55, 127], reso: [0, 30], again: [0, 20], clickvol: [20, 110] } },
-  tom: { from: /drum \d$/, set: { coarse: [33, 46], wave: [0, 25], pamt: [20, 55], pdecay: [30, 65], decay: [12, 35], attack: 0, again: [0, 15],
+  tom: { from: /drum \d$/, set: { coarse: [33, 46], table: 1, wave: [0, 31], pamt: [20, 55], pdecay: [30, 65], decay: [12, 35], attack: 0, again: [0, 15],
     clickvol: [0, 60], cutoff: [70, 127], reso: [0, 40] } },
   snare: { from: /snare$/, set: { coarse: [38, 54], nmix: [60, 115], ncolour: [80, 127], decay: [8, 30], pamt: [20, 50], pdecay: [40, 75], attack: 0,
     cutoff: [80, 127], reso: [0, 50] } },
@@ -82,11 +83,11 @@ export const RECIPES = {
   'open hat': { from: /hihat$|cymbal$/, set: { coarse: [70, 127], decay: [30, 70], attack: 0, ftype: 54, cutoff: [90, 120], reso: [0, 40],
     again: [80, 127], bgain: [80, 127] } },
   cymbal: { from: /cymbal$/, set: { decay: [60, 110], attack: 0, ftype: [18, 54], cutoff: [80, 120], again: [60, 127], bgain: [60, 127] } },
-  cowbell: { from: /cymbal$|hihat$/, set: { wave: 75, coarse: [60, 80], afreq: [55, 75], again: [0, 30], bgain: [0, 20], decay: [10, 30],
+  cowbell: { from: /cymbal$|hihat$/, set: { table: 1, wave: 94, coarse: [60, 80], afreq: [55, 75], again: [0, 30], bgain: [0, 20], decay: [10, 30],
     attack: 0, ftype: 18, cutoff: [80, 105], reso: [20, 60] } },
-  'mid perc': { from: /drum \d$/, set: { coarse: [44, 62], wave: [0, 75], pamt: [5, 35], pdecay: [20, 50], decay: [6, 22], attack: 0, again: [0, 40],
+  'mid perc': { from: /drum \d$/, set: { coarse: [44, 62], table: 1, wave: [0, 94], pamt: [5, 35], pdecay: [20, 50], decay: [6, 22], attack: 0, again: [0, 40],
     clickvol: [20, 90], cutoff: [70, 127], reso: [0, 50] } },
-  zap: { from: /drum \d$/, set: { coarse: [40, 75], wave: [0, 50], pamt: [100, 127], pdecay: [5, 25], decay: [5, 20], attack: 0, again: [0, 30],
+  zap: { from: /drum \d$/, set: { coarse: [40, 75], table: 1, wave: [0, 62], pamt: [100, 127], pdecay: [5, 25], decay: [5, 20], attack: 0, again: [0, 30],
     clickvol: [0, 40] } },
 };
 // the recipes this pool can make (each needs a kit sound of its type)
