@@ -97,3 +97,7 @@ html.look-grey .knob.fslide .fcl { stroke: #f4f3ee; stroke-width: 2; }
 html.look-grey .knob.fslide .mrange { stroke: var(--accent); stroke-width: 2.6; }
 html.panel3d .knob.fslide svg { filter: none; }
 html.panel3d .knob.fslide .fcap, html.panel3d .knob.fslide .fcl, html.panel3d .knob.fslide .slot { display: none; }
+
+/* PANEL COLOUR (SETTINGS; html.panel-own): the GREY look's panel in a colour of your own, the ink light on a dark one */
+html.look-grey.panel-own { --panel-rgb: var(--grey-panel) !important; --ink-rgb: var(--grey-ink) !important; }
+html.look-grey.panel-own .btn:active, html.look-grey.panel-own .btn[aria-pressed="true"], html.look-grey.panel-own .btn[aria-selected="true"] { color: rgb(var(--panel-rgb)); }
