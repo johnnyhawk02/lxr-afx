@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnfifw7';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnfifw7';
-import { presetName, jumble } from './names.js?v=mwnfifw7';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnfifw7';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnfifw7';
-import { breed, isDud } from '../sound/breed.js?v=mwnfifw7';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnfifw7';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnfifw7';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnfifw7';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnfifw7';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnfifw7';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnglroa';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnglroa';
+import { presetName, jumble } from './names.js?v=mwnglroa';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnglroa';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnglroa';
+import { breed, isDud } from '../sound/breed.js?v=mwnglroa';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnglroa';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnglroa';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnglroa';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnglroa';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnglroa';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnfifw7', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnglroa', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -919,11 +919,10 @@ function vfader(e) {
   el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
-  // its modulation (a right-click sets each source's depth): the sources' short name in the middle of the ring, the
+  // its modulation (a right-click sets each source's depth): the
   // range they can move it over as an arc outside the ring, and a dot where they have it now (modLive)
-  const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey), tag = mod && document.createElement('span');
+  const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey);
   if (mod) {
-    tag.className = 'modtag'; tr.append(tag);
     el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); openMod(e, el, mod); });
   }
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
@@ -949,7 +948,7 @@ function vfader(e) {
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
     if (mod) {
       const on = modDepths(mod).map((a, s) => (a && s ? s : 0)).filter(Boolean);
-      tag.textContent = on.length ? MOD_SHORT[on[0]] + (on.length > 1 ? '+' : '') : ''; el.classList.toggle('modded', on.length > 0);
+      el.classList.toggle('modded', on.length > 0);
       drawModRange(tr, v, e.max, c, mod);
     }
     const locked = S.locks.has(e.par);
@@ -987,9 +986,9 @@ function vfader(e) {
 // ---- a knob's modulation: a right-click on a knob opens its DEPTHS, for the key being edited. Every source is always
 // on, each with a depth of its own (0 to start: the knob stays where it's set), either way from the middle: the LFO,
 // the key's VELOCITY, the AMP ENV, the PITCH ENV and STEP SEQ, eight levels of the key's own (one each hit, in turn;
-// every knob of the key that STEP SEQ moves follows the same steps). A knob that's modulated shows the sources' short
-// name in its ring, the range they swing it over outside the ring, and a dot where they have it now ----
-const MOD_NAMES = ['OFF', 'LFO', 'VELOCITY', 'AMP ENV', 'PITCH ENV', 'STEP SEQ'], MOD_SHORT = ['', 'LFO', 'VEL', 'AMP', 'PIT', 'SEQ'];
+// every knob of the key that STEP SEQ moves follows the same steps). A knob that's modulated shows
+// the range they swing it over outside the ring, and a dot where they have it now ----
+const MOD_NAMES = ['OFF', 'LFO', 'VELOCITY', 'AMP ENV', 'PITCH ENV', 'STEP SEQ'];
 const MOD_SAYS = ['', 'Swings it either way of where it is set, at the LFO SPEED, WAVE and SYNC', 'Hits harder than halfway push it up, softer ones down',
   'Follows the amp envelope: the depth at its peak, back as the sound dies away', 'Follows the pitch envelope: the depth at the hit, back as the pitch settles',
   'Each hit takes the next step: the step\'s level times the depth, held until the next hit'];

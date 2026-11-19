@@ -679,14 +679,11 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .keymake .mk { display: contents; }
 .keymake .btn { min-height: 0; height: 24px; padding: 0 4px; font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; }
 
-/* ---- a knob's modulation (right-click a knob): the sources' short name in the middle of a modulated knob's ring, the
+/* ---- a knob's modulation (right-click a knob): no text in the ring (Johnny, 2026-11-19); the
    range they swing it over as an arc outside the ring, a dot where they have it now; and the depths under the knob:
    one row a source on one grid (name, a depth either way from the middle, its number), then STEP SEQ's eight steps
    in the depth column ---- */
 .knob { position: relative; }
-.modtag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; letter-spacing: 0;
-  padding: 1px 2px 0; background: var(--ink); color: var(--panel); text-shadow: none; border-radius: 2px; pointer-events: none; }
-.vf:not(.modded) .modtag { display: none; }
 .knob .mrange { fill: none; stroke: var(--ink); stroke-width: 2; opacity: .45; }
 .knob .mdot { fill: var(--ink); display: none; }
 .vf.modded.modlive .knob .mdot { display: inline; }
