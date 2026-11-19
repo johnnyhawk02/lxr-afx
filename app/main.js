@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnszw82';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnszw82';
-import { presetName, jumble } from './names.js?v=mwnszw82';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnszw82';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnszw82';
-import { breed, isDud } from '../sound/breed.js?v=mwnszw82';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnszw82';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnszw82';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnszw82';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnszw82';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnszw82';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnt0znk';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnt0znk';
+import { presetName, jumble } from './names.js?v=mwnt0znk';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnt0znk';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnt0znk';
+import { breed, isDud } from '../sound/breed.js?v=mwnt0znk';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnt0znk';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnt0znk';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnt0znk';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnt0znk';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnt0znk';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnszw82', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnt0znk', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -387,7 +387,9 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
 // the LAST box is gone from the top bar (Johnny, 2026-11-19: "this info is a bit redundant"): the key panel shows the
 // key played, and what MIDI did that played nothing (a CC, another channel, a key outside the zones) goes to the status line
 function showLastText(t) { detail(t.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])); }
-function showLast(sound) {
+function showLast(sound, note) {
+  const sk = stripKeys.find((x) => x.sound === sound && x.note === note); // the key lights while it sounds
+  if (sk) { sk.k.classList.add('hit'); clearTimeout(sk.k._t); sk.k._t = setTimeout(() => sk.k.classList.remove('hit'), 160); }
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
@@ -1306,7 +1308,7 @@ function drawEditKey() {
   const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) + hand :
     here ? `its own sound${hand}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
   $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
-  $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what;
+  $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what; $('kh-info').title = what;
   $('screen').classList.toggle('keylocked', locked);
   drawStrip();
 }
@@ -1344,25 +1346,43 @@ $('paste-key').addEventListener('click', pasteKey);
 
 // ---- the key strip: every key of the layout, grouped by engine; click picks the key and plays it ----
 const stripKeys = [];
+// the keys as a piano keyboard (Johnny, 2026-11-19: "have piano keys with the engine as a square bracket kind of thing"):
+// white keys side by side, black keys over their gaps; each engine a bracket over its keys, its name (the tab: a
+// click shows that engine's knobs) on the bracket. Zones meet where a black key starts or a white key ends
+const PIANO_W = 42, PIANO_B = 26; // a white key's width, a black key's
+const isBlack = (note) => [1, 3, 6, 8, 10].includes(note % 12);
 function buildStrip() {
   const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
-  SOUNDS.forEach((s, i) => {
-    if (!engineOn(i)) { $('sounds').append(soundBtns[i]); return; } // (an engine not in use: its button waits, hidden)
-    // the engine's button heads its keys (the tabs: a click shows that engine's knobs), as wide as they are
+  const on = SOUNDS.map((s, i) => i).filter((i) => engineOn(i));
+  SOUNDS.forEach((s, i) => { if (!engineOn(i)) $('sounds').append(soundBtns[i]); }); // (an engine not in use: its button waits, hidden)
+  const lo = SOUNDS[on[0]].zone.lo, hi = SOUNDS[on[on.length - 1]].zone.hi, pos = {};
+  let wi = 0;
+  for (let n = lo; n <= hi; n++) {
+    if (isBlack(n)) pos[n] = [wi * PIANO_W - PIANO_B / 2, wi * PIANO_W + PIANO_B / 2];
+    else { pos[n] = [wi * PIANO_W, (wi + 1) * PIANO_W]; wi++; }
+  }
+  const edge = (a, b) => (isBlack(b) ? pos[b][0] : pos[a][1]); // (where note a's zone meets note b's)
+  box.style.width = `${wi * PIANO_W}px`;
+  const keys = document.createElement('div'); keys.className = 'piano';
+  for (const i of on) {
+    const s = SOUNDS[i];
+    const x0 = s.zone.lo === lo ? pos[lo][0] : edge(s.zone.lo - 1, s.zone.lo), x1 = s.zone.hi === hi ? pos[hi][1] : edge(s.zone.hi, s.zone.hi + 1);
     const g = document.createElement('div'); g.className = 'kgroup';
-    g.innerHTML = '<div class="keys"></div>'; g.prepend(soundBtns[i]);
-    soundBtns[i].classList.toggle('narrow', s.zone.hi - s.zone.lo + 1 < 7);
+    Object.assign(g.style, { left: `${x0 + 3}px`, width: `${x1 - x0 - 6}px` });
+    g.append(soundBtns[i]); soundBtns[i].classList.toggle('narrow', x1 - x0 < 170);
+    box.append(g);
     for (let note = s.zone.lo; note <= s.zone.hi; note++) {
-      const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + ([1, 3, 6, 8, 10].includes(note % 12) ? ' blk' : '');
+      const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + (isBlack(note) ? ' blk' : '');
+      Object.assign(k.style, { left: `${pos[note][0]}px`, width: `${pos[note][1] - pos[note][0]}px` });
       k.title = `${s.name} ${noteName(note)} #${note}`;
       k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
       // held down, it plays like a key on the keyboard (an ACTIVE sequence plays until it's let go)
       k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => keyDown(i, note, 100)); });
       const up = () => noteOff(note); k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
-      g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
+      keys.append(k); stripKeys.push({ k, sound: i, note });
     }
-    box.append(g);
-  });
+  }
+  box.append(keys);
 }
 let drawPhone = () => {}; // (the phone view's pads and controls: set where the phone view is built, below)
 function drawStrip() {
@@ -1425,7 +1445,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnszw82').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnt0znk').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The

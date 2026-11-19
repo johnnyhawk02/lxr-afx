@@ -101,3 +101,15 @@ html.panel3d .knob.fslide .fcap, html.panel3d .knob.fslide .fcl, html.panel3d .k
 /* PANEL COLOUR (SETTINGS; html.panel-own): the GREY look's panel in a colour of your own, the ink light on a dark one */
 html.look-grey.panel-own { --panel-rgb: var(--grey-panel) !important; --ink-rgb: var(--grey-ink) !important; }
 html.look-grey.panel-own .btn:active, html.look-grey.panel-own .btn[aria-pressed="true"], html.look-grey.panel-own .btn[aria-selected="true"] { color: rgb(var(--panel-rgb)); }
+/* the piano keys on the GREY panel: ivory keys and black keys, the key on screen in the modulation orange */
+html.look-grey .keyhead .keystrip { --kselc: var(--accent); }
+html.look-grey .keyhead .piano .k:not(.blk) { background: linear-gradient(180deg, #f3f2ec 0%, #e3e2db 85%, #cfcec7 100%); border-color: #3a3b3d; color: #222; }
+html.look-grey .keyhead .piano .k.blk { background: linear-gradient(180deg, #2a2b2d, #111 80%, #2c2d2f); border-color: #050505; color: #ddd;
+  box-shadow: 0 2px 2px rgb(0 0 0 / .35); }
+html.look-grey .keyhead .piano .k:not(.blk):hover { background: #fff; }
+html.look-grey .keyhead .piano .k.sel:not(.blk) { background: linear-gradient(180deg, #f08a5c, var(--accent)); color: #fff; }
+html.look-grey .keyhead .piano .k.blk.sel { background: linear-gradient(180deg, #c8501c, var(--accent)); box-shadow: 0 2px 2px rgb(0 0 0 / .35); color: #fff; }
+html.look-grey .keyhead .piano .k.hit:not(.sel):not(.blk) { background: #fbd9c8; }
+html.look-grey .keyhead .piano .k.blk.hit:not(.sel) { background: #6a3420; }
+html.look-grey .keylocked .keyhead .piano .k:not(.blk) { background: #d8d7d0; color: #222; border-color: #3a3b3d; }
+html.look-grey .keylocked .keyhead .piano .k.blk { background: #111; color: #ddd; }
