@@ -1036,3 +1036,12 @@ html:not(.phone) .top { padding: 0 24px; }
 /* SOUNDMAKER (was BLENDER, Johnny 2026-11-19): the longer name fills its top-bar cell, so its B key shows in the hover text only */
 #blend-btn kbd { display: none; }
 #blend-btn { letter-spacing: .05em; }
+
+/* OPTIONS: SETUP and LOOK as two tabs at the top of the one menu; the chosen tab is filled */
+.menupanel .opttabs { grid-template-columns: 1fr 1fr; margin: 0 0 10px; }
+.menupanel .opttabs .btn[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+.optpane[hidden] { display: none; }
+.optpane > h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+/* the top bar: RANDOM, SOUNDMAKER over two cells, OPTIONS, UNDO */
+#blend-btn { grid-column: span 2; }
+#blend-btn kbd { display: inline-block; }

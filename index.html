@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwo5t8ly">
-<link rel="stylesheet" href="css/grey.css?v=mwo5t8ly">
+<link rel="stylesheet" href="css/lcd.css?v=mwo5uhvw">
+<link rel="stylesheet" href="css/grey.css?v=mwo5uhvw">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -114,8 +114,13 @@
     <button class="btn" id="blend-btn" aria-pressed="false" title="SOUNDMAKER (B): blend two sounds from the bucket into a new one, and save it to the bucket">SOUNDMAKER<kbd>B</kbd></button>
 
     <div class="menu" id="smenu">
-      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="How it plays: tempo, held keys, AUTO LEVEL, the keyboard's layout and the hardware knobs">SETUP ▾</button>
+      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="OPTIONS: SETUP (tempo, held keys, AUTO LEVEL, the keyboard, the hardware knobs) and LOOK (colours, knobs, lens)">OPTIONS ▾</button>
       <div class="menupanel settings" id="settings-panel" hidden>
+        <div class="randrow opttabs" role="tablist" aria-label="Options">
+          <button class="btn" type="button" role="tab" id="tab-setup" aria-selected="true">SETUP</button>
+          <button class="btn" type="button" role="tab" id="tab-look" aria-selected="false">LOOK</button>
+        </div>
+        <div class="optpane" id="setup-pane" role="tabpanel">
         <h3>PLAYING</h3>
         <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
         <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">HELD KEY BACK</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
@@ -128,11 +133,8 @@
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
           <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BASS STATION 2</button>
         </div>
-      </div>
-    </div>
-    <div class="menu" id="lmenu">
-      <button class="btn" id="look-btn" aria-haspopup="true" aria-expanded="false" title="How it looks: GREY or LCD, colours, knob size and style, the lens">LOOK ▾</button>
-      <div class="menupanel settings" id="look-panel" hidden>
+        </div>
+        <div class="optpane" id="look-panel" role="tabpanel" hidden>
         <h3>LOOK <span class="dim">KEPT IN THIS BROWSER</span></h3>
         <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
           <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
@@ -166,6 +168,7 @@
           <button class="btn" type="button" data-lens="tele" title="A long lens from high up: the faintest depth">TELE</button>
           <button class="btn" type="button" data-lens="wide" title="A wide lens from close: the knobs lean out a little toward the edges">WIDE</button>
           <button class="btn" type="button" data-lens="low" title="From a little lower, as you'd sit at it: the knobs' fronts show">LOW</button>
+        </div>
         </div>
         </div>
       </div>
@@ -301,6 +304,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwo5t8ly"></script>
+<script type="module" src="app/main.js?v=mwo5uhvw"></script>
 </body>
 </html>
