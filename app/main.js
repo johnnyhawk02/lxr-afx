@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnglroa';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnglroa';
-import { presetName, jumble } from './names.js?v=mwnglroa';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnglroa';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnglroa';
-import { breed, isDud } from '../sound/breed.js?v=mwnglroa';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnglroa';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnglroa';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnglroa';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnglroa';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnglroa';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnh4p0m';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnh4p0m';
+import { presetName, jumble } from './names.js?v=mwnh4p0m';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnh4p0m';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnh4p0m';
+import { breed, isDud } from '../sound/breed.js?v=mwnh4p0m';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnh4p0m';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnh4p0m';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnh4p0m';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnh4p0m';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnh4p0m';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnglroa', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnh4p0m', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -591,13 +591,12 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // velocity and mix) fills 11 cells
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
 // in the order the sound flows: its sources, what bends them, the filter and the amp, then the LFO and the mix
-const ROWS = [['osc', 'noise', 'click'], ['mod a', 'mod b', 'pitch'], ['filter in', 'filter', 'amp'], ['lfo', 'mix']];
-const GRID_COLS = 14;
+const ROWS = [['osc', 'noise', 'click', 'mod a'], ['mod b', 'pitch', 'filter in', 'filter'], ['amp', 'lfo', 'mix']]; // (row 4: modStrip)
+const GRID_COLS = 16;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
 function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
-  closeMod();
   const box = $('faders'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
   const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
@@ -629,6 +628,7 @@ function buildFaders() {
   el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
   for (const e of sends) el.querySelector('.row').append(vfader(e));
   box.append(el);
+  modStrip(box, cell, voice);
   drawSource(); // (the dice sits in the key's row of buttons, above)
   makePanel($('make')); // (and the MAKE buttons under them)
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 2, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
@@ -923,7 +923,9 @@ function vfader(e) {
   // range they can move it over as an arc outside the ring, and a dot where they have it now (modLive)
   const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey);
   if (mod) {
-    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); openMod(e, el, mod); });
+    el._ukey = e.ukey;
+    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); selectModDial(e); });
+    tr.addEventListener('pointerdown', () => selectModDial(e)); // (the bottom row's MODULATION follows the dial last touched)
   }
   const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
@@ -1021,87 +1023,74 @@ function modLive(mods, steps) {
     const v = clamp(valueNow(k.e.par) + d * k.e.max, 0, k.e.max);
     dot.setAttribute('transform', `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
   }
-  if (!modPop.hidden && modPop._steps) modPop._steps(steps ? steps[voice] : -1);
+  if (stripSteps) stripSteps(steps ? steps[voice] : -1);
 }
-const modPop = document.createElement('div'); modPop.className = 'menupanel modpop'; modPop.hidden = true; $('screen').append(modPop);
-function closeMod() { if (modPop.hidden) return; modPop.hidden = true; modPop.innerHTML = ''; modPop._steps = null; faderDraws = faderDraws.filter((d) => !d.mod); }
-// a bar either way from its middle (a depth: 0..254, MOD_AMT_ZERO none)
-function pmBar(box, o) {
-  const tr = document.createElement('div'); tr.className = 'htrack pm'; tr.setAttribute('role', 'slider'); tr.innerHTML = '<i></i><b></b>';
-  tr.setAttribute('aria-label', o.label); tr.setAttribute('aria-valuemin', -127); tr.setAttribute('aria-valuemax', 127);
-  const fill = tr.querySelector('i'), out = document.createElement('output');
+// ---- the bottom row: MODULATION, the selected dial's depth from every source (a press or a right-click on a
+// modulatable dial selects it), and the key's STEP SEQ: its eight steps, STEP TIME and SLEW. One cell each, on the grid
+// (Johnny, 2026-11-19: "bottom row shows sequencer and modulations so we dont need the popup") ----
+let modDial = 'cutoff', stripSteps = null;
+// a depth: a bar up and down from its middle, in a cell of its own (0..254, MOD_AMT_ZERO none)
+function depthBar(o) {
+  const el = document.createElement('div'); el.className = 'vd';
+  el.innerHTML = '<output></output><div class="dtrack" role="slider"><i></i><b></b></div><span class="lab"></span>';
+  el.querySelector('.lab').textContent = o.label; el.title = o.title;
+  const tr = el.querySelector('.dtrack'), fill = tr.querySelector('i'), out = el.querySelector('output');
+  tr.setAttribute('aria-label', o.label + ' depth'); tr.setAttribute('aria-valuemin', -127); tr.setAttribute('aria-valuemax', 127);
   const draw = () => {
-    const v = o.get(), f = v / MOD_AMT_MAX, h = MOD_AMT_ZERO / MOD_AMT_MAX;
-    fill.style.setProperty('--l', (Math.min(f, h) * 100) + '%'); fill.style.setProperty('--r', ((1 - Math.max(f, h)) * 100) + '%');
-    const d = Math.round(v - MOD_AMT_ZERO); out.textContent = d > 0 ? '+' + d : d; tr.setAttribute('aria-valuenow', d);
-    o.row.classList.toggle('on', d !== 0);
+    const v = o.get(), f = v / MOD_AMT_MAX, h = MOD_AMT_ZERO / MOD_AMT_MAX, d = Math.round(v - MOD_AMT_ZERO);
+    fill.style.setProperty('--b', (Math.min(f, h) * 100) + '%'); fill.style.setProperty('--t', ((1 - Math.max(f, h)) * 100) + '%');
+    out.textContent = d > 0 ? '+' + d : d; tr.setAttribute('aria-valuenow', d); el.classList.toggle('on', d !== 0);
   };
-  const put = (x) => { x = clamp(Math.round(x), 0, MOD_AMT_MAX); if (x !== o.get()) { o.set(x); draw(); } };
-  dragger(tr, 'x', { min: 0, max: MOD_AMT_MAX, get: o.get, put });
-  tr.addEventListener('dblclick', () => put(MOD_AMT_ZERO));
-  box.append(tr, out);
-  return draw;
+  dragger(tr, 'y', { min: 0, max: MOD_AMT_MAX, get: o.get, put: (x) => { x = clamp(Math.round(x), 0, MOD_AMT_MAX); if (x !== o.get()) { o.set(x); draw(); } } });
+  tr.addEventListener('dblclick', () => { if (o.get() !== MOD_AMT_ZERO) { o.set(MOD_AMT_ZERO); draw(); } });
+  return { el, draw };
 }
-function openMod(e, el, m) {
-  closeMod();
-  const voice = SOUNDS[S.sel].engineVoice, name = `${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${e.label.toUpperCase()}`;
-  modPop.innerHTML = `<h3>MODULATE <span></span></h3><div class="mrows"></div><p class="cap"></p>`;
-  modPop.querySelector('h3 span').textContent = e.label.toUpperCase();
-  const rows = modPop.querySelector('.mrows'), cap = modPop.querySelector('.cap'), draws = [];
-  cap.textContent = 'Every source is on: drag its depth away from 0, either way. Double-click a depth for 0';
-  for (let s = 1; s < MOD_NAMES.length; s++) {
-    const row = document.createElement('div'); row.className = 'mrow'; row.title = MOD_SAYS[s];
-    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = MOD_NAMES[s]; row.append(lab);
-    draws.push(pmBar(row, { label: `${e.label} ${MOD_NAMES[s]} depth`, row, get: () => valueNow(m.depths[s]) ?? MOD_AMT_ZERO,
-      set: (x) => { editValue(m.depths[s], x); drawFaders(); const d = Math.round(x - MOD_AMT_ZERO); detail(`${name} <em>${MOD_NAMES[s]} ${d > 0 ? '+' : ''}${d}</em>`); } }));
-    rows.append(row);
-    row.addEventListener('pointerenter', () => { cap.textContent = MOD_SAYS[s]; });
+// the row, in the grid's bottom row (cells 1 to GRID_COLS); voice: the engine on screen
+function modStrip(box, cell, voice) {
+  const schema = VOICE_SCHEMAS[voice];
+  const dialE = () => schema.find((e) => e.ukey === modDial) || schema.find((e) => e.ukey === 'cutoff');
+  // MODULATION: one cell a source
+  const ms = document.createElement('div'); ms.className = 'sect rt modsect'; ms.style.setProperty('--n', NUM_SRC); cell(ms, 4, 5, 1, 1 + NUM_SRC);
+  ms.innerHTML = '<h3>modulate <span></span></h3><div class="row"></div>';
+  const msRow = ms.querySelector('.row'), msName = ms.querySelector('h3 span'), bars = [];
+  for (let s = 1; s <= NUM_SRC; s++) {
+    const mod = () => modOf(voice, dialE().ukey);
+    const b = depthBar({ label: MOD_SOURCES[s], title: MOD_SAYS[s],
+      get: () => valueNow(mod().depths[s]) ?? MOD_AMT_ZERO,
+      set: (x) => { editValue(mod().depths[s], x); drawFaders(); const d = Math.round(x - MOD_AMT_ZERO); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} ${dialE().label.toUpperCase()} <em>${MOD_NAMES[s]} ${d > 0 ? '+' : ''}${d}</em>`); } });
+    msRow.append(b.el); bars.push(b);
   }
-  // STEP SEQ's eight levels, under its depth: drag a step up or down
-  const srow = document.createElement('div'); srow.className = 'mrow steps';
-  srow.innerHTML = '<span class="lab">STEPS</span><div class="stepbox"></div><span></span>';
-  const sbox = srow.querySelector('.stepbox'), bars = [];
+  box.append(ms);
+  // STEP SEQ: the eight steps, then STEP TIME and SLEW as dials
+  const n = NUM_STEPS + 2, sq = document.createElement('div'); sq.className = 'sect rt sep seqsect'; sq.style.setProperty('--n', n); cell(sq, 4, 5, 1 + NUM_SRC, 1 + NUM_SRC + n);
+  sq.innerHTML = '<h3>step seq</h3><div class="row"></div>';
+  const sqRow = sq.querySelector('.row'), steps = [];
   for (let k = 0; k < NUM_STEPS; k++) {
-    const par = stepPar(voice, k), b = document.createElement('div'); b.className = 'step'; b.setAttribute('role', 'slider');
-    b.setAttribute('aria-label', 'step ' + (k + 1)); b.innerHTML = '<i></i>';
-    const get = () => valueNow(par) ?? 0;
-    const drawB = () => { b.style.setProperty('--f', get() / 127); b.setAttribute('aria-valuenow', Math.round(get())); };
+    const par = stepPar(voice, k), el = document.createElement('div'); el.className = 'vd stepd';
+    el.innerHTML = `<output></output><div class="step" role="slider"><i></i></div><span class="lab">${k + 1}</span>`;
+    const b = el.querySelector('.step'), out = el.querySelector('output'), get = () => valueNow(par) ?? 0;
+    b.setAttribute('aria-label', 'step ' + (k + 1));
+    const drawB = () => { b.style.setProperty('--f', get() / 127); out.textContent = Math.round(get()); b.setAttribute('aria-valuenow', Math.round(get())); };
     dragger(b, 'y', { min: 0, max: 127, get, put: (x) => { x = clamp(Math.round(x), 0, 127); if (x !== get()) { editValue(par, x); drawB(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEP ${k + 1} ${x}</em>`); } } });
-    sbox.append(b); bars.push(b); draws.push(drawB);
+    sqRow.append(el); steps.push({ el, draw: drawB });
   }
-  srow.addEventListener('pointerenter', () => { cap.textContent = 'The key\'s eight steps. Every knob STEP SEQ moves on this key follows them'; });
-  rows.append(srow);
-  // STEP TIME (HIT: a step a hit; or a step length at the tempo, each hit from step 1) and SLEW (a glide between steps)
-  const sx = [
-    { label: 'STEP TIME', par: stepTimePar(voice), max: STEP_TIMES.length - 1, show: (x) => STEP_TIMES[x][0].toUpperCase(),
-      says: 'HIT: each hit plays the next step. Or a step length at the tempo: the steps run on their own, from step 1 at each hit' },
-    { label: 'SLEW', par: stepSlewPar(voice), max: 127, show: (x) => (x ? slewMs(x) + 'ms' : 'OFF'), says: 'Glides from one step\'s level to the next instead of jumping' }];
-  for (const o of sx) {
-    const row = document.createElement('div'); row.className = 'mrow on'; row.innerHTML = '<span class="lab"></span><div class="htrack" role="slider"><i></i></div><output></output>';
-    row.querySelector('.lab').textContent = o.label;
-    const tr = row.querySelector('.htrack'), out = row.querySelector('output'), get = () => Math.round(valueNow(o.par) ?? 0);
-    tr.setAttribute('aria-label', o.label);
-    const drawX = () => { const x = get(); tr.style.setProperty('--f', o.max === 127 ? x / 127 : (x + 0.5) / (o.max + 1)); out.textContent = o.show(x); tr.setAttribute('aria-valuetext', o.show(x)); };
-    dragger(tr, 'x', { min: 0, max: o.max, get, put: (x) => { x = clamp(Math.round(x), 0, o.max); if (x !== get()) { editValue(o.par, x); drawX(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>${o.label} ${o.show(x)}</em>`); } } });
-    tr.addEventListener('dblclick', () => { if (get()) { editValue(o.par, 0); drawX(); } });
-    row.addEventListener('pointerenter', () => { cap.textContent = o.says; });
-    rows.append(row); draws.push(drawX);
+  for (const par of [stepTimePar(voice), stepSlewPar(voice)]) {
+    const e = schema.find((x) => x.par === par), f = vfader({ ...e, ukey: undefined, display: e.step === 'slew' ? { type: 'slew' } : e.display });
+    f.querySelector('.lock').remove(); sqRow.append(f);
   }
-  modPop._steps = (at) => bars.forEach((b, k) => b.classList.toggle('now', k === at));
-  const draw = () => draws.forEach((d) => d());
-  draw.mod = true; faderDraws.push(draw); draw();
-  modPop._steps(stepAt ? stepAt[voice] : -1);
-  // under the knob, inside the screen (the screen may be scaled down to fit)
-  modPop.hidden = false;
-  const sc = $('screen'), sr = sc.getBoundingClientRect(), k = sr.width / sc.offsetWidth || 1, r = el.getBoundingClientRect();
-  const w = modPop.offsetWidth, h = modPop.offsetHeight;
-  let left = (r.left - sr.left) / k, top = (r.bottom - sr.top) / k + 4;
-  left = clamp(left, 8, sc.offsetWidth - w - 8);
-  if (top + h > sc.offsetHeight - 8) top = (r.top - sr.top) / k - h - 4;
-  Object.assign(modPop.style, { left: left + 'px', top: Math.max(8, top) + 'px' });
+  box.append(sq);
+  if (GRID_COLS > NUM_SRC + n) { const fl = document.createElement('div'); fl.className = 'sect rt sep fill'; cell(fl, 4, 5, 1 + NUM_SRC + n, GRID_COLS + 1); box.append(fl); }
+  stripSteps = (at) => steps.forEach((st, k) => st.el.classList.toggle('now', k === at));
+  const draw = () => {
+    const e = dialE(); msName.textContent = e.label;
+    bars.forEach((b) => b.draw()); steps.forEach((st) => st.draw());
+    document.querySelectorAll('.faders .vf.modsel').forEach((x) => x.classList.remove('modsel'));
+    const sel = [...document.querySelectorAll('.faders .sect .vf')].find((x) => x._ukey === e.ukey); if (sel) sel.classList.add('modsel');
+  };
+  faderDraws.push(draw);
+  stripSteps(stepAt ? stepAt[voice] : -1);
 }
-document.addEventListener('pointerdown', (ev) => { if (!modPop.hidden && !modPop.contains(ev.target)) closeMod(); });
-document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeMod(); });
+function selectModDial(e) { if (modDial === e.ukey) return; modDial = e.ukey; drawFaders(); }
 
 // ---- what the editor edits: the last key (KEY) or every key (ALL KEYS); clearing a key's edits ----
 function setEditAll(all) { S.editAll = all; save(); drawEditKey(); drawFaders(); }
@@ -2372,11 +2361,11 @@ function setPhone() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// fit the screen to the window: the big screen is a fixed 16:10 panel, 1424 x 890 (a 1440 x 900 window less the bezel's
-// margin), laid out at that size always and scaled to fit the window, up or down, and centred; the dark surround fills
+// fit the screen to the window: the big screen is a fixed 16:8 panel, 1780 x 890 (Johnny, 2026-11-19: "make proportion
+// 16:8"), laid out at that size always and scaled to fit the window, up or down, and centred; the dark surround fills
 // what's left, so it never reflows and nothing scrolls. (index.html does the same before the first paint)
 // ---------------------------------------------------------------------------------------------------------------
-const FIT_W = 1424, FIT_H = 890;
+const FIT_W = 1780, FIT_H = 890;
 // the engine buttons sit right under their key groups in the strip above, FX under the key's buttons
 function alignEngines() {
   const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;

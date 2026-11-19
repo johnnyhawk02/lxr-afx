@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnglroa">
+<link rel="stylesheet" href="css/lcd.css?v=mwnh4p0m">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -246,12 +246,12 @@
 </main>
 </div>
 <script>
-// the big screen is a fixed 16:10 panel (1424 x 890), scaled to fit the window and centred (app/main.js fitScreen does the
+// the big screen is a fixed 16:8 panel (1780 x 890), scaled to fit the window and centred (app/main.js fitScreen does the
 // same on resize): set before the first paint so it never shows at the wrong size
 (function () {
   if (document.documentElement.classList.contains('phone')) return;
-  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1424, (innerHeight - 16) / 890);
-  st.style.left = (innerWidth - 1424 * s) / 2 + 'px'; st.style.top = (innerHeight - 890 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
+  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1780, (innerHeight - 16) / 890);
+  st.style.left = (innerWidth - 1780 * s) / 2 + 'px'; st.style.top = (innerHeight - 890 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
 })();
 </script>
 <script>
@@ -266,6 +266,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnglroa"></script>
+<script type="module" src="app/main.js?v=mwnh4p0m"></script>
 </body>
 </html>

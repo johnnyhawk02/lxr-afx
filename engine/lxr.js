@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwnglroa';
+import { read as readTable } from './wavetables.js?v=mwnh4p0m';
 
 export { PAR, CC, CC2 };
 

@@ -14,12 +14,12 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body { background: radial-gradient(120% 80% at 50% 0%, #2a2d28, #161815) fixed; padding: 8px; overflow: hidden; font-family: var(--font); color: var(--ink); }
-/* the stage holds the screen. On a laptop or desktop it is a fixed 16:10 panel, 1424 x 890, that fitScreen (app/main.js)
+/* the stage holds the screen. On a laptop or desktop it is a fixed 16:8 panel, 1780 x 890, that fitScreen (app/main.js)
    scales to fit the window and centres, the bezel's dark surround filling the rest; the layout inside never reflows.
-   The size rules below are container queries on the stage, not media queries, so they see 1424 x 890 at any window
+   The size rules below are container queries on the stage, not media queries, so they see 1780 x 890 at any window
    size (and the phone's own size on a phone) */
 .stage { container-type: size; width: 100%; height: 100%; }
-html:not(.phone) .stage { position: absolute; left: 8px; top: 8px; width: 1424px; height: 890px; transform-origin: 0 0; }
+html:not(.phone) .stage { position: absolute; left: 8px; top: 8px; width: 1780px; height: 890px; transform-origin: 0 0; }
 button { font: inherit; color: inherit; }
 
 .screen {
@@ -640,7 +640,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
 @container (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
 .faders .sect.off > .row { opacity: .42; }
-.faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */
+.faders { grid-template-columns: repeat(18, minmax(0, 1fr)); } /* 16 cells of the engine's sections, then the key's own two */
 
 /* ENGINES 4 to 6: the second drum, snare and metal, shaded like the first */
 .pad.e3 { background: rgb(var(--ink-rgb) / .2); }
@@ -687,20 +687,22 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .knob .mrange { fill: none; stroke: var(--ink); stroke-width: 2; opacity: .45; }
 .knob .mdot { fill: var(--ink); display: none; }
 .vf.modded.modlive .knob .mdot { display: inline; }
-.modpop { position: absolute; right: auto; width: 560px; z-index: 30; }
-.modpop h3 span { color: var(--ink); }
-.modpop .mrows { display: grid; grid-template-columns: 130px 1fr 56px; gap: 8px 10px; align-items: center; }
-.modpop .mrow { display: contents; }
-.modpop .mrow .lab { font-size: 17px; letter-spacing: .06em; color: var(--ghost); cursor: default; }
-.modpop .mrow.on .lab, .modpop .mrow.steps .lab { color: var(--ink); }
-.modpop .mrow output { text-align: right; font-size: 17px; font-variant-numeric: tabular-nums; }
-.htrack.pm i { width: auto; right: 0; clip-path: inset(0 var(--r) 0 var(--l)); }
-.htrack.pm b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }
-.modpop .stepbox { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; height: 64px; }
-.modpop .step { --f: 0; position: relative; cursor: ns-resize; touch-action: none; border: 2px solid var(--ink); }
-.modpop .step i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--f) * 100%); background: var(--ink); }
-.modpop .step.now { outline: 2px solid var(--ink); outline-offset: 2px; }
-.modpop .cap { margin: 12px 0 0; font-size: 15px; letter-spacing: 1px; line-height: 1.2; min-height: 2.4em; }
+/* the bottom row (modStrip): MODULATE, the selected dial's depth from each source as a bar up and down from its middle,
+   then STEP SEQ's eight steps, STEP TIME and SLEW; one cell each, like the knobs above */
+.vd { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; min-height: 0; }
+.vd output { font-size: 17px; height: 1.1em; font-variant-numeric: tabular-nums; }
+.vd .lab { font-size: 15px; text-transform: uppercase; letter-spacing: 0; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 4px); color: var(--muted); cursor: default; }
+.vd.on .lab, .vd.stepd .lab { color: var(--ink); }
+.dtrack { position: relative; width: 30px; height: var(--ks); cursor: ns-resize; touch-action: none;
+  background: repeating-linear-gradient(to top, var(--ghost) 0 4px, transparent 4px 6px); }
+.dtrack i { position: absolute; left: 0; right: 0; top: 0; bottom: 0; clip-path: inset(var(--t) 0 var(--b) 0);
+  background: repeating-linear-gradient(to top, var(--ink) 0 4px, transparent 4px 6px); }
+.dtrack b { position: absolute; top: 50%; left: -4px; right: -4px; height: 2px; margin-top: -1px; background: var(--ink); }
+.stepd .step { --f: 0; position: relative; width: 30px; height: var(--ks); cursor: ns-resize; touch-action: none; border: 2px solid var(--ink); box-sizing: border-box; }
+.stepd .step i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--f) * 100%); background: var(--ink); }
+.stepd.now .step { outline: 2px solid var(--ink); outline-offset: 2px; }
+.faders .vf.modsel .lab { text-decoration: underline; text-underline-offset: 3px; }
+.faders .modsect h3 span { color: var(--ink); }
 
 /* ---- SOUND BLENDER: a popup over the screen, on the same 4-column grid throughout ---- */
 .blender { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgb(var(--panel-rgb) / .55); }
