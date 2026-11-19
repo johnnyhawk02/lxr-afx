@@ -912,3 +912,50 @@ html:not(.phone) .faders .vf.big .knob.fslide svg { transform: none; }
 .knob.fslide .notch { stroke-width: 2.5; }
 .faders .vf.big:has(.fslide) .lock { left: calc(50% + 50px); }
 html.phone .faders .vf.big .knob.fslide { height: 150px; margin: 8px 0; }
+
+/* ---- the keys as a piano, each engine a bracket over its keys with its name on it (Johnny, 2026-11-19: "have piano
+   keys with the engine as a square bracket kind of thing"); buildStrip places every key and bracket ---- */
+.keyhead .keystrip { position: relative; display: block; flex: none; height: 96px; --kselc: var(--ink); }
+.keyhead .kgroup { position: absolute; top: 0; height: 30px; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0; min-width: 0; }
+.keyhead .kgroup::before { content: ''; position: absolute; left: 0; right: 0; top: 13px; bottom: -2px; border: 2px solid var(--ink); border-bottom: 0; border-radius: 2px 2px 0 0; }
+html .keyhead .kgroup .snd { position: relative; z-index: 1; width: auto; max-width: calc(100% - 16px); height: 26px; min-height: 0; padding: 0 10px 0 22px; gap: 6px; font-size: 17px;
+  background: rgb(var(--panel-rgb)); box-shadow: none; overflow: hidden; }
+html .keyhead .kgroup .snd i { left: 7px; }
+html .keyhead .kgroup .snd .ch { font-size: 13px; }
+html .keyhead .kgroup .snd.narrow { padding: 0 6px; font-size: 15px; }
+html .keyhead .kgroup .snd.narrow .ch, html .keyhead .kgroup .snd.narrow i { display: none; }
+html .keyhead .kgroup .snd[aria-selected="true"] { background: var(--ink); color: rgb(var(--panel-rgb)); text-shadow: none; }
+.keyhead .kgroup:has(.snd[aria-selected="true"])::before { border-width: 3px; border-bottom: 0; }
+.keyhead .piano { position: absolute; left: 0; right: 0; top: 34px; height: 62px; }
+.keyhead .piano .k { position: absolute; top: 0; height: 62px; border: 2px solid var(--ink); border-radius: 0 0 4px 4px; background: transparent; outline: 0; }
+.keyhead .piano .k.blk { z-index: 2; height: 38px; background: var(--ink); border-radius: 0 0 3px 3px; }
+.keyhead .piano .k + .k:not(.blk) { margin-left: 0; }
+.keyhead .piano .k:not(.blk) { border-left-width: 1px; border-right-width: 1px; }
+.keyhead .piano .k:hover { background: var(--tint); }
+.keyhead .piano .k.blk:hover { background: rgb(var(--ink-rgb) / .8); }
+/* the key on screen, filled; a key that's sounding, lit for a moment */
+.keyhead .piano .k.sel { background: var(--kselc); outline: 0; }
+.keyhead .piano .k.blk.sel { background: rgb(var(--panel-rgb)); box-shadow: inset 0 0 0 4px var(--ink); }
+.keyhead .piano .k.hit:not(.sel) { background: rgb(var(--ink-rgb) / .35); }
+.keyhead .piano .k.blk.hit:not(.sel) { background: rgb(var(--ink-rgb) / .55); }
+/* its marks: a dot when edited by hand, a padlock when locked, a dashed foot when it plays a rhythm */
+.keyhead .piano .k.own::after { top: auto; bottom: 8px; background: currentColor; }
+.keyhead .piano .k { color: var(--ink); }
+.keyhead .piano .k.blk, .keyhead .piano .k.sel { color: rgb(var(--panel-rgb)); }
+.keyhead .piano .k.blk.sel { color: var(--ink); }
+.keyhead .piano .k svg { top: auto; bottom: 6px; margin-top: 0; }
+.keyhead .piano .k.locked::after { display: none; }
+/* a locked key: the panel inverts, the keyboard with it */
+.keylocked .keyhead .kgroup::before { border-color: rgb(var(--panel-rgb)); }
+.keylocked .keyhead .piano .k { border-color: rgb(var(--panel-rgb)); color: rgb(var(--panel-rgb)); background: transparent; }
+.keylocked .keyhead .piano .k.blk { background: rgb(var(--panel-rgb) / .75); color: var(--ink); }
+.keylocked .keyhead .piano .k.sel { background: rgb(var(--panel-rgb)); color: var(--ink); }
+.keylocked .keyhead .piano .k.blk.sel { box-shadow: inset 0 0 0 4px rgb(var(--panel-rgb)); background: var(--ink); color: rgb(var(--panel-rgb)); }
+html .keylocked .keyhead .kgroup .snd { background: var(--ink); color: rgb(var(--panel-rgb)); border-color: rgb(var(--panel-rgb)); }
+html .keylocked .keyhead .kgroup .snd[aria-selected="true"] { background: rgb(var(--panel-rgb)); color: var(--ink); }
+
+/* KEY: the note and the sound it plays, no more (the bracket says the engine); a long name ends neatly, the full one
+   in its tooltip */
+.khkey #kh-num, .khkey #kh-engine { display: none; }
+.khkey .keyname b { font-size: 54px; }
+.khkey .keyinfo span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; font-size: 19px; overflow-wrap: anywhere; }

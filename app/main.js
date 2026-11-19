@@ -387,7 +387,9 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
 // the LAST box is gone from the top bar (Johnny, 2026-11-19: "this info is a bit redundant"): the key panel shows the
 // key played, and what MIDI did that played nothing (a CC, another channel, a key outside the zones) goes to the status line
 function showLastText(t) { detail(t.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])); }
-function showLast(sound) {
+function showLast(sound, note) {
+  const sk = stripKeys.find((x) => x.sound === sound && x.note === note); // the key lights while it sounds
+  if (sk) { sk.k.classList.add('hit'); clearTimeout(sk.k._t); sk.k._t = setTimeout(() => sk.k.classList.remove('hit'), 160); }
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }
@@ -1306,7 +1308,7 @@ function drawEditKey() {
   const what = locked ? `locked${from && from !== 'kept' ? ' · ' + from : ''}` : from ? (from === 'kept' ? 'its own sound' : from) + hand :
     here ? `its own sound${hand}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
   $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
-  $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what;
+  $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what; $('kh-info').title = what;
   $('screen').classList.toggle('keylocked', locked);
   drawStrip();
 }
@@ -1344,25 +1346,43 @@ $('paste-key').addEventListener('click', pasteKey);
 
 // ---- the key strip: every key of the layout, grouped by engine; click picks the key and plays it ----
 const stripKeys = [];
+// the keys as a piano keyboard (Johnny, 2026-11-19: "have piano keys with the engine as a square bracket kind of thing"):
+// white keys side by side, black keys over their gaps; each engine a bracket over its keys, its name (the tab: a
+// click shows that engine's knobs) on the bracket. Zones meet where a black key starts or a white key ends
+const PIANO_W = 42, PIANO_B = 26; // a white key's width, a black key's
+const isBlack = (note) => [1, 3, 6, 8, 10].includes(note % 12);
 function buildStrip() {
   const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
-  SOUNDS.forEach((s, i) => {
-    if (!engineOn(i)) { $('sounds').append(soundBtns[i]); return; } // (an engine not in use: its button waits, hidden)
-    // the engine's button heads its keys (the tabs: a click shows that engine's knobs), as wide as they are
+  const on = SOUNDS.map((s, i) => i).filter((i) => engineOn(i));
+  SOUNDS.forEach((s, i) => { if (!engineOn(i)) $('sounds').append(soundBtns[i]); }); // (an engine not in use: its button waits, hidden)
+  const lo = SOUNDS[on[0]].zone.lo, hi = SOUNDS[on[on.length - 1]].zone.hi, pos = {};
+  let wi = 0;
+  for (let n = lo; n <= hi; n++) {
+    if (isBlack(n)) pos[n] = [wi * PIANO_W - PIANO_B / 2, wi * PIANO_W + PIANO_B / 2];
+    else { pos[n] = [wi * PIANO_W, (wi + 1) * PIANO_W]; wi++; }
+  }
+  const edge = (a, b) => (isBlack(b) ? pos[b][0] : pos[a][1]); // (where note a's zone meets note b's)
+  box.style.width = `${wi * PIANO_W}px`;
+  const keys = document.createElement('div'); keys.className = 'piano';
+  for (const i of on) {
+    const s = SOUNDS[i];
+    const x0 = s.zone.lo === lo ? pos[lo][0] : edge(s.zone.lo - 1, s.zone.lo), x1 = s.zone.hi === hi ? pos[hi][1] : edge(s.zone.hi, s.zone.hi + 1);
     const g = document.createElement('div'); g.className = 'kgroup';
-    g.innerHTML = '<div class="keys"></div>'; g.prepend(soundBtns[i]);
-    soundBtns[i].classList.toggle('narrow', s.zone.hi - s.zone.lo + 1 < 7);
+    Object.assign(g.style, { left: `${x0 + 3}px`, width: `${x1 - x0 - 6}px` });
+    g.append(soundBtns[i]); soundBtns[i].classList.toggle('narrow', x1 - x0 < 170);
+    box.append(g);
     for (let note = s.zone.lo; note <= s.zone.hi; note++) {
-      const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + ([1, 3, 6, 8, 10].includes(note % 12) ? ' blk' : '');
+      const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + (isBlack(note) ? ' blk' : '');
+      Object.assign(k.style, { left: `${pos[note][0]}px`, width: `${pos[note][1] - pos[note][0]}px` });
       k.title = `${s.name} ${noteName(note)} #${note}`;
       k.innerHTML = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
       // held down, it plays like a key on the keyboard (an ACTIVE sequence plays until it's let go)
       k.addEventListener('pointerdown', (e) => { k.setPointerCapture(e.pointerId); startAudio().then(() => keyDown(i, note, 100)); });
       const up = () => noteOff(note); k.addEventListener('pointerup', up); k.addEventListener('pointercancel', up);
-      g.querySelector('.keys').append(k); stripKeys.push({ k, sound: i, note });
+      keys.append(k); stripKeys.push({ k, sound: i, note });
     }
-    box.append(g);
-  });
+  }
+  box.append(keys);
 }
 let drawPhone = () => {}; // (the phone view's pads and controls: set where the phone view is built, below)
 function drawStrip() {
