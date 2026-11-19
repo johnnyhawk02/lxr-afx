@@ -815,14 +815,16 @@ const ECHO_TIME = {
 const ECHO_DUCK = { max: 127, get: () => E().duck || 0, set: (v) => { E().duck = v; sendFx(); detail(`ECHO DUCK <em>${v ? Math.round(v / 1.27) + '%' : 'OFF'}</em>`); },
   show: (v) => (v ? Math.round(v / 1.27) + '%' : 'off'), dflt: 0 };
 const TOG_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true">'
-  + '<rect class="rbez" x="18" y="9" width="28" height="46" rx="3.5"/>'
-  + '<rect class="rup" x="21" y="12" width="22" height="20" rx="1.5"/><rect class="rdn" x="21" y="32" width="22" height="20" rx="1.5"/>'
-  + '<line class="rhl rhl-up" x1="23" y1="13.6" x2="41" y2="13.6"/><line class="rhl rhl-dn" x1="23" y1="50.4" x2="41" y2="50.4"/>'
-  + '<line class="rpiv" x1="21" y1="32" x2="43" y2="32"/>'
-  + '<line class="rmk" x1="32" y1="17" x2="32" y2="26"/><circle class="rmk" cx="32" cy="42" r="4.2"/>'
-  + '<line class="mrange" x1="52" y1="52" x2="52" y2="52"/><circle class="mdot" cx="52" cy="12" r="3"/></svg>';
+  + '<rect class="rbez" x="14" y="7" width="36" height="50" rx="2.5"/><rect class="rbz2" x="16.5" y="9.5" width="31" height="45" rx="1.5"/>'
+  + '<rect class="rgap" x="19" y="12" width="26" height="40" rx="1"/>'
+  + '<rect class="rface" x="20" y="13" width="24" height="38" rx="1.5"/>'
+  + '<rect class="rup" x="20" y="13" width="24" height="19"/><rect class="rdn" x="20" y="32" width="24" height="19"/>'
+  + '<rect class="rsh rsh-up" x="20" y="13" width="24" height="3.2"/><rect class="rsh rsh-dn" x="20" y="47.8" width="24" height="3.2"/>'
+  + '<line class="rhl rhl-up" x1="21.5" y1="13.9" x2="42.5" y2="13.9"/><line class="rhl rhl-dn" x1="21.5" y1="50.1" x2="42.5" y2="50.1"/>'
+  + '<circle class="rmk" cx="32" cy="22.5" r="4.3"/><line class="rmk" x1="32" y1="37.5" x2="32" y2="45.5"/>'
+  + '<line class="mrange" x1="55" y1="12" x2="55" y2="12"/><circle class="mdot" cx="55" cy="52" r="3"/></svg>';
 // a two-way FX switch (SYNC, P-PONG, the distortion's FILTER, XOVER and CLIP) is drawn as a rocker switch too (vtoggle):
-// the top pressed for its second setting, its name over it
+// its I end pressed for its second setting, its name over it
 function togDraw(b, out, names, get) {
   b.classList.add('tog'); b.setAttribute('role', 'switch'); b.innerHTML = TOG_SVG; b.setAttribute('aria-label', b.title);
   return () => { const v = get() ? 1 : 0; b.setAttribute('aria-checked', v === 1); out.textContent = names[v]; };
@@ -977,13 +979,14 @@ const LOCK_SVG = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 
 // a pan knob's L and R, at the two ends of its ring
 const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
 // a rocker switch: a control with only two settings (on/off, A/B) in a knob's cell, the same size as a knob (Johnny,
-// 2026-11-19: "turn any dials with 2 states into switches", then "make the switches rocker switches"). Its top half
-// pressed in is its second setting (ON, marked I), its bottom half its first (OFF, marked O). The GREY look draws a
-// black rocker in a bezel, the pressed half dark and the raised half catching the light; the LCD look fills the pressed
-// half. No three.js knob (app/panel3d.js draws only .knob). A modulated one (VEL VOL) shows the swing its sources give
-// it as a bar beside the rocker, the middle being where it flips, and a dot at the end the engine has it at now
+// 2026-11-19: "turn any dials with 2 states into switches", then rocker switches "more like this kind of switch", a
+// black KCD1 rocker). O is printed on its top end and I on its bottom end; ON (its second setting) has the I end pressed
+// in and the O end raised, as on the real switch. The GREY look draws a matte black rocker in a black bezel (with the
+// three.js panel on, app/panel3d.js builds it in 3D, tilted, with real shading and shadow); the LCD look fills the
+// pressed half. A modulated one (VEL VOL) shows the swing its sources give it as a bar beside the rocker (top: off,
+// bottom: on, the middle being where it flips), and a dot at the end the engine has it at now
 // the swing bar and the live dot on a switch (v: 0 or 1; lo, hi: how far its sources move it, in its 0..1 range)
-const togY = (x) => 52 - 40 * clamp(x, 0, 1);
+const togY = (x) => 12 + 40 * clamp(x, 0, 1);
 function drawTogMod(b, v, lo, hi) {
   const r = b.querySelector('.mrange');
   r.setAttribute('y1', togY(v + lo)); r.setAttribute('y2', togY(v + hi));
@@ -1139,7 +1142,7 @@ function modLive(mods, steps) {
     const d = m.get(k.mod.dest), dot = k.tr.querySelector('.mdot');
     k.el.classList.toggle('modlive', d !== undefined);
     if (d === undefined) continue;
-    if (k.tog) { dot.setAttribute('cy', valueNow(k.e.par) + d >= 0.5 ? 12 : 52); continue; } // (a switch: the end it's at)
+    if (k.tog) { dot.setAttribute('cy', valueNow(k.e.par) + d >= 0.5 ? 52 : 12); continue; } // (a switch: the end it's at)
     const v = clamp(valueNow(k.e.par) + d * k.e.max, 0, k.e.max);
     dot.setAttribute('transform', `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
   }
