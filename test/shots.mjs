@@ -421,8 +421,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
       || /[<>]/.test(got[1]._kit) || got[1][5] !== 255 || got[1]._lock !== true || got[2].join() !== '0') bad('export, import', file.presets.length, im1, f0, im2, f1, im3, im4, got);
     await p.keyboard.press('Escape'); const shut = await p.evaluate(() => document.getElementById('preset-panel').hidden);
     const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), m = r('midi-status'), lg = (() => { const g = document.createRange(); g.selectNodeContents(document.querySelector('.top .logo')); return g.getBoundingClientRect(); })();
-      return [b.left > r('screen').left, Math.round(b.width), m.left >= lg.right - 1 && m.right <= b.left, !document.getElementById('last')]; });
-    if (!shut || !bar[0] || bar[1] < 600 || !bar[2] || !bar[3]) bad('top bar', shut, bar); } // (PRESET has the patch's cells; the MIDI lamp sits right of the logo; no LAST box)
+      return [b.left > r('screen').left, Math.round(b.width / r('screen').width * 100), m.left >= lg.right - 1 && m.right <= b.left, !document.getElementById('last')]; });
+    if (!shut || !bar[0] || bar[1] < 40 || !bar[2] || !bar[3]) bad('top bar', shut, bar); } // (PRESET has the patch's cells, nearly half the screen whatever its scale; the MIDI lamp sits right of the logo; no LAST box)
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
