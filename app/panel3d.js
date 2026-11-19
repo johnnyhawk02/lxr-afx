@@ -53,14 +53,17 @@ sun.shadow.mapSize.set(2048, 1024);
 sun.shadow.radius = 5; sun.shadow.blurSamples = 16; sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
 
-// the panel: one flat plane, the GREY look's grey with a faint brushed grain and a little more light toward the top
-function panelTexture() {
+// the panel: one flat plane in the panel's colour (the GREY look's grey, or SETTINGS > PANEL COLOUR: --panel-rgb) with a
+// faint brushed grain and a little more light toward the top. The grain is the same every time (a seeded random), so a
+// new colour doesn't make it jump
+function panelTexture(rgb) {
   const c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
   const g = c.getContext('2d');
-  g.fillStyle = 'rgb(172,174,172)'; g.fillRect(0, 0, c.width, c.height);
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  g.fillStyle = `rgb(${rgb.join(',')})`; g.fillRect(0, 0, c.width, c.height);
   for (let i = 0; i < 9000; i++) { // the brushing: long faint horizontal streaks
-    const y = Math.random() * c.height, x = Math.random() * c.width, l = 80 + Math.random() * 500, a = Math.random() * 0.035;
-    g.strokeStyle = Math.random() < 0.5 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a * 0.8})`;
+    const y = rnd() * c.height, x = rnd() * c.width, l = 80 + rnd() * 500, a = rnd() * 0.035;
+    g.strokeStyle = rnd() < 0.5 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a * 0.8})`;
     g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y); g.stroke();
   }
   const top = g.createLinearGradient(0, 0, 0, c.height);
@@ -70,9 +73,17 @@ function panelTexture() {
   return t;
 }
 const panel = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
-  new THREE.MeshStandardMaterial({ map: panelTexture(), roughness: 0.78, metalness: 0.0, envMapIntensity: 0.25 }));
+  new THREE.MeshStandardMaterial({ map: null, roughness: 0.78, metalness: 0.0, envMapIntensity: 0.25 }));
 panel.receiveShadow = true;
 scene.add(panel);
+let panelRgb = '';
+function panelColour() { // (a new colour: a new texture)
+  const v = getComputedStyle(root).getPropertyValue('--panel-rgb').trim() || '172 174 172';
+  if (v === panelRgb) return v;
+  panelRgb = v; const rgb = v.split(/[\s,]+/).map(Number).slice(0, 3);
+  panel.material.map?.dispose(); panel.material.map = panelTexture(rgb.length === 3 && rgb.every((n) => n >= 0) ? rgb : [172, 174, 172]); panel.material.needsUpdate = true;
+  return v;
+}
 
 // a chicken-head knob in the SVG's units (its viewBox is 64 wide, the knob's centre at 32,32), y up, z out of the panel
 const U = 1;
@@ -231,7 +242,7 @@ function sync() {
   if (lensKey !== (root.dataset.lens || 'flat')) { lensKey = root.dataset.lens || 'flat'; setLens(); }
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
   const style = knobStyle();
-  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}/${lensKey}:${style}`;
+  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}/${lensKey}:${style}/${panelColour()}`;
   for (const el of screen.querySelectorAll('.knob:not(.fslide)')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;

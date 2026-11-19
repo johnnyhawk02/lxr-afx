@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnt2hql">
-<link rel="stylesheet" href="css/grey.css?v=mwnt2hql">
+<link rel="stylesheet" href="css/lcd.css?v=mwnt3b0o">
+<link rel="stylesheet" href="css/grey.css?v=mwnt3b0o">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -18,6 +18,10 @@
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
   // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
   try { if (localStorage.getItem('lxr-afx-look') !== 'lcd') document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
+  // the GREY look's own panel colour (SETTINGS > PANEL COLOUR), before the first paint; app/main.js applyGreyColour() keeps it in step
+  try { var gp = localStorage.getItem('lxr-afx-grey-panel'); if (/^#[0-9a-f]{6}$/i.test(gp)) { var q = [1, 3, 5].map(function (i) { return parseInt(gp.substr(i, 2), 16); });
+    var st = document.documentElement.style; st.setProperty('--grey-panel', q.join(' ')); st.setProperty('--grey-ink', (0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2]) / 255 < 0.45 ? '236 236 230' : '24 25 27');
+    document.documentElement.classList.add('panel-own'); } } catch (e) {}
   // the knob size (SETTINGS > KNOB SIZE): grows only the knob inside its printed scale, never the cell
   try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 5 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.87 + 0.058 * kv).toFixed(3));
     var ks = localStorage.getItem('lxr-afx-knob-style') || 'ribbed'; if (/^(round|ribbed|rubber)$/.test(ks)) document.documentElement.classList.add('knob-' + ks); } catch (e) { /* the defaults */ }
@@ -136,6 +140,9 @@
         <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
           <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
           <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
+        </div>
+        <div id="grey-colour">
+        <div class="lowkey colour"><span class="dim">PANEL COLOUR</span><input type="color" id="grey-panel" value="#acaeac" aria-label="The grey panel's colour" title="The panel's colour: the text and markings turn light on a dark colour"><button class="btn sm" id="grey-reset" type="button" title="Back to the plain grey">GREY</button></div>
         </div>
         <div id="lens-set">
         <h3>LENS</h3>
@@ -324,6 +331,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnt2hql"></script>
+<script type="module" src="app/main.js?v=mwnt3b0o"></script>
 </body>
 </html>
