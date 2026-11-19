@@ -47,3 +47,16 @@ html.panel3d #screen > canvas.panel3d { display: block; position: absolute; inse
 html.panel3d .knob svg { filter: none; }
 html.panel3d .knob .skirt, html.panel3d .knob .skirt-top, html.panel3d .knob .chh, html.panel3d .knob .chl { display: none; }
 html.panel3d .start { background-color: rgb(172 174 172); }
+
+/* a toggle switch (vtoggle in app/main.js): a bright bat-handle lever on a hex nut, seen from above, the two ends
+   printed on the panel (the longer mark for up, its second setting). Drawn the same with the three.js panel on, which
+   puts no knob in its cell */
+html.look-grey .tog svg { filter: drop-shadow(0 2px 1.5px rgb(0 0 0 / .4)); }
+html.look-grey .tog .tslot, html.look-grey .tog .tblk { display: none; }
+html.look-grey .tog .tsc { display: inline; stroke: var(--ink); stroke-width: 1.6; }
+html.look-grey .tog .tnut { display: inline; fill: #8e9094; stroke: #3a3b3d; stroke-width: .8; stroke-linejoin: round; }
+html.look-grey .tog .tbush { display: inline; fill: #6b6d70; stroke: #2f3032; stroke-width: .8; }
+html.look-grey .tog .tbat { display: inline; fill: #d9dbdd; stroke: #2a2b2d; stroke-width: .9; }
+html.look-grey .tog .thl { display: inline; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; opacity: .85; }
+html.look-grey .tog .mrange { stroke: var(--accent); stroke-width: 2.6; opacity: .95; }
+html.look-grey .tog .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }

@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnopnjg';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnopnjg';
-import { presetName, jumble } from './names.js?v=mwnopnjg';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnopnjg';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnopnjg';
-import { breed, isDud } from '../sound/breed.js?v=mwnopnjg';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnopnjg';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnopnjg';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnopnjg';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnopnjg';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnopnjg';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnq3dbv';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnq3dbv';
+import { presetName, jumble } from './names.js?v=mwnq3dbv';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnq3dbv';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnq3dbv';
+import { breed, isDud } from '../sound/breed.js?v=mwnq3dbv';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnq3dbv';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnq3dbv';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnq3dbv';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnq3dbv';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnq3dbv';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnopnjg', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnq3dbv', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -814,13 +814,27 @@ const ECHO_TIME = {
 // the echo's DUCK: how far the echoes go down while the dry sound plays, swelling back up in the gaps (0: off)
 const ECHO_DUCK = { max: 127, get: () => E().duck || 0, set: (v) => { E().duck = v; sendFx(); detail(`ECHO DUCK <em>${v ? Math.round(v / 1.27) + '%' : 'OFF'}</em>`); },
   show: (v) => (v ? Math.round(v / 1.27) + '%' : 'off'), dflt: 0 };
+const TOG_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true">'
+  + '<line class="tsc" x1="24" y1="5" x2="40" y2="5"/><line class="tsc off" x1="27" y1="59" x2="37" y2="59"/>'
+  + '<rect class="tslot" x="22" y="7" width="20" height="50" rx="3"/>'
+  + '<path class="tnut" d="M32 19.5L42.8 25.75V38.25L32 44.5L21.2 38.25V25.75Z"/><circle class="tbush" cx="32" cy="32" r="7.2"/>'
+  + '<g class="lev"><rect class="tblk" x="26.5" y="11.5" width="11" height="20"/>'
+  + '<path class="tbat" d="M28.6 32L27.2 14.5A4.9 4.9 0 1 1 36.8 14.5L35.4 32Z"/><line class="thl" x1="30.6" y1="29" x2="29.9" y2="15"/></g>'
+  + '<line class="mrange" x1="50" y1="52" x2="50" y2="52"/><circle class="mdot" cx="50" cy="12" r="3"/></svg>';
+// a two-way FX switch (SYNC, P-PONG, the distortion's FILTER, XOVER and CLIP) is drawn as a toggle switch too (vtoggle):
+// the lever up for its second setting, its name over it
+function togDraw(b, out, names, get) {
+  b.classList.add('tog'); b.setAttribute('role', 'switch'); b.innerHTML = TOG_SVG; b.setAttribute('aria-label', b.title);
+  return () => { const v = get() ? 1 : 0; b.setAttribute('aria-checked', v === 1); out.textContent = names[v]; };
+}
 // a switch in a knob's cell: a button that steps through its settings, named on the button, lit away from the first
 function gswitch(label, names, title, get, set) {
   const el = document.createElement('div'); el.className = 'vf vsw';
   el.innerHTML = '<output></output><button class="swb" type="button"></button><span class="lab"></span>';
   el.querySelector('.lab').textContent = label;
   const b = el.querySelector('.swb'); b.title = title;
-  const draw = () => { b.textContent = names[get()] ?? names[0]; b.setAttribute('aria-pressed', get() > 0); };
+  const draw = names.length === 2 ? togDraw(b, el.querySelector('output'), names, get)
+    : () => { b.textContent = names[get()] ?? names[0]; b.setAttribute('aria-pressed', get() > 0); };
   b.addEventListener('click', () => { set((get() + 1) % names.length); faderDraws.forEach((d) => d()); });
   faderDraws.push(draw);
   return el;
@@ -885,8 +899,8 @@ function buildDirt() {
     set: (v) => { D[k] = v; sendFx(); say(`${label.toUpperCase()} <em>${show ? show(v) : v}</em>`); } });
   // a switch: a button that steps through its settings, named on the button
   // (lit when it's away from its first setting, like the pedal's switch lights; a choice in the header isn't lit)
-  const cycle = (b, k, names, label, lit = true) => {
-    const draw = () => { b.textContent = names[D[k]] ?? names[0]; if (lit) b.setAttribute('aria-pressed', D[k] > 0); };
+  const cycle = (b, k, names, label, lit = true, out = null) => {
+    const draw = out ? togDraw(b, out, names, () => D[k]) : () => { b.textContent = names[D[k]] ?? names[0]; if (lit) b.setAttribute('aria-pressed', D[k] > 0); };
     b.addEventListener('click', () => { D[k] = (D[k] + 1) % names.length; sendFx(); draw(); drawDirt(); say(`${label ? label + ' ' : ''}<em>${names[D[k]]}</em>`); });
     faderDraws.push(draw); return b;
   };
@@ -894,7 +908,7 @@ function buildDirt() {
     const el = document.createElement('div'); el.className = 'vf vsw';
     el.innerHTML = '<output></output><button class="swb" type="button"></button><span class="lab"></span>';
     el.querySelector('.lab').textContent = label; el.querySelector('.swb').title = title;
-    cycle(el.querySelector('.swb'), k, names, label.toUpperCase());
+    cycle(el.querySelector('.swb'), k, names, label.toUpperCase(), true, names.length === 2 ? el.querySelector('output') : null);
     return el;
   };
   const hbtn = (k, names, label, title) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb'; b.title = title; return cycle(b, k, names, label, names[0] === 'OFF'); };
@@ -962,7 +976,63 @@ function lightRing(ticks, v, max, c) {
 const LOCK_SVG = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
 // a pan knob's L and R, at the two ends of its ring
 const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
+// a toggle switch: a control with only two settings (on/off, A/B) in a knob's cell, the same size as a knob (Johnny,
+// 2026-11-19: "turn any dials with 2 states into switches"). Up is its second setting (ON), down its first (OFF). The
+// GREY look draws a bat-handle lever on a hex nut seen from above, the LCD look a slot with its block at one end; no
+// three.js knob (app/panel3d.js draws only .knob). A modulated one (VEL VOL) shows the swing its sources give it as a
+// bar beside the lever, the middle being where it flips, and a dot at the end the engine has it at now
+// the swing bar and the live dot on a switch (v: 0 or 1; lo, hi: how far its sources move it, in its 0..1 range)
+const togY = (x) => 52 - 40 * clamp(x, 0, 1);
+function drawTogMod(b, v, lo, hi) {
+  const r = b.querySelector('.mrange');
+  r.setAttribute('y1', togY(v + lo)); r.setAttribute('y2', togY(v + hi));
+}
+function vtoggle(e) {
+  const el = document.createElement('div'); el.className = 'vf vtog';
+  el.innerHTML = `<output></output><button class="tog" type="button" role="switch">${TOG_SVG}</button><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
+  el.querySelector('.lab').textContent = e.label;
+  const b = el.querySelector('.tog'), out = el.querySelector('output'), lock = el.querySelector('.lock');
+  b.setAttribute('aria-label', e.label); b.title = 'Click to flip';
+  const mod = e.ukey && modOf(SOUNDS[S.sel].engineVoice, e.ukey);
+  if (mod) {
+    el._ukey = e.ukey;
+    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); selectModDial(e); });
+    b.addEventListener('pointerdown', () => selectModDial(e));
+  }
+  const on = () => (valueNow(e.par) >= 0.5 ? 1 : 0);
+  const draw = () => {
+    const v = on();
+    b.setAttribute('aria-checked', v === 1); out.textContent = showValue(e, v);
+    el.classList.toggle('changed', !editing() && valueNow(e.par) !== S.defaults[e.par]);
+    el.classList.toggle('keyed', editing() && keyEdited(e.par));
+    if (mod) { const [lo, hi] = modSpan(mod); el.classList.toggle('modded', !!(lo || hi)); drawTogMod(b, v, lo, hi); }
+    const locked = S.locks.has(e.par);
+    lock.setAttribute('aria-pressed', locked);
+    lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
+  };
+  const put = (x) => {
+    if (x === valueNow(e.par)) return;
+    editValue(e.par, x); draw();
+    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
+  };
+  b.addEventListener('click', () => { if (!learn) put(1 - on()); });
+  // double-click on the name: back to where it was before you changed it (on a key), or the kit's value
+  el.querySelector('.lab').addEventListener('dblclick', () => {
+    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
+    if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
+    else put(S.defaults[e.par]);
+  });
+  el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
+  lock.addEventListener('click', () => {
+    const l = !S.locks.has(e.par); if (l) S.locks.add(e.par); else S.locks.delete(e.par); save(); draw(); drawLocks();
+    detail(l ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);
+  });
+  faderDraws.push(draw);
+  if (mod) modDots.push({ tr: b, el, e, mod, tog: true });
+  return el;
+}
 function vfader(e) {
+  if (e.max === 1 && e.display.type === 'menu') return vtoggle(e); // (two settings: a switch)
   const el = document.createElement('div'); el.className = 'vf';
   el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
@@ -1068,6 +1138,7 @@ function modLive(mods, steps) {
     const d = m.get(k.mod.dest), dot = k.tr.querySelector('.mdot');
     k.el.classList.toggle('modlive', d !== undefined);
     if (d === undefined) continue;
+    if (k.tog) { dot.setAttribute('cy', valueNow(k.e.par) + d >= 0.5 ? 12 : 52); continue; } // (a switch: the end it's at)
     const v = clamp(valueNow(k.e.par) + d * k.e.max, 0, k.e.max);
     dot.setAttribute('transform', `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
   }
@@ -1324,7 +1395,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnopnjg').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnq3dbv').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
