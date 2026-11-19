@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo5t8ly';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo5t8ly';
-import { presetName, jumble } from './names.js?v=mwo5t8ly';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo5t8ly';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo5t8ly';
-import { breed, isDud } from '../sound/breed.js?v=mwo5t8ly';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo5t8ly';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo5t8ly';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo5t8ly';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo5t8ly';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo5t8ly';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo5uhvw';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo5uhvw';
+import { presetName, jumble } from './names.js?v=mwo5uhvw';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo5uhvw';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo5uhvw';
+import { breed, isDud } from '../sound/breed.js?v=mwo5uhvw';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo5uhvw';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwo5uhvw';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo5uhvw';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo5uhvw';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo5uhvw';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo5t8ly', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo5uhvw', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1432,7 +1432,7 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); openLook(false); } }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 // ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
 // SCREEN COLOURS: the screen is drawn in two colours, a panel and an ink (css/lcd.css derives every other shade from
@@ -1476,7 +1476,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo5t8ly').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo5uhvw').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1541,19 +1541,24 @@ function applyKnobStyle(style, keep) {
 for (const b of $('knob-styles').children) b.addEventListener('click', () => { applyKnobStyle(b.dataset.style, true); detail(`knob style: <em>${b.textContent}</em>`); });
 { let st = KNOB_STYLE_DEFAULT; try { st = localStorage.getItem(KNOB_STYLE_STORE) || KNOB_STYLE_DEFAULT; } catch (e) { /* the default */ } applyKnobStyle(st, false); }
 // ---- SETUP (how it plays) and LOOK (how it looks): the two top-bar menus SETTINGS was split into (Johnny, 2026-11-19) ----
-function openLook(open) { $('look-panel').hidden = !open; $('look-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openSettings(false); } }
-$('look-btn').addEventListener('click', () => openLook($('look-panel').hidden));
-function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openLook(false); } }
+// OPTIONS (Johnny, 2026-11-19: "setup and look are tabs in options"): one menu, its SETUP and LOOK tabs
+let optTab = 'setup';
+function showOptTab(t) {
+  optTab = t; $('setup-pane').hidden = t !== 'setup'; $('look-panel').hidden = t !== 'look';
+  $('tab-setup').setAttribute('aria-selected', t === 'setup'); $('tab-look').setAttribute('aria-selected', t === 'look');
+}
+$('tab-setup').addEventListener('click', () => showOptTab('setup'));
+$('tab-look').addEventListener('click', () => showOptTab('look'));
+function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
 document.addEventListener('pointerdown', (e) => {
   if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
   if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
-  if (!$('look-panel').hidden && !e.target.closest('#lmenu')) openLook(false);
   if (!e.target.closest('.tdd')) openTableMenu(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openLook(false); openTableMenu(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openTableMenu(false); } });
 // THIS KEY's two menus (Johnny, 2026-11-19: "try and put these items into menus"): KEY (ALTER, LOCK, CLEAR, COPY, PASTE;
 // their shortcuts still work with the menu shut) and MAKE (the key made a kick, a snare...). A press in either shuts it
 
@@ -2269,7 +2274,7 @@ function drawPreset() {
 }
 function openPresets(open) {
   $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
-  if (open) { openMenu(false); openSettings(false); openLook(false); drawPreset(); } else { if (delArmed) { clearTimeout(delT); delArmed = null; } if (initArmed) disarmInit(); } // (RANDOM PATCH lives here now)
+  if (open) { openMenu(false); openSettings(false); drawPreset(); } else { if (delArmed) { clearTimeout(delT); delArmed = null; } if (initArmed) disarmInit(); } // (RANDOM PATCH lives here now)
 }
 $('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
 $('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));
@@ -2389,7 +2394,7 @@ function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let
 function openBlender(open) {
   if (!open && phoneOn) return; // (on a phone the blender is the whole screen)
   $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); openLook(false); fillSides(); drawBlender(); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); fillSides(); drawBlender(); }
 }
 $('blend-btn').addEventListener('click', () => openBlender($('blender').hidden));
 $('bl-close').addEventListener('click', () => openBlender(false));
