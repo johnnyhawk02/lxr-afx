@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnhup22';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnhup22';
-import { presetName, jumble } from './names.js?v=mwnhup22';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnhup22';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnhup22';
-import { breed, isDud } from '../sound/breed.js?v=mwnhup22';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnhup22';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnhup22';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnhup22';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnhup22';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnhup22';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnim447';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnim447';
+import { presetName, jumble } from './names.js?v=mwnim447';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnim447';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnim447';
+import { breed, isDud } from '../sound/breed.js?v=mwnim447';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnim447';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnim447';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnim447';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnim447';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnim447';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnhup22', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnim447', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -199,9 +199,9 @@ function handEdit(ed, par, was, v) {
   if (o[par] === v) delete o[par];
   if (!Object.keys(o).length) delete ed._o;
 }
-function editValue(par, v) {
+function editValue(par, v, undo) { // undo: [what, merge] for UNDO, so one gesture (a paint, a STEP SEQ shape) is one step back
   if (!editing()) { // ALL KEYS: the engine's base and every key of the zone that has its own sound (locked keys stay)
-    snapshot(`${SOUNDS[S.sel].name} ALL KEYS ${parLabel(par)}`, `all/${S.sel}/${par}`);
+    snapshot(undo ? undo[0] : `${SOUNDS[S.sel].name} ALL KEYS ${parLabel(par)}`, undo ? undo[1] : `all/${S.sel}/${par}`);
     const k = S.keyEdits[S.sel], base = S.values[par];
     setValue(par, v);
     for (const n in k) if (!k[n]._lock) { handEdit(k[n], par, k[n][par] ?? base, v); k[n][par] = v; }
@@ -209,7 +209,7 @@ function editValue(par, v) {
   }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
   if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
-  snapshot(`${SOUNDS[S.sel].name} ${noteName(note)} ${parLabel(par)}`, `key/${S.sel}/${note}/${par}`);
+  snapshot(undo ? undo[0] : `${SOUNDS[S.sel].name} ${noteName(note)} ${parLabel(par)}`, undo ? undo[1] : `key/${S.sel}/${note}/${par}`);
   const was = keyPatch(S.sel, note).vals.get(par);
   handEdit(k[note] ||= {}, par, was, v); k[note][par] = v;
   send({ type: 'param', par, value: v }); // heard on what's still ringing
@@ -1046,6 +1046,35 @@ function depthBar(o) {
   tr.addEventListener('dblclick', () => { if (o.get() !== MOD_AMT_ZERO) { o.set(MOD_AMT_ZERO); draw(); } });
   return { el, draw };
 }
+// STEP SEQ's shapes: SHAPES in the heading opens them; a press deals the key's eight steps that shape (the random ones
+// differently each time). One UNDO takes it back
+const STEP_CELLS = 4;
+const rnd127 = () => Math.floor(Math.random() * 128);
+const STEP_SHAPES = [
+  ['random', () => Array.from({ length: 8 }, rnd127)],
+  ['ramp up', () => Array.from({ length: 8 }, (_, k) => Math.round(k / 7 * 127))],
+  ['ramp down', () => Array.from({ length: 8 }, (_, k) => Math.round((7 - k) / 7 * 127))],
+  ['triangle', () => [0, 32, 64, 96, 127, 96, 64, 32]],
+  ['alternate', () => { const hi = 90 + Math.floor(Math.random() * 38), lo = Math.floor(Math.random() * 40); return Array.from({ length: 8 }, (_, k) => (k % 2 ? lo : hi)); }],
+  ['accents', () => { const v = Array(8).fill(0).map(() => Math.floor(Math.random() * 24)); v[0] = 127; for (let n = 1 + Math.floor(Math.random() * 2); n > 0; n--) v[1 + Math.floor(Math.random() * 7)] = 100 + Math.floor(Math.random() * 28); return v; }],
+  ['smooth', () => { let x = rnd127(); return Array.from({ length: 8 }, () => (x = clamp(x + Math.round((Math.random() - 0.5) * 60), 0, 127))); }],
+  ['flat', () => Array(8).fill(127)],
+];
+function stepShapes(h3, voice, deal) {
+  const dd = document.createElement('span'); dd.className = 'tdd'; h3.classList.add('withbtn'); h3.append(dd);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb tbl'; b.textContent = 'SHAPES \u25be'; b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false');
+  const menu = document.createElement('div'); menu.className = 'tblmenu shapemenu'; menu.hidden = true; menu.setAttribute('role', 'menu');
+  const open = (on) => { menu.hidden = !on; b.setAttribute('aria-expanded', on); };
+  b.addEventListener('click', () => open(menu.hidden));
+  for (const [name, make] of STEP_SHAPES) {
+    const it = document.createElement('button'); it.type = 'button'; it.className = 'btn sm'; it.textContent = name.toUpperCase(); it.setAttribute('role', 'menuitem');
+    it.addEventListener('click', () => { deal(make(), name.toUpperCase()); open(false); });
+    menu.append(it);
+  }
+  const shut = (e) => { if (!dd.isConnected) { document.removeEventListener('pointerdown', shut); return; } if (!menu.hidden && !dd.contains(e.target)) open(false); };
+  document.addEventListener('pointerdown', shut);
+  dd.append(b, menu);
+}
 // the row, in the grid's bottom row (cells 1 to GRID_COLS); voice: the engine on screen
 function modStrip(box, cell, voice) {
   const schema = VOICE_SCHEMAS[voice];
@@ -1062,21 +1091,44 @@ function modStrip(box, cell, voice) {
     msRow.append(b.el); bars.push(b);
   }
   box.append(ms);
-  // STEP SEQ: the eight steps, then STEP TIME and SLEW as dials
-  const n = NUM_STEPS + 2, sq = document.createElement('div'); sq.className = 'sect rt sep seqsect'; sq.style.setProperty('--n', n); cell(sq, 4, 5, 1 + NUM_SRC, 1 + NUM_SRC + n);
-  sq.innerHTML = '<h3>step seq</h3><div class="row"></div>';
-  const sqRow = sq.querySelector('.row'), steps = [];
+  // STEP SEQ: the eight steps side by side in four cells (paint them: press and drag across), then STEP TIME and SLEW
+  // as dials; SHAPES in the heading deals the steps a shape
+  const n = STEP_CELLS + 2, sq = document.createElement('div'); sq.className = 'sect rt sep seqsect'; sq.style.setProperty('--n', n); cell(sq, 4, 5, 1 + NUM_SRC, 1 + NUM_SRC + n);
+  sq.innerHTML = '<h3>step seq</h3><div class="row"><div class="stepbox" role="group" aria-label="steps: press and drag to paint"></div></div>';
+  const sqRow = sq.querySelector('.row'), sbox = sq.querySelector('.stepbox'), steps = [];
+  sbox.style.gridColumn = `span ${STEP_CELLS}`;
+  const stepGet = (k) => valueNow(stepPar(voice, k)) ?? 0;
   for (let k = 0; k < NUM_STEPS; k++) {
-    const par = stepPar(voice, k), el = document.createElement('div'); el.className = 'vd stepd';
-    el.innerHTML = `<output></output><div class="step" role="slider"><i></i></div><span class="lab">${k + 1}</span>`;
-    const b = el.querySelector('.step'), out = el.querySelector('output'), get = () => valueNow(par) ?? 0;
-    b.setAttribute('aria-label', 'step ' + (k + 1));
-    const drawB = () => { b.style.setProperty('--f', get() / 127); out.textContent = Math.round(get()); b.setAttribute('aria-valuenow', Math.round(get())); };
-    dragger(b, 'y', { min: 0, max: 127, get, put: (x) => { x = clamp(Math.round(x), 0, 127); if (x !== get()) { editValue(par, x); drawB(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEP ${k + 1} ${x}</em>`); } } });
-    sqRow.append(el); steps.push({ el, draw: drawB });
+    const el = document.createElement('div'); el.className = 'stepd';
+    el.innerHTML = `<output></output><div class="step"><i></i></div><span class="lab">${k + 1}</span>`;
+    const b = el.querySelector('.step'), out = el.querySelector('output');
+    const drawB = () => { const x = stepGet(k); b.style.setProperty('--f', x / 127); out.textContent = Math.round(x); };
+    sbox.append(el); steps.push({ el, bar: b, draw: drawB });
   }
+  // painting: the step under the pointer takes the pointer's height; a quick drag fills the steps it skipped
+  const putStep = (k, x, stroke) => { x = clamp(Math.round(x), 0, 127); if (x === stepGet(k)) return; editValue(stepPar(voice, k), x, [`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} STEPS`, stroke]); steps[k].draw(); };
+  let paint = null;
+  const at = (e) => { const r0 = steps[0].bar.getBoundingClientRect(), r7 = steps[NUM_STEPS - 1].bar.getBoundingClientRect();
+    const k = clamp(Math.floor((e.clientX - r0.left) / ((r7.right - r0.left) / NUM_STEPS)), 0, NUM_STEPS - 1);
+    return { k, x: clamp((r0.bottom - e.clientY) / r0.height, 0, 1) * 127 }; };
+  const paintTo = (e) => {
+    const p = at(e), from = paint.k ?? p.k, x0 = paint.x ?? p.x;
+    for (let k = Math.min(from, p.k); k <= Math.max(from, p.k); k++) putStep(k, from === p.k ? p.x : x0 + (p.x - x0) * (k - from) / (p.k - from), paint.stroke);
+    paint.k = p.k; paint.x = p.x;
+    detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEP ${p.k + 1} ${Math.round(p.x)}</em>`);
+  };
+  const endPaint = () => { if (dragEnd === endPaint) dragEnd = null; paint = null; };
+  sbox.addEventListener('pointerdown', (e) => {
+    if (e.button) return; e.preventDefault();
+    try { sbox.setPointerCapture(e.pointerId); } catch (err) { /* gone */ }
+    paint = { id: e.pointerId, stroke: 'paint/' + performance.now() }; dragEnd = endPaint; paintTo(e);
+  });
+  sbox.addEventListener('pointermove', (e) => { if (!paint || e.pointerId !== paint.id) return; if (!stillPressed(e)) { endPaint(); return; } paintTo(e); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) sbox.addEventListener(ev, endPaint);
+  stepShapes(sq.querySelector('h3'), voice, (vals, name) => { const stroke = 'shape/' + performance.now(); vals.forEach((x, k) => putStep(k, x, stroke)); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEPS ${name}</em>`); });
   for (const par of [stepTimePar(voice), stepSlewPar(voice)]) {
     const e = schema.find((x) => x.par === par), f = vfader({ ...e, ukey: undefined, display: e.step === 'slew' ? { type: 'slew' } : e.display });
+    f.classList.add('seqdial');
     f.querySelector('.lock').remove(); sqRow.append(f);
   }
   box.append(sq);
