@@ -114,3 +114,7 @@ html.look-grey .keyhead .piano .k.hit:not(.sel):not(.blk) { background: #fbd9c8;
 html.look-grey .keyhead .piano .k.blk.hit:not(.sel) { background: #6a3420; }
 html.look-grey .keylocked .keyhead .piano .k:not(.blk) { background: #d8d7d0; color: #222; border-color: #3a3b3d; }
 html.look-grey .keylocked .keyhead .piano .k.blk { background: #111; color: #ddd; }
+/* the key on screen on the GREY panel: orange with a dark frame, and the bar under the keyboard in orange */
+html.look-grey .keyhead .piano .k.sel:not(.blk) { background: repeating-linear-gradient(135deg, #f39a70 0 3px, var(--accent) 3px 7px); box-shadow: inset 0 0 0 3px #3a1a0c; color: #fff; }
+html.look-grey .keyhead .piano .k.blk.sel { background: repeating-linear-gradient(135deg, #f39a70 0 3px, var(--accent) 3px 7px); box-shadow: inset 0 0 0 3px #3a1a0c, 0 2px 2px rgb(0 0 0 / .35); color: #fff; }
+html.look-grey .keyhead .piano .k.sel::before { background: var(--accent); }

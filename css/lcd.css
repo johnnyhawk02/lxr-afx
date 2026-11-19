@@ -999,3 +999,22 @@ html:not(.phone) .top { padding: 0 24px; }
 .khact .keyacts .menu > .btn { height: 66px; font-size: 20px; }
 .khact .keyacts .dicebtn { width: 66px; height: 66px; justify-self: start; }
 .khact .keyacts .dicebtn .die { border-radius: 8px; }
+
+/* ---- the key on screen, unmistakable (Johnny, 2026-11-19: "make the selected key more visible"): hatched in the ink
+   with a thick ink frame, never solid like a black key; a selected black key is the panel colour, hatched and framed;
+   and a bar under the keyboard marks it either way ---- */
+.keyhead .keystrip { height: 110px; }
+.keyhead .piano .k.sel, .keyhead .piano .k.blk.sel {
+  background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb) / .55) 0 3px, rgb(var(--panel-rgb)) 3px 7px);
+  box-shadow: inset 0 0 0 4px var(--ink); border-color: var(--ink); color: var(--ink); z-index: 3; }
+.keyhead .piano .k.blk.sel { box-shadow: inset 0 0 0 4px var(--ink), 0 0 0 2px rgb(var(--panel-rgb)); }
+.keyhead .piano .k.sel::before { content: ''; position: absolute; left: 2px; right: 2px; top: auto; bottom: auto; height: 6px; background: var(--ink);
+  border-radius: 1px; }
+.keyhead .piano .k.sel:not(.blk)::before { bottom: -12px; }
+.keyhead .piano .k.blk.sel::before { top: calc(66px + 6px); }
+/* a locked key: the same marks in the panel colour over the inverted panel */
+.keylocked .keyhead .piano .k.sel, .keylocked .keyhead .piano .k.blk.sel {
+  background: repeating-linear-gradient(135deg, rgb(var(--panel-rgb) / .6) 0 3px, var(--ink) 3px 7px);
+  box-shadow: inset 0 0 0 4px rgb(var(--panel-rgb)); color: rgb(var(--panel-rgb)); }
+.keylocked .keyhead .piano .k.sel::before { background: rgb(var(--panel-rgb)); }
+.keyhead .piano .k.sel:not(.blk) { z-index: 1; } /* (the black keys still lie over it) */
