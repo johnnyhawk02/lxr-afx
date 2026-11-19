@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnrqb1f';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnrqb1f';
-import { presetName, jumble } from './names.js?v=mwnrqb1f';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnrqb1f';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnrqb1f';
-import { breed, isDud } from '../sound/breed.js?v=mwnrqb1f';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnrqb1f';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnrqb1f';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnrqb1f';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnrqb1f';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnrqb1f';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnsj2gp';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnsj2gp';
+import { presetName, jumble } from './names.js?v=mwnsj2gp';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnsj2gp';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnsj2gp';
+import { breed, isDud } from '../sound/breed.js?v=mwnsj2gp';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnsj2gp';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnsj2gp';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnsj2gp';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnsj2gp';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnsj2gp';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnrqb1f', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnsj2gp', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -970,7 +970,8 @@ const KNOB_SVG = (() => {
   const others = '<circle class="rdc" cx="32" cy="32" r="12.6"/><line class="rdl" x1="34.5" y1="32" x2="43.5" y2="32"/>'
     + `<circle class="rbb" cx="32" cy="32" r="14.4"/>${ribs}<circle class="rbt" cx="32" cy="32" r="12"/><line class="rbl" x1="34" y1="32" x2="43.5" y2="32"/>`
     + '<circle class="rub" cx="32" cy="32" r="14.8"/><circle class="rut" cx="32" cy="32" r="10.5"/><circle class="rud" cx="40.6" cy="32" r="1.8"/>';
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}${sc}<path class="mrange"/><g class="rot"><g class="body">${head}${others}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g></g><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
+  // (the printed scale and the markers sit in .ring, which css/grey.css pulls in snug round a smaller knob: RIBBED)
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><g class="ring">${t}${sc}<path class="mrange"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></g><g class="rot"><g class="body">${head}${others}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g></g></svg>`;
 })();
 // LEVEL's fader (Johnny, 2026-11-19: "make LEVEL into a fader"): a mixer-style slider in a 40 x 200 box. The cap's
 // middle travels the box's full height (0 at the bottom, full at the top), so a press on the slot lands where it
@@ -1423,7 +1424,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnrqb1f').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnsj2gp').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // LENS: the camera on the GREY look's 3D panel (app/panel3d.js reads html data-lens): FLAT (straight down, the default),
@@ -1443,7 +1444,7 @@ applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'l
 // move out with it (css/lcd.css). A transform, so the cells and the grid never move. Kept in this browser. Johnny,
 // 2026-11-19: "i want the knobs this size or even bigger", "the labels need to move obviously"
 const KNOB_SIZE_STORE = 'lxr-afx-knob-body', KNOB_BODY = [1.04, 1.3]; // (x 1.25: 1.3x and 1.63x the old knob)
-const KNOB_SIZE_DEFAULT = 5;
+const KNOB_SIZE_DEFAULT = 10; // (XXL, Johnny 2026-11-19: "i want these knobs by default"; before that XL+5)
 const knobBody = (v) => KNOB_BODY[0] + (KNOB_BODY[1] - KNOB_BODY[0]) * v / 10;
 const knobSizeName = (v) => (v <= 0 ? 'XL' : v >= 10 ? 'XXL' : `XL+${v}`);
 function applyKnobSize(v, keep) {
@@ -1457,15 +1458,15 @@ $('knob-size').addEventListener('input', (e) => { applyKnobSize(e.target.value, 
 { let v = KNOB_SIZE_DEFAULT; try { const k = localStorage.getItem(KNOB_SIZE_STORE); if (k !== null && k !== '') v = +k; } catch (e) { /* the default */ } applyKnobSize(v, false); }
 // KNOB STYLE (the GREY look): CHICKEN head, ROUND, RIBBED or RUBBER, drawn flat (css/grey.css) and in 3D (app/panel3d.js).
 // Kept in this browser. Johnny, 2026-11-19: "give me a choice of knobs"
-const KNOB_STYLE_STORE = 'lxr-afx-knob-style', KNOB_STYLES = ['chicken', 'round', 'ribbed', 'rubber'];
+const KNOB_STYLE_STORE = 'lxr-afx-knob-style', KNOB_STYLES = ['chicken', 'round', 'ribbed', 'rubber'], KNOB_STYLE_DEFAULT = 'ribbed'; // (Johnny: "i want these knobs by default")
 function applyKnobStyle(style, keep) {
-  if (!KNOB_STYLES.includes(style)) style = 'chicken';
+  if (!KNOB_STYLES.includes(style)) style = KNOB_STYLE_DEFAULT;
   for (const k of KNOB_STYLES) document.documentElement.classList.toggle('knob-' + k, k === style && k !== 'chicken');
   for (const b of $('knob-styles').children) b.setAttribute('aria-pressed', b.dataset.style === style);
   if (keep) { try { localStorage.setItem(KNOB_STYLE_STORE, style); } catch (e) { /* not kept */ } }
 }
 for (const b of $('knob-styles').children) b.addEventListener('click', () => { applyKnobStyle(b.dataset.style, true); detail(`knob style: <em>${b.textContent}</em>`); });
-{ let st = 'chicken'; try { st = localStorage.getItem(KNOB_STYLE_STORE) || 'chicken'; } catch (e) { /* chicken */ } applyKnobStyle(st, false); }
+{ let st = KNOB_STYLE_DEFAULT; try { st = localStorage.getItem(KNOB_STYLE_STORE) || KNOB_STYLE_DEFAULT; } catch (e) { /* the default */ } applyKnobStyle(st, false); }
 function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
