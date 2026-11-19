@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnclevf';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnclevf';
-import { presetName, jumble } from './names.js?v=mwnclevf';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnclevf';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnclevf';
-import { breed, isDud } from '../sound/breed.js?v=mwnclevf';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnclevf';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnclevf';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnclevf';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnclevf';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnclevf';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnf55fv';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnf55fv';
+import { presetName, jumble } from './names.js?v=mwnf55fv';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnf55fv';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnf55fv';
+import { breed, isDud } from '../sound/breed.js?v=mwnf55fv';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnf55fv';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnf55fv';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnf55fv';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnf55fv';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnf55fv';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnclevf', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnf55fv', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1070,8 +1070,24 @@ function openMod(e, el, m) {
     dragger(b, 'y', { min: 0, max: 127, get, put: (x) => { x = clamp(Math.round(x), 0, 127); if (x !== get()) { editValue(par, x); drawB(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEP ${k + 1} ${x}</em>`); } } });
     sbox.append(b); bars.push(b); draws.push(drawB);
   }
-  srow.addEventListener('pointerenter', () => { cap.textContent = 'The key\'s eight steps: each hit plays the next one. Every knob STEP SEQ moves on this key follows them'; });
+  srow.addEventListener('pointerenter', () => { cap.textContent = 'The key\'s eight steps. Every knob STEP SEQ moves on this key follows them'; });
   rows.append(srow);
+  // STEP TIME (HIT: a step a hit; or a step length at the tempo, each hit from step 1) and SLEW (a glide between steps)
+  const sx = [
+    { label: 'STEP TIME', par: stepTimePar(voice), max: STEP_TIMES.length - 1, show: (x) => STEP_TIMES[x][0].toUpperCase(),
+      says: 'HIT: each hit plays the next step. Or a step length at the tempo: the steps run on their own, from step 1 at each hit' },
+    { label: 'SLEW', par: stepSlewPar(voice), max: 127, show: (x) => (x ? slewMs(x) + 'ms' : 'OFF'), says: 'Glides from one step\'s level to the next instead of jumping' }];
+  for (const o of sx) {
+    const row = document.createElement('div'); row.className = 'mrow on'; row.innerHTML = '<span class="lab"></span><div class="htrack" role="slider"><i></i></div><output></output>';
+    row.querySelector('.lab').textContent = o.label;
+    const tr = row.querySelector('.htrack'), out = row.querySelector('output'), get = () => Math.round(valueNow(o.par) ?? 0);
+    tr.setAttribute('aria-label', o.label);
+    const drawX = () => { const x = get(); tr.style.setProperty('--f', o.max === 127 ? x / 127 : (x + 0.5) / (o.max + 1)); out.textContent = o.show(x); tr.setAttribute('aria-valuetext', o.show(x)); };
+    dragger(tr, 'x', { min: 0, max: o.max, get, put: (x) => { x = clamp(Math.round(x), 0, o.max); if (x !== get()) { editValue(o.par, x); drawX(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>${o.label} ${o.show(x)}</em>`); } } });
+    tr.addEventListener('dblclick', () => { if (get()) { editValue(o.par, 0); drawX(); } });
+    row.addEventListener('pointerenter', () => { cap.textContent = o.says; });
+    rows.append(row); draws.push(drawX);
+  }
   modPop._steps = (at) => bars.forEach((b, k) => b.classList.toggle('now', k === at));
   const draw = () => draws.forEach((d) => d());
   draw.mod = true; faderDraws.push(draw); draw();

@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnclevf';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnf55fv';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS } from './schema.js?v=mwnclevf';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwnclevf';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnclevf';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS, STEPX_BASE } from './schema.js?v=mwnf55fv';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwnf55fv';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnf55fv';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -102,6 +102,11 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
+    if (par >= STEPX_BASE) { // STEP SEQ's STEP TIME or SLEW
+      const i = par - STEPX_BASE; if (i >= 12) return;
+      if (i % 2) this.e.setStepSlew(i >> 1, value); else this.e.setStepTime(i >> 1, value);
+      return;
+    }
     if (par >= STEP_BASE) { // a STEP SEQ level
       const i = par - STEP_BASE; if (i >= 6 * NUM_STEPS) return;
       this.e.setStep(Math.floor(i / NUM_STEPS), i % NUM_STEPS, value / 127);
@@ -168,7 +173,7 @@ export class LxrInstrument {
   release(sound) { this.held[sound] = null; this.backs[sound] = null; }
   /** the step each sound's sequence played last (0..7), -1 for none */
   readSteps() { return this.held.map((h) => (h ? h.cur : -1)); }
-  setBpm(bpm) { this.bpm = Math.max(20, Math.min(300, bpm)); }
+  setBpm(bpm) { this.bpm = Math.max(20, Math.min(300, bpm)); this.e.stepBpm = this.bpm; } // (STEP SEQ's STEP TIME follows it)
   // one 64-sample block at the engine's rate: each voice panned as it was triggered
   _block(dst) {
     // keys coming back on a step of the grid that falls in this block (1.45 ms), then the grid moves on
