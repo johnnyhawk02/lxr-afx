@@ -306,12 +306,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .knob { width: var(--ks); height: var(--ks); }
 @media (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
 
-/* the master compressor's gain-reduction meter */
-.grm { display: grid; grid-template-columns: auto 1fr 4.6em; align-items: center; gap: 8px; margin-top: 4px; font-size: 15px; }
-.grm .segs { display: flex; gap: 2px; height: 14px; }
-.grm .segs i { flex: 1; background: var(--ghost); }
-.grm .segs i.on { background: var(--ink); }
-.grm output { font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
 .fxside .sect { padding-top: 4px; }
 .fxside .sect + .sect { margin-top: 4px; }
 
@@ -345,8 +339,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .vf.big .lock { font-size: 15px; }
 .fxside h2 { margin-top: 6px; }
 .fxside .mout .row { display: flex; align-items: center; gap: 14px; }
-.grm { grid-template-columns: 1fr; gap: 4px; margin: 0; flex: 1; }
-.grm output { text-align: left; }
 @media (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
 /* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
    as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
@@ -392,18 +384,27 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 /* the right column on one set of columns: every effect's knobs, the distortion's switches, the ENV meter, the output
    level and the gain-reduction meter all sit in the same six cells */
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
-.fxside .mout .grm { grid-column: 2 / 7; align-self: center; padding-left: 8px; }
-/* the output meter: L and R on the gain reduction's cells (2 to 6), the side and its held peak in the first cell */
-.fxside .outm .row { align-items: center; }
-.fxside .outm .mrow + .mrow { margin-top: 4px; }
-.outm .ch { grid-column: 1; grid-row: 1; justify-self: start; font-size: 15px; color: var(--muted); }
-.outm output { grid-column: 1; grid-row: 1; justify-self: end; padding-right: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
-.outm .segs { grid-column: 2 / 7; display: flex; gap: 2px; height: 14px; padding-left: 8px; }
-.outm .segs i { flex: 1; background: var(--ghost); }
-.outm .segs i.on, .outm .segs i.pk { background: var(--ink); }
-.outm .scale { grid-column: 2 / 7; position: relative; height: 16px; margin: 2px 0 0 8px; font-size: 13px; color: var(--muted); }
-.outm .scale span { position: absolute; top: 0; transform: translateX(-50%); }
-.outm .scale span:first-child { transform: none; } .outm .scale span:last-child { transform: translateX(-100%); }
+/* OUTPUT: LEVEL in cell 1, the meters on cells 2 to 6, each row a name, a bar and a reading on the same three columns */
+.fxside .mout .meters { grid-column: 2 / 5; align-self: center; padding-left: 8px; display: flex; flex-direction: column; gap: 4px; }
+.meters .mrow, .meters .mscale { display: grid; grid-template-columns: 1em 1fr 3.2em; align-items: center; gap: 0 6px; margin: 0; font-size: 15px; }
+.meters .ch { color: var(--muted); font-size: 15px; }
+.meters output { font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+.meters .segs { display: flex; gap: 2px; height: 14px; }
+.meters .segs i { flex: 1; background: var(--ghost); }
+.meters .segs i.on, .meters .segs i.pk { background: var(--ink); }
+.meters .mscale { margin-top: -2px; }
+.meters .mscale .ch { text-align: right; font-size: 13px; }
+.meters .scale { position: relative; height: 15px; font-size: 13px; color: var(--muted); }
+.meters .scale span { position: absolute; top: 0; transform: translateX(-50%); }
+.meters .scale span:first-child { transform: none; } .meters .scale span:last-child { transform: translateX(-100%); }
+.fxside .mout .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
+.vu svg { display: block; width: 100%; height: auto; overflow: hidden; }
+.vu svg .arc, .vu svg line { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.vu svg .hot { stroke: var(--ink); stroke-width: 4; fill: none; }
+.vu svg text { fill: var(--ink); font-family: var(--font); font-size: 11px; text-anchor: middle; dominant-baseline: middle; }
+.vu svg .vul { fill: var(--muted); font-size: 9px; letter-spacing: 1px; }
+.vu svg .needle { stroke-width: 2; stroke-linecap: round; }
+.vu output { position: absolute; right: 5px; bottom: 1px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .fxside .outm h3 { display: flex; align-items: center; gap: 6px; }
 .fxside .sect h3 { padding-left: 0; }
 /* the key's sequencer (row 4, the cells after the LFO): ACTIVE and RANDOM in its heading, eight steps across its
@@ -602,7 +603,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .sounds .fxtab kbd { margin-left: 6px; }
 /* the effects on the tab: send FX in the first column, the master's distortion in the second, compressor and output in
    the third, each section on the knob grid */
-#fxglobal { display: grid; grid-template-columns: repeat(3, auto); column-gap: 0; align-items: start; justify-content: start; }
+#fxglobal { display: grid; grid-template-columns: repeat(3, auto); column-gap: 0; align-items: start; justify-content: space-between; }
 .fxcol { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; }
 .fxcol + .fxcol { border-left: var(--rule); }
 .fxcol:first-child { padding-left: 4px; }
