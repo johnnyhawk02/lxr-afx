@@ -1401,17 +1401,20 @@ function applyLook(look, keep) {
 }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
 applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'lcd', false);
-// KNOB SIZE: S / M / L scales only the knob drawn inside its cell (a CSS transform, so the cells and the grid never
-// move). Kept in this browser. Johnny, 2026-11-19: "add knob size in the options"
-const KNOB_SIZE_STORE = 'lxr-afx-knob-size', KNOB_ZOOM = { s: 0.8, m: 1, l: 1.2 };
-function applyKnobSize(size, keep) {
-  if (!(size in KNOB_ZOOM)) size = 'm';
-  document.documentElement.style.setProperty('--knob-zoom', KNOB_ZOOM[size]);
-  for (const b of $('knob-sizes').children) b.setAttribute('aria-pressed', b.dataset.size === size);
-  if (keep) { try { localStorage.setItem(KNOB_SIZE_STORE, size); } catch (e) { /* not kept */ } }
+// KNOB SIZE: a slider from M (the usual size) to XL scales only the knobs and switches drawn inside their cells (a CSS
+// transform, so the cells and the grid never move; the three.js knobs follow the drawing's size). XL is as big as a knob
+// gets before its scale runs into its value and name. Kept in this browser. Johnny, 2026-11-19: "make the knob size in
+// settings a slider going from medium to extra large"
+const KNOB_SIZE_STORE = 'lxr-afx-knob-size', KNOB_ZOOM_MAX = 1.35;
+function knobSizeName(z) { return z <= 1.001 ? 'M' : z >= KNOB_ZOOM_MAX - 0.001 ? 'XL' : z < 1.2 ? 'M+' : 'L'; }
+function applyKnobSize(z, keep) {
+  z = Math.min(KNOB_ZOOM_MAX, Math.max(1, Number(z) || 1));
+  document.documentElement.style.setProperty('--knob-zoom', z);
+  $('knob-size').value = z; $('knob-size-val').textContent = knobSizeName(z);
+  if (keep) { try { localStorage.setItem(KNOB_SIZE_STORE, String(z)); } catch (e) { /* not kept */ } }
 }
-for (const b of $('knob-sizes').children) b.addEventListener('click', () => { applyKnobSize(b.dataset.size, true); detail(`knob size: <em>${b.textContent}</em>`); });
-{ let size = 'm'; try { size = localStorage.getItem(KNOB_SIZE_STORE) || 'm'; } catch (e) { /* M */ } applyKnobSize(size, false); }
+$('knob-size').addEventListener('input', (e) => { applyKnobSize(e.target.value, true); detail(`knob size: <em>${knobSizeName(+e.target.value)}</em>`); });
+{ let z = 1; try { const v = localStorage.getItem(KNOB_SIZE_STORE); z = v === 'l' ? 1.2 : +v || 1; } catch (e) { /* M */ } applyKnobSize(z, false); }
 function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)

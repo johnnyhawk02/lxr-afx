@@ -19,7 +19,7 @@
   // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
   try { if (localStorage.getItem('lxr-afx-look') !== 'lcd') document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
   // the knob size (SETTINGS > KNOB SIZE): scales only the knob drawn in its cell, never the cell
-  try { var kz = { s: 0.8, l: 1.2 }[localStorage.getItem('lxr-afx-knob-size')]; if (kz) document.documentElement.style.setProperty('--knob-zoom', kz); } catch (e) { /* M */ }
+  try { var kz = +localStorage.getItem('lxr-afx-knob-size') || ({ l: 1.2 })[localStorage.getItem('lxr-afx-knob-size')]; if (kz > 1 && kz <= 1.35) document.documentElement.style.setProperty('--knob-zoom', kz); } catch (e) { /* M */ }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
     var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
@@ -137,12 +137,8 @@
           <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
         </div>
         <h3>KNOB SIZE</h3>
-        <div class="randrow looks" id="knob-sizes" role="group" aria-label="The size of the knobs">
-          <button class="btn" type="button" data-size="s" title="Smaller knobs, in the same places">S</button>
-          <button class="btn" type="button" data-size="m" title="The knobs at their usual size">M</button>
-          <button class="btn" type="button" data-size="l" title="Bigger knobs, in the same places">L</button>
-        </div>
-        <p class="dim note">ONLY THE KNOB GROWS OR SHRINKS: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
+        <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">M</em></span><span class="dim end">M</span><input type="range" id="knob-size" min="1" max="1.35" step="0.05" value="1" aria-label="The size of the knobs, from medium to extra large" title="The size of the knobs: medium (left) to extra large (right)"><span class="dim">XL</span></div>
+        <p class="dim note">MEDIUM TO EXTRA LARGE: ONLY THE KNOBS GROW, EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
         <div id="lcd-colours">
         <h3>SCREEN COLOURS</h3>
         <div class="randrow themes" id="themes"></div>
