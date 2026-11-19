@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnvfn5b';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnvfn5b';
-import { presetName, jumble } from './names.js?v=mwnvfn5b';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnvfn5b';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnvfn5b';
-import { breed, isDud } from '../sound/breed.js?v=mwnvfn5b';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnvfn5b';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnvfn5b';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnvfn5b';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnvfn5b';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnvfn5b';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnvptp2';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnvptp2';
+import { presetName, jumble } from './names.js?v=mwnvptp2';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnvptp2';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnvptp2';
+import { breed, isDud } from '../sound/breed.js?v=mwnvptp2';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnvptp2';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnvptp2';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnvptp2';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnvptp2';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnvptp2';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnvfn5b', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnvptp2', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -689,13 +689,16 @@ function tablePicker(h3, voice, row) {
 }
 // the wave display's state: its canvas, the voice, the stack drawn (an offscreen canvas and what it shows), what's drawn
 // now, when the last live frame was drawn (moves under modulation are capped: 30 a second, 15 on a phone)
-const wave = { cv: null, voice: 0, stack: null, stackKey: '', last: '', liveAt: 0, pend: null, timer: 0 };
+const wave = { cv: null, voice: 0, peak: 1, stack: null, stackKey: '', last: '', liveAt: 0, pend: null, timer: 0 };
 const WV_GAP = matchMedia('(pointer: coarse)').matches ? 66 : 33;
-const WV_SLANT = [0.3, 0.5]; // (how far back the last frame sits: of the width, of the height)
-// where frame t (0 front .. 1 back) of the waterfall sits on a w x h canvas: its left end, its centre line, its width, its height
-function wvPlace(t, w, h) {
-  const p = 2, dx = (w - 2 * p) * WV_SLANT[0], dy = (h - 2 * p) * WV_SLANT[1], fw = w - 2 * p - dx, fh = h - 2 * p - dy;
-  return { x: p + t * dx, y: h - p - fh / 2 - t * dy, fw, a: fh / 2 * 0.92 };
+const WV_SLANT = [0.22, 0.42]; // (how far back the last frame sits: of the width, of the height)
+// where frame t (0 front .. 1 back) of the waterfall sits on a w x h canvas: its left end, its centre line, its width, its
+// height. The stack runs edge to edge: the front frame's foot on the bottom, the back frame's peak on the top, the front
+// frame's left end on the left edge, the back frame's right end on the right. peak: the table's loudest point, so a quiet
+// table still fills the height
+function wvPlace(t, w, h, peak = 1) {
+  const p = 1.5, dx = (w - 2 * p) * WV_SLANT[0], dy = (h - 2 * p) * WV_SLANT[1], fw = w - 2 * p - dx, fh = h - 2 * p - dy;
+  return { x: p + t * dx, y: h - p - fh / 2 - t * dy, fw, a: fh / 2 / Math.max(peak, 0.05) };
 }
 function wvLine(g, pts, q) { g.beginPath(); for (let j = 0; j <= pts.length; j++) { const x = q.x + j / pts.length * q.fw, y = q.y - pts[j % pts.length] * q.a; j ? g.lineTo(x, y) : g.moveTo(x, y); } }
 function drawWave(live) {
@@ -721,11 +724,13 @@ function drawWave(live) {
     const g = s.getContext('2d'); g.setTransform(ratio, 0, 0, ratio, 0, 0); g.lineJoin = 'round';
     const t = tableFor(i, true), n = t ? Math.min(Math.max(t.frames, 2), 24) : 21;
     // the floor: the front and back centre lines and the sides joining them, faint
+    const frames = Array.from({ length: n }, (_, f) => waveShape(i, f / (n - 1) * WAVE_TOP, pwm, 64));
+    wave.peak = frames.reduce((m, pts) => pts.reduce((a, v) => Math.max(a, Math.abs(v)), m), 0);
     const f0 = wvPlace(0, w, h), f1 = wvPlace(1, w, h);
     g.strokeStyle = ink; g.globalAlpha = 0.2; g.lineWidth = 1; g.beginPath();
     g.moveTo(f0.x, f0.y); g.lineTo(f0.x + f0.fw, f0.y); g.lineTo(f1.x + f1.fw, f1.y); g.lineTo(f1.x, f1.y); g.closePath(); g.stroke();
     for (let f = n - 1; f >= 0; f--) {
-      const tt = f / (n - 1), q = wvPlace(tt, w, h), pts = waveShape(i, tt * WAVE_TOP, pwm, 64);
+      const tt = f / (n - 1), q = wvPlace(tt, w, h, wave.peak), pts = frames[f];
       wvLine(g, pts, q); g.lineTo(q.x + q.fw, q.y + q.a + 1); g.lineTo(q.x, q.y + q.a + 1); g.closePath();
       g.globalAlpha = 0.82; g.fillStyle = panel; g.fill();
       wvLine(g, pts, q); g.globalAlpha = 0.32; g.strokeStyle = ink; g.lineWidth = 1; g.stroke();
@@ -735,7 +740,7 @@ function drawWave(live) {
   const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.clearRect(0, 0, W, H); g.drawImage(wave.stack, 0, 0);
   // the frame the tone plays, at its place in the stack
   g.setTransform(ratio, 0, 0, ratio, 0, 0); g.lineJoin = 'round';
-  const tt = Math.min(Math.max(at / WAVE_TOP, 0), 1), q = wvPlace(tt, w, h);
+  const tt = Math.min(Math.max(at / WAVE_TOP, 0), 1), q = wvPlace(tt, w, h, wave.peak);
   wvLine(g, waveShape(i, at, pwm, 96), q); g.strokeStyle = hot; g.lineWidth = 2.2; g.stroke();
 }
 // from the audio: where each voice's dial is now; drawn while it moves (modulation), back to the knob when it stops
@@ -1469,7 +1474,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnvfn5b').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnvptp2').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
