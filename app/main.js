@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnus9ak';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnus9ak';
-import { presetName, jumble } from './names.js?v=mwnus9ak';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnus9ak';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnus9ak';
-import { breed, isDud } from '../sound/breed.js?v=mwnus9ak';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnus9ak';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnus9ak';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnus9ak';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnus9ak';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnus9ak';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnux9ic';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnux9ic';
+import { presetName, jumble } from './names.js?v=mwnux9ic';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnux9ic';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnux9ic';
+import { breed, isDud } from '../sound/breed.js?v=mwnux9ic';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnux9ic';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnux9ic';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnux9ic';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnux9ic';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnux9ic';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnus9ak', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnux9ic', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -625,15 +625,19 @@ function buildFaders() {
     }
     if (col <= GRID_COLS) { const n = GRID_COLS + 1 - col; sect(n, ' fill'); }
   });
+  // the key's FX SENDS, one above the other in the last column (Johnny, 2026-11-19: "make the fx sends one above another
+  // to remove one slot and give the knobs more space"): ECHO in row 1 under the heading, REVERB in row 2 under a blank
+  // one, so each lines up with its row's knobs
   const sends = entries.filter((e) => e.section === 'fx sends');
-  const el = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 3); el.className = 'sect sends sep'; el.style.setProperty('--n', 2);
-  el.innerHTML = '<h3>fx sends</h3><div class="row"></div>';
-  for (const e of sends) el.querySelector('.row').append(vfader(e));
-  box.append(el);
+  sends.forEach((e, i) => {
+    const el = cell(document.createElement('div'), i + 1, i + 2, GRID_COLS + 1, GRID_COLS + 2); el.className = 'sect sends sep' + (i ? ' rt' : ''); el.style.setProperty('--n', 1);
+    el.innerHTML = `<h3>${i ? '&nbsp;' : 'fx sends'}</h3><div class="row"></div>`;
+    el.querySelector('.row').append(vfader(e)); box.append(el);
+  });
   modStrip(box, cell, voice);
   drawSource(); // (the dice sits in the key's row of buttons, above)
   makePanel($('make')); // (and the MAKE buttons under them)
-  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl), true), 2, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
+  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl), true), 3, 5, GRID_COLS + 1, GRID_COLS + 2); big.classList.add('big', 'rt', 'sep');
   box.append(big);
   // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
   // key as it plays now and levels it again (it never switches it off)
@@ -1449,7 +1453,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnus9ak').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnux9ic').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1488,9 +1492,9 @@ applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'l
 // left end: what was XL+7, "the smallest the knobs should be") to MAX, nearly filling its cell. Its name and padlock
 // move down with it. A transform, so the cells and the grid never move. Kept in this browser. Johnny, 2026-11-19:
 // "give me more to the right, you seem scared of giving me big dials"
-// (2026-11-19 later: "make this the default look and size, make more space between the knobs": the range is a little
-// smaller, 0.85 to 1.35, so the size Johnny had, 7, is the default with more room round each knob)
-const KNOB_SIZE_STORE = 'lxr-afx-knob-kd', KNOB_KD = [0.85, 1.35];
+// (the default, 7, is the size Johnny had; the room round the knobs comes from the cells, wider since the FX SENDS
+// went one above the other)
+const KNOB_SIZE_STORE = 'lxr-afx-knob-kd', KNOB_KD = [0.87, 1.45];
 const KNOB_SIZE_DEFAULT = 7;
 const knobKd = (v) => KNOB_KD[0] + (KNOB_KD[1] - KNOB_KD[0]) * v / 10;
 const knobSizeName = (v) => (v <= 0 ? 'XL' : v >= 10 ? 'MAX' : `XL+${v}`);
