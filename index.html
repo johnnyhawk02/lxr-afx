@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnr87we">
-<link rel="stylesheet" href="css/grey.css?v=mwnr87we">
+<link rel="stylesheet" href="css/lcd.css?v=mwnrjspw">
+<link rel="stylesheet" href="css/grey.css?v=mwnrjspw">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -19,7 +19,8 @@
   // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
   try { if (localStorage.getItem('lxr-afx-look') !== 'lcd') document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
   // the knob size (SETTINGS > KNOB SIZE): grows only the knob inside its printed scale, never the cell
-  try { var kv = +localStorage.getItem('lxr-afx-knob-body'); if (kv > 0 && kv <= 10) document.documentElement.style.setProperty('--knob-body', (1.04 + 0.026 * kv).toFixed(3)); } catch (e) { /* XL */ }
+  try { var kq = localStorage.getItem('lxr-afx-knob-body'), kv = kq === null || kq === '' ? 5 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--knob-body', (1.04 + 0.026 * kv).toFixed(3));
+    var ks = localStorage.getItem('lxr-afx-knob-style'); if (/^(round|ribbed|rubber)$/.test(ks)) document.documentElement.classList.add('knob-' + ks); } catch (e) { /* the defaults */ }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
     var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
@@ -137,8 +138,17 @@
           <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
         </div>
         <h3>KNOB SIZE</h3>
-        <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="0" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">XXL</span></div>
+        <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL+5</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="5" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">XXL</span></div>
         <p class="dim note">THE KNOB GROWS INSIDE ITS SCALE: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
+        <div id="knob-style-row">
+        <h3>KNOB STYLE</h3>
+        <div class="randrow looks" id="knob-styles" role="group" aria-label="The style of the knobs">
+          <button class="btn" type="button" data-style="chicken" title="A black chicken-head pointer on a metal skirt">CHICKEN</button>
+          <button class="btn" type="button" data-style="round" title="A round black cap on a metal skirt, a white line across it">ROUND</button>
+          <button class="btn" type="button" data-style="ribbed" title="A black ribbed instrument knob with a white line">RIBBED</button>
+          <button class="btn" type="button" data-style="rubber" title="A soft-touch rubber dome with a white dot">RUBBER</button>
+        </div>
+        </div>
         <div id="lcd-colours">
         <h3>SCREEN COLOURS</h3>
         <div class="randrow themes" id="themes"></div>
@@ -304,6 +314,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnr87we"></script>
+<script type="module" src="app/main.js?v=mwnrjspw"></script>
 </body>
 </html>

@@ -91,12 +91,43 @@ const matAt = (k, o) => {
   return faded.get(key);
 };
 
-function makeKnob() {
-  const g = new THREE.Group(), turn = new THREE.Group();
-  const skirt = new THREE.Mesh(skirtGeo, MAT.skirt), cap = new THREE.Mesh(capGeo, MAT.cap);
-  const head = new THREE.Mesh(headGeo, MAT.head), line = new THREE.Mesh(lineGeo, MAT.line);
-  for (const m of [skirt, cap, head, line]) { m.castShadow = true; m.receiveShadow = true; }
-  turn.add(skirt, cap, head, line); g.add(turn); g.userData = { turn, parts: { skirt, cap, head, line } };
+// the other knob styles (SETTINGS > KNOB STYLE; html.knob-round / knob-ribbed / knob-rubber, else the chicken head).
+// Johnny, 2026-11-19: "give me a choice of knobs"
+const lathe = (pts, n = 72) => { const g = new THREE.LatheGeometry(pts.map(([r, h]) => new THREE.Vector2(r, h)), n); g.rotateX(Math.PI / 2); return g; };
+// ROUND: the metal skirt with a black round cap standing on it, a white line across the top
+const roundCapGeo = lathe([[0, 3.9], [12.6, 3.9], [12.8, 9.6], [12.3, 11], [11, 11.6], [0, 11.7]]);
+const roundLineGeo = new THREE.BoxGeometry(9, 1.7, 0.4).translate(2.5 + 9 / 2, 0, 11.75);
+// RIBBED: a black ribbed cylinder on a flange, a slightly domed top with a white line (the classic instrument knob)
+const ribFlangeGeo = lathe([[0, 0], [15, 0], [15, 1], [14.2, 1.9], [0, 1.9]]);
+const ribBodyGeo = (() => {
+  const s = new THREE.Shape(), N = 28;
+  for (let i = 0; i <= N * 2; i++) { const a = i / (N * 2) * Math.PI * 2, r = i % 2 ? 12.6 : 13.4; i ? s.lineTo(r * Math.cos(a), r * Math.sin(a)) : s.moveTo(r, 0); }
+  const g = new THREE.ExtrudeGeometry(s, { depth: 9.2, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.3, bevelSegments: 2, curveSegments: 2 });
+  g.translate(0, 0, 2.2); return g;
+})();
+const ribTopGeo = lathe([[0, 11.7], [12.4, 11.7], [11.9, 12.5], [0, 12.9]]);
+const ribLineGeo = new THREE.BoxGeometry(9.5, 1.6, 0.4).translate(2 + 9.5 / 2, 0, 12.85);
+// RUBBER: a soft-touch dome, matte, with a white dot near its edge
+const rubberGeo = lathe([[0, 0], [14.6, 0], [14.9, 1.4], [14.7, 4.5], [13.8, 7.6], [11.6, 9.9], [8, 11.2], [4, 11.7], [0, 11.8]]);
+const rubberDotGeo = new THREE.CylinderGeometry(1.7, 1.7, 0.6, 24).rotateX(Math.PI / 2).translate(8.6, 0, 11.1);
+Object.assign(MAT, {
+  black: new THREE.MeshPhysicalMaterial({ color: 0x111214, metalness: 0, roughness: 0.42, clearcoat: 0.4, clearcoatRoughness: 0.35, envMapIntensity: 0.4 }),
+  rubber: new THREE.MeshStandardMaterial({ color: 0x2b2d30, metalness: 0, roughness: 0.92, envMapIntensity: 0.3 }),
+});
+const KNOB_PARTS = { // each style: [geometry, material] parts
+  chicken: [[skirtGeo, 'skirt'], [capGeo, 'cap'], [headGeo, 'head'], [lineGeo, 'line']],
+  round: [[skirtGeo, 'skirt'], [roundCapGeo, 'black'], [roundLineGeo, 'line']],
+  ribbed: [[ribFlangeGeo, 'black'], [ribBodyGeo, 'black'], [ribTopGeo, 'black'], [ribLineGeo, 'line']],
+  rubber: [[rubberGeo, 'rubber'], [rubberDotGeo, 'line']],
+};
+const knobStyle = () => (['round', 'ribbed', 'rubber'].find((k) => root.classList.contains('knob-' + k)) || 'chicken');
+function makeKnob(style) {
+  const g = new THREE.Group(), turn = new THREE.Group(), parts = {};
+  KNOB_PARTS[style].forEach(([geo, mat], i) => {
+    const m = new THREE.Mesh(geo, MAT[mat]); m.castShadow = true; m.receiveShadow = true; m.userData.mat = mat;
+    turn.add(m); parts['p' + i] = m;
+  });
+  g.add(turn); g.userData = { turn, parts, style };
   scene.add(g); return g;
 }
 
@@ -164,18 +195,20 @@ function sync() {
     sun.shadow.camera.updateProjectionMatrix();
   }
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
-  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}`;
+  const style = knobStyle();
+  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}:${style}`;
   for (const el of screen.querySelectorAll('.knob')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;
     seen.add(el);
-    let k = knobs.get(el); if (!k) knobs.set(el, (k = makeKnob()));
+    let k = knobs.get(el); if (k && k.userData.style !== style) { scene.remove(k); k = null; }
+    if (!k) knobs.set(el, (k = makeKnob(style)));
     const size = r.width / s, x = (r.left - ox) / s + size / 2, y = (r.top - oy) / s + size / 2;
     k.position.set(x, -y, 0); k.scale.setScalar(size / 64);
     const m = /rotate\(([-\d.e]+)/.exec(el.querySelector('.rot')?.getAttribute('transform') || '');
     k.userData.turn.rotation.z = -(m ? +m[1] : 0) * Math.PI / 180;
     let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
-    if (k.userData.o !== o) { k.userData.o = o; for (const [n, mesh] of Object.entries(k.userData.parts)) mesh.material = matAt(n, o); }
+    if (k.userData.o !== o) { k.userData.o = o; for (const mesh of Object.values(k.userData.parts)) mesh.material = matAt(mesh.userData.mat, o); }
     k.visible = true;
     sig += `|${x.toFixed(1)},${y.toFixed(1)},${size.toFixed(1)},${m ? m[1] : 0},${o}`;
   }
