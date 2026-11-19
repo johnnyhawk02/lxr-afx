@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnqgsnw';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnqgsnw';
-import { presetName, jumble } from './names.js?v=mwnqgsnw';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnqgsnw';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnqgsnw';
-import { breed, isDud } from '../sound/breed.js?v=mwnqgsnw';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnqgsnw';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnqgsnw';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnqgsnw';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnqgsnw';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnqgsnw';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnqtj6r';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnqtj6r';
+import { presetName, jumble } from './names.js?v=mwnqtj6r';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnqtj6r';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnqtj6r';
+import { breed, isDud } from '../sound/breed.js?v=mwnqtj6r';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnqtj6r';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnqtj6r';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnqtj6r';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnqtj6r';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnqtj6r';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnqgsnw', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnqtj6r', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -815,14 +815,14 @@ const ECHO_TIME = {
 const ECHO_DUCK = { max: 127, get: () => E().duck || 0, set: (v) => { E().duck = v; sendFx(); detail(`ECHO DUCK <em>${v ? Math.round(v / 1.27) + '%' : 'OFF'}</em>`); },
   show: (v) => (v ? Math.round(v / 1.27) + '%' : 'off'), dflt: 0 };
 const TOG_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true">'
-  + '<line class="tsc" x1="24" y1="5" x2="40" y2="5"/><line class="tsc off" x1="27" y1="59" x2="37" y2="59"/>'
-  + '<rect class="tslot" x="22" y="7" width="20" height="50" rx="3"/>'
-  + '<path class="tnut" d="M32 19.5L42.8 25.75V38.25L32 44.5L21.2 38.25V25.75Z"/><circle class="tbush" cx="32" cy="32" r="7.2"/>'
-  + '<g class="lev"><rect class="tblk" x="26.5" y="11.5" width="11" height="20"/>'
-  + '<path class="tbat" d="M28.6 32L27.2 14.5A4.9 4.9 0 1 1 36.8 14.5L35.4 32Z"/><line class="thl" x1="30.6" y1="29" x2="29.9" y2="15"/></g>'
-  + '<line class="mrange" x1="50" y1="52" x2="50" y2="52"/><circle class="mdot" cx="50" cy="12" r="3"/></svg>';
-// a two-way FX switch (SYNC, P-PONG, the distortion's FILTER, XOVER and CLIP) is drawn as a toggle switch too (vtoggle):
-// the lever up for its second setting, its name over it
+  + '<rect class="rbez" x="18" y="9" width="28" height="46" rx="3.5"/>'
+  + '<rect class="rup" x="21" y="12" width="22" height="20" rx="1.5"/><rect class="rdn" x="21" y="32" width="22" height="20" rx="1.5"/>'
+  + '<line class="rhl rhl-up" x1="23" y1="13.6" x2="41" y2="13.6"/><line class="rhl rhl-dn" x1="23" y1="50.4" x2="41" y2="50.4"/>'
+  + '<line class="rpiv" x1="21" y1="32" x2="43" y2="32"/>'
+  + '<line class="rmk" x1="32" y1="17" x2="32" y2="26"/><circle class="rmk" cx="32" cy="42" r="4.2"/>'
+  + '<line class="mrange" x1="52" y1="52" x2="52" y2="52"/><circle class="mdot" cx="52" cy="12" r="3"/></svg>';
+// a two-way FX switch (SYNC, P-PONG, the distortion's FILTER, XOVER and CLIP) is drawn as a rocker switch too (vtoggle):
+// the top pressed for its second setting, its name over it
 function togDraw(b, out, names, get) {
   b.classList.add('tog'); b.setAttribute('role', 'switch'); b.innerHTML = TOG_SVG; b.setAttribute('aria-label', b.title);
   return () => { const v = get() ? 1 : 0; b.setAttribute('aria-checked', v === 1); out.textContent = names[v]; };
@@ -976,11 +976,12 @@ function lightRing(ticks, v, max, c) {
 const LOCK_SVG = '<svg viewBox="0 0 16 18" aria-hidden="true"><path d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg>';
 // a pan knob's L and R, at the two ends of its ring
 const LR_SVG = '<text class="lr" x="3" y="66">L</text><text class="lr" x="61" y="66">R</text>';
-// a toggle switch: a control with only two settings (on/off, A/B) in a knob's cell, the same size as a knob (Johnny,
-// 2026-11-19: "turn any dials with 2 states into switches"). Up is its second setting (ON), down its first (OFF). The
-// GREY look draws a bat-handle lever on a hex nut seen from above, the LCD look a slot with its block at one end; no
-// three.js knob (app/panel3d.js draws only .knob). A modulated one (VEL VOL) shows the swing its sources give it as a
-// bar beside the lever, the middle being where it flips, and a dot at the end the engine has it at now
+// a rocker switch: a control with only two settings (on/off, A/B) in a knob's cell, the same size as a knob (Johnny,
+// 2026-11-19: "turn any dials with 2 states into switches", then "make the switches rocker switches"). Its top half
+// pressed in is its second setting (ON, marked I), its bottom half its first (OFF, marked O). The GREY look draws a
+// black rocker in a bezel, the pressed half dark and the raised half catching the light; the LCD look fills the pressed
+// half. No three.js knob (app/panel3d.js draws only .knob). A modulated one (VEL VOL) shows the swing its sources give
+// it as a bar beside the rocker, the middle being where it flips, and a dot at the end the engine has it at now
 // the swing bar and the live dot on a switch (v: 0 or 1; lo, hi: how far its sources move it, in its 0..1 range)
 const togY = (x) => 52 - 40 * clamp(x, 0, 1);
 function drawTogMod(b, v, lo, hi) {
@@ -1395,7 +1396,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnqgsnw').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnqtj6r').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
