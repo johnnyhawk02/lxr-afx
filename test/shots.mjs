@@ -200,6 +200,18 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (left > 16) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (16 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
+  // KNOB SIZE (SETTINGS): S and L scale only the knob drawn; its cell and every column stay where they were
+  { const boxes = () => p.$$eval('#faders .vf .knob', (ks) => ks.map((k) => { const c = k.getBoundingClientRect(), s = k.querySelector('svg').getBoundingClientRect();
+      return [Math.round(c.left), Math.round(c.top), Math.round(c.width), Math.round(s.width)]; }));
+    const m = await boxes();
+    for (const [size, z] of [['l', 1.2], ['s', 0.8], ['m', 1]]) {
+      await p.click('#settings-btn'); await p.click(`#knob-sizes [data-size=${size}]`); await p.click('#settings-btn'); await p.waitForTimeout(80);
+      const b = await boxes();
+      const moved = b.filter((x, i) => x[0] !== m[i][0] || x[1] !== m[i][1] || x[2] !== m[i][2]).length;
+      const off = b.filter((x, i) => Math.abs(x[3] - m[i][3] * z) > 2).length;
+      if (moved || off || b.length !== m.length) { errors++; console.log(`${w}x${h} KNOB SIZE ${size}: ${moved} cells moved, ${off} knobs the wrong size`); }
+      if (w === 1440 && h === 900 && size !== 'm') await p.screenshot({ path: `${out}/knobs-${size}-${w}x${h}.png` });
+    } }
   // ENGINES (SETTINGS): 1 to 6 mono engines on even zones of the 25 keys; each engine in use shows its button, its keys
   // in the strip, and a kit sound on every key; back to 3 as before
   { const eng = async (n) => { for (let g = 0; g < 6 && Number(await p.textContent('#engines')) !== n; g++) {
