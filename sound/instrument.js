@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnux9ic';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnvcz24';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS, STEPX_BASE } from './schema.js?v=mwnux9ic';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwnux9ic';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnux9ic';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwnvcz24';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwnvcz24';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnvcz24';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -102,14 +102,16 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
+    if (par >= STEPLEN_BASE) { if (par < ALL_PARAMS) this.e.setStepLen(par - STEPLEN_BASE, value); return; } // STEP SEQ's LENGTH
+    if (par >= STEP2_BASE) { const i = par - STEP2_BASE; this.e.setStep(i >> 3, 8 + (i & 7), value / 127); return; } // steps 9 to 16
     if (par >= STEPX_BASE) { // STEP SEQ's STEP TIME or SLEW
-      const i = par - STEPX_BASE; if (i >= 12) return;
+      const i = par - STEPX_BASE;
       if (i % 2) this.e.setStepSlew(i >> 1, value); else this.e.setStepTime(i >> 1, value);
       return;
     }
     if (par >= STEP_BASE) { // a STEP SEQ level
-      const i = par - STEP_BASE; if (i >= 6 * NUM_STEPS) return;
-      this.e.setStep(Math.floor(i / NUM_STEPS), i % NUM_STEPS, value / 127);
+      const i = par - STEP_BASE;
+      this.e.setStep(i >> 3, i & 7, value / 127);
       return;
     }
     if (par >= DEPTH_BASE) { // a knob's depth from one source
