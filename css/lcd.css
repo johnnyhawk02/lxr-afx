@@ -798,10 +798,11 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
 /* the OSC section's wave display: three cells, its picture across all three; a canvas
    drawing the table as a slanted stack of frames (app/main.js drawWave) */
-.faders .vf.wvcell { grid-column: span 3; }
-.faders .vf.wvcell .wvbox { width: calc(100% - 12px); height: var(--ks); display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 2px; }
-.faders .vf.wvcell output { text-transform: lowercase; }
+/* the picture takes the cell's whole height above its label (the table's name is on the TABLE button, so no readout) */
+.faders .vf.wvcell { grid-column: span 3; align-self: stretch; }
+.faders .vf.wvcell .wvbox { width: calc(100% - 8px); flex: 1 1 0; min-height: var(--ks); display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 1px; }
+.faders .vf.wvcell output { display: none; }
 .faders .vf.wvcell .wv { display: block; width: 100%; height: 100%; }
 
 /* ---- the top section, reorganised (Johnny, 2026-11-19: "the whole top section is a mess"): the top bar and the key
