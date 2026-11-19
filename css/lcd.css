@@ -708,13 +708,19 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .dtrack i { position: absolute; left: 0; right: 0; top: 0; bottom: 0; clip-path: inset(var(--t) 0 var(--b) 0);
   background: repeating-linear-gradient(to top, var(--ink) 0 4px, transparent 4px 6px); }
 .dtrack b { position: absolute; top: 50%; left: -4px; right: -4px; height: 2px; margin-top: -1px; background: var(--ink); }
-.seqsect .stepbox { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 10px; padding: 0 18px 0 16px; /* (room between the steps and round them: Johnny, "make space in and around the step seq") */ cursor: crosshair; touch-action: none; }
+.seqsect .stepbox { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); grid-template-rows: auto 1fr; gap: 2px 8px; padding: 0 18px 0 16px; /* (room between the steps and round them: Johnny, "make space in and around the step seq") */ cursor: crosshair; touch-action: none; }
 .stepd { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
 .stepd output { font-size: 15px; height: 1.1em; text-align: center; font-variant-numeric: tabular-nums; }
 .stepd .lab { font-size: 13px; text-align: center; color: var(--ink); }
 .stepd .step { --f: 0; position: relative; height: var(--ks); border: 2px solid var(--ink); box-sizing: border-box; pointer-events: none; }
 .stepd .step i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--f) * 100%); background: var(--ink); }
 .stepd.now .step { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* LENGTH's bracket over the steps that play (drag its end); the steps past it greyed */
+.seqsect .lenrow { grid-column: 1 / -1; grid-row: 1; display: grid; grid-template-columns: subgrid; height: 16px; cursor: ew-resize; }
+.seqsect .lenbr { position: relative; border: 2px solid var(--ink); border-bottom: 0; height: 8px; margin-top: 6px; pointer-events: none; }
+.seqsect .lenbr b { position: absolute; right: -8px; top: -9px; min-width: 18px; height: 16px; padding: 0 2px; box-sizing: border-box; background: var(--ink); color: var(--panel);
+  font-size: 15px; line-height: 16px; text-align: center; }
+.stepd.off .step, .stepd.off output, .stepd.off .lab { opacity: 0.3; }
 .tblmenu.shapemenu { width: 300px; top: auto; bottom: calc(100% + 4px); z-index: 40; } /* (opens upward: the bottom row is the last) */
 .faders .vf.modsel .lab { text-decoration: underline; text-underline-offset: 3px; }
 .faders .modsect h3 span { color: var(--ink); }

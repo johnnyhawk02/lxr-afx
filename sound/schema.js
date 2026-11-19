@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, STEP_TIME_DEF, slewMs } from '../engine/lxr.js?v=mwnux9ic';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, STEP_TIME_DEF, slewMs } from '../engine/lxr.js?v=mwnvcz24';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwnux9ic';
+import { TABLE_NAMES } from './tables.js?v=mwnvcz24';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -110,15 +110,22 @@ export const tablePar = (voice) => TABLE_BASE + voice;
 export const NUM_SRC = MOD_SOURCES.length - 1;
 export const DEPTH_BASE = TABLE_BASE + 6;
 export const depthPar = (voice, i, src) => DEPTH_BASE + (voice * NUM_MOD + i) * NUM_SRC + (src - 1);
-// then each voice's STEP SEQ: eight levels, 0..127 (each hit of the voice plays the next one)
-export const NUM_STEPS = 8;
+// then each voice's STEP SEQ: its first eight levels, 0..127 (steps 9 to 16 and LENGTH come after STEP TIME and SLEW,
+// added 2026-11-19, so every parameter number before them stays as it was)
+export const NUM_STEPS = 16;
 export const STEP_BASE = DEPTH_BASE + 6 * NUM_MOD * NUM_SRC;
-export const stepPar = (voice, k) => STEP_BASE + voice * NUM_STEPS + k;
-export const STEP_DEFAULTS = [127, 32, 80, 32, 110, 0, 64, 32];
+export const stepPar = (voice, k) => (k < 8 ? STEP_BASE + voice * 8 + k : STEP2_BASE + voice * 8 + k - 8);
+export const STEP_DEFAULTS = [127, 32, 80, 32, 110, 0, 64, 32, 127, 32, 80, 32, 110, 0, 64, 32];
 // then each voice's STEP TIME (engine/lxr.js STEP_TIMES) and SLEW (0..127, 0 none)
-export const STEPX_BASE = STEP_BASE + 6 * NUM_STEPS;
+export const STEPX_BASE = STEP_BASE + 6 * 8;
 export const stepTimePar = (voice) => STEPX_BASE + voice * 2, stepSlewPar = (voice) => STEPX_BASE + voice * 2 + 1;
-export const ALL_PARAMS = STEPX_BASE + 12;
+// then steps 9 to 16 of each voice, and its LENGTH (1..16, the steps that play: 8 by default, so a sound saved with
+// eight steps plays as it did)
+export const STEP2_BASE = STEPX_BASE + 12;
+export const STEPLEN_BASE = STEP2_BASE + 6 * 8;
+export const stepLenPar = (voice) => STEPLEN_BASE + voice;
+export const STEP_LEN_DEF = 8;
+export const ALL_PARAMS = STEPLEN_BASE + 6;
 // a knob's value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
 export const dec2 = (x) => Math.round(x * 100) / 100;
 export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
@@ -127,7 +134,7 @@ for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
   for (let s = 1; s <= NUM_SRC; s++) INIT_VALUES[depthPar(v, i, s)] = MOD_AMT_ZERO;
 }
 for (let v = 0; v < 6; v++) STEP_DEFAULTS.forEach((x, k) => { INIT_VALUES[stepPar(v, k)] = x; });
-for (let v = 0; v < 6; v++) INIT_VALUES[stepTimePar(v)] = STEP_TIME_DEF;
+for (let v = 0; v < 6; v++) { INIT_VALUES[stepTimePar(v)] = STEP_TIME_DEF; INIT_VALUES[stepLenPar(v)] = STEP_LEN_DEF; }
 { const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
@@ -349,13 +356,15 @@ function buildSchema(voice) {
   // Part of the sound; ALTER leaves it alone unless WILD
   out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
     max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
-  // STEP SEQ's eight levels (edited in a knob's modulation pop-up). Part of the sound, like the depths
+  // STEP SEQ's sixteen levels (edited in a knob's modulation pop-up). Part of the sound, like the depths
   for (let k = 0; k < NUM_STEPS; k++) out.push({ key: 'STEP' + (k + 1) + '_' + (voice + 1), par: stepPar(voice, k), ukey: 'step' + (k + 1), label: 'step ' + (k + 1),
     text: 'STEP', page: 'mod', section: 'mod', min: 0, max: 127, def: STEP_DEFAULTS[k], display: { type: 'num' }, morph: null, weight: 0, rand: 'mix', hidden: true, step: k });
   out.push({ key: 'STEP_TIME' + (voice + 1), par: stepTimePar(voice), ukey: 'steptime', label: 'step time', text: 'STEP_TIME', page: 'mod', section: 'mod', min: 0,
     max: STEP_TIMES.length - 1, def: STEP_TIME_DEF, display: { type: 'menu', names: STEP_TIMES.map((t) => t[0]) }, morph: null, weight: 0, rand: 'mix', hidden: true, step: 'time' });
   out.push({ key: 'STEP_SLEW' + (voice + 1), par: stepSlewPar(voice), ukey: 'stepslew', label: 'slew', text: 'STEP_SLEW', page: 'mod', section: 'mod', min: 0,
     max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'mix', hidden: true, step: 'slew' });
+  out.push({ key: 'STEP_LEN' + (voice + 1), par: stepLenPar(voice), ukey: 'steplen', label: 'length', text: 'STEP_LEN', page: 'mod', section: 'mod', min: 1,
+    max: NUM_STEPS, def: STEP_LEN_DEF, display: { type: 'num' }, morph: null, weight: 0, rand: 'still', hidden: true, step: 'len' });
   return out;
 }
 

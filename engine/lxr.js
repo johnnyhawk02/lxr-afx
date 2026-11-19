@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwnux9ic';
+import { read as readTable } from './wavetables.js?v=mwnvcz24';
 
 export { PAR, CC, CC2 };
 
@@ -805,14 +805,14 @@ function lfo_calcPhaseInc(freq, sync, bpm) {
 // is re-sent through the parameter handler with a modulated 0..1 value, once a block: the LFO and velocity swing it
 // either way (base + amount * (2 * value - 1), the firmware's sum, so a kit's old LFO and velocity targets play as they
 // did), the two envelopes push it one way (base + amount * envelope). Amounts are -1..1. Not in the firmware: STEP SEQ,
-// eight levels a key (setStep, 0..1), pushing its knobs one way like the envelopes (base + amount * level). Every key
+// sixteen levels a key, LENGTH of them played (setStep, 0..1), pushing its knobs one way like the envelopes (base + amount * level). Every key
 // press starts it again from step 1 (Johnny, 2026-11-19: "per key, retriggered on keypress"), and it steps on in time:
 // STEP TIME, a step's length at the tempo (STEP_TIMES, stepBpm). SLEW (setStepSlew): a glide from one step's level to
 // the next (the press itself jumps to step 1)
 // ---------------------------------------------------------------------------------------
 export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env', 'step seq'];
 export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4, STEP: 5 };
-export const NUM_STEPS = 8;
+export const NUM_STEPS = 16;
 // STEP TIME's settings: [name, beats a step] (STEP_TIME_DEF: 1/16)
 export const STEP_TIMES = [['1/64', 1 / 16], ['1/32', 1 / 8], ['1/16', 1 / 4], ['1/8', 1 / 2], ['1/4', 1], ['1/2', 2], ['1 bar', 4]];
 export const STEP_TIME_DEF = 2;
@@ -1477,6 +1477,7 @@ export class LxrEngine {
     this.stepPlayed = new Int8Array(6).fill(-1);
     this.stepTarget = new Float32Array(6); this.stepTime = new Uint8Array(6); this.stepClock = new Float64Array(6);
     this.stepCoef = new Float32Array(6); this.stepBpm = 120; this.stepTime.fill(STEP_TIME_DEF);
+    this.stepLen = new Uint8Array(6).fill(8); // LENGTH: the steps that play (1..16)
     // initDrumVoice(), Snare_init(), HiHat_init(), Cymbal_init()
     // the six voices, all one merged voice (VOICE_KINDS: what each firmware voice was), and their firmware names
     this.voices = VOICE_KINDS.map(makeVoice);
@@ -1658,7 +1659,9 @@ export class LxrEngine {
   /** each voice's modulated controls now: [[dest, how far it is moved (-1..1)], ...] a voice (for the page's knobs) */
   readMods() { return this.routes.map((m) => { const o = []; for (const [dest, r] of m) if (r.on) o.push([dest, r.d]); return o; }); }
 
-  /** a STEP SEQ level (voice 0..5, step 0..7, level 0..1) */
+  /** STEP SEQ's LENGTH (1..16) */
+  setStepLen(voice, x) { this.stepLen[voice] = Math.max(1, Math.min(NUM_STEPS, Math.round(x))); if (this.stepPlayed[voice] >= this.stepLen[voice]) this.stepPlayed[voice] = 0; }
+  /** a STEP SEQ level (voice 0..5, step 0..15, level 0..1) */
   setStep(voice, step, level) { this.stepLevels[voice * NUM_STEPS + step] = f(level); }
   /** STEP TIME (an index into STEP_TIMES) and SLEW (0..127) */
   setStepTime(voice, t) { this.stepTime[voice] = Math.max(0, Math.min(STEP_TIMES.length - 1, Math.round(t))); }
@@ -1668,7 +1671,7 @@ export class LxrEngine {
     if (this.stepPlayed[n] >= 0) {
       const len = STEP_TIMES[this.stepTime[n]][1] * 60 / this.stepBpm * REAL_FS;
       this.stepClock[n] += BLOCK;
-      while (this.stepClock[n] >= len) { this.stepClock[n] -= len; this.stepPlayed[n] = (this.stepPlayed[n] + 1) % NUM_STEPS; }
+      while (this.stepClock[n] >= len) { this.stepClock[n] -= len; this.stepPlayed[n] = (this.stepPlayed[n] + 1) % this.stepLen[n]; }
     }
     const k = this.stepPlayed[n];
     if (k >= 0) this.stepTarget[n] = this.stepLevels[n * NUM_STEPS + k];

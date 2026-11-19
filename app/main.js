@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnux9ic';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnux9ic';
-import { presetName, jumble } from './names.js?v=mwnux9ic';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnux9ic';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnux9ic';
-import { breed, isDud } from '../sound/breed.js?v=mwnux9ic';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnux9ic';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnux9ic';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnux9ic';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnux9ic';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnux9ic';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnvcz24';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnvcz24';
+import { presetName, jumble } from './names.js?v=mwnvcz24';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnvcz24';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnvcz24';
+import { breed, isDud } from '../sound/breed.js?v=mwnvcz24';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnvcz24';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnvcz24';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnvcz24';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnvcz24';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnvcz24';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnux9ic', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnvcz24', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1199,17 +1199,17 @@ function depthBar(o) {
 }
 // STEP SEQ's shapes: SHAPES in the heading opens them; a press deals the key's eight steps that shape (the random ones
 // differently each time). One UNDO takes it back
-const STEP_CELLS = 4;
+const STEP_CELLS = 8, NS = NUM_STEPS;
 const rnd127 = () => Math.floor(Math.random() * 128);
 const STEP_SHAPES = [
-  ['random', () => Array.from({ length: 8 }, rnd127)],
-  ['ramp up', () => Array.from({ length: 8 }, (_, k) => Math.round(k / 7 * 127))],
-  ['ramp down', () => Array.from({ length: 8 }, (_, k) => Math.round((7 - k) / 7 * 127))],
-  ['triangle', () => [0, 32, 64, 96, 127, 96, 64, 32]],
-  ['alternate', () => { const hi = 90 + Math.floor(Math.random() * 38), lo = Math.floor(Math.random() * 40); return Array.from({ length: 8 }, (_, k) => (k % 2 ? lo : hi)); }],
-  ['accents', () => { const v = Array(8).fill(0).map(() => Math.floor(Math.random() * 24)); v[0] = 127; for (let n = 1 + Math.floor(Math.random() * 2); n > 0; n--) v[1 + Math.floor(Math.random() * 7)] = 100 + Math.floor(Math.random() * 28); return v; }],
-  ['smooth', () => { let x = rnd127(); return Array.from({ length: 8 }, () => (x = clamp(x + Math.round((Math.random() - 0.5) * 60), 0, 127))); }],
-  ['flat', () => Array(8).fill(127)],
+  ['random', () => Array.from({ length: NS }, rnd127)],
+  ['ramp up', () => Array.from({ length: NS }, (_, k) => Math.round(k / (NS - 1) * 127))],
+  ['ramp down', () => Array.from({ length: NS }, (_, k) => Math.round((NS - 1 - k) / (NS - 1) * 127))],
+  ['triangle', () => Array.from({ length: NS }, (_, k) => Math.round((1 - Math.abs(k - NS / 2) / (NS / 2)) * 127))],
+  ['alternate', () => { const hi = 90 + Math.floor(Math.random() * 38), lo = Math.floor(Math.random() * 40); return Array.from({ length: NS }, (_, k) => (k % 2 ? lo : hi)); }],
+  ['accents', () => { const v = Array(NS).fill(0).map(() => Math.floor(Math.random() * 24)); v[0] = 127; for (let n = 2 + Math.floor(Math.random() * 3); n > 0; n--) v[1 + Math.floor(Math.random() * (NS - 1))] = 100 + Math.floor(Math.random() * 28); return v; }],
+  ['smooth', () => { let x = rnd127(); return Array.from({ length: NS }, () => (x = clamp(x + Math.round((Math.random() - 0.5) * 60), 0, 127))); }],
+  ['flat', () => Array(NS).fill(127)],
 ];
 function stepShapes(h3, voice, deal) {
   const dd = document.createElement('span'); dd.className = 'tdd'; h3.classList.add('withbtn'); h3.append(dd);
@@ -1242,18 +1242,22 @@ function modStrip(box, cell, voice) {
     msRow.append(b.el); bars.push(b);
   }
   box.append(ms);
-  // STEP SEQ: the eight steps side by side in four cells (paint them: press and drag across), then STEP TIME and SLEW
-  // as dials; SHAPES in the heading deals the steps a shape
+  // STEP SEQ: the sixteen steps side by side in eight cells (paint them: press and drag across) under LENGTH's bracket
+  // (drag its end: the steps that play), then STEP TIME and SLEW as dials; SHAPES in the heading deals the steps a shape
   const n = STEP_CELLS + 2, sq = document.createElement('div'); sq.className = 'sect rt sep seqsect'; sq.style.setProperty('--n', n); cell(sq, 4, 5, 1 + NUM_SRC, 1 + NUM_SRC + n);
-  sq.innerHTML = '<h3>step seq</h3><div class="row"><div class="stepbox" role="group" aria-label="steps: press and drag to paint"></div></div>';
+  sq.innerHTML = '<h3>step seq</h3><div class="row"><div class="stepbox" role="group" aria-label="steps: press and drag to paint"><div class="lenrow" title="LENGTH: drag the bracket end"><div class="lenbr"><b></b></div></div></div></div>';
   const sqRow = sq.querySelector('.row'), sbox = sq.querySelector('.stepbox'), steps = [];
   sbox.style.gridColumn = `span ${STEP_CELLS}`;
   const stepGet = (k) => valueNow(stepPar(voice, k)) ?? 0;
+  const lenGet = () => clamp(Math.round(valueNow(stepLenPar(voice)) ?? STEP_LEN_DEF), 1, NUM_STEPS);
+  const lenrow = sbox.querySelector('.lenrow'), lenbr = sbox.querySelector('.lenbr'), lenNum = lenbr.querySelector('b');
+  const drawLen = () => { const n = lenGet(); lenbr.style.gridColumn = `1 / span ${n}`; lenNum.textContent = n; steps.forEach((st, k) => st.el.classList.toggle('off', k >= n)); };
   for (let k = 0; k < NUM_STEPS; k++) {
     const el = document.createElement('div'); el.className = 'stepd';
     el.innerHTML = `<output></output><div class="step"><i></i></div><span class="lab">${k + 1}</span>`;
     const b = el.querySelector('.step'), out = el.querySelector('output');
     const drawB = () => { const x = stepGet(k); b.style.setProperty('--f', x / 127); out.textContent = Math.round(x); };
+    el.style.gridRow = '2';
     sbox.append(el); steps.push({ el, bar: b, draw: drawB });
   }
   // painting: the step under the pointer takes the pointer's height; a quick drag fills the steps it skipped
@@ -1276,6 +1280,18 @@ function modStrip(box, cell, voice) {
   });
   sbox.addEventListener('pointermove', (e) => { if (!paint || e.pointerId !== paint.id) return; if (!stillPressed(e)) { endPaint(); return; } paintTo(e); });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) sbox.addEventListener(ev, endPaint);
+  // LENGTH: the bracket's end follows the pointer, a step at a time
+  let lenDrag = null;
+  const lenTo = (e) => { const n = at(e).k + 1; if (n !== lenGet()) editValue(stepLenPar(voice), n, [`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} STEP LENGTH`, lenDrag.stroke]); drawLen();
+    detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>LENGTH ${n}</em>`); };
+  const endLen = () => { if (dragEnd === endLen) dragEnd = null; lenDrag = null; };
+  lenrow.addEventListener('pointerdown', (e) => {
+    e.stopPropagation(); if (e.button) return; e.preventDefault();
+    try { lenrow.setPointerCapture(e.pointerId); } catch (err) { /* gone */ }
+    lenDrag = { id: e.pointerId, stroke: 'len/' + performance.now() }; dragEnd = endLen; lenTo(e);
+  });
+  lenrow.addEventListener('pointermove', (e) => { e.stopPropagation(); if (!lenDrag || e.pointerId !== lenDrag.id) return; if (!stillPressed(e)) { endLen(); return; } lenTo(e); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) lenrow.addEventListener(ev, (e) => { e.stopPropagation(); endLen(); });
   stepShapes(sq.querySelector('h3'), voice, (vals, name) => { const stroke = 'shape/' + performance.now(); vals.forEach((x, k) => putStep(k, x, stroke)); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} <em>STEPS ${name}</em>`); });
   for (const par of [stepTimePar(voice), stepSlewPar(voice)]) {
     const e = schema.find((x) => x.par === par), f = vfader({ ...e, ukey: undefined, display: e.step === 'slew' ? { type: 'slew' } : e.display });
@@ -1287,7 +1303,7 @@ function modStrip(box, cell, voice) {
   stripSteps = (at) => steps.forEach((st, k) => st.el.classList.toggle('now', k === at));
   const draw = () => {
     const e = dialE(); msName.textContent = e.label;
-    bars.forEach((b) => b.draw()); steps.forEach((st) => st.draw());
+    bars.forEach((b) => b.draw()); steps.forEach((st) => st.draw()); drawLen();
     document.querySelectorAll('.faders .vf.modsel').forEach((x) => x.classList.remove('modsel'));
     const sel = [...document.querySelectorAll('.faders .sect .vf')].find((x) => x._ukey === e.ukey); if (sel) sel.classList.add('modsel');
   };
@@ -1453,7 +1469,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnux9ic').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnvcz24').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
