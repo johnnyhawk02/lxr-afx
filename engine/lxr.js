@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwnfboc9';
+import { read as readTable } from './wavetables.js?v=mwnfifw7';
 
 export { PAR, CC, CC2 };
 
@@ -805,12 +805,18 @@ function lfo_calcPhaseInc(freq, sync, bpm) {
 // is re-sent through the parameter handler with a modulated 0..1 value, once a block: the LFO and velocity swing it
 // either way (base + amount * (2 * value - 1), the firmware's sum, so a kit's old LFO and velocity targets play as they
 // did), the two envelopes push it one way (base + amount * envelope). Amounts are -1..1. Not in the firmware: STEP SEQ,
-// eight levels a voice (setStep, 0..1), one a hit: each trigger of the voice takes the next step's level and holds it
-// until the next hit, pushing its knobs one way like the envelopes (base + amount * level)
+// eight levels a voice (setStep, 0..1), pushing its knobs one way like the envelopes (base + amount * level). STEP TIME
+// (setStepTime): HIT, each trigger of the voice takes the next step and holds it until the next hit; or a step length
+// in time (STEP_TIMES, at the tempo, stepBpm), each hit starting again from step 1. SLEW (setStepSlew): a glide from
+// one step's level to the next
 // ---------------------------------------------------------------------------------------
 export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env', 'step seq'];
 export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4, STEP: 5 };
 export const NUM_STEPS = 8;
+// STEP TIME's settings: [name, beats a step] (0: HIT, a step a hit)
+export const STEP_TIMES = [['hit', 0], ['1/64', 1 / 16], ['1/32', 1 / 8], ['1/16', 1 / 4], ['1/8', 1 / 2], ['1/4', 1], ['1/2', 2], ['1 bar', 4]];
+// SLEW 0..127 as a glide time, ms (0: none)
+export const slewMs = (x) => (x > 0 ? Math.round(2000 * (x / 127) ** 2 + 2) : 0);
 // a route's destination: a parameter number, or EXTRA_DEST + an extra (EXTRAS)
 export const EXTRA_DEST = 1000;
 
@@ -1468,6 +1474,8 @@ export class LxrEngine {
     this.stepNext = new Uint8Array(6);
     this.stepNow = new Float32Array(6);
     this.stepPlayed = new Int8Array(6).fill(-1);
+    this.stepTarget = new Float32Array(6); this.stepTime = new Uint8Array(6); this.stepClock = new Float64Array(6);
+    this.stepCoef = new Float32Array(6); this.stepBpm = 120;
     // initDrumVoice(), Snare_init(), HiHat_init(), Cymbal_init()
     // the six voices, all one merged voice (VOICE_KINDS: what each firmware voice was), and their firmware names
     this.voices = VOICE_KINDS.map(makeVoice);
@@ -1651,6 +1659,21 @@ export class LxrEngine {
 
   /** a STEP SEQ level (voice 0..5, step 0..7, level 0..1) */
   setStep(voice, step, level) { this.stepLevels[voice * NUM_STEPS + step] = f(level); }
+  /** STEP TIME (an index into STEP_TIMES) and SLEW (0..127) */
+  setStepTime(voice, t) { this.stepTime[voice] = Math.max(0, Math.min(STEP_TIMES.length - 1, Math.round(t))); }
+  setStepSlew(voice, x) { const ms = slewMs(x); this.stepCoef[voice] = ms ? f(Math.exp(-BLOCK / (ms / 1000 * REAL_FS))) : 0; }
+  // STEP SEQ, once a block: on in time (STEP TIME not HIT), then the glide to the step's level
+  _stepRun(n) {
+    if (this.stepTime[n] && this.stepPlayed[n] >= 0) {
+      const len = STEP_TIMES[this.stepTime[n]][1] * 60 / this.stepBpm * REAL_FS;
+      this.stepClock[n] += BLOCK;
+      while (this.stepClock[n] >= len) { this.stepClock[n] -= len; this.stepPlayed[n] = (this.stepPlayed[n] + 1) % NUM_STEPS; }
+    }
+    const k = this.stepPlayed[n];
+    if (k >= 0) this.stepTarget[n] = this.stepLevels[n * NUM_STEPS + k];
+    const c = this.stepCoef[n], t = this.stepTarget[n];
+    this.stepNow[n] = c ? f(t + f(f(this.stepNow[n] - t) * c)) : t;
+  }
 
   /** voiceControl_noteOn: voice 0..2 drums, 3 snare, 4 cymbal, 5 closed hat, 6 open hat */
   trigger(voice, velocity = 127, note = SEQ_DEFAULT_NOTE) {
@@ -1732,8 +1755,9 @@ export class LxrEngine {
     this.velLast[n] = f(vel / 127);
     this._routesFrom(n, SRC.VEL, this.velLast[n]);
     // STEP SEQ: this hit's step
-    const k = this.stepNext[n]; this.stepPlayed[n] = k; this.stepNext[n] = (k + 1) % NUM_STEPS;
-    this.stepNow[n] = this.stepLevels[n * NUM_STEPS + k];
+    const k = this.stepTime[n] ? 0 : this.stepNext[n]; this.stepPlayed[n] = k; this.stepNext[n] = (k + 1) % NUM_STEPS; this.stepClock[n] = 0;
+    this.stepTarget[n] = this.stepLevels[n * NUM_STEPS + k];
+    if (!this.stepCoef[n]) this.stepNow[n] = this.stepTarget[n];
     this._routesFrom(n, SRC.STEP, this.stepNow[n]);
     let offset = 1;
     if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
@@ -1874,7 +1898,7 @@ export class LxrEngine {
     // every modulated control back to its setting, then moved: velocity, the LFOs (each runs every block, in voice
     // order, as the firmware's), the envelopes (as they were at the end of the last block)
     this._resetTargets();
-    for (let n = 0; n < 6; n++) { this._routesFrom(n, SRC.VEL, this.velLast[n]); this._routesFrom(n, SRC.STEP, this.stepNow[n]); }
+    for (let n = 0; n < 6; n++) { this._stepRun(n); this._routesFrom(n, SRC.VEL, this.velLast[n]); this._routesFrom(n, SRC.STEP, this.stepNow[n]); }
     for (let n = 0; n < 6; n++) { const x = lfo_calc(this.lfos[n], this.rng); this._routesFrom(n, SRC.LFO, x); }
     for (let n = 0; n < 6; n++) {
       const v = this.voices[n];
