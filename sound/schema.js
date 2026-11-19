@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, slewMs } from '../engine/lxr.js?v=mwnh4p0m';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, STEP_TIME_DEF, slewMs } from '../engine/lxr.js?v=mwnhup22';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwnh4p0m';
+import { TABLE_NAMES } from './tables.js?v=mwnhup22';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -89,7 +89,7 @@ export const extraPar = (voice, k) => EXTRA_BASE + voice * NUM_EXTRAS + k;
 // then each voice's modulation: for every control that can be modulated (MOD_DIALS, by merged name) its source
 // (MOD_SOURCES: 0 off, 1 the voice's LFO, 2 velocity, 3 the amp envelope, 4 the pitch envelope) and its amount (0..254,
 // MOD_AMT_ZERO none: -127 .. +127, a firmware amount a is MOD_AMT_ZERO + a). Right-click a knob to set them
-export { MOD_SOURCES, STEP_TIMES, slewMs };
+export { MOD_SOURCES, STEP_TIMES, STEP_TIME_DEF, slewMs };
 export const MOD_DIALS = ['coarse', 'fine', 'wave', 'pwm', 'afreq', 'again', 'awave', 'amode', 'fmenv', 'bfreq', 'bgain', 'bwave',
   'ncolour', 'nmix', 'attack', 'decay', 'repeat', 'aslope', 'pdecay', 'pslope', 'pamt', 'click', 'clickvol', 'clickfreq',
   'cutoff', 'reso', 'ftype', 'fdrive', 'velvol', 'lfofreq', 'lfosync', 'lfowave', 'lforetrig', 'lfooffset', 'level', 'pan',
@@ -115,7 +115,7 @@ export const NUM_STEPS = 8;
 export const STEP_BASE = DEPTH_BASE + 6 * NUM_MOD * NUM_SRC;
 export const stepPar = (voice, k) => STEP_BASE + voice * NUM_STEPS + k;
 export const STEP_DEFAULTS = [127, 32, 80, 32, 110, 0, 64, 32];
-// then each voice's STEP TIME (engine/lxr.js STEP_TIMES: 0 HIT, a step a hit) and SLEW (0..127, 0 none)
+// then each voice's STEP TIME (engine/lxr.js STEP_TIMES) and SLEW (0..127, 0 none)
 export const STEPX_BASE = STEP_BASE + 6 * NUM_STEPS;
 export const stepTimePar = (voice) => STEPX_BASE + voice * 2, stepSlewPar = (voice) => STEPX_BASE + voice * 2 + 1;
 export const ALL_PARAMS = STEPX_BASE + 12;
@@ -127,6 +127,7 @@ for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
   for (let s = 1; s <= NUM_SRC; s++) INIT_VALUES[depthPar(v, i, s)] = MOD_AMT_ZERO;
 }
 for (let v = 0; v < 6; v++) STEP_DEFAULTS.forEach((x, k) => { INIT_VALUES[stepPar(v, k)] = x; });
+for (let v = 0; v < 6; v++) INIT_VALUES[stepTimePar(v)] = STEP_TIME_DEF;
 { const k = new Uint8Array(NUM_PARAMS); for (let i = 8; i < NUM_PARAMS; i++) k[i - 8] = INIT_KIT[i]; INIT_VALUES.set(kitToPositions(k)); }
 for (let v = 0; v < 6; v++) INIT_VALUES.set(extraDefaults(VOICE_KINDS[v]), extraPar(v, 0));
 for (let v = 0; v < 6; v++) INIT_VALUES[seqPatPar(v)] = 0b00010001; // steps 1 and 5, ready for ACTIVE
@@ -352,7 +353,7 @@ function buildSchema(voice) {
   for (let k = 0; k < NUM_STEPS; k++) out.push({ key: 'STEP' + (k + 1) + '_' + (voice + 1), par: stepPar(voice, k), ukey: 'step' + (k + 1), label: 'step ' + (k + 1),
     text: 'STEP', page: 'mod', section: 'mod', min: 0, max: 127, def: STEP_DEFAULTS[k], display: { type: 'num' }, morph: null, weight: 0, rand: 'mix', hidden: true, step: k });
   out.push({ key: 'STEP_TIME' + (voice + 1), par: stepTimePar(voice), ukey: 'steptime', label: 'step time', text: 'STEP_TIME', page: 'mod', section: 'mod', min: 0,
-    max: STEP_TIMES.length - 1, def: 0, display: { type: 'menu', names: STEP_TIMES.map((t) => t[0]) }, morph: null, weight: 0, rand: 'mix', hidden: true, step: 'time' });
+    max: STEP_TIMES.length - 1, def: STEP_TIME_DEF, display: { type: 'menu', names: STEP_TIMES.map((t) => t[0]) }, morph: null, weight: 0, rand: 'mix', hidden: true, step: 'time' });
   out.push({ key: 'STEP_SLEW' + (voice + 1), par: stepSlewPar(voice), ukey: 'stepslew', label: 'slew', text: 'STEP_SLEW', page: 'mod', section: 'mod', min: 0,
     max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'mix', hidden: true, step: 'slew' });
   return out;
@@ -481,7 +482,16 @@ export function routesFromOld(get, v) {
   return out;
 }
 // 1: routes on the knobs, one source a knob (modSrcPar, modAmtPar); 2: a depth from every source (depthPar)
-export const MOD_RULE = 2; // what a store or preset made since then says (mod: MOD_RULE)
+export const MOD_RULE = 3; // what a store or preset made since then says (mod: MOD_RULE)
+// a sound saved while STEP TIME began with HIT (MOD_RULE 2: 0 HIT, 1 1/64, ... 7 1 bar), in place: HIT (a step a hit)
+// becomes 1/16, the others one down. base: false when the values were saved before STEP TIME (their STEP TIME is new)
+export function stepTimesFromHit(values, keys, base = true) {
+  const old = (x) => (Math.round(x) > 0 ? Math.round(x) - 1 : STEP_TIME_DEF);
+  for (let v = 0; v < 6; v++) if (base) values[stepTimePar(v)] = old(values[stepTimePar(v)]);
+  if (keys) keys.forEach((ks) => { for (const n in ks || {}) { const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
+    for (let v = 0; v < 6; v++) { const p = stepTimePar(v); if (p in ed) ed[p] = old(ed[p]); if (ed._o && p in ed._o) ed._o[p] = old(ed._o[p]); } } });
+  return values;
+}
 // a sound saved with one source a knob (MOD_RULE 1), as depths: the knob's amount becomes its depth from that source,
 // every other depth 0, in place (values, and the keys' edits as upgradeMod takes them). The old pairs are cleared
 export function pairsToDepths(values, keys) {
