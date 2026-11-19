@@ -5,7 +5,7 @@
  "params": {
   "coarse": 51,
   "fine": 49,
-  "wave": 31.25,
+  "wave": 25,
   "pwm": 0,
   "afreq": 60,
   "again": 0,
@@ -24,8 +24,8 @@
   "pdecay": 49,
   "pslope": 15,
   "pamt": 37,
-  "click": 111.13,
-  "clickvol": 36.9,
+  "click": 10,
+  "clickvol": 123,
   "clickfreq": 0,
   "rtone": 0,
   "rnoise": 1,
@@ -124,11 +124,6 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127,
-  "table": 1,
-  "atable": 1,
-  "btable": 1,
-  "clicklen": 127,
-  "clickdir": 127
+  "modamt:drive": 127
  }
 }

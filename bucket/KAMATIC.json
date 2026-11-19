@@ -5,7 +5,7 @@
  "params": {
   "coarse": 98,
   "fine": 0,
-  "wave": 106.25,
+  "wave": 85,
   "pwm": 0,
   "afreq": 41,
   "again": 0,
@@ -14,7 +14,7 @@
   "fmenv": 0,
   "bfreq": 127,
   "bgain": 2,
-  "bwave": 62.5,
+  "bwave": 125,
   "ncolour": 127,
   "nmix": 0,
   "attack": 22,
@@ -24,9 +24,9 @@
   "pdecay": 20,
   "pslope": 0,
   "pamt": 0,
-  "click": 0,
+  "click": 6,
   "clickvol": 0,
-  "clickfreq": 87.49,
+  "clickfreq": 80,
   "rtone": 1,
   "rnoise": 1,
   "rclick": 0,
@@ -124,11 +124,6 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127,
-  "table": 1,
-  "atable": 1,
-  "btable": 12,
-  "clicklen": 68.64,
-  "clickdir": 127
+  "modamt:drive": 127
  }
 }

@@ -9,13 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwmugadb';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwn23log';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, CLICK_BASE, INIT_VALUES } from './schema.js?v=mwmugadb';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwmugadb';
-// the voice and oscillator (0 tone, 1 MOD A, 2 MOD B) of the i-th table parameter from TABLE_BASE
-const tableSlot = (i) => (i < 6 ? [i, 0] : [Math.floor((i - 6) / 2), 1 + ((i - 6) % 2)]);
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwmugadb';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE } from './schema.js?v=mwn23log';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwn23log';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwn23log';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -57,7 +55,7 @@ export class LxrInstrument {
     this.e.loadInitKit();
     // each voice's TABLE, and whether a table not made yet is made here (not in the AudioWorklet: the page makes it and
     // posts it, then retable())
-    this.tableOf = INIT_VALUES.slice(TABLE_BASE, TABLE_BASE + 18); /* (the tone's 6, then MOD A and B's 12: the starting ones until a kit says) */ this.build = typeof registerProcessor === 'undefined'; this.retable(); for (let i = 0; i < 12; i++) this.e.setClick(i >> 1, i & 1, INIT_VALUES[CLICK_BASE + i]);
+    this.tableOf = new Float64Array(6); this.build = typeof registerProcessor === 'undefined';
     this.ratio = REAL_FS / sampleRate;
     this.gain = 0.8;
     this.voices = SOUNDS.map((_, i) => new Voice(this, i));
@@ -89,7 +87,7 @@ export class LxrInstrument {
   static holds(id) { return holds(id); }
   static drop(id) { drop(id); }
   /** the wavetables again (after one arrived) */
-  retable() { for (let i = 0; i < 18; i++) { const [v, w] = tableSlot(i); this.e.setTable(v, tableFor(this.tableOf[i], this.build), w); } }
+  retable() { for (let v = 0; v < 6; v++) this.e.setTable(v, tableFor(this.tableOf[v], this.build)); }
   /** ENGINES: how many engines are in use (1..6); only their voices are made */
   setEngines(n) {
     setEngines(n);
@@ -99,10 +97,9 @@ export class LxrInstrument {
   }
   loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
   setParam(par, value) {
-    if (par >= CLICK_BASE) { const i = par - CLICK_BASE; if (i < 12) this.e.setClick(i >> 1, i & 1, value); return; } // a click's LENGTH or DIRECT
     if (par >= TABLE_BASE) { // a voice's wavetable (0: CLASSIC)
-      const i = par - TABLE_BASE; if (i >= 18) return;
-      this.tableOf[i] = value; const [v, w] = tableSlot(i); this.e.setTable(v, tableFor(value, this.build), w);
+      const v = par - TABLE_BASE; if (v >= 6) return;
+      this.tableOf[v] = value; this.e.setTable(v, tableFor(value, this.build));
       return;
     }
     if (par >= MOD_BASE) { // a knob's modulation: its source, or its amount

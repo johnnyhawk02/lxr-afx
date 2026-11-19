@@ -14,7 +14,7 @@
   "fmenv": 127,
   "bfreq": 94,
   "bgain": 0,
-  "bwave": 80,
+  "bwave": 64,
   "ncolour": 127,
   "nmix": 0,
   "attack": 0,
@@ -26,7 +26,7 @@
   "pamt": 34,
   "click": 0,
   "clickvol": 0,
-  "clickfreq": 87.49,
+  "clickfreq": 0,
   "rtone": 1,
   "rnoise": 1,
   "rclick": 0,
@@ -124,11 +124,6 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127,
-  "table": 1,
-  "atable": 1,
-  "btable": 1,
-  "clicklen": 68.64,
-  "clickdir": 127
+  "modamt:drive": 127
  }
 }

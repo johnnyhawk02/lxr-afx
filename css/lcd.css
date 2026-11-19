@@ -446,7 +446,6 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel .randrow .cap { font-size: 14px; letter-spacing: 1px; line-height: 1.15; text-align: center; margin-top: -3px; }
 .menupanel .randrow .cap.wide { grid-column: 1 / -1; }
 #to-table { grid-column: span 2; }
-#to-which { background: var(--ink); color: var(--panel); letter-spacing: 2px; }
 .menupanel .bars + .bars { margin-top: 6px; }
 .menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
 .menupanel .chk.lvl { margin-top: 6px; }

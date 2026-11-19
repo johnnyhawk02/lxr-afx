@@ -11,11 +11,11 @@
 // hihat with closed + open triggers), mono per voice before panning.
 
 import {
-  SINE_TABLE, MIDI_NOTE_FREQ,
+  SINE_TABLE, TRI_TABLE, REC_TABLE, SAW_TABLE, TRANSIENT_DATA, MIDI_NOTE_FREQ,
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
-import { Click, clickTone, clickLen } from './click.js?v=mwmugadb';
-import { read as readTable } from './wavetables.js?v=mwmugadb';
+import { EXTRA_CLICKS } from './lxr-clicks.js';
+import { read as readTable } from './wavetables.js?v=mwn23log';
 
 export { PAR, CC, CC2 };
 
@@ -100,6 +100,19 @@ export const OSC_WAVE_NAMES = ['Sine', 'Tri', 'Saw', 'Rec', 'Noise', 'PWM'];
 const SEQ_DEFAULT_NOTE = 60;
 const SEMITONE_UP_MINUS_1 = f(f(1.0594630943592952645618252949463) - 1);
 
+// the three band-limited wavetables, back to back like in flash (a read one past the end of
+// row 10 of one table lands in the next table)
+const WAVE_MEM = new Int16Array(TRI_TABLE.length * 3 + 1);
+WAVE_MEM.set(TRI_TABLE, 0);
+WAVE_MEM.set(REC_TABLE, TRI_TABLE.length);
+WAVE_MEM.set(SAW_TABLE, TRI_TABLE.length * 2);
+const TRI_BASE = 0, REC_BASE = TRI_TABLE.length, SAW_BASE = TRI_TABLE.length * 2;
+// Reading one past the last saw row is an out-of-bounds read in the firmware (it happens for
+// pitches above ~14 kHz); whatever the linker put next is read. By default this port wraps to
+// the start of that row, which continues the waveform; verify.mjs sets it to what follows the
+// table in the reference binary.
+WAVE_MEM[WAVE_MEM.length - 1] = SAW_TABLE[10 * 1024];
+export function setSawPastEndSample(v) { WAVE_MEM[WAVE_MEM.length - 1] = v; }
 
 function makeOsc() {
   return {
@@ -143,18 +156,143 @@ function detent(x, step, last) {
 }
 function osc_setPos(osc, x) {
   osc.wraw = x;
-  const p = x / WAVE_MAX; osc.wpos = p > 0 ? (p > 1 ? 1 : p) : 0; // (along its wavetable; 0 for no number)
+  if (osc.wtab) { const p = x / WAVE_MAX; osc.wpos = p < 0 ? 0 : p > 1 ? 1 : p; osc.wB = -1; return; } // (a wavetable: the knob moves along it)
+  const [k, t] = detent(x, WAVE_STEP, WAVE_ORDER.length - 1);
+  osc.waveform = WAVE_ORDER[k];
+  if (t > 0) { osc.wB = WAVE_ORDER[k + 1]; osc.wt = t; } else osc.wB = -1;
 }
 
 const freq2PhaseIncr = (x) => toU32(f(f(f(4096 * x) / REAL_FS) * 1048576));
 const freq2PhaseIncr1024 = (x) => toU32(f(f(f(1024 * x) / REAL_FS) * 4194304));
+const freq2PhaseIncr32767 = (x) => toU32(f(f(f(1024 * x) / REAL_FS) * 131072));
 
+// fast_log2() returns uint8 31-clz, so log2(0) is 255; freqToTableIndex() keeps the uint8 wrap
+function freqToTableIndex(fr) {
+  const log2 = (31 - Math.clz32(toU32(f(fr / 440)))) & 0xff;
+  const midiNote = 12 * log2 + 70;
+  return Math.trunc(midiNote / 12) & 0xff;
+}
+
+// interpolated table read: table[itg] + ((table[itg+1]-table[itg]) * frac) >> shift
+function lerp(mem, idx, frac, shift) {
+  const a = mem[idx];
+  const d = mem[idx + 1] - a;
+  return (a + Math.floor(d * frac / 2 ** shift)) << 16 >> 16;
+}
+
+function calcSineBlock(osc, buf, size, gain) {
+  const pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase, p = pm ? (phase + pm[i]) >>> 0 : phase;
+    const out = lerp(SINE_TABLE, p >>> 20, p & 0xfffff, 20);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+function calcFmSineBlock(osc, mod, buf, size, gain) {
+  const pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase;
+    const index = ((pm ? phase + pm[i] : phase) + ((toU32(f(mod[i] * osc.fmMod)) << 17) >>> 0)) >>> 0;
+    const out = lerp(SINE_TABLE, index >>> 20, index & 0xfffff, 20);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+function calcFmBlock(osc, base, mod, buf, size, gain) {
+  const row = base + osc.tableOffset * 1024, pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase;
+    const index = ((pm ? phase + pm[i] : phase) + ((toU32(f(mod[i] * osc.fmMod)) << 19) >>> 0)) >>> 0;
+    const out = lerp(WAVE_MEM, row + (index >>> 22), index & 0x3fffff, 22);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    osc.output = out;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+// second saw shifted by pwm * half a cycle; the shift is added in float, like in C
+const pwmShift = (phase, pwm) => toU32(f(f(phase) + f(pwm * 2147483648)));
+
+function calcPwmFmBlock(osc, mod, buf, size, gain, pwm) {
+  const row = SAW_BASE + osc.tableOffset * 1024, pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase;
+    const index = ((pm ? phase + pm[i] : phase) + ((toU32(f(mod[i] * osc.fmMod)) << 19) >>> 0)) >>> 0;
+    const index2 = pwmShift(index, pwm);
+    const a = lerp(WAVE_MEM, row + (index >>> 22), index & 0x3fffff, 22);
+    const b = lerp(WAVE_MEM, row + (index2 >>> 22), index2 & 0x3fffff, 22);
+    const out = qsub16(a, b);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    osc.output = out;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+function calcWavetableOscBlock(osc, base, buf, size, gain) {
+  const row = base + osc.tableOffset * 1024, pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase, p = pm ? (phase + pm[i]) >>> 0 : phase;
+    const out = lerp(WAVE_MEM, row + (p >>> 22), p & 0x3fffff, 22);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+function calcPwmBlock(osc, buf, size, gain, pwm) {
+  const row = SAW_BASE + osc.tableOffset * 1024, pm = osc.pm;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase, p = pm ? (phase + pm[i]) >>> 0 : phase;
+    const phase2 = pwmShift(p, pwm);
+    const a = lerp(WAVE_MEM, row + (p >>> 22), p & 0x3fffff, 22);
+    const b = lerp(WAVE_MEM, row + (phase2 >>> 22), phase2 & 0x3fffff, 22);
+    const out = qsub16(a, b);
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    osc.output = out;
+    buf[i] = toI16(f(out * gain));
+  }
+}
+
+// sample-and-hold noise: a new random value each time the phase wraps
 function calcNoiseBlock(osc, buf, size, gain, rng) {
   for (let i = 0; i < size; i++) {
     const last = osc.phase;
     osc.phase = (osc.phase + osc.phaseInc) >>> 0;
     if (last > osc.phase) osc.output = (rng.next() << 16) >> 16;
     buf[i] = toI16(f(osc.output * gain));
+  }
+}
+
+// one wave's sample at a phase (not in the firmware): iS the sine's phase, iT the tables' (they take FM at different
+// depths, like the firmware's kernels), row the band-limited table's row for the pitch; the noise holds osc.output
+function waveAt(w, iS, iT, row, pwm, osc) {
+  switch (w) {
+    case SINE: return lerp(SINE_TABLE, iS >>> 20, iS & 0xfffff, 20);
+    case TRI: return lerp(WAVE_MEM, TRI_BASE + row + (iT >>> 22), iT & 0x3fffff, 22);
+    case SAW: return lerp(WAVE_MEM, SAW_BASE + row + (iT >>> 22), iT & 0x3fffff, 22);
+    case REC: return lerp(WAVE_MEM, REC_BASE + row + (iT >>> 22), iT & 0x3fffff, 22);
+    case PWM: {
+      const i2 = pwmShift(iT, pwm);
+      return qsub16(lerp(WAVE_MEM, SAW_BASE + row + (iT >>> 22), iT & 0x3fffff, 22), lerp(WAVE_MEM, SAW_BASE + row + (i2 >>> 22), i2 & 0x3fffff, 22));
+    }
+    case NOISE: return osc.output;
+    default: return 0;
+  }
+}
+// between two waves (not in the firmware): both read from one phase and crossfaded by osc.wt; mod (or null) is FM
+function calcBlendBlock(osc, mod, buf, size, gain, pwm, rng) {
+  const pm = osc.pm, wA = osc.waveform, wB = osc.wB, t = osc.wt, row = osc.tableOffset * 1024;
+  const noise = wA === NOISE || wB === NOISE;
+  for (let i = 0; i < size; i++) {
+    const phase = osc.phase, p = pm ? (phase + pm[i]) >>> 0 : phase;
+    let iS = p, iT = p;
+    if (mod) { const m = toU32(f(mod[i] * osc.fmMod)); iS = (p + ((m << 17) >>> 0)) >>> 0; iT = (p + ((m << 19) >>> 0)) >>> 0; }
+    osc.phase = (phase + osc.phaseInc) >>> 0;
+    if (noise && phase > osc.phase) osc.output = (rng.next() << 16) >> 16;
+    const a = waveAt(wA, iS, iT, row, pwm, osc), b = waveAt(wB, iS, iT, row, pwm, osc);
+    buf[i] = toI16(f(f(a + f(f(b - a) * t)) * gain));
   }
 }
 
@@ -171,13 +309,13 @@ const BASIC_ID = 'builtin:basic';
 // tables are read a quarter behind: a sound moved onto BASIC starts and runs in the same phase
 const LAG = PHASE_ONE * 3 / 4;
 function calcWtBlock(osc, mod, buf, size, gain) {
-  const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767), div = t.div || 1;
+  const t = osc.wtab, pm = osc.pm, pos = osc.wpos, hz = osc.hz, g = f(gain * 32767);
   const sine = mod && t.id === BASIC_ID ? Math.max(0, 1 - pos * (t.frames - 1) / 10) : 0; // (how much of the sine's FM depth)
   for (let i = 0; i < size; i++) {
     const phase = osc.phase;
     let p = ((pm ? phase + pm[i] : phase) + LAG) >>> 0, out;
     if (mod) {
-      const m = toU32(f(mod[i] * osc.fmMod)), pT = (p + (div > 1 ? Math.floor(((m << 19) >>> 0) / div) : (m << 19) >>> 0)) >>> 0; // (FM as deep in steps on a noise table)
+      const m = toU32(f(mod[i] * osc.fmMod)), pT = (p + ((m << 19) >>> 0)) >>> 0;
       out = readTable(t, pos, pT / PHASE_ONE, hz, REAL_FS);
       if (sine > 0) { const pS = (p + ((m << 17) >>> 0)) >>> 0, s = readTable(t, pos, pS / PHASE_ONE, hz, REAL_FS); out = s + (out - s) * (1 - sine); }
     } else out = readTable(t, pos, p / PHASE_ONE, hz, REAL_FS);
@@ -187,16 +325,62 @@ function calcWtBlock(osc, mod, buf, size, gain) {
   }
 }
 
-// an oscillator plays its wavetable (calcWtBlock), FM'd by mod or not; with none yet (the page posts it), silence
-function calcNextOscSampleBlock(osc, buf, size, gain) { if (osc.wtab) calcWtBlock(osc, null, buf, size, gain); else { buf.fill(0, 0, size); osc.output = 0; } }
-function calcNextOscSampleFmBlock(osc, mod, buf, size, gain) { if (osc.wtab) calcWtBlock(osc, mod, buf, size, gain); else { buf.fill(0, 0, size); osc.output = 0; } }
+// waveforms above PWM are user samples, which this port doesn't load: they are silent (the
+// firmware without samples leaves the buffer as it was, so it replays whatever another part
+// of the voice put there last; the merged voice's parts keep their own buffers, so that would
+// no longer be the same garbage)
+function calcNextOscSampleBlock(osc, buf, size, gain, pwm, rng) {
+  if (osc.wtab) { calcWtBlock(osc, null, buf, size, gain); return; }
+  if (osc.wB >= 0) { calcBlendBlock(osc, null, buf, size, gain, pwm, rng); return; }
+  switch (osc.waveform) {
+    case SINE: calcSineBlock(osc, buf, size, gain); break;
+    case SAW: calcWavetableOscBlock(osc, SAW_BASE, buf, size, gain); break;
+    case TRI: calcWavetableOscBlock(osc, TRI_BASE, buf, size, gain); break;
+    case REC: calcWavetableOscBlock(osc, REC_BASE, buf, size, gain); break;
+    case NOISE: calcNoiseBlock(osc, buf, size, gain, rng); break;
+    case PWM: calcPwmBlock(osc, buf, size, gain, pwm); break;
+    default: buf.fill(0, 0, size); break;
+  }
+}
+
+function calcNextOscSampleFmBlock(osc, mod, buf, size, gain, pwm, rng) {
+  if (osc.wtab) { calcWtBlock(osc, mod, buf, size, gain); return; }
+  if (osc.wB >= 0) { calcBlendBlock(osc, mod, buf, size, gain, pwm, rng); return; }
+  switch (osc.waveform) {
+    case SINE: calcFmSineBlock(osc, mod, buf, size, gain); break;
+    case SAW: calcFmBlock(osc, SAW_BASE, mod, buf, size, gain); break;
+    case TRI: calcFmBlock(osc, TRI_BASE, mod, buf, size, gain); break;
+    case REC: calcFmBlock(osc, REC_BASE, mod, buf, size, gain); break;
+    case NOISE: calcNoiseBlock(osc, buf, size, gain, rng); break;
+    case PWM: calcPwmFmBlock(osc, mod, buf, size, gain, pwm); break;
+    default: buf.fill(0, 0, size); break;
+  }
+}
 
 function osc_setFreq(osc) {
   const cur = f(f(osc.freq * osc.pitchMod) * osc.modNodeValue);
-  if (osc.wtab) { const d = osc.wtab.div || 1; osc.hz = Math.abs(cur) / d || 0; /* (pitch modulation can take the frequency below 0: it then runs backwards) */ osc.phaseInc = toU32(f(cur / d / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
-  // (the noise generator, as the firmware stepped it: at the sine's rate, or the tables' for the cymbal's, whose
-  // waveform is the triangle; and an oscillator before its table arrives)
-  osc.phaseInc = osc.waveform === TRI ? freq2PhaseIncr1024(cur) : freq2PhaseIncr(cur);
+  if (osc.wtab) { osc.hz = Math.abs(cur); /* (pitch modulation can take the frequency below 0: it then runs backwards) */ osc.phaseInc = toU32(f(cur / REAL_FS) * PHASE_ONE); return; } // (a wavetable: phase 0..2^32 a cycle)
+  if (osc.wB >= 0) { // between two waves: one phase for both (the tables' format; the sine's is the same frequency)
+    osc.phaseInc = freq2PhaseIncr1024(cur);
+    const idx = freqToTableIndex(cur);
+    osc.tableOffset = idx > 10 ? 10 : idx;
+    return;
+  }
+  switch (osc.waveform) {
+    case SINE:
+    case NOISE:
+      osc.phaseInc = freq2PhaseIncr(cur);
+      break;
+    case SAW: case TRI: case REC: case PWM: {
+      osc.phaseInc = freq2PhaseIncr1024(cur);
+      const idx = freqToTableIndex(cur);
+      osc.tableOffset = idx > 10 ? 10 : idx;
+      break;
+    }
+    default:
+      osc.phaseInc = freq2PhaseIncr32767(cur);
+      break;
+  }
 }
 
 /** midiParser_calcDetune: fine tune value 0..127 -> +/- one semitone factor */
@@ -225,7 +409,7 @@ const setCoarse = (osc, v) => { const w = Math.floor(v); osc.coarseFrac = v - w;
 const setFine = (osc, v) => { const w = Math.floor(v); osc.fineFrac = v - w; osc.midiFreq = (osc.midiFreq & 0xff00) | w; osc_recalcFreq(osc); };
 
 // ---------------------------------------------------------------------------------------
-// Envelopes: Decay.c (pitch EG, float), SlopeEg2.c (amp EG, double)
+// Envelopes: Decay.c (pitch EG, float), SlopeEg2.c (amp EG, double), snapEg.c
 // ---------------------------------------------------------------------------------------
 const decaySlope = (val, slope) => f(f(f(1 + slope) * val) / f(1 + f(slope * Math.abs(val))));
 const TIME_K = f(f(2 * f(0.99)) / f(1 - f(0.99)));
@@ -307,18 +491,53 @@ function slopeEg2_calc(eg) {
   return 0;
 }
 
+function snapEg_calc(eg, time) {
+  let ret = 0;
+  if (eg.value > 0) {
+    ret = f(f(eg.value * eg.value) * 24);
+    eg.value = f(eg.value - f(f(0.2) * time));
+  }
+  return ret;
+}
 
 // ---------------------------------------------------------------------------------------
-// the click (engine/click.js: METAMORF's, in place of transientGenerator.c's samples since 2026-11-19). Its settings:
-// level 0..1, shape 0..1, tone Hz, len ms, direct 0..1 (the share added after the drive, skipping filter and drive)
+// transientGenerator.c: 12 one-shot click/attack samples, plus "snap" (0) and "offset" (1)
 // ---------------------------------------------------------------------------------------
-function makeClick() { const c = new Click(REAL_FS); Object.assign(c, { level: 0, shape: 0, tone: clickTone(63.5), len: clickLen(63.5), direct: 0 }); return c; }
-// a block of the click: its through part (int16, into the filter) in C, its direct part (float) in D
-function click_calcBlock(c, C, D, size) {
-  if (!c.on || c.level <= 0) { C.fill(0, 0, size); D.fill(0, 0, size); return false; }
-  const th = 1 - c.direct, di = c.direct;
-  for (let i = 0; i < size; i++) { const x = 32767 * c.next(c.level, c.shape, c.tone, c.len); C[i] = toI16(x * th); D[i] = x * di; }
-  return true;
+export const NUM_TRANSIENTS = 12;
+const TRANSIENT_LEN = 2205;
+const TRANSIENT_END = 2311061504; // 2204 << 20
+
+function makeTransient() { return { phase: 0, pitch: 1, waveform: 0, volume: 1 }; }
+// Mobile: waves past the firmware's 14 are the extra int16 clicks in lxr-clicks.js.
+export const NUM_WAVES = NUM_TRANSIENTS + 2 + EXTRA_CLICKS.length;
+function transient_setWaveform(t, w) { t.waveform = w < NUM_WAVES ? w : 0; }
+// Extra clicks: same phase field (u32, 20-bit fraction) but each sample has its own length.
+function extra_calcBlock(t, buf, size) {
+  const d = EXTRA_CLICKS[t.waveform - NUM_TRANSIENTS - 2], end = d.length - 1;
+  const inc = t.pitch * 1048576;
+  for (let i = 0; i < size; i++) {
+    const idx = t.phase / 1048576;
+    if (idx < end) {
+      const k = idx | 0, fr = idx - k;
+      buf[i] = toI16(t.volume * (d[k] + (d[k + 1] - d[k]) * fr));
+      t.phase += inc;
+    } else buf[i] = 0;
+  }
+}
+function transient_calcBlock(t, buf, size) {
+  if (t.waveform >= NUM_TRANSIENTS + 2) { extra_calcBlock(t, buf, size); return; }
+  if (t.waveform <= 1 || t.phase >= TRANSIENT_END) { buf.fill(0, 0, size); return; }
+  const base = (t.waveform - 2) * TRANSIENT_LEN;
+  const inc = f(t.pitch * 1048576);
+  for (let i = 0; i < size; i++) {
+    if (t.phase < TRANSIENT_END) {
+      const idx = t.phase >>> 20;
+      buf[i] = toI16(f(f(t.volume * (TRANSIENT_DATA[base + idx] << 8)) * (idx < TRANSIENT_LEN ? 1 : 0)));
+      t.phase = toU32(f(f(t.phase) + inc)); // phase += float: the add happens in float
+    } else {
+      buf[i] = 0;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------------------
@@ -660,7 +879,7 @@ export const toPosition = (par, value) => { const k = POS_KIND.get(par); return 
 //   mod B  a second modulator (modOsc2, gain fmModAmount2), summed with mod A, always FM
 //   noise  sample-and-hold noise (noiseOsc), crossfaded with the tone by mix
 //   click  the transient
-// The filter takes whichever of tone and noise are routed to it (routeT, routeN), and the click's through part;
+// The filter takes whichever of tone, noise and click are routed to it (routeT, routeN, routeC);
 // the rest is added after it. A part is only made if the voice has it (srcA, srcB, srcN).
 // fmEnv: the FM depth follows mod A's gain and the pitch envelope (the drum's FM) instead of
 // staying at full (the metal's).
@@ -700,13 +919,13 @@ const MIXER_R0 = makeOnePole().r, DRIVE_R0 = makeOnePole().r;
 function makeVoice(kind, i) {
   const v = {
     kind, osc: makeOsc(), modOsc: makeOsc(), modOsc2: makeOsc(), noiseOsc: makeOsc(),
-    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, extra: extraDefaults(kind), routeT: 1, routeN: 1,
+    srcA: 0, srcB: 0, srcN: 0, pitchEg: 0, fmEnv: 0, extra: extraDefaults(kind), routeT: 1, routeN: 1, routeC: 1,
     fmModAmount: 0, fmModAmount2: 0, mixAmt: 0, mix: 0, carrierGain: 1,
     vol: f(0.8), velo: 0, pan: 0, triggeredPanL: 0, triggeredPanR: 0,
     oscPitchEg: { decay: f(0.01), slope: 0, value: 0 }, egPitchModAmount: f(0.5),
-    click: makeClick(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
+    transGen: makeTransient(), lfo: makeLfo(), oscVolEg: makeSlopeEg(), egValueOscVol: 0,
     distortion: { shape: 0, driveFilter: makeOnePole() }, filter: makeFilter(), filterType: 0, filterB: 0, filterT: 0, fwTo: null, fwAt: null, fFirm: 0,
-    ampFilterInput: 0, egPitchNow: 0, lastGain: 0, volumeMod: 1, combinedVolume: 0,
+    ampFilterInput: 0, egPitchNow: 0, lastGain: 0, snapEg: { value: 0 }, volumeMod: 1, combinedVolume: 0,
     faderFilter: makeOnePole(), mixerVolFilter: makeOnePole(), pwm: 0,
     hatDecays: 0, decayClosed: 0, decayOpen: 0, isOpen: 0,
   };
@@ -721,12 +940,12 @@ function makeVoice(kind, i) {
     Object.assign(v.modOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, modNodeValue: 1, waveform: TRI + i, fmMod: 0, midiFreq: 70 << 8 | 64 });
   } else if (kind === 'snare') { // Snare_init()
-    Object.assign(v, { srcN: 1, pitchEg: 1, fmEnv: 1, routeT: 0 });
+    Object.assign(v, { srcN: 1, pitchEg: 1, fmEnv: 1, routeT: 0, routeC: 0 });
     v.faderFilter.r = 0.1;
     Object.assign(v.noiseOsc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
     Object.assign(v.osc, { freq: 440, waveform: 1, fmMod: 0, midiFreq: 70 << 8 | 64, modNodeValue: 1 });
   } else { // Cymbal_init(), HiHat_init(): an FM oscillator driven by two mod oscillators
-    Object.assign(v, { srcA: 1, srcB: 1, carrierGain: kind === 'hat' ? f(0.5) : 1, egPitchModAmount: 0,
+    Object.assign(v, { srcA: 1, srcB: 1, routeC: 0, carrierGain: kind === 'hat' ? f(0.5) : 1, egPitchModAmount: 0,
       fmModAmount: f(0.5), fmModAmount2: f(0.5) });
     v.faderFilter.r = 0.1;
     Object.assign(v.modOsc, { freq: 440, waveform: SINE, fmMod: 0, midiFreq: 70 << 8 | 64, pitchMod: 1, modNodeValue: 1 });
@@ -751,10 +970,17 @@ function updatePan(v) {
   v.triggeredPanR = f(Math.sqrt(f(v.pan / 127)));
 }
 
-// oscillator start phase on trigger; "offset" transient mode (1) starts it later in the cycle. A wavetable starts where
-// the firmware's tables did, a quarter cycle in (with the tables read a quarter behind, a sine starts at its low point,
-// as the firmware's did)
-function resetPhase(osc, offset) { osc.phase = toU32(f((0xff << 22) * offset)); }
+// oscillator start phase on trigger; "offset" transient mode (1) starts it later in the cycle
+// (between two waves, the nearer one's start)
+function resetPhase(osc, offset, sineStart) {
+  if (osc.wtab) { osc.phase = toU32(f((0xff << 22) * offset)); return; } // (a wavetable starts where the firmware's tables do: a quarter cycle in)
+  const w = osc.wB >= 0 && osc.wt >= 0.5 ? osc.wB : osc.waveform;
+  if (w === SINE) osc.phase = toU32(sineStart(offset));
+  else if (w > SINE && w <= REC) osc.phase = toU32(f((0xff << 22) * offset));
+  else osc.phase = 0;
+}
+const drumSineStart = (offset) => f(1024 + f(((0x3ff << 20) - 1024) * offset));
+const otherSineStart = (offset) => f((0x3ff << 20) * offset);
 
 // ---------------------------------------------------------------------------------------
 // FX bus: FxBus.c, FX/Distortion.c, FX/Ringmod.c, FX/Compressor.c, FX/Delay.c (the reverb
@@ -942,20 +1168,17 @@ function distortionProcess(d, fx, out, size, dryWet) {
   }
 }
 
-// the ring modulator's carrier: a square (the firmware's band-limited rec; a plain square here, the oscillators'
-// firmware tables being gone)
 function makeRingmod() {
   const osc = makeOsc();
-  osc.freq = f(100); osc.modNodeValue = f(1); osc.fmMod = 0;
+  osc.freq = f(100); osc.modNodeValue = f(1); osc.waveform = REC; osc.fmMod = 0;
   osc.midiFreq = 70 << 8 | 64; osc.pitchMod = f(1);
   osc_setFreq(osc);
   return { osc, buf: new Int16Array(BLOCK) };
 }
-function ringmodProcess(rm, fx, out, size, dryWet) {
-  const o = rm.osc;
+function ringmodProcess(rm, fx, out, size, dryWet, rng) {
+  calcNextOscSampleBlock(rm.osc, rm.buf, size, f(1), f(0.3), rng);
   for (let i = 0; i < size; i++) {
-    const m = o.phase < 0x80000000 ? 32767 : -32767;
-    o.phase = (o.phase + o.phaseInc) >>> 0;
+    const m = rm.buf[i];
     for (let c = 0; c < 2; c++) {
       const x = fx[2 * i + c];
       const wet = wrap16((x * m) >> 16);
@@ -1201,7 +1424,7 @@ export class FxBus {
     const fx = this.input, dw = this.forceWet ? 1 : this.dryWet;
     switch (this.fxType) {
       case FX_DISTORTION: distortionProcess(this.distortion, fx, out, size, dw); break;
-      case FX_RING: ringmodProcess(this.ringmod, fx, out, size, dw); break;
+      case FX_RING: ringmodProcess(this.ringmod, fx, out, size, dw, rng); break;
       case FX_COMPRESSOR: compressorProcess(this.compressor, fx, out, size, dw); break;
       case FX_DELAY:
         if (this.delay.type === DELAY_NORMAL) delayProcess(this.delay, this.buffer, fx, out, size, dw);
@@ -1242,13 +1465,14 @@ export class LxrEngine {
     this.voices = VOICE_KINDS.map(makeVoice);
     this.drums = this.voices.slice(0, 3);
     [this.snare, this.cymbal, this.hat] = this.voices.slice(3);
+    // (not in the firmware) each voice's tone WAVE parameter and its oscillator, for the wavetables (setTable)
+    this.toneWave = new Map([PAR.OSC_WAVE_DRUM1, PAR.OSC_WAVE_DRUM2, PAR.OSC_WAVE_DRUM3, PAR.OSC_WAVE_SNARE, PAR.WAVE1_CYM, PAR.WAVE1_HH].map((p, n) => [p, this.voices[n].osc]));
     this.lfos = this.voices.map((v) => v.lfo);
     this.out = Array.from({ length: 6 }, () => new Int16Array(BLOCK));
     this._bA = new Int16Array(BLOCK); // mod A (with mod B summed in)
     this._bB = new Int16Array(BLOCK); // mod B
     this._bN = new Int16Array(BLOCK); // noise
-    this._bC = new Int16Array(BLOCK); // the click's through part
-    this._bD = new Float64Array(BLOCK); // its direct part
+    this._bC = new Int16Array(BLOCK); // click
     this._bT = new Int16Array(BLOCK); // the tone, when it skips the filter
     this._bM = new Int16Array(BLOCK); // mod A, scaled down for FM between FM and MIX
     this.fx = new FxBus(); // FxBus_init()
@@ -1344,18 +1568,13 @@ export class LxrEngine {
    * pitch envelope on the metal, FM on the snare, noise on the drum, ...), its filter routing, and its kind.
    */
   setExtra(n, k, value) { this.voices[n].extra[k] = value; this._extra(n, k, value); }
-  /** the click's LENGTH (k 0) and DIRECT (k 1), 0..127: not in the firmware, kept beside its other three */
-  setClick(n, k, value) {
-    const c = this.voices[n].click, x = Math.max(0, Math.min(127, +value || 0));
-    if (k === 0) c.len = clickLen(x); else c.direct = x / 127;
-  }
 
   /**
    * A voice's wavetable (not in the firmware): a table made by wavetables.js, or null for the firmware's waves. With a
    * table the tone's WAVE knob moves along it (0 its first frame, WAVE_MAX its last), smoothly, modulated too.
    */
-  setTable(n, t, which = 0) { // (which: 0 the tone, 1 MOD A, 2 MOD B)
-    const v = this.voices[n], osc = which === 2 ? v.modOsc2 : which === 1 ? v.modOsc : v.osc;
+  setTable(n, t) {
+    const osc = this.voices[n].osc;
     if (osc.wtab === (t || null)) return;
     osc.wtab = t || null;
     osc_setPos(osc, osc.wraw);
@@ -1387,7 +1606,7 @@ export class LxrEngine {
       case EX.FM_ENV: v.fmEnv = flt; break;
       case EX.ROUTE_TONE: v.routeT = value >= 0.5 ? 1 : 0; break; // (a modulated switch: on from halfway, as the nearest step was)
       case EX.ROUTE_NOISE: v.routeN = value >= 0.5 ? 1 : 0; break;
-      case EX.ROUTE_CLICK: break; // (gone: the click's DIRECT knob, setClick)
+      case EX.ROUTE_CLICK: v.routeC = value >= 0.5 ? 1 : 0; break;
       case EX.REPEAT: v.oscVolEg.repeat = Math.round(value); break;
       default: break;
     }
@@ -1455,7 +1674,8 @@ export class LxrEngine {
   // landing on a detent; from between two, along the dial
   _modPos(par, kind, d) {
     const base = this.activeParameters[par];
-    const raw = kind === 'wave' ? null : kind === 'filter' ? filterRaw(base) : modeRaw(base); // (a wave knob is a place along its table: no detents)
+    const wt = kind === 'wave' && this.toneWave.get(par)?.wtab; // (on a wavetable the knob has no detents: along the dial)
+    const raw = wt ? null : kind === 'wave' ? waveRaw(base) : kind === 'filter' ? filterRaw(base) : modeRaw(base);
     const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
     let x;
     if (raw === null) x = f(clamp(f(f(base / 127) + d)) * 127);
@@ -1491,8 +1711,10 @@ export class LxrEngine {
     this._lfoRetrigger(n);
     this.velLast[n] = f(vel / 127);
     this._routesFrom(n, SRC.VEL, this.velLast[n]);
-    resetPhase(v.osc, 1);
-    if (drum) resetPhase(v.modOsc, 1); else v.modOsc.phase = 0;
+    let offset = 1;
+    if (v.transGen.waveform === 1) offset = f(offset - v.transGen.volume);
+    resetPhase(v.osc, offset, drum ? drumSineStart : otherSineStart);
+    if (drum) resetPhase(v.modOsc, 1, drumSineStart); else v.modOsc.phase = 0;
     v.modOsc2.phase = 0;
     osc_setBaseNote(v.osc, note);
     osc_setBaseNote(v.modOsc, note);
@@ -1501,7 +1723,8 @@ export class LxrEngine {
     if (v.hatDecays) { v.isOpen = open; v.oscVolEg.decay = open ? v.decayOpen : v.decayClosed; }
     slopeEg2_trigger(v.oscVolEg);
     v.velo = f(vel / 127);
-    v.click.trigger();
+    v.transGen.phase = 0;
+    v.snapEg.value = 1;
     if (drum) SVF_reset(v.filter);
     if (v.fwTo) v.fwAt.set(v.fwTo); // (a filter type set before the note sounds from the start: no glide into it)
     updatePan(v);
@@ -1513,6 +1736,10 @@ export class LxrEngine {
     let egPitch = 0;
     if (v.pitchEg) { egPitch = decayEg_calc(v.oscPitchEg); v.osc.pitchMod = f(1 + f(egPitch * v.egPitchModAmount)); }
     v.egPitchNow = egPitch;
+    if (v.transGen.waveform === 0) {
+      const snap = snapEg_calc(v.snapEg, v.transGen.pitch);
+      v.osc.pitchMod = f((v.pitchEg ? v.osc.pitchMod : 1) + f(snap * v.transGen.volume));
+    }
     // the FM depth: full (fmEnv 0, the metal's), following mod A's gain and the pitch envelope (1, the drum's), or between
     if (v.fmEnv === 1) v.osc.fmMod = f(v.fmModAmount * egPitch);
     else if (v.fmEnv > 0) v.osc.fmMod = f(f(1 - v.fmEnv) + f(v.fmEnv * f(v.fmModAmount * egPitch)));
@@ -1536,74 +1763,70 @@ export class LxrEngine {
 
   // ----- audio rate (calc*SyncBlock) -----
   _sync(n, buf) {
-    const v = this.voices[n], size = BLOCK, rng = this.rng, A = this._bA, B = this._bB, N = this._bN, C = this._bC, D = this._bD;
+    const v = this.voices[n], size = BLOCK, rng = this.rng, A = this._bA, B = this._bB, N = this._bN, C = this._bC;
     // the parts, in the order the firmware's voices draw their noise: mod A, mod B, noise, tone
-    if (v.srcA) calcNextOscSampleBlock(v.modOsc, A, size, v.fmModAmount);
+    if (v.srcA) calcNextOscSampleBlock(v.modOsc, A, size, v.fmModAmount, v.pwm, rng);
     if (v.srcB) {
-      calcNextOscSampleBlock(v.modOsc2, B, size, v.fmModAmount2);
+      calcNextOscSampleBlock(v.modOsc2, B, size, v.fmModAmount2, v.pwm, rng);
       if (v.srcA) for (let i = 0; i < size; i++) A[i] = qadd16(A[i], B[i]);
       else A.set(B);
     }
-    const ck = click_calcBlock(v.click, C, D, size), thru = ck && v.click.direct < 1, direct = ck && v.click.direct > 0;
-    // (the firmware's snare finish: only while nothing but the noise goes into the filter. Whether the click does is its
-    // settings', not whether it's sounding now, so a note keeps one path from start to end)
-    const snare = v.kind === 'snare' && !v.routeT && v.routeN && !(v.click.level > 0 && v.click.direct < 1) && v.srcN;
+    const snare = v.kind === 'snare' && !v.routeT && v.routeN && !v.routeC && v.srcN;
     if (v.srcN) calcNoiseBlock(v.noiseOsc, N, size, snare ? f(0.9) : f(f(0.9) * v.mix), rng);
     const m = v.srcA ? v.mixAmt : 0, mixA = m >= 1;
     let g = mixA ? f(1 - v.fmModAmount) : v.carrierGain;
     if (m > 0 && !mixA) g = f(v.carrierGain + f(f(f(1 - v.fmModAmount) - v.carrierGain) * m)); // (between FM and MIX)
     if (v.mix) g = f(g * f(1 - v.mix));
     if (mixA) {
-      calcNextOscSampleBlock(v.osc, buf, size, g);
+      calcNextOscSampleBlock(v.osc, buf, size, g, v.pwm, rng);
       for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], A[i]);
     } else if (m > 0) { // between FM and MIX (not in the firmware): mod A's FM depth fades out as it fades into the mix
       const M = this._bM, mf = f(1 - m);
       for (let i = 0; i < size; i++) M[i] = toI16(f(A[i] * mf));
-      calcNextOscSampleFmBlock(v.osc, M, buf, size, g);
+      calcNextOscSampleFmBlock(v.osc, M, buf, size, g, v.pwm, rng);
       for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], toI16(f(A[i] * m)));
-    } else if (v.srcA || v.srcB) calcNextOscSampleFmBlock(v.osc, A, buf, size, g);
-    else calcNextOscSampleBlock(v.osc, buf, size, g);
-    if (snare) { this._snareFinish(n, v, buf, direct); return; } // (only while it's routed like the firmware's snare)
-    // the filter, on the parts routed to it (and the click's through part); the others are added after it
-    const T = this._bT, toFilter = v.routeT || thru || (v.srcN && v.routeN);
+    } else if (v.srcA || v.srcB) calcNextOscSampleFmBlock(v.osc, A, buf, size, g, v.pwm, rng);
+    else calcNextOscSampleBlock(v.osc, buf, size, g, v.pwm, rng);
+    transient_calcBlock(v.transGen, C, size);
+    if (snare) { this._snareFinish(n, v, buf); return; } // (only while it's routed like the firmware's snare)
+    // the filter, on the parts routed to it; the others are added after it
+    const T = this._bT, toFilter = v.routeT || v.routeC || (v.srcN && v.routeN);
     if (!v.routeT) { T.set(buf); buf.fill(0); }
-    if (thru) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
+    if (v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
     if (v.srcN && v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
     if (toFilter) filterBlock(v, buf);
     if (!v.routeT) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], T[i]);
+    if (!v.routeC) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], C[i]);
     if (v.srcN && !v.routeN) for (let i = 0; i < size; i++) buf[i] = qadd16(buf[i], N[i]);
     if (v.kind === 'drum') {
       // amp EG, interpolated over the block (bufferTool_addGainInterpolated)
       const gain = f(v.ampFilterInput), last = f(v.lastGain), d = f(gain - last);
       for (let i = 0; i < size; i++) buf[i] = toI16(buf[i] * (last + f(i / f(size - 1)) * d));
       if (v.volumeMod) for (let i = 0; i < size; i++) buf[i] = toI16(f(buf[i] * v.velo));
-      // the click's direct part: the amp envelope and velocity too, then past the drive
-      if (direct) for (let i = 0; i < size; i++) D[i] *= (last + f(i / f(size - 1)) * d) * (v.volumeMod ? v.velo : 1);
       // drive, with the drive amount smoothed per sample (calcDistBlockFiltered)
       for (let i = 0; i < size; i++) buf[i] = distortSample(buf[i], calcOnePole(v.distortion.driveFilter, v.distortion.shape));
       for (let i = 0; i < size; i++) {
         const mixVol = calcOnePole(v.mixerVolFilter, v.vol);
         v.combinedVolume = f(mixVol * calcOnePole(v.faderFilter, this.faderVolume[n]));
-        buf[i] = toI16(f((direct ? buf[i] + D[i] : buf[i]) * v.combinedVolume));
+        buf[i] = toI16(f(buf[i] * v.combinedVolume));
       }
     } else {
       v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
-      for (let j = 0; j < size; j++) { const g = f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n])); buf[j] = toI16(f(buf[j] * g)); if (direct) D[j] *= g; }
+      for (let j = 0; j < size; j++) buf[j] = toI16(f(buf[j] * f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n]))));
       for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
-      if (direct) for (let j = 0; j < size; j++) buf[j] = toI16(buf[j] + D[j]); // (the click's direct part, past the drive)
     }
   }
   // the snare's last steps: the noise filtered alone, crossfaded with the tone in float, one gain, the drive
-  _snareFinish(n, v, buf, direct) {
-    const N = this._bN, D = this._bD, size = BLOCK;
+  _snareFinish(n, v, buf) {
+    const N = this._bN, C = this._bC, size = BLOCK;
     filterBlock(v, N);
     v.combinedVolume = v.volumeMod ? f(f(v.vol * v.velo) * v.egValueOscVol) : f(v.vol * v.egValueOscVol);
     for (let j = 0; j < size; j++) {
-      const tmp = fmaf(N[j], v.mix, buf[j]), g = f(v.combinedVolume * calcOnePole(v.faderFilter, this.faderVolume[n]));
-      buf[j] = toI16(f(tmp * g)); if (direct) D[j] *= g;
+      let tmp = fmaf(N[j], v.mix, buf[j]);
+      tmp = f(tmp + C[j]);
+      buf[j] = toI16(f(f(v.combinedVolume * tmp) * calcOnePole(v.faderFilter, this.faderVolume[n])));
     }
     for (let j = 0; j < size; j++) buf[j] = distortSample(buf[j], v.distortion.shape);
-    if (direct) for (let j = 0; j < size; j++) buf[j] = toI16(buf[j] + D[j]); // (the click, past the drive)
   }
   _decimate(n, buf) {
     const inc = f(this.decimationRate[n] * this.decimationRate[6]);
@@ -1726,7 +1949,7 @@ export class LxrEngine {
     };
     const pitchModAmount = (x) => { const val = f(x / 127); return f(f(val * val) * 32); };
     const filterValue = () => valueShaperF2F(flt, FILTER_SHAPER);
-    const clk = () => Math.max(0, Math.min(127, isFloatModulator ? v * 127 : data2)), clickShape = () => clk() / 127, clickLevel = () => clk() / 127;
+    const transPitch = () => f(1 + f(f(val / f(33.9)) - f(0.75)));
     const pos = () => (isFloatModulator ? f(flt * 127) : data2); // a morphable switch's position (see _modPos)
     const wpos = (osc) => osc_setPos(osc, pos());
 
@@ -1854,20 +2077,20 @@ export class LxrEngine {
 
     switch (num) {
       case CC2.TRANS1_WAVE: case CC2.TRANS2_WAVE: case CC2.TRANS3_WAVE:
-        drums[num - CC2.TRANS1_WAVE].click.shape = clickShape(); break; // (the click's SHAPE: was its sample)
-      case CC2.TRANS4_WAVE: sn.click.shape = clickShape(); break;
-      case CC2.TRANS5_WAVE: cy.click.shape = clickShape(); break;
-      case CC2.TRANS6_WAVE: hh.click.shape = clickShape(); break;
+        transient_setWaveform(drums[num - CC2.TRANS1_WAVE].transGen, wave(NUM_WAVES)); break;
+      case CC2.TRANS4_WAVE: transient_setWaveform(sn.transGen, wave(NUM_WAVES)); break;
+      case CC2.TRANS5_WAVE: transient_setWaveform(cy.transGen, wave(NUM_WAVES)); break;
+      case CC2.TRANS6_WAVE: transient_setWaveform(hh.transGen, wave(NUM_WAVES)); break;
       case CC2.TRANS1_VOL: case CC2.TRANS2_VOL: case CC2.TRANS3_VOL:
-        drums[num - CC2.TRANS1_VOL].click.level = clickLevel(); break; // (its LEVEL)
-      case CC2.TRANS4_VOL: sn.click.level = clickLevel(); break;
-      case CC2.TRANS5_VOL: cy.click.level = clickLevel(); break;
-      case CC2.TRANS6_VOL: hh.click.level = clickLevel(); break;
+        drums[num - CC2.TRANS1_VOL].transGen.volume = flt; break;
+      case CC2.TRANS4_VOL: sn.transGen.volume = flt; break;
+      case CC2.TRANS5_VOL: cy.transGen.volume = flt; break;
+      case CC2.TRANS6_VOL: hh.transGen.volume = flt; break;
       case CC2.TRANS1_FREQ: case CC2.TRANS2_FREQ: case CC2.TRANS3_FREQ:
-        drums[num - CC2.TRANS1_FREQ].click.tone = clickTone(clk()); break; // (its TONE)
-      case CC2.TRANS4_FREQ: sn.click.tone = clickTone(clk()); break;
-      case CC2.TRANS5_FREQ: cy.click.tone = clickTone(clk()); break;
-      case CC2.TRANS6_FREQ: hh.click.tone = clickTone(clk()); break;
+        drums[num - CC2.TRANS1_FREQ].transGen.pitch = transPitch(); break;
+      case CC2.TRANS4_FREQ: sn.transGen.pitch = transPitch(); break;
+      case CC2.TRANS5_FREQ: cy.transGen.pitch = transPitch(); break;
+      case CC2.TRANS6_FREQ: hh.transGen.pitch = transPitch(); break;
       case CC2.FILTER_TYPE_1: case CC2.FILTER_TYPE_2: case CC2.FILTER_TYPE_3:
       case CC2.FILTER_TYPE_4: case CC2.FILTER_TYPE_5: case CC2.FILTER_TYPE_6: {
         voice_setFilterPos([d0, d1, d2, sn, cy, hh][num - CC2.FILTER_TYPE_1], pos()); // (a dial: see voice_setFilterPos)
@@ -1912,7 +2135,7 @@ export class LxrEngine {
       case CC2.FX_P1: case CC2.FX_P2: case CC2.FX_P3: case CC2.FX_P4:
         this.fx.setParameter(num - CC2.FX_P1, flt); break;
       case CC2.FX_RATIO: compressorSetRatio(this.fx.compressor, itg); break;
-      case CC2.FX_WAVE: break; // (the ring modulator plays a square only)
+      case CC2.FX_WAVE: this.fx.ringmod.osc.waveform = itg; break;
       case CC2.FX_DELAY_TYPE: this.fx.delay.type = itg; break;
       case CC2.PWM_4: sn.pwm = flt; break;
       case CC2.PWM_5: cy.pwm = flt; break;
