@@ -611,7 +611,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
 @media (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
 .faders .sect.off > .row { opacity: .42; }
-.faders { grid-template-columns: repeat(17, minmax(0, 1fr)); } /* 15 cells of the engine's sections, then the key's own two */
+.faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */
 
 /* ENGINES 4 to 6: the second drum, snare and metal, shaded like the first */
 .pad.e3 { background: rgb(var(--ink-rgb) / .2); }
@@ -737,8 +737,9 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
 /* the wave display in the OSC heading: one cycle of what the tone plays, the frames either side faint */
-/* the OSC section's wave display: a cell the size of a knob's, its picture where a knob's dial would be */
-.faders .vf.wvcell .wvbox { width: var(--ks); height: var(--ks); display: flex; align-items: center; justify-content: center;
+/* the OSC section's wave display: two cells, its picture twice a knob's width where the dials would be */
+.faders .vf.wvcell { grid-column: span 2; }
+.faders .vf.wvcell .wvbox { width: calc(2 * var(--ks)); height: var(--ks); display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 4px 3px; }
 .faders .vf.wvcell output { text-transform: lowercase; }
 .faders .vf.wvcell .wv { width: 100%; height: 100%; overflow: visible; }
