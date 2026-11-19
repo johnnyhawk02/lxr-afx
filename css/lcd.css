@@ -1032,3 +1032,7 @@ html:not(.phone) .top { padding: 0 24px; }
   box-shadow: inset 0 0 0 4px rgb(var(--panel-rgb)); color: rgb(var(--panel-rgb)); }
 .keylocked .keyhead .piano .k.sel::before { background: rgb(var(--panel-rgb)); }
 .keyhead .piano .k.sel:not(.blk) { z-index: 1; } /* (the black keys still lie over it) */
+
+/* SOUNDMAKER (was BLENDER, Johnny 2026-11-19): the longer name fills its top-bar cell, so its B key shows in the hover text only */
+#blend-btn kbd { display: none; }
+#blend-btn { letter-spacing: .05em; }

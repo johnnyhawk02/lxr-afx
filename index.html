@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwo5qz3d">
-<link rel="stylesheet" href="css/grey.css?v=mwo5qz3d">
+<link rel="stylesheet" href="css/lcd.css?v=mwo5t8ly">
+<link rel="stylesheet" href="css/grey.css?v=mwo5t8ly">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -111,7 +111,7 @@
         </div>
       </div>
     </div>
-    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUND BLENDER (B): blend two sounds from the bucket into a new one, and save it to the bucket">BLENDER<kbd>B</kbd></button>
+    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUNDMAKER (B): blend two sounds from the bucket into a new one, and save it to the bucket">SOUNDMAKER<kbd>B</kbd></button>
 
     <div class="menu" id="smenu">
       <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="How it plays: tempo, held keys, AUTO LEVEL, the keyboard's layout and the hardware knobs">SETUP ▾</button>
@@ -243,12 +243,12 @@
     <button class="btn big" id="start-btn"><span class="dk">CLICK TO START</span><span class="ph">START</span></button>
     <p class="splash-hint dk">CLICK ANYWHERE OR PRESS ANY KEY: AUDIO AND MIDI START</p>
     <p id="start-text"></p>
-    <p class="ph" id="start-phone">The sound blender: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
+    <p class="ph" id="start-phone">SOUNDMAKER: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
     <p class="splash-foot dk">FREE AND OPEN SOURCE (GPL-3.0) · DRUM VOICES FROM THE LXR-02 FIRMWARE BY SONIC POTIONS</p>
   </div>
   <div class="blender" id="blender" hidden>
-    <div class="blbox" role="dialog" aria-label="Sound blender">
-      <h3>SOUND BLENDER <span class="dim" id="bl-eng"></span><button class="btn sm" id="bl-close" title="Close (Esc)">CLOSE</button></h3>
+    <div class="blbox" role="dialog" aria-label="Soundmaker">
+      <h3>SOUNDMAKER <span class="dim" id="bl-eng"></span><button class="btn sm" id="bl-close" title="Close (Esc)">CLOSE</button></h3>
       <div class="blpick" id="bl-a"></div>
       <div class="blpick" id="bl-b"></div>
       <div class="bars" id="bl-bars" title="How far from A to B: knobs slide, switches flip halfway. Let go to hear it; double-click for 50%"></div>
@@ -266,7 +266,7 @@
       <div class="blrow">
         <input class="pname" id="bl-name" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="The new sound's name" title="The new sound's name: type one, or press NEW NAME">
         <button class="btn" id="bl-roll" title="Another made-up name">NEW NAME</button>
-        <button class="btn" id="bl-save" title="Keep this sound: it joins the bucket at once (RANDOM, the dice and the blender draw from it) and the list below">SAVE</button>
+        <button class="btn" id="bl-save" title="Keep this sound: it joins the bucket at once (RANDOM, the dice and SOUNDMAKER draw from it) and the list below">SAVE</button>
       </div>
       <h3>SAVED <span class="dim" id="bl-count"></span></h3>
       <div class="plist bllist" id="bl-list"></div>
@@ -301,6 +301,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwo5qz3d"></script>
+<script type="module" src="app/main.js?v=mwo5t8ly"></script>
 </body>
 </html>
