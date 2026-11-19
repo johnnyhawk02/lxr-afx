@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo5n7te';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo5n7te';
-import { presetName, jumble } from './names.js?v=mwo5n7te';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo5n7te';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo5n7te';
-import { breed, isDud } from '../sound/breed.js?v=mwo5n7te';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo5n7te';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo5n7te';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo5n7te';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo5n7te';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo5n7te';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo5qz3d';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo5qz3d';
+import { presetName, jumble } from './names.js?v=mwo5qz3d';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo5qz3d';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo5qz3d';
+import { breed, isDud } from '../sound/breed.js?v=mwo5qz3d';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo5qz3d';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwo5qz3d';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo5qz3d';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo5qz3d';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo5qz3d';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo5n7te', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo5qz3d', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -636,7 +636,6 @@ function buildFaders() {
   });
   modStrip(box, cell, voice);
   drawSource(); // (the dice sits in the key's row of buttons, above)
-  makePanel($('make')); // (and the MAKE buttons under them)
   const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl), true), 3, 5, GRID_COLS + 1, GRID_COLS + 2); big.classList.add('big', 'rt', 'sep');
   box.append(big);
   // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
@@ -1330,8 +1329,6 @@ function drawEditKey() {
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
   $('clear-key').disabled = !here || locked;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
-  $('key-btn-text').textContent = locked ? 'LOCKED' : 'KEY'; $('key-btn').classList.toggle('locked', locked); // (the KEY menu's button says so)
-  $('key-panel-name').textContent = `${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}`;
   diceBtn.disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const he = handEdits(edits[note]), hand = he ? ` · ${he} edit${he === 1 ? '' : 's'}` : '';
@@ -1479,7 +1476,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo5n7te').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo5qz3d').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1554,18 +1551,11 @@ document.addEventListener('pointerdown', (e) => {
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
   if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
   if (!$('look-panel').hidden && !e.target.closest('#lmenu')) openLook(false);
-  if (!$('key-panel').hidden && !e.target.closest('#kmenu')) openKeyMenu(false);
-  if (!$('make-panel').hidden && !e.target.closest('#mkmenu')) openMake(false);
   if (!e.target.closest('.tdd')) openTableMenu(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openLook(false); openKeyMenu(false); openMake(false); openTableMenu(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openLook(false); openTableMenu(false); } });
 // THIS KEY's two menus (Johnny, 2026-11-19: "try and put these items into menus"): KEY (ALTER, LOCK, CLEAR, COPY, PASTE;
 // their shortcuts still work with the menu shut) and MAKE (the key made a kick, a snare...). A press in either shuts it
-function openKeyMenu(open) { $('key-panel').hidden = !open; $('key-btn').setAttribute('aria-expanded', open); if (open) openMake(false); }
-function openMake(open) { $('make-panel').hidden = !open; $('make-btn').setAttribute('aria-expanded', open); if (open) openKeyMenu(false); }
-$('key-btn').addEventListener('click', () => openKeyMenu($('key-panel').hidden));
-$('make-btn').addEventListener('click', () => openMake($('make-panel').hidden));
-$('key-panel').addEventListener('click', (e) => { if (e.target.closest('.btn') && !learn) openKeyMenu(false); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -1819,30 +1809,6 @@ function typeSound(sound, name) {
     if (!isDud(measure(sound, S.values, s.vals), LEVEL_TARGET_DB[sound])) break;
   }
   return s;
-}
-// the MAKE buttons (the key panel, under the key's buttons): one press makes the key on screen that type of sound, a new one each press. A type needs a kit
-// sound of its kind in the engine's pool (until every engine draws from every kit voice, a hat needs the metal)
-const MAKE_TYPES = [['kick', 'KICK'], ['tom', 'TOM'], ['mid perc', 'PERC'], ['zap', 'ZAP'], ['snare', 'SNARE'], ['clap', 'CLAP'], ['rim', 'RIM'],
-  ['cowbell', 'BELL'], ['closed hat', 'C HAT'], ['open hat', 'O HAT'], ['cymbal', 'CYMBAL']];
-function makePanel(el) {
-  el.innerHTML = '<div class="mk"></div>';
-  const box = el.querySelector('.mk');
-  for (const [name, text] of MAKE_TYPES) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = text; b.dataset.type = name;
-    b.addEventListener('click', () => { if (!learn) { openMake(false); randKey(name); } });
-    box.append(b);
-  }
-  const any = document.createElement('button'); any.type = 'button'; any.className = 'btn sm'; any.textContent = 'ANY'; any.dataset.type = '';
-  any.addEventListener('click', () => { if (!learn) { openMake(false); const ok = recipesFor(pool(S.sel)); if (ok.length) randKey(ok[Math.floor(rnd() * ok.length)]); } });
-  box.append(any);
-  faderDraws.push(() => {
-    const ok = new Set(recipesFor(pool(S.sel))), locked = keyLocked(S.sel, editKey[S.sel]);
-    for (const b of box.children) {
-      const can = b.dataset.type ? ok.has(b.dataset.type) : ok.size > 0;
-      b.disabled = locked || !can;
-      b.title = !can ? `No bucket sound of that kind on this engine yet` : locked ? 'This key is locked' : `Make this key ${b.dataset.type ? 'a ' + b.dataset.type : 'a sound of any type'}: a new one each press (UNDO takes it back)`;
-    }
-  });
 }
 const madeText = () => SOURCES[source()].made;
 function drawSource() {

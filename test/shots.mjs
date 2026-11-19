@@ -19,7 +19,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // ALTER KEY, LOCK KEY, CLEAR, COPY and PASTE live in THIS KEY's KEY menu, the MAKE buttons in its MAKE menu: the same
   { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
     await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; }
-    const menu = /^#(lock-key|clear-key|copy-key|paste-key)$/.test(sel) ? ['#key-btn', '#key-panel'] : /^#make |^#alter-key$/.test(sel) ? ['#make-btn', '#make-panel'] : null;
+    const menu = null;
     if (menu && !(await p.isVisible(sel))) { await click(menu[0]); const r = await click(sel, o); if (await p.isVisible(menu[1])) await click(menu[0]); return r; }
     return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
@@ -59,15 +59,6 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (r > sh + 1) { errors++; console.log(`${w}x${h}: RANDOM menu runs off the screen`, r, sh); }
     await p.keyboard.press('Escape'); }
   await p.mclick('#src-kit');
-  // MAKE THIS KEY: KICK makes the drum key on screen a kick, SNARE on the snare engine a snare
-  for (const [eng, type] of [['1', 'kick'], ['2', 'snare'], ['1', 'mid perc']]) {
-    await p.keyboard.press(eng); await p.waitForTimeout(100);
-    await p.click(`#make .btn[data-type="${type}"]`); await p.waitForTimeout(500);
-    const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3'))), kits = Object.values(st.keyEdits[Number(eng) - 1]).map((e) => e._kit);
-    if (!kits.some((k) => (k || '').startsWith(type + ' ('))) { errors++; console.log('make', type, kits); }
-  }
-  if (w === 1440 && h === 900) await p.screenshot({ path: `${out}/make-${w}x${h}.png` });
-  if (w === 1280 && h === 700) await p.screenshot({ path: `${out}/make-${w}x${h}.png` });
   await p.keyboard.press('1');
   // knobs: filter freq (CC16) on the key just played; LEARN maps CC 30 to the drum's decay
   await p.evaluate(() => { window.afx.noteOn(1, 66, 110); window.afx.cc(16, 20); window.afx.cc(18, 64); });
@@ -259,7 +250,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
     const g = await p.evaluate(() => { const r = (el) => el.getBoundingClientRect(), d = r(document.getElementById('rand-key')), a = r(document.getElementById('alter-key')), f = r(document.getElementById('faders')),
       sends = r(document.querySelector('#faders .sect.sends')), heads = [...document.querySelectorAll('#keystrip .kgroup')].filter((g) => { const b = g.querySelector('.snd'), k = r(g); return !b || r(b).left < k.left - 1 || r(b).right > k.right + 1; }).length; // (each engine's name sits on its bracket)
-      return { inActs: !!document.querySelector('#keyacts #rand-key'), inMenu: !!document.querySelector('#key-panel #alter-key'), shut: a.width === 0, square: Math.abs(d.width - d.height), size: d.width,
+      return { inActs: !!document.querySelector('#keyacts #rand-key'), inMenu: !document.querySelector('#keyacts #alter-key'), shut: a.width === 0, square: Math.abs(d.width - d.height), size: d.width,
         sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, heads }; });
     if (!g.inActs || !g.inMenu || !g.shut || g.square > 0.5 || g.size < 24 || g.sendsTop > 14 || g.sendsRight > 14 || g.heads) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
     const name = () => p.textContent('#kh-info'), face = () => p.getAttribute('#rand-key', 'data-face');

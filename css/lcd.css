@@ -866,14 +866,21 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 
 /* ---- THIS KEY in menus (Johnny, 2026-11-19: "try and put these items into menus"): the dice, then KEY and MAKE, on
    the five columns of the menu buttons above them (dice in the first, KEY over the next two, MAKE the last two) ---- */
-.khact .keyacts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; }
-.khact .keyacts .dicebtn { justify-self: start; }
-.khact #kmenu { grid-column: 2 / 4; }
-.khact #mkmenu { grid-column: 4 / 6; }
-.khact .keyacts .menu > .btn { width: 100%; min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-#key-btn svg { width: 14px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; }
-#key-btn:not(.locked) .shackle { transform: translate(5px, -2px); }
-#key-btn.locked svg rect { fill: currentColor; }
+.khact .keyacts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; }
+.khact .keyacts .dicebtn { justify-self: start; grid-row: 1 / 3; }
+/* (Johnny, 2026-11-19: the KEY menu taken out into buttons in its zone, MAKE gone): the dice, then two rows over the
+   other four columns: ALTER and LOCK KEY two cells each, then COPY, PASTE and CLEAR (two cells) */
+.khact #alter-key { grid-column: 2 / 4; grid-row: 1; }
+.khact #lock-key { grid-column: 4 / 6; grid-row: 1; }
+.khact #copy-key { grid-column: 2 / 3; grid-row: 2; }
+.khact #paste-key { grid-column: 3 / 4; grid-row: 2; }
+.khact #clear-key { grid-column: 4 / 6; grid-row: 2; }
+.khact .keyacts > .btn { width: 100%; min-width: 0; min-height: 0; height: auto; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; }
+.khact .keyacts .iconbtn svg { width: 22px; height: 18px; }
+.khact .keyacts .iconbtn + .keylock { margin-left: 0; }
+.khact .keyacts .keylock svg { width: 13px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.khact .keyacts .keylock[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.khact .keyacts .keylock[aria-pressed="true"] svg rect { fill: currentColor; }
 /* the menus open under their buttons, from the right; inside them the buttons keep their own colours when the key is locked */
 .keyhead .menupanel { color: var(--ink); text-shadow: var(--shadow); text-align: left; }
 .keyhead .menupanel .randrow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -886,11 +893,10 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keylocked .keyhead .menupanel .iconbtn svg { fill: var(--panel); }
 .makepanel .keymake { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
 .makepanel .keymake .mk { display: contents; }
-.makepanel #alter-key { grid-column: span 2; }
 .makepanel .keymake .btn { height: auto; min-height: 36px; font-size: 18px; padding: 0 4px; }
 .keylocked .keyhead .menupanel h3 { color: var(--ink); }
 .keyhead .menupanel .randrow > .btn { width: 100%; }
-.keylocked .keyhead #key-btn { background: var(--panel); color: var(--ink); border-color: var(--panel); }
+.keylocked .khact .keyacts .keylock { background: var(--panel); color: var(--ink); border-color: var(--panel); }
 
 /* ---- a rocker switch in a knob's cell (vtoggle in app/main.js): a control with two settings, the same size as a
    knob, so the grid holds. O on its top end, I on its bottom end; ON has the I end pressed. This look fills the pressed
@@ -1005,7 +1011,6 @@ html:not(.phone) .top { padding: 0 24px; }
 .khview, .khact { justify-content: space-between; }
 .khview .fxtab { height: 66px; font-size: 20px; }
 .khact .keyacts { align-items: stretch; }
-.khact .keyacts .menu > .btn { height: 66px; font-size: 20px; }
 .khact .keyacts .dicebtn { width: 66px; height: 66px; justify-self: start; }
 .khact .keyacts .dicebtn .die { border-radius: 8px; }
 
