@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnjj8x6';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwnjsvax';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS, STEPX_BASE } from './schema.js?v=mwnjj8x6';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwnjj8x6';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnjj8x6';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, NUM_STEPS, STEPX_BASE } from './schema.js?v=mwnjsvax';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwnjsvax';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwnjsvax';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added

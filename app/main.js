@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnjj8x6';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnjj8x6';
-import { presetName, jumble } from './names.js?v=mwnjj8x6';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnjj8x6';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnjj8x6';
-import { breed, isDud } from '../sound/breed.js?v=mwnjj8x6';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnjj8x6';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnjj8x6';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnjj8x6';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnjj8x6';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnjj8x6';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnjsvax';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnjsvax';
+import { presetName, jumble } from './names.js?v=mwnjsvax';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnjsvax';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnjsvax';
+import { breed, isDud } from '../sound/breed.js?v=mwnjsvax';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnjsvax';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnjsvax';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnjsvax';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnjsvax';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnjsvax';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnjj8x6', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnjsvax', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -671,7 +671,7 @@ function tablePicker(h3, voice, row) {
   });
   // the wave display, two cells of its own, the picture twice a knob's width: the table as a slanted stack of its frames
   // (a waterfall: the start of the WAVE knob at the front, its end at the back), the frame the tone plays now drawn
-  // over it in the accent colour. It follows the WAVE knob, and while a key sounds, where modulation has it now. A 2D
+  // over it in black (the ink), the others grey. It follows the WAVE knob, and while a key sounds, where modulation has it now. A 2D
   // canvas: the stack is drawn once per table (and PWM, look, size), each move only puts the one frame over it
   const vc = document.createElement('div'); vc.className = 'vf wvcell'; vc.innerHTML = '<output></output><div class="wvbox"></div><span class="lab">shape</span>';
   row.append(vc);
@@ -703,7 +703,7 @@ function drawWave(live) {
   }
   const i = tableNow(voice), knob = valueNow(ukeyPar(voice, 'wave')) || 0, pwm = valueNow(ukeyPar(voice, 'pwm')) || 0;
   const at = live ?? knob, css = getComputedStyle(cv), ink = css.getPropertyValue('--ink').trim() || '#000', panel = css.getPropertyValue('--panel').trim() || '#fff';
-  const hot = css.getPropertyValue('--accent').trim() || ink, ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const hot = ink, ratio = Math.min(window.devicePixelRatio || 1, 2);
   const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   const W = Math.round(w * ratio), H = Math.round(h * ratio);
   const sk = `${i}/${pwm}/${W}x${H}/${ink}/${panel}`;
@@ -723,7 +723,7 @@ function drawWave(live) {
       const tt = f / (n - 1), q = wvPlace(tt, w, h), pts = waveShape(i, tt * WAVE_TOP, pwm, 64);
       wvLine(g, pts, q); g.lineTo(q.x + q.fw, q.y + q.a + 1); g.lineTo(q.x, q.y + q.a + 1); g.closePath();
       g.globalAlpha = 0.82; g.fillStyle = panel; g.fill();
-      wvLine(g, pts, q); g.globalAlpha = 0.25 + 0.4 * (1 - tt); g.strokeStyle = ink; g.lineWidth = 1; g.stroke();
+      wvLine(g, pts, q); g.globalAlpha = 0.32; g.strokeStyle = ink; g.lineWidth = 1; g.stroke();
     }
     wave.stackKey = sk;
   }
@@ -731,7 +731,7 @@ function drawWave(live) {
   // the frame the tone plays, at its place in the stack
   g.setTransform(ratio, 0, 0, ratio, 0, 0); g.lineJoin = 'round';
   const tt = Math.min(Math.max(at / WAVE_TOP, 0), 1), q = wvPlace(tt, w, h);
-  wvLine(g, waveShape(i, at, pwm, 96), q); g.strokeStyle = hot; g.lineWidth = 2; g.stroke();
+  wvLine(g, waveShape(i, at, pwm, 96), q); g.strokeStyle = hot; g.lineWidth = 2.2; g.stroke();
 }
 // from the audio: where each voice's dial is now; drawn while it moves (modulation), back to the knob when it stops
 function showWaves(w) {
