@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnjaw1p';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnjaw1p';
-import { presetName, jumble } from './names.js?v=mwnjaw1p';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnjaw1p';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnjaw1p';
-import { breed, isDud } from '../sound/breed.js?v=mwnjaw1p';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnjaw1p';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnjaw1p';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnjaw1p';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnjaw1p';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnjaw1p';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnjj8x6';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnjj8x6';
+import { presetName, jumble } from './names.js?v=mwnjj8x6';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnjj8x6';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnjj8x6';
+import { breed, isDud } from '../sound/breed.js?v=mwnjj8x6';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnjj8x6';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnjj8x6';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnjj8x6';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnjj8x6';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnjj8x6';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnjaw1p', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnjj8x6', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -669,30 +669,69 @@ function tablePicker(h3, voice, row) {
     b.title = `The tone's oscillator: ${i ? 'the ' + TABLE_NAMES[i].toUpperCase() + ' wavetable, the WAVE knob moving along it' : 'CLASSIC, the WAVE knob picking sine, tri, saw, rec, pwm or noise'}. Click to choose another`;
     items.forEach((it, k) => { it.classList.toggle('on', k === i); it.setAttribute('aria-selected', k === i); });
   });
-  // the wave display, two cells of its own, the picture twice a knob's width: one cycle of what the tone plays, flat, the frames
-  // either side faint behind it. It follows the WAVE knob, and while a key sounds, where modulation has it now
+  // the wave display, two cells of its own, the picture twice a knob's width: the table as a slanted stack of its frames
+  // (a waterfall: the start of the WAVE knob at the front, its end at the back), the frame the tone plays now drawn
+  // over it in the accent colour. It follows the WAVE knob, and while a key sounds, where modulation has it now. A 2D
+  // canvas: the stack is drawn once per table (and PWM, look, size), each move only puts the one frame over it
   const vc = document.createElement('div'); vc.className = 'vf wvcell'; vc.innerHTML = '<output></output><div class="wvbox"></div><span class="lab">shape</span>';
   row.append(vc);
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'wv'); svg.setAttribute('viewBox', `0 0 ${WV_W} ${WV_H}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
-  svg.innerHTML = '<line class="ax"/><path class="nb"/><path class="nb"/><path class="cur"/>';
-  svg.querySelector('.ax').setAttribute('x1', 0); svg.querySelector('.ax').setAttribute('x2', WV_W); svg.querySelector('.ax').setAttribute('y1', WV_H / 2); svg.querySelector('.ax').setAttribute('y2', WV_H / 2);
-  vc.querySelector('.wvbox').append(svg);
+  const cv = document.createElement('canvas'); cv.className = 'wv'; cv.setAttribute('aria-hidden', 'true');
+  vc.querySelector('.wvbox').append(cv);
+  if (window.ResizeObserver) new ResizeObserver(() => drawWave(null)).observe(cv);
   faderDraws.push(() => { vc.querySelector('output').textContent = TABLE_NAMES[tableNow(voice)]; });
-  wave.svg = svg; wave.voice = voice; wave.last = '';
+  wave.cv = cv; wave.voice = voice; wave.last = ''; wave.stackKey = '';
   faderDraws.push(() => drawWave(null));
 }
-// the wave display's state: its svg, the voice, where modulation has the dial now (null: the knob), what's drawn
-const WV_W = 120, WV_H = 24, wave = { svg: null, voice: 0, live: null, liveAt: 0, last: '' };
-const wavePath = (pts) => { let d = ''; for (let j = 0; j <= pts.length; j++) { const y = pts[j % pts.length]; d += (j ? 'L' : 'M') + (j / pts.length * WV_W).toFixed(1) + ' ' + ((1 - y * 0.9) * WV_H / 2).toFixed(1); } return d; };
+// the wave display's state: its canvas, the voice, the stack drawn (an offscreen canvas and what it shows), what's drawn
+// now, when the last live frame was drawn (moves under modulation are capped: 30 a second, 15 on a phone)
+const wave = { cv: null, voice: 0, stack: null, stackKey: '', last: '', liveAt: 0, pend: null, timer: 0 };
+const WV_GAP = matchMedia('(pointer: coarse)').matches ? 66 : 33;
+const WV_SLANT = [0.3, 0.5]; // (how far back the last frame sits: of the width, of the height)
+// where frame t (0 front .. 1 back) of the waterfall sits on a w x h canvas: its left end, its centre line, its width, its height
+function wvPlace(t, w, h) {
+  const p = 2, dx = (w - 2 * p) * WV_SLANT[0], dy = (h - 2 * p) * WV_SLANT[1], fw = w - 2 * p - dx, fh = h - 2 * p - dy;
+  return { x: p + t * dx, y: h - p - fh / 2 - t * dy, fw, a: fh / 2 * 0.92 };
+}
+function wvLine(g, pts, q) { g.beginPath(); for (let j = 0; j <= pts.length; j++) { const x = q.x + j / pts.length * q.fw, y = q.y - pts[j % pts.length] * q.a; j ? g.lineTo(x, y) : g.moveTo(x, y); } }
 function drawWave(live) {
-  const { svg, voice } = wave; if (!svg || !svg.isConnected) return;
+  const { cv, voice } = wave; if (!cv || !cv.isConnected) return;
+  const now = performance.now();
+  if (live !== null) { // under modulation: no more than one frame each WV_GAP ms, the newest kept for the next
+    const wait = wave.liveAt + WV_GAP - now;
+    if (wait > 0) { wave.pend = live; if (!wave.timer) wave.timer = setTimeout(() => { wave.timer = 0; const x = wave.pend; wave.pend = null; if (x !== null) drawWave(x); }, wait); return; }
+    wave.liveAt = now;
+  }
   const i = tableNow(voice), knob = valueNow(ukeyPar(voice, 'wave')) || 0, pwm = valueNow(ukeyPar(voice, 'pwm')) || 0;
-  const at = live ?? knob, key = `${i}/${at.toFixed(2)}/${pwm}`;
+  const at = live ?? knob, css = getComputedStyle(cv), ink = css.getPropertyValue('--ink').trim() || '#000', panel = css.getPropertyValue('--panel').trim() || '#fff';
+  const hot = css.getPropertyValue('--accent').trim() || ink, ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  const W = Math.round(w * ratio), H = Math.round(h * ratio);
+  const sk = `${i}/${pwm}/${W}x${H}/${ink}/${panel}`;
+  const key = `${sk}/${hot}/${at.toFixed(2)}`;
   if (key === wave.last) return; wave.last = key;
-  const paths = svg.querySelectorAll('path'), step = frameStep(i);
-  paths[2].setAttribute('d', wavePath(waveShape(i, at, pwm)));
-  [-1, 1].forEach((s, k) => { const x = at + s * step; paths[k].setAttribute('d', step && x >= 0 && x <= WAVE_TOP ? wavePath(waveShape(i, x, pwm)) : ''); });
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  // the stack, drawn back to front, each frame filled below its line with the panel colour so it hides the ones behind
+  if (sk !== wave.stackKey) {
+    const s = wave.stack || (wave.stack = document.createElement('canvas')); s.width = W; s.height = H;
+    const g = s.getContext('2d'); g.setTransform(ratio, 0, 0, ratio, 0, 0); g.lineJoin = 'round';
+    const t = tableFor(i, true), n = t ? Math.min(Math.max(t.frames, 2), 24) : 21;
+    // the floor: the front and back centre lines and the sides joining them, faint
+    const f0 = wvPlace(0, w, h), f1 = wvPlace(1, w, h);
+    g.strokeStyle = ink; g.globalAlpha = 0.2; g.lineWidth = 1; g.beginPath();
+    g.moveTo(f0.x, f0.y); g.lineTo(f0.x + f0.fw, f0.y); g.lineTo(f1.x + f1.fw, f1.y); g.lineTo(f1.x, f1.y); g.closePath(); g.stroke();
+    for (let f = n - 1; f >= 0; f--) {
+      const tt = f / (n - 1), q = wvPlace(tt, w, h), pts = waveShape(i, tt * WAVE_TOP, pwm, 64);
+      wvLine(g, pts, q); g.lineTo(q.x + q.fw, q.y + q.a + 1); g.lineTo(q.x, q.y + q.a + 1); g.closePath();
+      g.globalAlpha = 0.82; g.fillStyle = panel; g.fill();
+      wvLine(g, pts, q); g.globalAlpha = 0.25 + 0.4 * (1 - tt); g.strokeStyle = ink; g.lineWidth = 1; g.stroke();
+    }
+    wave.stackKey = sk;
+  }
+  const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.clearRect(0, 0, W, H); g.drawImage(wave.stack, 0, 0);
+  // the frame the tone plays, at its place in the stack
+  g.setTransform(ratio, 0, 0, ratio, 0, 0); g.lineJoin = 'round';
+  const tt = Math.min(Math.max(at / WAVE_TOP, 0), 1), q = wvPlace(tt, w, h);
+  wvLine(g, waveShape(i, at, pwm, 96), q); g.strokeStyle = hot; g.lineWidth = 2; g.stroke();
 }
 // from the audio: where each voice's dial is now; drawn while it moves (modulation), back to the knob when it stops
 function showWaves(w) {
@@ -1257,7 +1296,7 @@ function applyColours(keep) {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16)), p = rgb(colours.panel), st = document.documentElement.style;
   const dark = (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) / 255 < 0.4;
   st.setProperty('--panel-rgb', p.join(' ')); st.setProperty('--ink-rgb', rgb(colours.ink).join(' '));
-  st.setProperty('--shade-rgb', dark ? '0 0 0' : 'var(--ink-rgb)'); st.setProperty('--glow', dark ? 0 : 1);
+  st.setProperty('--shade-rgb', dark ? '0 0 0' : 'var(--ink-rgb)'); st.setProperty('--glow', dark ? 0 : 1); drawWave(null);
   $('col-panel').value = colours.panel; $('col-ink').value = colours.ink;
   for (const b of $('themes').children) b.setAttribute('aria-pressed', b.dataset.panel === colours.panel && b.dataset.ink === colours.ink);
   if (keep) { try { localStorage.setItem(COLOURS_STORE, JSON.stringify(colours)); } catch (e) { /* not kept */ } }
@@ -1278,6 +1317,7 @@ function applyLook(look, keep) {
   document.documentElement.classList.toggle('look-grey', look === 'grey');
   for (const b of $('looks').children) b.setAttribute('aria-pressed', b.dataset.look === look);
   $('lcd-colours').hidden = look === 'grey';
+  drawWave(null); // (the wave display takes the look's colours)
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
