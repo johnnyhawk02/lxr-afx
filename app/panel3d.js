@@ -1,17 +1,25 @@
-// MOCKUP ONLY (mockup-3d.html): the GREY panel drawn with three.js for a subtle depth. The page is the real app, laid
-// out exactly as index.html lays it out; a three.js canvas sits behind it in place of the panel's flat background.
-// It draws only a flat panel plane, lit, and a chicken-head knob in each knob's cell, turned with the app's own value,
-// casting a soft shadow. Looked at straight down through an orthographic camera, so every knob stays on its grid cell
-// and nothing is drawn in perspective. The text, the printed scales, the rules and the buttons are the page's own.
-import * as THREE from 'three';
-import { RoomEnvironment } from './vendor/RoomEnvironment.js';
+// The GREY look's panel drawn with three.js, for a subtle depth (Johnny, 2026-11-19: "subtly 3d ... no boxes, just a
+// flat plane with knobs"). A canvas sits behind the screen's contents in place of the panel's flat background and draws
+// only a flat panel plane, lit, and a chicken-head knob in each knob's cell, turned with the app's own value, casting a
+// soft shadow. It looks straight down through an orthographic camera, so every knob stays on its grid cell and nothing
+// is drawn in perspective. The text, the printed scales, the rules and the buttons stay the page's own. On while the
+// look is GREY on the big screen (html.panel3d, css/grey.css); the LCD look and the phone keep the flat drawing
+import * as THREE from '../vendor/three/three.module.min.js';
+import { RoomEnvironment } from '../vendor/three/RoomEnvironment.js';
 
+const root = document.documentElement;
 const screen = document.getElementById('screen');
 const canvas = document.createElement('canvas');
 canvas.className = 'panel3d';
+canvas.setAttribute('aria-hidden', 'true');
 screen.prepend(canvas);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+// a software renderer (no graphics chip: some virtual machines, headless test browsers) takes seconds a frame here, so
+// it keeps the flat drawing: the import fails and app/main.js carries on without it (?3d in the address forces it on)
+{ const gl = renderer.getContext(), i = gl.getExtension('WEBGL_debug_renderer_info');
+  const name = String(i ? gl.getParameter(i.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  if (/swiftshader|llvmpipe|softpipe|software|basic render/i.test(name) && !/[?&]3d\b/.test(location.search)) { canvas.remove(); renderer.dispose(); throw new Error('software renderer: ' + name); } }
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.shadowMap.enabled = true;
@@ -26,7 +34,7 @@ camera.position.set(0, 0, 2000);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8c8e, 1.0));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 2048);
+sun.shadow.mapSize.set(2048, 1024);
 sun.shadow.radius = 5; sun.shadow.blurSamples = 16; sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
 
@@ -97,9 +105,9 @@ let W = 0, H = 0;
 function sync() {
   const sr = screen.getBoundingClientRect(), s = sr.width / screen.offsetWidth || 1;
   const w = screen.clientWidth, h = screen.clientHeight;
-  if (w !== W || h !== H || renderer.getPixelRatio() !== devicePixelRatio * s) {
+  if (w !== W || h !== H || renderer.getPixelRatio() !== Math.min(2, devicePixelRatio * s)) {
     W = w; H = h;
-    renderer.setPixelRatio(Math.min(3, devicePixelRatio * s)); renderer.setSize(W, H, false);
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio * s)); renderer.setSize(W, H, false);
     Object.assign(camera, { left: 0, right: W, top: 0, bottom: -H }); camera.updateProjectionMatrix();
     panel.scale.set(W, H, 1); panel.position.set(W / 2, -H / 2, 0);
     sun.position.set(W / 2 - 900, -H / 2 + 1100, 1600); sun.target.position.set(W / 2, -H / 2, 0);
@@ -107,7 +115,7 @@ function sync() {
     sun.shadow.camera.updateProjectionMatrix();
   }
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
-  const seen = new Set();
+  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}`;
   for (const el of screen.querySelectorAll('.knob')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;
@@ -120,14 +128,30 @@ function sync() {
     let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
     if (k.userData.o !== o) { k.userData.o = o; for (const [n, mesh] of Object.entries(k.userData.parts)) mesh.material = matAt(n, o); }
     k.visible = true;
+    sig += `|${x.toFixed(1)},${y.toFixed(1)},${size.toFixed(1)},${m ? m[1] : 0},${o}`;
   }
   for (const [el, k] of knobs) if (!seen.has(el)) { k.visible = false; if (!el.isConnected) { scene.remove(k); knobs.delete(el); } }
+  return sig;
 }
 
-let queued = false;
-const draw = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; sync(); renderer.render(scene, camera); }); };
-new MutationObserver(draw).observe(document.getElementById('stage'), { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden'] });
+// draw only when something a knob shows has changed: a value, a place, a fade, the window
+let queued = false, last = '';
+const wanted = () => root.classList.contains('look-grey') && !root.classList.contains('phone');
+const draw = () => {
+  if (queued) return; queued = true;
+  requestAnimationFrame(() => {
+    queued = false;
+    const on = wanted(); root.classList.toggle('panel3d', on);
+    if (!on) { last = ''; return; }
+    const sig = sync();
+    if (sig !== last) { last = sig; renderer.render(scene, camera); }
+  });
+};
+const relevant = (r) => r.type === 'childList' || r.attributeName === 'class' || r.attributeName === 'hidden'
+  || (r.attributeName === 'transform' && r.target.classList?.contains('rot')) || (r.attributeName === 'style' && r.target.id === 'stage');
+new MutationObserver((rs) => { if (rs.some(relevant)) draw(); }).observe(document.getElementById('stage'),
+  { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden'] });
+new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
 addEventListener('resize', draw);
 document.fonts?.ready.then(draw);
 draw(); setTimeout(draw, 300); setTimeout(draw, 1200);
-window.panel3d = { draw, scene, renderer };
