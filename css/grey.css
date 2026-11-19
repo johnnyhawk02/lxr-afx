@@ -41,6 +41,12 @@ html.look-grey:is(.knob-round, .knob-ribbed, .knob-rubber) .knob :is(.chh, .chl)
 html.look-grey:is(.knob-ribbed, .knob-rubber) .knob :is(.skirt, .skirt-top) { display: none; }
 html.look-grey.knob-round .knob .rdc { display: inline; fill: #141516; stroke: #050505; stroke-width: .7; }
 html.look-grey.knob-round .knob .rdl { display: inline; stroke: #f4f3ee; stroke-width: 1.8; stroke-linecap: round; }
+/* RIBBED is smaller than the others inside the scale, so its scale and markers come in snug round it (Johnny,
+   2026-11-19: "fit the markings to these"): ticks from just outside its flange, a little bolder to read at that size */
+html.look-grey.knob-ribbed .knob .ring { transform: scale(.74); transform-origin: 32px 32px; }
+html.look-grey.knob-ribbed .knob .sc { stroke-width: 2; }
+html.look-grey.knob-ribbed .knob .mrange { stroke-width: 3.4; }
+html.look-grey.knob-ribbed .knob .notch { stroke-width: 5; }
 html.look-grey.knob-ribbed .knob .rbb { display: inline; fill: #18191b; stroke: #050505; stroke-width: .7; }
 html.look-grey.knob-ribbed .knob .rbr { display: inline; stroke: #3a3c40; stroke-width: .9; }
 html.look-grey.knob-ribbed .knob .rbt { display: inline; fill: #0e0f10; }
