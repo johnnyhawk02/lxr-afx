@@ -758,6 +758,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .blitem .blload { border-left: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blitem button:hover { background: var(--tint); }
 .blrow.five { grid-template-columns: repeat(5, 1fr); }
+.blrow.six { grid-template-columns: repeat(3, 1fr); }
 /* ---- LOAD: the bucket's sounds in a list, on the same grid ---- */
 .ldrow { display: grid; grid-template-columns: 1fr 160px; gap: 8px; align-items: center; }
 .ldrow .pname { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
@@ -788,7 +789,7 @@ html.phone .blpick .btn { min-height: 40px; }
 html.phone .blbox .hb { grid-template-columns: 58px 1fr 48px; }
 html.phone .blbox .htrack { height: 34px; }
 html.phone .blnames { grid-template-columns: 58px 1fr 1fr 48px; font-size: 15px; }
-html.phone .blrow, html.phone .blrow.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html.phone .blrow, html.phone .blrow.five, html.phone .blrow.six { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 html.phone .blrow .btn { min-height: 44px; }
 html.phone #bl-play { grid-column: 1 / -1; }
 html.phone .blrow .pname { grid-column: 1 / -1; min-height: 44px; }
