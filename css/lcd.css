@@ -14,10 +14,16 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body { background: radial-gradient(120% 80% at 50% 0%, #2a2d28, #161815) fixed; padding: 8px; overflow: hidden; font-family: var(--font); color: var(--ink); }
+/* the stage holds the screen. On a laptop or desktop it is a fixed 16:10 panel, 1424 x 890, that fitScreen (app/main.js)
+   scales to fit the window and centres, the bezel's dark surround filling the rest; the layout inside never reflows.
+   The size rules below are container queries on the stage, not media queries, so they see 1424 x 890 at any window
+   size (and the phone's own size on a phone) */
+.stage { container-type: size; width: 100%; height: 100%; }
+html:not(.phone) .stage { position: absolute; left: 8px; top: 8px; width: 1424px; height: 890px; transform-origin: 0 0; }
 button { font: inherit; color: inherit; }
 
 .screen {
-  position: relative; height: calc(100vh - 16px); max-width: 1600px; margin: 0 auto;
+  position: relative; height: 100%; margin: 0 auto;
   display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; padding: 12px 16px 14px;
   border: 6px solid #0b0c0a; border-radius: 12px; user-select: none; -webkit-user-select: none;
   text-shadow: var(--shadow); font-size: 20px; line-height: 1.1;
@@ -151,9 +157,27 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   background: rgb(var(--panel-rgb) / .88); border-radius: 6px; z-index: 10; text-align: center; }
 .start p { max-width: 30em; font-size: 22px; margin: 0; }
+/* the splash: the start screen, on the whole panel. The click (or key) that leaves it is the gesture a browser wants
+   before it lets a page make sound */
+html:not(.phone) .start { background: var(--panel); background-image: inherit; cursor: pointer; gap: 0; }
+.splash { display: flex; flex-direction: column; align-items: center; }
+.splash-logo { margin: 0; font-weight: 400; font-size: 168px; line-height: .9; letter-spacing: .14em; padding-left: .14em; }
+.splash-logo span { color: var(--muted); }
+.splash-tag { font-size: 30px !important; letter-spacing: .32em; padding-left: .32em; margin-top: 6px !important; }
+/* the 25 keys, lighting up one after another */
+.splash-keys { display: grid; grid-template-columns: repeat(25, 22px); gap: 4px; margin: 38px 0 44px; }
+.splash-keys i { height: 34px; border: 2px solid var(--ink); border-radius: 2px; background: var(--ghost); animation: splashkey 2.5s steps(1) infinite; }
+.splash-keys i:nth-child(2) { animation-delay: 0.1s; } .splash-keys i:nth-child(3) { animation-delay: 0.2s; } .splash-keys i:nth-child(4) { animation-delay: 0.3s; } .splash-keys i:nth-child(5) { animation-delay: 0.4s; } .splash-keys i:nth-child(6) { animation-delay: 0.5s; } .splash-keys i:nth-child(7) { animation-delay: 0.6s; } .splash-keys i:nth-child(8) { animation-delay: 0.7s; } .splash-keys i:nth-child(9) { animation-delay: 0.8s; } .splash-keys i:nth-child(10) { animation-delay: 0.9s; } .splash-keys i:nth-child(11) { animation-delay: 1.0s; } .splash-keys i:nth-child(12) { animation-delay: 1.1s; } .splash-keys i:nth-child(13) { animation-delay: 1.2s; } .splash-keys i:nth-child(14) { animation-delay: 1.3s; } .splash-keys i:nth-child(15) { animation-delay: 1.4s; } .splash-keys i:nth-child(16) { animation-delay: 1.5s; } .splash-keys i:nth-child(17) { animation-delay: 1.6s; } .splash-keys i:nth-child(18) { animation-delay: 1.7s; } .splash-keys i:nth-child(19) { animation-delay: 1.8s; } .splash-keys i:nth-child(20) { animation-delay: 1.9s; } .splash-keys i:nth-child(21) { animation-delay: 2.0s; } .splash-keys i:nth-child(22) { animation-delay: 2.1s; } .splash-keys i:nth-child(23) { animation-delay: 2.2s; } .splash-keys i:nth-child(24) { animation-delay: 2.3s; } .splash-keys i:nth-child(25) { animation-delay: 2.4s; }
+@keyframes splashkey { 0%, 8% { background: var(--ink); } 9%, 100% { background: var(--ghost); } }
+.start .btn.big { min-width: 9em; animation: splashblink 1.2s steps(1) infinite; }
+@keyframes splashblink { 0%, 64% { opacity: 1; } 65%, 100% { opacity: .35; } }
+.splash-hint { font-size: 20px !important; letter-spacing: .12em; margin-top: 16px !important; color: var(--muted); }
+html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--muted); max-width: 44em; }
+.splash-foot { position: absolute; bottom: 18px; left: 0; right: 0; max-width: none !important; font-size: 17px !important; letter-spacing: .1em; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .splash-keys i, .start .btn.big { animation: none; } }
 .start[hidden] { display: none; }
 
-@media (max-width: 1340px) {
+@container (max-width: 1340px) {
   .screen { font-size: 18px; padding: 10px 12px 12px; }
   .logo { font-size: 34px; }
   .btn { font-size: 17px; padding: 3px 9px; }
@@ -164,7 +188,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
   .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }
   .snd { font-size: 20px; min-height: 42px; }
 }
-@media (max-height: 820px) {
+@container (max-height: 820px) {
   .screen { gap: 8px; }
   .bars { gap: 2px; }
   .htrack { height: 19px; }
@@ -191,8 +215,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .knob .lr { fill: var(--ink); font: 700 18px/1 var(--font); text-anchor: middle; }
 .sect .vsel { grid-column: span 2; justify-content: flex-start; padding: 18px 6px 0; }
 .sect .vsel label { white-space: nowrap; }
-@media (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: 15px; } .vf output { font-size: 16px; } }
-@media (max-height: 820px) { .faders { row-gap: 6px; } }
+@container (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: 15px; } .vf output { font-size: 16px; } }
+@container (max-height: 820px) { .faders { row-gap: 6px; } }
 
 /* ---- the RANDOM menu: everything that randomises a whole engine or all three ---- */
 .menu { position: relative; }
@@ -251,7 +275,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .lockveil span { background: var(--panel); padding: 0 8px; }
 .keylocked .lockveil { display: flex; }
 .keylocked .faders { opacity: .45; pointer-events: none; }
-@media (max-width: 1340px) {
+@container (max-width: 1340px) {
   .keyhead { gap: 12px; padding: 4px 10px; }
   .keyname b { font-size: 40px; }
   .k { width: 18px; height: 30px; }
@@ -271,7 +295,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keyname b { min-width: 0; width: 4.2ch; }
 .keyname #kh-num { width: 4ch; }
 .keyinfo { width: 14em; max-width: none; }
-@media (max-width: 1340px) { .keyinfo { width: 11em; } }
+@container (max-width: 1340px) { .keyinfo { width: 11em; } }
 
 /* ---- the side: the engine's level and its keys, one row each ---- */
 .body { grid-template-columns: clamp(300px, 24vw, 360px) 1fr; }
@@ -285,14 +309,14 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .kl:hover { background: var(--tint); }
 .kl.locked { border-style: dashed; border-color: var(--ink); }
 .kl.sel { background: var(--ink); color: var(--panel); border-color: var(--ink); text-shadow: none; }
-@media (max-width: 1340px) { .kl { font-size: 17px; } }
+@container (max-width: 1340px) { .kl { font-size: 17px; } }
 
 /* the engine row: each engine button placed under its key group (alignEngines in app/main.js) */
 .sounds { position: relative; display: block; height: 38px; }
 .sounds .tag { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
 .sounds .snd { position: absolute; top: 0; height: 38px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: 20px; }
 .sounds .snd .ch { font-size: 15px; }
-@media (max-width: 1340px) { .sounds .snd { font-size: 18px; } .sounds .snd .ch { font-size: 13px; } }
+@container (max-width: 1340px) { .sounds .snd { font-size: 18px; } .sounds .snd .ch { font-size: 13px; } }
 
 /* ---- body: the synth on the left, the FX on the right ---- */
 .body { grid-template-columns: 1fr auto; }
@@ -304,7 +328,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .sect .row { display: grid; grid-template-columns: repeat(var(--n), var(--kw)); }
 .fxside .vf output { font-size: 16px; } .fxside .vf .lab { font-size: 15px; }
 .fxside .knob { width: var(--ks); height: var(--ks); }
-@media (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
+@container (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
 
 .fxside .sect { padding-top: 4px; }
 .fxside .sect + .sect { margin-top: 4px; }
@@ -324,7 +348,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keyhead .keyacts .btn { font-size: 17px; min-height: 30px; }
 .keyhead .keylock { min-width: 7em; min-height: 36px; font-size: 19px; }
 .keyname b { font-size: 40px; }
-@media (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
+@container (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
 
 .lowkey b.bpm { min-width: 3.2em; }
 
@@ -339,7 +363,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .vf.big .lock { font-size: 15px; }
 .fxside h2 { margin-top: 6px; }
 .fxside .mout .row { display: flex; align-items: center; gap: 14px; }
-@media (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
+@container (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
 /* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
    as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
 .fxside .sect.dirt .row + .row { margin-top: 2px; }
@@ -378,9 +402,9 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .sect.make .mk { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 4px 8px 0; align-content: start; }
 .faders .sect.make .mk .btn { padding: 4px 2px; min-width: 0; white-space: nowrap; overflow: hidden; }
 .faders .vf.big .knob { width: 96px; height: 96px; }
-@media (max-width: 1340px) { .faders { --ks: 44px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
-@media (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } .faders .vf.big .knob { width: 80px; height: 80px; } }
-@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
+@container (max-width: 1340px) { .faders { --ks: 44px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
+@container (max-height: 820px) { .faders { --ks: 38px; } .faders .sect h3 { margin-bottom: 0; } .faders .vf.big .knob { width: 80px; height: 80px; } }
+@container (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 36px; } }
 /* the right column on one set of columns: every effect's knobs, the distortion's switches, the ENV meter, the output
    level and the gain-reduction meter all sit in the same six cells */
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
@@ -446,9 +470,9 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .sect .vf output { font-size: 18px; }
 .faders .sect.seq .steps { padding-top: 20px; }
 .faders .sect .vsel { padding-left: 18px; }
-@media (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: 14px; } }
-@media (max-height: 820px) { .faders { --ks: 54px; } .faders .vf.big .knob { width: 96px; height: 96px; } }
-@media (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
+@container (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: 14px; } }
+@container (max-height: 820px) { .faders { --ks: 54px; } .faders .vf.big .knob { width: 96px; height: 96px; } }
+@container (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
 
 /* ---- the RANDOM menu on an even grid: two equal buttons a row, the sliders and WILD under HOW MUCH ---- */
 .menupanel { width: 470px; }
@@ -517,8 +541,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .midi { flex: 0 50 auto; min-width: 120px; max-width: 180px; }
 .last { flex: 1 1 190px; }
 .lowkey b { min-width: 4.6em; }
-@media (max-width: 1500px) { .last > .dim, .pbtn > .dim { display: none; } .pbtn b { max-width: 130px; } }
-@media (min-width: 1341px) and (max-width: 1500px) { .top { gap: 10px; } .logo { font-size: 36px; letter-spacing: .1em; } .lowkey > .dim { letter-spacing: .02em; } }
+@container (max-width: 1500px) { .last > .dim, .pbtn > .dim { display: none; } .pbtn b { max-width: 130px; } }
+@container (min-width: 1341px) and (max-width: 1500px) { .top { gap: 10px; } .logo { font-size: 36px; letter-spacing: .1em; } .lowkey > .dim { letter-spacing: .02em; } }
 
 /* ---- PHONE: a phone held upright gets a simpler screen (html.phone, set by the page): the 25 keys as pads, and under
    them the pad pressed last with its dice, ALTER, LOCK and sends, then INIT PATCH, RANDOM ALL and UNDO. Everything on
@@ -530,8 +554,12 @@ html.phone .screen { display: block; height: calc(100vh - 8px); height: calc(100
 html.phone .screen > :not(.blender):not(.start) { display: none; }
 html.phone .dk, html.phone #start-text { display: none; }
 html.phone .ph { display: revert; }
-html.phone .start { gap: 14px; padding: 0 18px; background: rgb(var(--panel-rgb) / .95); }
+html.phone .start { gap: 14px; padding: 0 18px; background: var(--panel); }
 html.phone .start p { font-size: 19px; line-height: 1.25; max-width: 20em; }
+html.phone .splash-logo { font-size: 64px; }
+html.phone .splash-tag { font-size: 18px !important; letter-spacing: .2em; padding-left: .2em; }
+html.phone .splash-keys { grid-template-columns: repeat(5, 28px); gap: 5px; margin: 22px 0 10px; }
+html.phone .splash-keys i { height: 18px; }
 html.phone .pv { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) repeat(6, auto); gap: 6px; height: 100%; }
 .pv > * { grid-column: 1 / -1; min-width: 0; }
 .pv-pads, .pv-row, .pv-send { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -599,7 +627,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .editor[hidden] { display: none; }
 .sounds .fxtab { position: absolute; top: 0; right: 0; height: 38px; min-height: 0; padding: 2px 10px; gap: 6px; font-size: 20px; }
 .sounds .fxtab[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
-@media (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
+@container (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
 .sounds .fxtab kbd { margin-left: 6px; }
 /* the effects on the tab: send FX in the first column, the master's distortion in the second, compressor and output in
    the third, each section on the knob grid */
@@ -610,7 +638,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .fxside > h2 { display: none; }
 .left > .fxside { --kw: 72px; --ks: 50px; }
 .left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
-@media (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
+@container (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
 .faders .sect.off > .row { opacity: .42; }
 .faders { grid-template-columns: repeat(16, minmax(0, 1fr)); } /* 14 cells of the engine's sections, then the key's own two */
 
