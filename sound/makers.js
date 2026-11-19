@@ -66,17 +66,19 @@ export function free({ schema, pool, rnd }) {
 // from: which kit voices it starts from (by the end of the pool's label); set: merged control (ukey) -> [lo, hi]
 // (a single number for an exact value). Waves are places on the BASIC table (table 1): 0 sine, 31 tri, 62 saw, 94
 // square, 125 narrow pulse. Filter types:
-// 0 lp, 18 bp, 36 unity bp, 54 hp, 72 notch, 90 peak, 108 lp2, 126 off. Ranges from the kits' own sounds of that kind
+// 0 lp, 18 bp, 36 unity bp, 54 hp, 72 notch, 90 peak, 108 lp2, 126 off. The click (engine/click.js): click is its SHAPE (0 pulse,
+// 64 chirp, 127 noise), clickfreq its TONE (87 is 2 kHz), clicklen its LENGTH (69 is 3 ms). Ranges from the kits' own sounds of that kind
 export const RECIPES = {
   kick: { from: /drum \d$/, set: { coarse: [22, 32], table: 1, wave: 0, pamt: [55, 115], pdecay: [30, 75], pslope: [2, 20], decay: [15, 45], attack: 0,
-    cutoff: [55, 127], reso: [0, 30], again: [0, 20], clickvol: [20, 110] } },
+    cutoff: [55, 127], reso: [0, 30], again: [0, 20], clickvol: [19, 57], click: [0, 16],
+    clickfreq: [80, 104], clicklen: [40, 70], clickdir: 0 } },
   tom: { from: /drum \d$/, set: { coarse: [33, 46], table: 1, wave: [0, 31], pamt: [20, 55], pdecay: [30, 65], decay: [12, 35], attack: 0, again: [0, 15],
-    clickvol: [0, 60], cutoff: [70, 127], reso: [0, 40] } },
+    clickvol: [0, 45], click: [0, 32], clickfreq: [70, 100], clicklen: [40, 75], cutoff: [70, 127], reso: [0, 40] } },
   snare: { from: /snare$/, set: { coarse: [38, 54], nmix: [60, 115], ncolour: [80, 127], decay: [8, 30], pamt: [20, 50], pdecay: [40, 75], attack: 0,
     cutoff: [80, 127], reso: [0, 50] } },
   clap: { from: /snare$/, set: { repeat: [2, 4], nmix: [110, 127], ncolour: [100, 127], decay: [6, 18], attack: 0, ftype: 18, cutoff: [80, 110],
-    reso: [20, 60], pamt: [0, 10], clickvol: [0, 30] } },
-  rim: { from: /drum \d$|snare$/, set: { coarse: [55, 75], decay: [3, 9], pamt: [10, 40], pdecay: [10, 40], click: 6, clickvol: [80, 127],
+    reso: [20, 60], pamt: [0, 10], clickvol: [0, 30], click: [100, 127], clickfreq: [90, 110], clicklen: [60, 90] } },
+  rim: { from: /drum \d$|snare$/, set: { coarse: [55, 75], decay: [3, 9], pamt: [10, 40], pdecay: [10, 40], click: [0, 40], clickvol: [60, 110], clickfreq: [95, 115], clicklen: [30, 60],
     attack: 0, cutoff: [90, 127] } },
   'closed hat': { from: /hihat$|cymbal$/, set: { coarse: [70, 127], decay: [2, 10], attack: 0, ftype: 54, cutoff: [95, 125], reso: [0, 50],
     again: [80, 127], bgain: [80, 127] } },
@@ -86,9 +88,9 @@ export const RECIPES = {
   cowbell: { from: /cymbal$|hihat$/, set: { table: 1, wave: 94, coarse: [60, 80], afreq: [55, 75], again: [0, 30], bgain: [0, 20], decay: [10, 30],
     attack: 0, ftype: 18, cutoff: [80, 105], reso: [20, 60] } },
   'mid perc': { from: /drum \d$/, set: { coarse: [44, 62], table: 1, wave: [0, 94], pamt: [5, 35], pdecay: [20, 50], decay: [6, 22], attack: 0, again: [0, 40],
-    clickvol: [20, 90], cutoff: [70, 127], reso: [0, 50] } },
+    clickvol: [15, 70], click: [0, 64], clickfreq: [80, 110], clicklen: [30, 70], cutoff: [70, 127], reso: [0, 50] } },
   zap: { from: /drum \d$/, set: { coarse: [40, 75], table: 1, wave: [0, 62], pamt: [100, 127], pdecay: [5, 25], decay: [5, 20], attack: 0, again: [0, 30],
-    clickvol: [0, 40] } },
+    clickvol: [0, 40], click: 64, clickfreq: [95, 120], clicklen: [60, 95] } },
 };
 // the recipes this pool can make (each needs a kit sound of its type)
 export const recipesFor = (pool) => Object.keys(RECIPES).filter((k) => pool.some((s) => RECIPES[k].from.test(s.label)));

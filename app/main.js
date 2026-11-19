@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, TABLE_RULE, upgradeTables, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmt9v3r';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, soundToTable } from '../sound/tables.js?v=mwmt9v3r';
-import { presetName, jumble } from './names.js?v=mwmt9v3r';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmt9v3r';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmt9v3r';
-import { breed, isDud } from '../sound/breed.js?v=mwmt9v3r';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmt9v3r';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwmt9v3r';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmt9v3r';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmt9v3r';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmt9v3r';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, TABLE_RULE, upgradeTables, CLICK_RULE, upgradeClicks, soundClicks, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwmugadb';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, soundToTable } from '../sound/tables.js?v=mwmugadb';
+import { presetName, jumble } from './names.js?v=mwmugadb';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwmugadb';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwmugadb';
+import { breed, isDud } from '../sound/breed.js?v=mwmugadb';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwmugadb';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwmugadb';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwmugadb';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwmugadb';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwmugadb';
 // the WAVE knob each wavetable moves (0 the tone's, 1 MOD A's, 2 MOD B's: schema.js tablePar)
 const WAVE_OF = { wave: 0, awave: 1, bwave: 2 };
 
@@ -67,6 +67,7 @@ try {
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
     if (d.modRule !== MOD_RULE) { upgradeMod(S.defaults); upgradeMod(S.values, S.keyEdits); } // (kept with the firmware's one LFO and one velocity target: now routes on the knobs)
     if (d.tableRule !== TABLE_RULE) { upgradeTables(S.defaults); upgradeTables(S.values, S.keyEdits); } // (kept while the oscillators could play CLASSIC: now on tables)
+    if (d.clickRule !== CLICK_RULE) { upgradeClicks(S.defaults); upgradeClicks(S.values, S.keyEdits); } // (kept with the firmware's sampled clicks)
   }
 } catch (e) { /* first visit, or storage blocked */ }
 let saveT = 0;
@@ -75,7 +76,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, modRule: MOD_RULE, tableRule: TABLE_RULE, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, modRule: MOD_RULE, tableRule: TABLE_RULE, clickRule: CLICK_RULE, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
@@ -91,6 +92,7 @@ let savedSounds = [];
 try { savedSounds = (JSON.parse(localStorage.getItem(BLEND_STORE)) || []).map(tidySound).filter(Boolean); } catch (e) { /* none */ }
 // the bucket moved onto the wavetables (2026-11-18: BASIC, and NOISE for the noise): the sounds saved in this browser go
 // with it, once
+try { if (!localStorage.getItem('lxr-afx-click1')) { savedSounds = savedSounds.map(soundClicks); localStorage.setItem(BLEND_STORE, JSON.stringify(savedSounds)); localStorage.setItem('lxr-afx-click1', '1'); } } catch (e) { /* as they are */ }
 try { if (!localStorage.getItem('lxr-afx-tables2')) { savedSounds = savedSounds.map(soundToTable); localStorage.setItem(BLEND_STORE, JSON.stringify(savedSounds)); localStorage.setItem('lxr-afx-tables2', '1'); } } catch (e) { /* as they are */ }
 const inRepo = new Set(BUCKET.map((s) => s.name));
 const bucket = () => [...BUCKET, ...savedSounds.filter((s) => !inRepo.has(s.name))];
@@ -112,7 +114,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmt9v3r', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwmugadb', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
@@ -1714,9 +1716,10 @@ function tidyPreset(p) {
   });
   if (d.mod !== MOD_RULE) upgradeMod(values, keys); // (saved with the firmware's one LFO and one velocity target: now routes on the knobs)
   if (d.tab !== TABLE_RULE) upgradeTables(values, keys); // (saved while the oscillators could play CLASSIC)
+  if (d.clk !== CLICK_RULE) upgradeClicks(values, keys); // (saved with the firmware's sampled clicks)
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
-  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, mod: MOD_RULE, tab: TABLE_RULE, engines } };
+  return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, mod: MOD_RULE, tab: TABLE_RULE, clk: CLICK_RULE, engines } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
 let presets = [];
@@ -1726,7 +1729,7 @@ function storePresets() { try { localStorage.setItem(PRESET_STORE, JSON.stringif
 const storeOr = (said) => { if (!storePresets()) said += ' · <em>the browser would not keep it</em> (storage full or blocked): EXPORT writes a file'; detail(said); };
 // the patch as a preset keeps it: the keys by their place in the layout
 const shiftKeys = (ks, by) => ks.map((k) => Object.fromEntries(Object.entries(k || {}).map(([n, e]) => [Number(n) + by, structuredClone(e)])));
-const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE, mod: MOD_RULE, tab: TABLE_RULE, engines: S.engines });
+const patchData = () => ({ values: [...S.values], keys: shiftKeys(S.keyEdits, -S.zoneStart), fx: structuredClone(S.fx), pos: POS_RULE, mod: MOD_RULE, tab: TABLE_RULE, clk: CLICK_RULE, engines: S.engines });
 // the same patch, whatever order its parts were written in
 const canon = (x) => (Array.isArray(x) ? '[' + x.map(canon).join() + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map((k) => k + ':' + canon(x[k])).join() + '}' : JSON.stringify(x));
 const presetSaved = () => presets.find((p) => p.id === S.preset.id);
