@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnf55fv">
+<link rel="stylesheet" href="css/lcd.css?v=mwnfifw7">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -25,6 +25,7 @@
 </script>
 </head>
 <body>
+<div class="stage" id="stage">
 <main class="screen" id="screen">
   <header class="top">
     <h1 class="logo">LXR<span>-</span>AFX</h1>
@@ -199,9 +200,16 @@
     <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
   </div>
   <div class="start" id="start">
-    <button class="btn big" id="start-btn"><span class="dk">START AUDIO + MIDI</span><span class="ph">START</span></button>
+    <div class="splash">
+      <h1 class="splash-logo">LXR<span>-</span>AFX</h1>
+      <p class="splash-tag">DRUM SYNTH FOR 25 KEYS</p>
+      <div class="splash-keys" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <button class="btn big" id="start-btn"><span class="dk">CLICK TO START</span><span class="ph">START</span></button>
+    <p class="splash-hint dk">CLICK ANYWHERE OR PRESS ANY KEY: AUDIO AND MIDI START</p>
     <p id="start-text"></p>
     <p class="ph" id="start-phone">The sound blender: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
+    <p class="splash-foot dk">FREE AND OPEN SOURCE (GPL-3.0) · DRUM VOICES FROM THE LXR-02 FIRMWARE BY SONIC POTIONS</p>
   </div>
   <div class="blender" id="blender" hidden>
     <div class="blbox" role="dialog" aria-label="Sound blender">
@@ -236,6 +244,16 @@
     </div>
   </div>
 </main>
+</div>
+<script>
+// the big screen is a fixed 16:10 panel (1424 x 890), scaled to fit the window and centred (app/main.js fitScreen does the
+// same on resize): set before the first paint so it never shows at the wrong size
+(function () {
+  if (document.documentElement.classList.contains('phone')) return;
+  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1424, (innerHeight - 16) / 890);
+  st.style.left = (innerWidth - 1424 * s) / 2 + 'px'; st.style.top = (innerHeight - 890 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
+})();
+</script>
 <script>
 // if the page's code fails to load or start (a stale cached file, an error), say so instead of sitting on START
 (function () {
@@ -248,6 +266,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnf55fv"></script>
+<script type="module" src="app/main.js?v=mwnfifw7"></script>
 </body>
 </html>

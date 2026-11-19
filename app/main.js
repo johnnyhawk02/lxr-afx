@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnf55fv';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnf55fv';
-import { presetName, jumble } from './names.js?v=mwnf55fv';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnf55fv';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnf55fv';
-import { breed, isDud } from '../sound/breed.js?v=mwnf55fv';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnf55fv';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnf55fv';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnf55fv';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnf55fv';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnf55fv';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnfifw7';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnfifw7';
+import { presetName, jumble } from './names.js?v=mwnfifw7';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnfifw7';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnfifw7';
+import { breed, isDud } from '../sound/breed.js?v=mwnfifw7';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnfifw7';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnfifw7';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnfifw7';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnfifw7';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnfifw7';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnf55fv', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnfifw7', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1791,13 +1791,21 @@ document.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------------------------------------------------------
 // start
 // ---------------------------------------------------------------------------------------------------------------
-$('start-btn').addEventListener('click', async () => {
+// the splash: a click anywhere on it, or any key, starts (the browser lets a page make sound only after one of those)
+async function start() {
+  if ($('start').hidden) return;
   $('start').hidden = true;
   await startAudio();
   // on a phone the pads are the keys: it isn't asked for MIDI there (a keyboard still plays if MIDI was allowed before)
   if (!phoneOn) startMidi();
   else if (navigator.permissions) navigator.permissions.query({ name: 'midi' }).then((s) => { if (s.state === 'granted') startMidi(); }).catch(() => {});
-});
+}
+$('start').addEventListener('click', start);
+// (first in line, so the key that starts doesn't also play or press anything)
+window.addEventListener('keydown', (e) => {
+  if ($('start').hidden || e.metaKey || e.ctrlKey || e.altKey || ['Shift', 'Meta', 'Control', 'Alt', 'Tab'].includes(e.key)) return;
+  e.preventDefault(); e.stopImmediatePropagation(); start();
+}, true);
 // ---------------------------------------------------------------------------------------------------------------
 // PRESETS: the whole patch (every key's sound, edits, lock, sequence and sends, the engines' base, the effects, the
 // master and the BPM) kept under a name in this browser (localStorage). A new patch gets a made-up name (names.js);
@@ -2365,10 +2373,11 @@ function setPhone() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// fit the screen to small windows (a MacBook Air's browser with its toolbar and the dock): below 1264x784 inside the
-// bezel the whole screen is laid out at that size and scaled down, so every knob stays visible and nothing scrolls
+// fit the screen to the window: the big screen is a fixed 16:10 panel, 1424 x 890 (a 1440 x 900 window less the bezel's
+// margin), laid out at that size always and scaled to fit the window, up or down, and centred; the dark surround fills
+// what's left, so it never reflows and nothing scrolls. (index.html does the same before the first paint)
 // ---------------------------------------------------------------------------------------------------------------
-const FIT_W = 1264, FIT_H = 850;
+const FIT_W = 1424, FIT_H = 890;
 // the engine buttons sit right under their key groups in the strip above, FX under the key's buttons
 function alignEngines() {
   const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;
@@ -2378,11 +2387,10 @@ function alignEngines() {
   const tag = row.querySelector('.tag'); tag.style.left = `${parseFloat(soundBtns[0].style.left) - tag.offsetWidth - 12}px`;
 }
 function fitScreen() {
-  const sc = $('screen'), vw = innerWidth - 16, vh = innerHeight - 16, s = Math.min(1, vw / FIT_W, vh / FIT_H);
+  const st = $('stage'), s = Math.min((innerWidth - 16) / FIT_W, (innerHeight - 16) / FIT_H);
   setPhone();
-  if (phoneOn) { sc.removeAttribute('style'); drawKeymap(); return; } // (the phone view lays itself out)
-  if (s < 1) Object.assign(sc.style, { width: `${vw / s}px`, height: `${vh / s}px`, maxWidth: 'none', margin: '0', transform: `scale(${s})`, transformOrigin: '0 0' });
-  else sc.removeAttribute('style');
+  if (phoneOn) { st.removeAttribute('style'); drawKeymap(); return; } // (the phone view lays itself out)
+  Object.assign(st.style, { left: `${(innerWidth - FIT_W * s) / 2}px`, top: `${(innerHeight - FIT_H * s) / 2}px`, transform: `scale(${s})` });
   drawKeymap(); alignEngines();
 }
 window.addEventListener('resize', fitScreen);
