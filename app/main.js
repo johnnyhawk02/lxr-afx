@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn9k1i5';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn9k1i5';
-import { presetName, jumble } from './names.js?v=mwn9k1i5';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn9k1i5';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn9k1i5';
-import { breed, isDud } from '../sound/breed.js?v=mwn9k1i5';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn9k1i5';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwn9k1i5';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn9k1i5';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn9k1i5';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn9k1i5';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwna7moh';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwna7moh';
+import { presetName, jumble } from './names.js?v=mwna7moh';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwna7moh';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwna7moh';
+import { breed, isDud } from '../sound/breed.js?v=mwna7moh';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwna7moh';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwna7moh';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwna7moh';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwna7moh';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwna7moh';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn9k1i5', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwna7moh', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
@@ -571,7 +571,8 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
-const ROWS = [['osc', 'mod a', 'mod b'], ['amp', 'pitch', 'click', 'noise'], ['filter in', 'filter'], ['lfo', 'mix']];
+// in the order the sound flows: its sources, what bends them, the filter and the amp, then the LFO and the mix
+const ROWS = [['osc', 'noise', 'click'], ['mod a', 'mod b', 'pitch'], ['filter in', 'filter', 'amp'], ['lfo', 'mix']];
 const GRID_COLS = 14;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
