@@ -780,14 +780,10 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .tblmenu[hidden] { display: none; }
 .tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
-/* the wave display in the OSC heading: one cycle of what the tone plays, the frames either side faint */
-/* the OSC section's wave display: two cells, its picture twice a knob's width where the dials would be */
+/* the OSC section's wave display: two cells, its picture twice a knob's width where the dials would be; a canvas
+   drawing the table as a slanted stack of frames (app/main.js drawWave) */
 .faders .vf.wvcell { grid-column: span 2; }
 .faders .vf.wvcell .wvbox { width: calc(2 * var(--ks)); height: var(--ks); display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 4px 3px; }
+  border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 2px; }
 .faders .vf.wvcell output { text-transform: lowercase; }
-.faders .vf.wvcell .wv { width: 100%; height: 100%; overflow: visible; }
-.faders .vf.wvcell .wv path, .faders .vf.wvcell .wv line { fill: none; stroke: var(--ink); vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-.faders .vf.wvcell .wv .cur { stroke-width: 2; }
-.faders .vf.wvcell .wv .nb { stroke-width: 1; opacity: 0.3; }
-.faders .vf.wvcell .wv .ax { stroke-width: 1; opacity: 0.25; stroke-dasharray: 2 3; }
+.faders .vf.wvcell .wv { display: block; width: 100%; height: 100%; }
