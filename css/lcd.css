@@ -979,3 +979,18 @@ html .keylocked .keyhead .kgroup .snd[aria-selected="true"] { background: rgb(va
 .keyhead .piano .k { height: 66px; }
 .keyhead .piano .k.blk { height: 40px; }
 .keylocked .keyline #kh-info { color: rgb(var(--panel-rgb) / .75); }
+
+/* ---- breathing room (Johnny, 2026-11-19: "give space around dials near the sides"): the knob panel, the key panel
+   and the top bar all step in by the same 16px more on each side, so their 18 columns still line up and the dials
+   at the edges sit clear of the border ---- */
+html:not(.phone) .faders { padding: 10px 22px 10px; }
+html:not(.phone) .keyhead { padding: 6px 22px 10px; }
+html:not(.phone) .top { padding: 0 24px; }
+/* SHOW and THIS KEY: their buttons as tall as the white keys and level with them, the section heading at the top, so
+   neither section is left half empty */
+.khview, .khact { justify-content: space-between; }
+.khview .fxtab { height: 66px; font-size: 20px; }
+.khact .keyacts { align-items: stretch; }
+.khact .keyacts .menu > .btn { height: 66px; font-size: 20px; }
+.khact .keyacts .dicebtn { width: 66px; height: 66px; justify-self: start; }
+.khact .keyacts .dicebtn .die { border-radius: 8px; }
