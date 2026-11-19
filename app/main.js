@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo6pktd';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo6pktd';
-import { presetName, jumble } from './names.js?v=mwo6pktd';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo6pktd';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo6pktd';
-import { breed, isDud } from '../sound/breed.js?v=mwo6pktd';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo6pktd';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo6pktd';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo6pktd';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo6pktd';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo6pktd';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo73jbk';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo73jbk';
+import { presetName, jumble } from './names.js?v=mwo73jbk';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo73jbk';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo73jbk';
+import { breed, isDud } from '../sound/breed.js?v=mwo73jbk';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo73jbk';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwo73jbk';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo73jbk';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo73jbk';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo73jbk';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo6pktd', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo73jbk', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1476,7 +1476,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo6pktd').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo73jbk').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1540,6 +1540,80 @@ function applyKnobStyle(style, keep) {
 }
 for (const b of $('knob-styles').children) b.addEventListener('click', () => { applyKnobStyle(b.dataset.style, true); detail(`knob style: <em>${b.textContent}</em>`); });
 { let st = KNOB_STYLE_DEFAULT; try { st = localStorage.getItem(KNOB_STYLE_STORE) || KNOB_STYLE_DEFAULT; } catch (e) { /* the default */ } applyKnobStyle(st, false); }
+// LOOK PRESETS (Johnny, 2026-11-19: "have presets for LOOK"): one click sets the look, its colours, the knob size and
+// style and the lens together. A few built in (DEFAULT is the app's own default: LCD in MINT, size 7), and SAVE MINE
+// keeps the look as it is now as one of your own (localStorage, MINE 1, MINE 2, ...); FORGET deletes the lit one of yours
+const LOOK_PRESETS_STORE = 'lxr-afx-look-presets';
+const LOOK_BUILTIN = [
+  { name: 'DEFAULT', look: 'lcd', panel: '#c8ecdf', ink: '#0a1410', size: 7, style: 'ribbed', lens: 'flat' },
+  { name: 'AMBER', look: 'lcd', panel: '#1c1408', ink: '#ffaa32', size: 7, style: 'ribbed', lens: 'flat' },
+  { name: 'GREEN CRT', look: 'lcd', panel: '#08140a', ink: '#6eff8c', size: 6, style: 'ribbed', lens: 'flat' },
+  { name: 'PAPER', look: 'lcd', panel: '#e2ded0', ink: '#1e1c18', size: 8, style: 'ribbed', lens: 'flat' },
+  { name: 'STUDIO', look: 'grey', grey: GREY_DEFAULT, size: 7, style: 'chicken', lens: 'flat' },
+  { name: 'JOHNNY', look: 'grey', grey: GREY_DEFAULT, size: 9, style: 'chicken', lens: 'wide' }, // (Johnny's own, from his screenshot 2026-11-19)
+  { name: 'BLACK BOX', look: 'grey', grey: '#26282a', size: 8, style: 'ribbed', lens: 'tele' },
+  { name: 'CREAM', look: 'grey', grey: '#e4dccb', size: 7, style: 'chicken', lens: 'low' },
+  { name: 'NAVY', look: 'grey', grey: '#28384f', size: 9, style: 'rubber', lens: 'wide' },
+];
+const hexOk = (h) => /^#[0-9a-f]{6}$/i.test(h || '');
+function tidyLookPreset(p) {
+  if (!p || typeof p !== 'object') return null;
+  const name = String(p.name || '').toUpperCase().replace(/[^A-Z0-9 +-]/g, '').slice(0, 12).trim();
+  if (!name || !['grey', 'lcd'].includes(p.look)) return null;
+  return { name, look: p.look, panel: hexOk(p.panel) ? p.panel.toLowerCase() : THEMES[0][1], ink: hexOk(p.ink) ? p.ink.toLowerCase() : THEMES[0][2],
+    grey: hexOk(p.grey) ? p.grey.toLowerCase() : GREY_DEFAULT, size: Math.round(Math.min(10, Math.max(0, +p.size || 0))),
+    style: KNOB_STYLES.includes(p.style) ? p.style : KNOB_STYLE_DEFAULT, lens: LENS_NAMES.includes(p.lens) ? p.lens : 'flat' };
+}
+let lookMine = [];
+try { const a = JSON.parse(localStorage.getItem(LOOK_PRESETS_STORE)); if (Array.isArray(a)) lookMine = a.map(tidyLookPreset).filter(Boolean); } catch (e) { /* none */ }
+const lookBuiltin = LOOK_BUILTIN.map(tidyLookPreset);
+function lookNow() {
+  return tidyLookPreset({ name: 'NOW', look: document.documentElement.classList.contains('look-grey') ? 'grey' : 'lcd', panel: colours.panel, ink: colours.ink,
+    grey: $('grey-panel').value, size: +$('knob-size').value, style: [...$('knob-styles').children].find((b) => b.getAttribute('aria-pressed') === 'true')?.dataset.style,
+    lens: document.documentElement.dataset.lens });
+}
+// a preset is lit when the screen looks just like it (an LCD preset ignores the GREY-only parts, and the other way round)
+function lookMatches(p, n) {
+  if (p.look !== n.look || p.size !== n.size) return false;
+  return p.look === 'lcd' ? p.panel === n.panel && p.ink === n.ink : p.grey === n.grey && p.style === n.style && p.lens === n.lens;
+}
+function applyLookPreset(p) {
+  if (p.look === 'lcd') { colours = { panel: p.panel, ink: p.ink }; applyColours(true); }
+  else { applyGreyColour(p.grey, true); applyKnobStyle(p.style, true); applyLens(p.lens, true); }
+  applyKnobSize(p.size, true); applyLook(p.look, true); drawLookPresets();
+}
+function lookSwatch(b, p) {
+  if (p.look === 'lcd') { b.style.setProperty('--tp', p.panel); b.style.setProperty('--ti', p.ink); return; }
+  const q = [1, 3, 5].map((i) => parseInt(p.grey.substr(i, 2), 16)), dark = (0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2]) / 255 < 0.45;
+  b.style.setProperty('--tp', p.grey); b.style.setProperty('--ti', dark ? '#ecece6' : '#18191b');
+}
+function drawLookPresets() {
+  const box = $('look-presets'), n = lookNow(); box.textContent = '';
+  let mineLit = false;
+  for (const [p, mine] of [...lookBuiltin.map((p) => [p, false]), ...lookMine.map((p) => [p, true])]) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn theme'; b.textContent = p.name; lookSwatch(b, p);
+    const lit = lookMatches(p, n); b.setAttribute('aria-pressed', lit); if (lit && mine) mineLit = true;
+    b.title = `${p.look === 'lcd' ? 'LCD' : 'GREY, ' + p.style + ' knobs, ' + p.lens + ' lens'}, knob size ${knobSizeName(p.size)}${mine ? ' (one of yours)' : ''}`;
+    b.addEventListener('click', () => { applyLookPreset(p); detail(`look preset: <em>${p.name}</em>`); });
+    box.append(b);
+  }
+  $('look-forget').disabled = !mineLit;
+}
+function keepLookMine() { try { localStorage.setItem(LOOK_PRESETS_STORE, JSON.stringify(lookMine)); } catch (e) { /* not kept */ } }
+$('look-save').addEventListener('click', () => {
+  const n = lookNow(), same = [...lookBuiltin, ...lookMine].find((p) => lookMatches(p, n));
+  if (same) { detail(`this look is already <em>${same.name}</em>`); return; }
+  let i = 1; while (lookMine.some((p) => p.name === `MINE ${i}`)) i++;
+  lookMine.push({ ...n, name: `MINE ${i}` }); keepLookMine(); drawLookPresets(); detail(`look saved as <em>MINE ${i}</em>`);
+});
+$('look-forget').addEventListener('click', () => {
+  const n = lookNow(), p = lookMine.find((q) => lookMatches(q, n)); if (!p) return;
+  lookMine = lookMine.filter((q) => q !== p); keepLookMine(); drawLookPresets(); detail(`look preset <em>${p.name}</em> forgotten`);
+});
+// any change by hand relights the presets
+$('look-panel').addEventListener('click', () => setTimeout(drawLookPresets));
+$('look-panel').addEventListener('input', () => drawLookPresets());
+drawLookPresets();
 // ---- SETUP (how it plays) and LOOK (how it looks): the two top-bar menus SETTINGS was split into (Johnny, 2026-11-19) ----
 // OPTIONS (Johnny, 2026-11-19: "setup and look are tabs in options"): one menu, its SETUP and LOOK tabs
 let optTab = 'setup';

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwo6pktd">
-<link rel="stylesheet" href="css/grey.css?v=mwo6pktd">
+<link rel="stylesheet" href="css/lcd.css?v=mwo73jbk">
+<link rel="stylesheet" href="css/grey.css?v=mwo73jbk">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -136,6 +136,12 @@
         </div>
         <div class="optpane" id="look-panel" role="tabpanel" hidden>
         <h3>LOOK <span class="dim">KEPT IN THIS BROWSER</span></h3>
+        <h3>PRESETS <span class="dim">ONE CLICK SETS IT ALL</span></h3>
+        <div class="randrow themes" id="look-presets" role="group" aria-label="Look presets"></div>
+        <div class="randrow" id="look-preset-acts">
+          <button class="btn" type="button" id="look-save" title="Keep the look as it is now (look, colours, knob size and style, lens) as a preset of your own">SAVE MINE</button>
+          <button class="btn" type="button" id="look-forget" disabled title="Delete the preset of your own that is lit up">FORGET</button>
+        </div>
         <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
           <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
           <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
@@ -315,6 +321,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwo6pktd"></script>
+<script type="module" src="app/main.js?v=mwo73jbk"></script>
 </body>
 </html>
