@@ -898,3 +898,17 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .tog .mrange { stroke: var(--ink); stroke-width: 3; opacity: .45; }
 .tog .mdot { fill: var(--ink); display: none; }
 .vf.modded.modlive .tog .mdot { display: inline; }
+
+/* LEVEL as a fader (Johnny, 2026-11-19: "make LEVEL into a fader"): a tall slot in the LEVEL cell, the cap's middle
+   running its full height. The LCD look draws it in ink; css/grey.css gives the GREY look its black cap */
+.faders .vf.big .knob.fslide { width: 60px; height: 300px; margin: 18px 0 16px; }
+html:not(.phone) .faders .vf.big .knob.fslide svg { transform: none; }
+.knob.fslide { cursor: ns-resize; }
+.knob.fslide .fs { stroke: var(--ink); stroke-width: 1.4; }
+.knob.fslide .slot { fill: rgb(var(--ink-rgb) / .85); }
+.knob.fslide .fcap { fill: var(--panel); stroke: var(--ink); stroke-width: 2.2; }
+.knob.fslide .fcl { stroke: var(--ink); stroke-width: 2.4; }
+.knob.fslide .mrange { stroke: var(--ink); stroke-width: 3; fill: none; }
+.knob.fslide .notch { stroke-width: 2.5; }
+.faders .vf.big:has(.fslide) .lock { left: calc(50% + 50px); }
+html.phone .faders .vf.big .knob.fslide { height: 150px; margin: 8px 0; }

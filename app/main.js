@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnrl778';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnrl778';
-import { presetName, jumble } from './names.js?v=mwnrl778';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnrl778';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnrl778';
-import { breed, isDud } from '../sound/breed.js?v=mwnrl778';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnrl778';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnrl778';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnrl778';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnrl778';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnrl778';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnrqb1f';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnrqb1f';
+import { presetName, jumble } from './names.js?v=mwnrqb1f';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnrqb1f';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnrqb1f';
+import { breed, isDud } from '../sound/breed.js?v=mwnrqb1f';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnrqb1f';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnrqb1f';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnrqb1f';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnrqb1f';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnrqb1f';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnrl778', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnrqb1f', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -631,7 +631,7 @@ function buildFaders() {
   modStrip(box, cell, voice);
   drawSource(); // (the dice sits in the key's row of buttons, above)
   makePanel($('make')); // (and the MAKE buttons under them)
-  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl)), 2, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
+  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl), true), 2, 5, GRID_COLS + 1, GRID_COLS + 3); big.classList.add('big', 'rt', 'sep');
   box.append(big);
   // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
   // key as it plays now and levels it again (it never switches it off)
@@ -972,6 +972,18 @@ const KNOB_SVG = (() => {
     + '<circle class="rub" cx="32" cy="32" r="14.8"/><circle class="rut" cx="32" cy="32" r="10.5"/><circle class="rud" cx="40.6" cy="32" r="1.8"/>';
   return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}${sc}<path class="mrange"/><g class="rot"><g class="body">${head}${others}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g></g><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
 })();
+// LEVEL's fader (Johnny, 2026-11-19: "make LEVEL into a fader"): a mixer-style slider in a 40 x 200 box. The cap's
+// middle travels the box's full height (0 at the bottom, full at the top), so a press on the slot lands where it
+// points; a printed scale both sides of a dark slot, the cap (group .cap, moved with the value), the modulation's range
+// as a bar to its right and its live dot, the notch at the left where it was before you changed it
+const FADER_SVG = (() => {
+  let sc = '';
+  for (let i = 0; i <= 10; i++) { const y = 200 - i * 20, w = i % 5 ? 5 : 8; sc += `<line class="fs" x1="${11 - w}" y1="${y}" x2="11" y2="${y}"/><line class="fs" x1="29" y1="${y}" x2="${29 + w}" y2="${y}"/>`; }
+  return `<svg viewBox="0 0 40 200" aria-hidden="true">${sc}<rect class="slot" x="17" y="-3" width="6" height="206" rx="3"/><path class="mrange"/>`
+    + `<g class="cap"><rect class="fcap" x="5" y="-12" width="30" height="24" rx="3"/><line class="fcl" x1="7.5" y1="0" x2="32.5" y2="0"/></g>`
+    + `<line class="notch" x1="-6" y1="0" x2="2" y2="0"/><circle class="mdot" cx="38" cy="0" r="2.6"/></svg>`;
+})();
+const faderY = (v, max) => 200 * (1 - (max ? clamp(v, 0, max) / max : 0));
 // a plus-minus knob (centre given: pan, coarse, fine, pregain, bass, tone) has its centre at the top, each half of its
 // range on its own side, and its ring lit from the top out to the value; any other knob lights from the bottom left
 const knobF = (v, max, c) => (c === undefined ? (max ? v / max : 0) : v <= c ? 0.5 * v / (c || 1) : 0.5 + 0.5 * (v - c) / ((max - c) || 1));
@@ -1042,10 +1054,10 @@ function vtoggle(e) {
   if (mod) modDots.push({ tr: b, el, e, mod, tog: true });
   return el;
 }
-function vfader(e) {
+function vfader(e, fader) {
   if (e.max === 1 && e.display.type === 'menu') return vtoggle(e); // (two settings: a switch)
   const el = document.createElement('div'); el.className = 'vf';
-  el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
+  el.innerHTML = `<output></output><div class="knob${fader ? ' fslide' : ''}" role="slider">${fader ? FADER_SVG : KNOB_SVG}</div><span class="lab"></span><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
   el.querySelector('.lab').textContent = e.label;
   const tr = el.querySelector('.knob'), out = el.querySelector('output'), lock = el.querySelector('.lock');
   // its modulation (a right-click sets each source's depth): the
@@ -1056,7 +1068,8 @@ function vfader(e) {
     el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); selectModDial(e); });
     tr.addEventListener('pointerdown', () => selectModDial(e)); // (the bottom row's MODULATION follows the dial last touched)
   }
-  const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.rot'), notch = tr.querySelector('.notch');
+  const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector(fader ? '.cap' : '.rot'), notch = tr.querySelector('.notch');
+  const at = (x) => (fader ? `translate(0 ${faderY(x, e.max).toFixed(2)})` : `rotate(${knobDeg(x, e.max, c)} 32 32)`);
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   tr.title = 'Drag up or down. Hold Shift for fine: tenths of a step';
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
@@ -1067,14 +1080,14 @@ function vfader(e) {
   const draw = () => {
     const v = valueNow(e.par);
     lightRing(ticks, v, e.max, c);
-    ptr.setAttribute('transform', `rotate(${knobDeg(v, e.max, c)} 32 32)`);
+    ptr.setAttribute('transform', at(v));
     out.textContent = shown(v); if (e.ukey === 'wave') el.querySelector('.lab').textContent = onTable() ? 'position' : e.label;
     tr.setAttribute('aria-valuenow', v); tr.setAttribute('aria-valuetext', shown(v));
     // the notch: editing a key, where the control was before you changed it; editing every key, where the last key
     // played has it
     const lm = lastMorph[S.sel], mv = editing() ? S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par] : lm && lm.values.get(e.par);
     tr.classList.toggle('morphed', mv !== undefined && mv !== v);
-    if (mv !== undefined) notch.setAttribute('transform', `rotate(${knobDeg(mv, e.max, c)} 32 32)`);
+    if (mv !== undefined) notch.setAttribute('transform', at(mv));
     el.classList.toggle('changed', !editing() && v !== S.defaults[e.par]);
     el.classList.toggle('keyed', editing() && keyEdited(e.par));
     if (mod) {
@@ -1095,7 +1108,8 @@ function vfader(e) {
 
     detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${shown(x)}</em>`);
   };
-  dragger(tr, 'y', { min: 0, max: e.max, len: 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
+  // (a fader follows the pointer along its slot, and a press on the slot away from the cap jumps there)
+  dragger(tr, 'y', { min: 0, max: e.max, len: fader ? 0 : 160, get: () => valueNow(e.par), put, held: (h) => el.classList.toggle('held', h) });
   // double-click: on a key, the control goes back to where it was before you changed it; on every key, back to the
   // kit's value
   const reset = () => {
@@ -1111,7 +1125,7 @@ function vfader(e) {
     detail(on ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);
   });
   faderDraws.push(draw);
-  if (mod) modDots.push({ tr, el, e, mod, c });
+  if (mod) modDots.push({ tr, el, e, mod, c, fader });
   return el;
 }
 // ---- a knob's modulation: a right-click on a knob opens its DEPTHS, for the key being edited. Every source is always
@@ -1135,6 +1149,7 @@ function modSpan(mod) {
 function drawModRange(tr, v, max, c, mod) {
   const path = tr.querySelector('.mrange'), [lo, hi] = modSpan(mod);
   if (!lo && !hi) { path.setAttribute('d', ''); return; }
+  if (tr.classList.contains('fslide')) { const y0 = faderY(v + hi * max, max), y1 = faderY(v + lo * max, max); path.setAttribute('d', y1 - y0 < 0.5 ? '' : `M38 ${y0.toFixed(2)}V${y1.toFixed(2)}`); return; }
   const at = (x) => KNOB_A0 + knobF(clamp(x, 0, max), max, c) * KNOB_SWEEP, R = 31;
   const a0 = at(v + lo * max), a1 = at(v + hi * max), pt = (a) => `${(32 + R * Math.cos(a)).toFixed(2)} ${(32 + R * Math.sin(a)).toFixed(2)}`;
   path.setAttribute('d', a1 - a0 < 0.02 ? '' : `M${pt(a0)} A${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(a1)}`);
@@ -1151,7 +1166,7 @@ function modLive(mods, steps) {
     if (d === undefined) continue;
     if (k.tog) { dot.setAttribute('cy', valueNow(k.e.par) + d >= 0.5 ? 52 : 12); continue; } // (a switch: the end it's at)
     const v = clamp(valueNow(k.e.par) + d * k.e.max, 0, k.e.max);
-    dot.setAttribute('transform', `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
+    dot.setAttribute('transform', k.fader ? `translate(0 ${faderY(v, k.e.max).toFixed(2)})` : `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
   }
   if (stripSteps) stripSteps(steps ? steps[voice] : -1);
 }
@@ -1408,7 +1423,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnrl778').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnrqb1f').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // LENS: the camera on the GREY look's 3D panel (app/panel3d.js reads html data-lens): FLAT (straight down, the default),

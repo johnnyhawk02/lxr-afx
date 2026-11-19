@@ -82,3 +82,12 @@ html.look-grey .tog .mrange { stroke: var(--accent); stroke-width: 2.6; opacity:
 html.look-grey .tog .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }
 html.panel3d .tog svg { filter: none; }
 html.panel3d .tog svg > :not(.mrange):not(.mdot) { display: none; }
+
+/* LEVEL's fader in the GREY look: a black cap with a white line over a dark slot (html.panel3d: three.js draws the cap) */
+html.look-grey .knob.fslide svg { filter: drop-shadow(0 2px 1.5px rgb(0 0 0 / .4)); }
+html.look-grey .knob.fslide .slot { fill: #232425; }
+html.look-grey .knob.fslide .fcap { fill: #141516; stroke: #050505; stroke-width: .8; }
+html.look-grey .knob.fslide .fcl { stroke: #f4f3ee; stroke-width: 2; }
+html.look-grey .knob.fslide .mrange { stroke: var(--accent); stroke-width: 2.6; }
+html.panel3d .knob.fslide svg { filter: none; }
+html.panel3d .knob.fslide .fcap, html.panel3d .knob.fslide .fcl, html.panel3d .knob.fslide .slot { display: none; }
