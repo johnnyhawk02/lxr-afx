@@ -836,3 +836,30 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .khact .keymake .mkl { font-size: 15px; padding-right: 6px; }
 .khact .keymake .btn { height: 26px; font-size: 15px; }
 .keylocked .keyhead .khsec h3 { color: var(--panel); }
+
+/* ---- THIS KEY in menus (Johnny, 2026-11-19: "try and put these items into menus"): the dice, then KEY and MAKE, on
+   the five columns of the menu buttons above them (dice in the first, KEY over the next two, MAKE the last two) ---- */
+.khact .keyacts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: center; }
+.khact .keyacts .dicebtn { justify-self: start; }
+.khact #kmenu { grid-column: 2 / 4; }
+.khact #mkmenu { grid-column: 4 / 6; }
+.khact .keyacts .menu > .btn { width: 100%; min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+#key-btn svg { width: 14px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+#key-btn:not(.locked) .shackle { transform: translate(5px, -2px); }
+#key-btn.locked svg rect { fill: currentColor; }
+/* the menus open under their buttons, from the right; inside them the buttons keep their own colours when the key is locked */
+.keyhead .menupanel { color: var(--ink); text-shadow: var(--shadow); text-align: left; }
+.keyhead .menupanel .randrow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.keyhead .menupanel .btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; }
+.keyhead .menupanel .keylock { min-width: 0; font-size: 19px; }
+.keyhead .menupanel .iconbtn svg { width: 24px; height: 20px; fill: var(--panel); stroke: currentColor; stroke-width: 2; }
+.keylocked .keyhead .menupanel .dim { color: var(--muted); opacity: 1; }
+.keylocked .keyhead .menupanel .btn { border-color: var(--ink); color: var(--ink); }
+.keylocked .keyhead .menupanel .keylock { background: var(--ink); color: var(--panel); }
+.keylocked .keyhead .menupanel .iconbtn svg { fill: var(--panel); }
+.makepanel .keymake { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.makepanel .keymake .mk { display: contents; }
+.makepanel .keymake .btn { height: auto; min-height: 36px; font-size: 18px; padding: 0 4px; }
+.keylocked .keyhead .menupanel h3 { color: var(--ink); }
+.keyhead .menupanel .randrow > .btn { width: 100%; }
+.keylocked .keyhead #key-btn { background: var(--panel); color: var(--ink); border-color: var(--panel); }
