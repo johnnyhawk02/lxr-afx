@@ -241,7 +241,8 @@ const lockedMsg = () => detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])
 // MIDI: note-ons on channels 1..7, keys C1..C5
 // ---------------------------------------------------------------------------------------------------------------
 let midi = null;
-function midiStatus(text, live) { const el = $('midi-status'); el.textContent = text; el.classList.toggle('live', !!live); el.title = text; }
+// the MIDI lamp beside the logo: lit while an input is connected, what it says in its tooltip
+function midiStatus(text, live) { const el = $('midi-status'); el.classList.toggle('live', !!live); el.title = text; el.setAttribute('aria-label', text); }
 function onMidi(e) {
   const [st, note, vel] = e.data;
   const ch = (st & 0x0f) + 1;
@@ -383,13 +384,10 @@ window.afx = { noteOn: (ch, note, vel = 100) => noteOn(ch, note, vel), noteOff: 
 // ---------------------------------------------------------------------------------------------------------------
 // the last note
 // ---------------------------------------------------------------------------------------------------------------
-let lastT = 0;
-function showLastText(t) {
-  $('last-text').textContent = t;
-  const box = $('last'); box.classList.add('hit'); clearTimeout(lastT); lastT = setTimeout(() => box.classList.remove('hit'), 90);
-}
-function showLast(sound, note, vel, st) {
-  showLastText(`${SOUNDS[sound].name} · ${noteName(note)} #${note} · V${vel}`);
+// the LAST box is gone from the top bar (Johnny, 2026-11-19: "this info is a bit redundant"): the key panel shows the
+// key played, and what MIDI did that played nothing (a CC, another channel, a key outside the zones) goes to the status line
+function showLastText(t) { detail(t.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])); }
+function showLast(sound) {
   const led = soundBtns[sound].querySelector('i');
   led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 120);
 }

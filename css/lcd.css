@@ -58,16 +58,10 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .logo span { color: var(--muted); }
 .lcdbox { border: 2px solid var(--ink); border-radius: 3px; padding: 4px 10px; min-height: 34px; display: flex; align-items: center; gap: 8px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
-.midi { flex: 0 1 180px; min-width: 100px; display: block; line-height: 24px; }
-.midi.live::before { content: "● "; }
-.last { flex: 1 1 auto; min-width: 0; }
 .lowkey { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lowkey > .dim { letter-spacing: .08em; }
 .lowkey b { font-weight: 400; min-width: 5.6em; justify-content: center; }
 .lowkey .btn.sm { min-width: 28px; min-height: 30px; font-size: 20px; }
-.last b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
-.last.hit { background: var(--ink); color: var(--panel); text-shadow: none; }
-.last.hit .dim { color: var(--panel); opacity: .7; }
 .kitrand { display: flex; gap: 6px; align-items: center; }
 .kitrand > .dim { margin-right: 2px; letter-spacing: .1em; }
 
@@ -182,7 +176,6 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
   .logo { font-size: 34px; }
   .btn { font-size: 17px; padding: 3px 9px; }
   .kitrand > .dim { display: none; }
-  .last > .dim { display: none; }
   .top { gap: 10px; }
   .logo { font-size: 30px; letter-spacing: .08em; }
   .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }
@@ -538,10 +531,8 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 /* room for it in the top bar: the MIDI box is as wide as what it says and gives way first when the line is tight,
    the last note's box takes what is left (its width never follows its text, so the boxes between stay put), the LOW
    KEY box is a little narrower, and on a laptop-wide window the PRESET and LAST labels go and the logo is smaller */
-.midi { flex: 0 50 auto; min-width: 120px; max-width: 180px; }
-.last { flex: 1 1 190px; }
 .lowkey b { min-width: 4.6em; }
-@container (max-width: 1500px) { .last > .dim, .pbtn > .dim { display: none; } .pbtn b { max-width: 130px; } }
+@container (max-width: 1500px) { .pbtn > .dim { display: none; } .pbtn b { max-width: 130px; } }
 @container (min-width: 1341px) and (max-width: 1500px) { .top { gap: 10px; } .logo { font-size: 36px; letter-spacing: .1em; } .lowkey > .dim { letter-spacing: .02em; } }
 
 /* ---- PHONE: a phone held upright gets a simpler screen (html.phone, set by the page): the 25 keys as pads, and under
@@ -794,11 +785,15 @@ html.phone #bl-clear { grid-column: 1 / -1; }
    (cells 4-12), whose buttons now head their own keys, FX + MASTER beside them; the menus over THIS KEY (cells
    13-18). The separate engine row is gone, so the knobs get its height ---- */
 html:not(.phone) .top { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 0; padding: 0 8px; align-items: center; }
-html:not(.phone) .top > * { margin: 0 8px; min-width: 0; }
+html:not(.phone) .top > * { margin: 0 8px; min-width: 0; grid-row: 1; }
 html:not(.phone) .top > .logo { grid-column: 1 / 4; margin-left: 4px; font-size: 40px; }
-html:not(.phone) .top > #pmenu { grid-column: 4 / 7; }
-html:not(.phone) .top > .midi { grid-column: 7 / 9; max-width: none; }
-html:not(.phone) .top > .last { grid-column: 9 / 13; }
+html:not(.phone) .top > #pmenu { grid-column: 4 / 13; }
+/* MIDI: a lamp at the right of the logo's cells, lit while an input is connected (its tooltip says which) */
+html:not(.phone) .top > .midilamp { grid-column: 1 / 4; grid-row: 1; justify-self: end; }
+.midilamp { display: flex; align-items: center; gap: 6px; font-size: 15px; letter-spacing: .12em; color: var(--muted); cursor: default; }
+.midilamp i { width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; opacity: .5; }
+.midilamp.live { color: var(--ink); }
+.midilamp.live i { background: var(--ink); opacity: 1; }
 html:not(.phone) .top > .topacts { grid-column: 13 / 19; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .pbtn { width: 100%; max-width: none; justify-content: flex-start; }
 .pbtn > span:last-child { margin-left: auto; }
