@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnt3b0o">
-<link rel="stylesheet" href="css/grey.css?v=mwnt3b0o">
+<link rel="stylesheet" href="css/lcd.css?v=piano2">
+<link rel="stylesheet" href="css/grey.css?v=piano2">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -189,15 +189,14 @@
   <div class="main">
   <div class="left">
   <section class="keyhead" id="keyhead" aria-label="The key">
-    <div class="khsec khkey"><h3>KEY</h3>
-      <div class="keyname"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
-      <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
-    </div>
-    <div class="khsec kheng"><h3>ENGINES <span class="dim">AND THEIR KEYS</span></h3>
+    <div class="khsec khkey">
+      <div class="keyline"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
       <nav class="sounds" id="sounds" role="tablist" aria-label="Engines">
         <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
-        <button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button>
       </nav>
+    </div>
+    <div class="khsec khview"><h3>SHOW</h3>
+      <button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button>
     </div>
     <div class="khsec khact"><h3>THIS KEY</h3>
       <div class="keyacts" id="keyacts">
@@ -331,6 +330,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnt3b0o"></script>
+<script type="module" src="app/main.js?v=piano2"></script>
 </body>
 </html>

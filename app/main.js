@@ -1349,20 +1349,23 @@ const stripKeys = [];
 // the keys as a piano keyboard (Johnny, 2026-11-19: "have piano keys with the engine as a square bracket kind of thing"):
 // white keys side by side, black keys over their gaps; each engine a bracket over its keys, its name (the tab: a
 // click shows that engine's knobs) on the bracket. Zones meet where a black key starts or a white key ends
-const PIANO_W = 42, PIANO_B = 26; // a white key's width, a black key's
+const PIANO_W = 42; // a white key's width when the section has no width yet (buildStrip shares the width out)
 const isBlack = (note) => [1, 3, 6, 8, 10].includes(note % 12);
 function buildStrip() {
   const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
   const on = SOUNDS.map((s, i) => i).filter((i) => engineOn(i));
   SOUNDS.forEach((s, i) => { if (!engineOn(i)) $('sounds').append(soundBtns[i]); }); // (an engine not in use: its button waits, hidden)
   const lo = SOUNDS[on[0]].zone.lo, hi = SOUNDS[on[on.length - 1]].zone.hi, pos = {};
+  // the white keys share the section's width (the keyboard fills it, whatever the number of keys)
+  let whites = 0; for (let n = lo; n <= hi; n++) if (!isBlack(n)) whites++;
+  const W = Math.min(72, Math.floor(($('sounds').clientWidth || whites * PIANO_W) / whites)), B = Math.round(W * 0.6);
   let wi = 0;
   for (let n = lo; n <= hi; n++) {
-    if (isBlack(n)) pos[n] = [wi * PIANO_W - PIANO_B / 2, wi * PIANO_W + PIANO_B / 2];
-    else { pos[n] = [wi * PIANO_W, (wi + 1) * PIANO_W]; wi++; }
+    if (isBlack(n)) pos[n] = [wi * W - B / 2, wi * W + B / 2];
+    else { pos[n] = [wi * W, (wi + 1) * W]; wi++; }
   }
   const edge = (a, b) => (isBlack(b) ? pos[b][0] : pos[a][1]); // (where note a's zone meets note b's)
-  box.style.width = `${wi * PIANO_W}px`;
+  box.style.width = `${wi * W}px`;
   const keys = document.createElement('div'); keys.className = 'piano';
   for (const i of on) {
     const s = SOUNDS[i];
