@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn7fouq';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn7fouq';
-import { presetName, jumble } from './names.js?v=mwn7fouq';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn7fouq';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn7fouq';
-import { breed, isDud } from '../sound/breed.js?v=mwn7fouq';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn7fouq';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwn7fouq';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn7fouq';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn7fouq';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn7fouq';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn8fd90';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn8fd90';
+import { presetName, jumble } from './names.js?v=mwn8fd90';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn8fd90';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn8fd90';
+import { breed, isDud } from '../sound/breed.js?v=mwn8fd90';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn8fd90';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwn8fd90';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn8fd90';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn8fd90';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn8fd90';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn7fouq', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn8fd90', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
@@ -572,7 +572,7 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // velocity and mix) fills 11 cells
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
 const ROWS = [['osc', 'mod a', 'mod b', 'noise'], ['amp', 'pitch', 'click'], ['filter in', 'filter'], ['lfo', 'mix']];
-const GRID_COLS = 14;
+const GRID_COLS = 15;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
 function buildFaders() {
@@ -594,11 +594,11 @@ function buildFaders() {
       const list = entries.filter((e) => e.section === sec);
       if (!list.length) continue;
       if (sec === 'seq') { seqPanel(sect(GRID_COLS + 1 - col, ' seq'), voice); continue; }
-      const el = sect(list.length);
+      const el = sect(list.length + (sec === 'osc' ? 1 : 0)); // (the OSC section: its wave display a cell of its own, after its knobs)
       el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
-      if (sec === 'osc') tablePicker(el.querySelector('h3'), voice);
       const row = el.querySelector('.row');
       for (const e of list) row.append(vfader(e));
+      if (sec === 'osc') tablePicker(el.querySelector('h3'), voice, row);
       const lv = PART_LEVEL[sec] && VOICE_SCHEMAS[voice].find((e) => e.ukey === PART_LEVEL[sec]);
       if (lv) faderDraws.push(() => el.classList.toggle('off', !valueNow(lv.par)));
     }
@@ -627,7 +627,7 @@ function drawFaders() { faderDraws.forEach((d) => d()); }
 // which the WAVE knob then moves along. A dropdown: the button opens the list, a click on one picks it
 const tableNow = (voice) => Math.round(valueNow(tablePar(voice)) || 0);
 function openTableMenu(open) { const m = document.querySelector('.tblmenu'); if (!m) return; m.hidden = !open; m.previousSibling.setAttribute('aria-expanded', open); }
-function tablePicker(h3, voice) {
+function tablePicker(h3, voice, row) {
   const dd = document.createElement('span'); dd.className = 'tdd'; h3.classList.add('withbtn'); h3.append(dd);
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm hdb tbl'; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false');
   const menu = document.createElement('div'); menu.className = 'tblmenu'; menu.hidden = true; menu.setAttribute('role', 'listbox');
@@ -648,13 +648,16 @@ function tablePicker(h3, voice) {
     b.title = `The tone's oscillator: ${i ? 'the ' + TABLE_NAMES[i].toUpperCase() + ' wavetable, the WAVE knob moving along it' : 'CLASSIC, the WAVE knob picking sine, tri, saw, rec, pwm or noise'}. Click to choose another`;
     items.forEach((it, k) => { it.classList.toggle('on', k === i); it.setAttribute('aria-selected', k === i); });
   });
-  // the wave display: one cycle of what the tone plays, flat, the frames either side faint behind it. It follows the
-  // WAVE knob, and while a key sounds, where modulation has it now
+  // the wave display, in a cell of its own the size of a knob's: one cycle of what the tone plays, flat, the frames
+  // either side faint behind it. It follows the WAVE knob, and while a key sounds, where modulation has it now
+  const vc = document.createElement('div'); vc.className = 'vf wvcell'; vc.innerHTML = '<output></output><div class="wvbox"></div><span class="lab">shape</span>';
+  row.append(vc);
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'wv'); svg.setAttribute('viewBox', `0 0 ${WV_W} ${WV_H}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
   svg.innerHTML = '<line class="ax"/><path class="nb"/><path class="nb"/><path class="cur"/>';
   svg.querySelector('.ax').setAttribute('x1', 0); svg.querySelector('.ax').setAttribute('x2', WV_W); svg.querySelector('.ax').setAttribute('y1', WV_H / 2); svg.querySelector('.ax').setAttribute('y2', WV_H / 2);
-  h3.append(svg);
+  vc.querySelector('.wvbox').append(svg);
+  faderDraws.push(() => { vc.querySelector('output').textContent = TABLE_NAMES[tableNow(voice)]; });
   wave.svg = svg; wave.voice = voice; wave.last = '';
   faderDraws.push(() => drawWave(null));
 }
