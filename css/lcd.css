@@ -796,10 +796,10 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .tblmenu[hidden] { display: none; }
 .tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
-/* the OSC section's wave display: two cells, its picture twice a knob's width where the dials would be; a canvas
+/* the OSC section's wave display: three cells, its picture across all three; a canvas
    drawing the table as a slanted stack of frames (app/main.js drawWave) */
-.faders .vf.wvcell { grid-column: span 2; }
-.faders .vf.wvcell .wvbox { width: calc(2 * var(--ks)); height: var(--ks); display: flex; align-items: center; justify-content: center;
+.faders .vf.wvcell { grid-column: span 3; }
+.faders .vf.wvcell .wvbox { width: calc(100% - 12px); height: var(--ks); display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--ink); border-radius: 3px; box-sizing: border-box; padding: 2px; }
 .faders .vf.wvcell output { text-transform: lowercase; }
 .faders .vf.wvcell .wv { display: block; width: 100%; height: 100%; }
