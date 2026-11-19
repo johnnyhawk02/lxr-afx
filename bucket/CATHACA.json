@@ -9,7 +9,7 @@
   "pwm": 0,
   "afreq": 127,
   "again": 13,
-  "awave": 62.5,
+  "awave": 125,
   "amode": 127,
   "fmenv": 127,
   "bfreq": 60,
@@ -24,9 +24,9 @@
   "pdecay": 93,
   "pslope": 10,
   "pamt": 14,
-  "click": 47.63,
-  "clickvol": 21.6,
-  "clickfreq": 0.32,
+  "click": 12,
+  "clickvol": 72,
+  "clickfreq": 26,
   "rtone": 1,
   "rnoise": 1,
   "rclick": 1,
@@ -124,11 +124,6 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127,
-  "table": 1,
-  "atable": 12,
-  "btable": 1,
-  "clicklen": 126.07,
-  "clickdir": 0
+  "modamt:drive": 127
  }
 }

@@ -1,13 +1,10 @@
-// node test/switches.test.mjs: the morphable switches: the filter types and mod A's FM/MIX mode as knobs (the
-// oscillators' waves were too until 2026-11-19; they're places along a wavetable now, with no detents). On a detent a sound plays as the menu setting did (test/merged.test.mjs checks that
+// node test/switches.test.mjs: the morphable switches (engine/lxr.js WAVE_STEP): the oscillator waves, the filter types
+// and mod A's FM/MIX mode as knobs. On a detent a sound plays as the menu setting did (test/merged.test.mjs checks that
 // against the firmware port); here, between two detents the sound moves smoothly from one to the other: one step off a
 // detent is close to the detent, the halfway point lies between the two ends, and nothing blows up.
 import { LxrEngine, BLOCK, WAVE_STEP, WAVE_MAX, FILTER_STEP, FILTER_MAX, MODE_MAX, EX, SRC, FILTER_PROBE } from '../engine/lxr.js';
 import { PAR } from '../engine/lxr-tables.js';
 import { mapVoice } from '../sound/schema.js';
-import { tableFor, BASIC } from '../sound/tables.js';
-// every oscillator on BASIC (the engine plays a wavetable only)
-const tabled = (e) => { for (let v = 0; v < 6; v++) for (const w of [0, 1, 2]) e.setTable(v, tableFor(BASIC), w); };
 import { KITS } from './bucket-kits.mjs';
 let fails = 0, checks = 0;
 const ok = (c, m) => { checks++; if (!c) { fails++; console.log('FAIL', m); } };
@@ -16,7 +13,7 @@ const kits = KITS.map((k) => k.kit);
 // one voice of a kit, with some controls set, rendered for n blocks
 function render(kit, v, set, n = 120) {
   const e = new LxrEngine({ seed: 5 });
-  e.loadKit(kit); tabled(e);
+  e.loadKit(kit);
   set(e);
   e.trigger(v, 110, 60);
   const out = new Float64Array(n * BLOCK);
@@ -56,6 +53,9 @@ function sweep(name, step, max, par, voices, prep0 = () => {}, noisy = () => fal
   console.log(`${name}: a hair off a detent sounds at most ${(worst * 100).toFixed(2)}% different`);
 }
 const VOICES = [[0, 0], [3, 0], [5, 3], [7, 4], [12, 0], [20, 5]];
+const noiseEnd = (k, step) => k + step >= WAVE_MAX; // (the pair with the noise: a hair's change of pitch moves its random steps)
+sweep('osc wave', WAVE_STEP, WAVE_MAX, (v) => (v < 3 ? PAR.OSC_WAVE_DRUM1 + v : [PAR.OSC_WAVE_SNARE, PAR.WAVE1_CYM, PAR.WAVE1_HH][v - 3]), VOICES, () => {}, noiseEnd);
+sweep('mod A wave', WAVE_STEP, WAVE_MAX, (v) => (v < 3 ? PAR.MOD_WAVE_DRUM1 + v : [undefined, PAR.WAVE2_CYM, PAR.WAVE2_HH][v - 3]), VOICES, () => {}, noiseEnd);
 sweep('filter', FILTER_STEP, FILTER_MAX, (v) => PAR['FILTER_TYPE_' + (v + 1)], VOICES);
 sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefined), VOICES, (e, v) => e.setParam(PAR['FMAMNT' + (v + 1)], 80));
 
@@ -90,11 +90,11 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
   }
 }
 
-// an LFO on the WAVE knob sweeps the place along the table (and stays in range)
+// an LFO on a dial from between two detents sweeps along it (and stays in range)
 {
   const kit = Uint8Array.from(kits[0]);
   const e = new LxrEngine({ seed: 9 });
-  e.loadKit(kit); tabled(e);
+  e.loadKit(kit);
   e.setParam(PAR.OSC_WAVE_DRUM1, 40);
   e.setParam(PAR.SYNC_LFO1, 0); e.setParam(PAR.FREQ_LFO1, 90); e.setParam(PAR.WAVE_LFO1, 0); // (an LFO fast enough to see move, whatever the kit had)
   e.setRouteSrc(0, PAR.OSC_WAVE_DRUM1, SRC.LFO);
@@ -102,9 +102,9 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
   e.trigger(0, 120, 60);
   const seen = new Set();
   let good = true;
-  for (let k = 0; k < 400; k++) { const o = e.renderBlock(0)[0]; for (const x of o) if (!Number.isFinite(x)) good = false; seen.add(e.voices[0].osc.wpos.toFixed(2)); }
+  for (let k = 0; k < 400; k++) { const o = e.renderBlock(0)[0]; for (const x of o) if (!Number.isFinite(x)) good = false; seen.add(e.voices[0].osc.waveform + ':' + e.voices[0].osc.wB); }
   ok(good, 'LFO on the wave: bad samples');
-  ok(seen.size > 10, `LFO on the wave: it should move along the table (saw ${seen.size} places)`);
+  ok(seen.size > 2, `LFO on the wave from between two detents: it should move along the dial (saw ${[...seen]})`);
 }
 console.log(fails ? `${fails} of ${checks} checks FAILED` : `all ${checks} checks passed`);
 process.exit(fails ? 1 : 0);

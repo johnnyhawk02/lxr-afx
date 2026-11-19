@@ -24,9 +24,9 @@
   "pdecay": 113,
   "pslope": 6,
   "pamt": 0,
-  "click": 127,
-  "clickvol": 33.6,
-  "clickfreq": 39.83,
+  "click": 3,
+  "clickvol": 112,
+  "clickfreq": 33,
   "rtone": 1,
   "rnoise": 1,
   "rclick": 1,
@@ -124,11 +124,6 @@
   "modsrc:rate": 0,
   "modamt:rate": 127,
   "modsrc:drive": 0,
-  "modamt:drive": 127,
-  "table": 1,
-  "atable": 1,
-  "btable": 1,
-  "clicklen": 121.39,
-  "clickdir": 0
+  "modamt:drive": 127
  }
 }

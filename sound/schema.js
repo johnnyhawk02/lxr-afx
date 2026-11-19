@@ -21,10 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmugadb';
-import { toneKnob, lenKnob } from '../engine/click.js?v=mwmugadb';
-import { CLICK_MAP } from './click-map.js?v=mwmugadb';
-import { TABLE_NAMES, classicPlace } from './tables.js?v=mwmugadb';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwn23log';
+import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
+import { TABLE_NAMES } from './tables.js?v=mwn23log';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -101,15 +100,8 @@ export const modAmtPar = (voice, i) => modSrcPar(voice, i) + 1;
 // then each voice's TABLE: the wavetable its tone plays (sound/tables.js: 0 CLASSIC, the firmware's waves). Last, so
 // every parameter number before it stays as it was (a store or preset saved before it plays CLASSIC)
 export const TABLE_BASE = MOD_BASE + 6 * NUM_MOD * 2;
-// then MOD A's and MOD B's wavetables (2 a voice, after the tone's 6, so older saves still line up). which: 0 the tone,
-// 1 MOD A, 2 MOD B
-export const MODTABLE_BASE = TABLE_BASE + 6;
-export const tablePar = (voice, which = 0) => (which ? MODTABLE_BASE + voice * 2 + which - 1 : TABLE_BASE + voice);
-// then the click's LENGTH and DIRECT (2 a voice: engine/click.js; its SHAPE, LEVEL and TONE are the firmware's click
-// wave, volume and freq parameters, given new meanings on 2026-11-19). k: 0 LENGTH, 1 DIRECT
-export const CLICK_BASE = MODTABLE_BASE + 12;
-export const clickPar = (voice, k) => CLICK_BASE + voice * 2 + k;
-export const ALL_PARAMS = CLICK_BASE + 12;
+export const tablePar = (voice) => TABLE_BASE + voice;
+export const ALL_PARAMS = TABLE_BASE + 6;
 // a knob's value kept to two decimal places (100 steps between whole numbers: finer than anyone hears, and files stay short)
 export const dec2 = (x) => Math.round(x * 100) / 100;
 export const INIT_VALUES = new Float64Array(ALL_PARAMS); // (a knob's value may be a decimal)
@@ -121,7 +113,7 @@ for (let v = 0; v < 6; v++) INIT_VALUES[trimPar(v)] = TRIM_ZERO;
 // (INIT_VALUES' own LFO and velocity targets become routes once the schemas are made: see the end of this file)
 
 const TRANSIENT_NAMES = ['snap', 'offset', 'click', 'click 2', 'tick', 'kick', 'rim', 'drop', 'hat', 'clap', 'kick 2', 'snare',
-  'tom', 'snap 2']; // (the firmware's click samples: the click is engine/click.js's now)
+  'tom', 'snap 2', ...EXTRA_CLICK_NAMES];
 // the morphable switches' dials (engine/lxr.js WAVE_STEP)
 const WAVE_DIAL = { names: WAVE_DETENT_NAMES, step: WAVE_STEP, max: WAVE_MAX };
 const FILTER_DIAL = { names: FILTER_DETENT_NAMES, step: FILTER_STEP, max: FILTER_MAX };
@@ -245,12 +237,6 @@ function firmwareSchema(voice) {
 // its firmware voice's parameter where it has one, else one of its extras. ukey: the control's name in the merged
 // voice; firmware: which firmware controls (section:TEXT, the nth of that name) it is; extra: its extra
 const ONOFF = ['off', 'on'];
-// the click's knobs that were the firmware's transient: now plain 0..127 knobs (randomised over METAMORF's useful ranges)
-const CLICK_KNOBS = {
-  clickvol: { rand: [0, 76], morph: 'timbre', weight: 0.5 },
-  click: { max: 127, display: { type: 'num' }, rand: [0, 127], morph: 'timbre', weight: 0.4 },
-  clickfreq: { rand: [45, 127], morph: 'timbre', weight: 0.6 },
-};
 const dialOf = (d) => ({ type: 'detent', names: d.names, step: d.step, max: d.max });
 export const MERGED = [
   // [ukey, page, section, label, firmware names, extra, display of the extra]
@@ -275,13 +261,12 @@ export const MERGED = [
   ['pdecay', 'shape', 'pitch', 'pitch dec', ['pitch:PITCH_DECAY'], 'PITCH_DECAY'],
   ['pslope', 'shape', 'pitch', 'pitch slope', ['pitch:EG_SLOPE'], 'PITCH_SLOPE'],
   ['pamt', 'shape', 'pitch', 'pitch amt', ['pitch:MOD_AMOUNT'], 'PITCH_AMOUNT'],
-  // the click (engine/click.js, METAMORF's): LEVEL, SHAPE (0 pulse, 63.5 chirp, 127 noise burst), TONE, LENGTH, DIRECT
-  ['clickvol', 'shape', 'click', 'click lvl', ['click:TRANSIENT_VOLUME']],
-  ['click', 'shape', 'click', 'shape', ['click:TRANSIENT_WAVE']],
-  ['clickfreq', 'shape', 'click', 'tone', ['click:TRANSIENT_FREQ']],
+  ['click', 'shape', 'click', 'click', ['click:TRANSIENT_WAVE']],
+  ['clickvol', 'shape', 'click', 'click vol', ['click:TRANSIENT_VOLUME']],
+  ['clickfreq', 'shape', 'click', 'click freq', ['click:TRANSIENT_FREQ']],
   ['rtone', 'filter', 'filter in', 'tone in', [], 'ROUTE_TONE', { type: 'menu', names: ONOFF }],
   ['rnoise', 'filter', 'filter in', 'noise in', [], 'ROUTE_NOISE', { type: 'menu', names: ONOFF }],
-  ['rclick', 'filter', 'filter in', 'click in', [], 'ROUTE_CLICK', { type: 'menu', names: ONOFF }], // (gone: the click's DIRECT)
+  ['rclick', 'filter', 'filter in', 'click in', [], 'ROUTE_CLICK', { type: 'menu', names: ONOFF }],
   ['cutoff', 'filter', 'filter', 'cutoff', ['filter:FILTER_F']],
   ['reso', 'filter', 'filter', 'reso', ['filter:FILTER_RESO']],
   ['ftype', 'filter', 'filter', 'type', ['filter:FILTER_TYPE']],
@@ -308,23 +293,16 @@ function buildSchema(voice) {
   const out = [];
   for (const [ukey, page, section, label, names, extra, disp] of MERGED) {
     const f = names.map((n) => byName.get(n)).find(Boolean);
-    if (f) { out.push({ ...f, ukey, page, section, label, ...(ukey === 'pwm' ? { hidden: true } : {}), ...(CLICK_KNOBS[ukey] || {}) }); continue; } // (PWM: the pulse is a place on BASIC now)
+    if (f) { out.push({ ...f, ukey, page, section, label }); continue; }
     const k = EX[extra], par = extraPar(voice, k), menu = disp && disp.type === 'menu';
     out.push({ key: extra + (voice + 1), par, ukey, label, text: extra, page, section, min: 0, max: menu ? disp.names.length - 1 : disp && disp.max !== undefined ? disp.max : 127,
-      def: INIT_VALUES[par], display: disp || { type: 'num' }, morph: null, weight: 0, rand: 'still', extra: k, ...(ukey === 'kind' || ukey === 'rclick' ? { hidden: true } : {}) });
+      def: INIT_VALUES[par], display: disp || { type: 'num' }, morph: null, weight: 0, rand: 'still', extra: k, ...(ukey === 'kind' ? { hidden: true } : {}) });
   }
   // a firmware control with no place in the merged voice (the hi-hat's open decay) stays, unseen, so a key keeps it
   const used = new Set(out.map((e) => e.par));
   for (const e of fw) if (!used.has(e.par)) out.push({ ...e, ukey: e.text.toLowerCase(), hidden: true });
   SEND_FX.forEach((name, k) => out.push({ key: 'SEND_' + name.toUpperCase() + (voice + 1), par: sendPar(voice, k), label: name, text: 'SEND_' + name.toUpperCase(),
     page: 'mix', section: 'fx sends', min: 0, max: 127, def: 0, display: { type: 'num' }, morph: null, weight: 0, rand: 'mix' }));
-  // the click's LENGTH and DIRECT (after its TONE)
-  const at = out.findIndex((e) => e.ukey === 'clickfreq') + 1;
-  out.splice(at, 0,
-    { key: 'CLICK_LEN' + (voice + 1), par: clickPar(voice, 0), ukey: 'clicklen', label: 'length', text: 'CLICK_LEN', page: 'shape', section: 'click', min: 0, max: 127,
-      def: INIT_VALUES[clickPar(voice, 0)], display: { type: 'num' }, morph: 'timbre', weight: 0.4, rand: [13, 101], own: true },
-    { key: 'CLICK_DIRECT' + (voice + 1), par: clickPar(voice, 1), ukey: 'clickdir', label: 'direct', text: 'CLICK_DIRECT', page: 'shape', section: 'click', min: 0, max: 127,
-      def: INIT_VALUES[clickPar(voice, 1)], display: { type: 'num' }, morph: 'timbre', weight: 0.2, rand: [0, 127], own: true });
   // the sequencer (the editor draws it as a strip of steps; the randomisers leave it to NEW SOUND and its RANDOM)
   out.push({ key: 'SEQ_ON' + (voice + 1), par: seqOnPar(voice), label: 'active', text: 'SEQ_ON', page: 'mix', section: 'seq', min: 0, max: 1,
     def: 0, display: { type: 'menu', names: ['off', 'on'] }, morph: null, weight: 0, rand: 'seq', seq: true });
@@ -345,13 +323,8 @@ function buildSchema(voice) {
   });
   // the tone's wavetable (chosen in the OSC section's heading, not a knob: section 'table' has no place in the grid).
   // Part of the sound; ALTER leaves it alone unless WILD
-  out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 1,
+  out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
     max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
-  // MOD A's and MOD B's (in their headings): on a table their WAVE knobs move along it, as the tone's does
-  for (const [which, ab] of [[1, 'a'], [2, 'b']]) {
-    out.push({ key: ab.toUpperCase() + 'TABLE' + (voice + 1), par: tablePar(voice, which), ukey: ab + 'table', label: ab + ' table', text: ab.toUpperCase() + '_TABLE', page: 'tone', section: 'table', min: 1,
-      max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
-  }
   return out;
 }
 
@@ -420,7 +393,7 @@ export function mapVoice(kit, src, dst) {
   const parMap = new Map(); // source parameter -> destination parameter
   for (const e of S) {
     if (e.hidden && e.ukey !== 'kind' && !e.mod) continue;
-    if (e.par >= NUM_PARAMS && e.extra === undefined && !e.mod && !e.table && !e.own) continue; // (sends, sequencer, trim)
+    if (e.par >= NUM_PARAMS && e.extra === undefined && !e.mod && !e.table) continue; // (sends, sequencer, trim)
     const d = D.find((x) => x.ukey === e.ukey);
     if (d) parMap.set(e.par, d.par);
   }
@@ -515,91 +488,3 @@ const ROUTES = new Map(VOICE_SCHEMAS.flatMap((sc, voice) => sc.filter((e) => e.m
 export const routeOf = (par) => ROUTES.get(par) || null;
 // a knob's modulation parameters ({ src, amt }), by its merged name, or null if it can't be modulated
 export function modOf(voice, ukey) { const i = MOD_DIALS.indexOf(ukey); return i < 0 ? null : { src: modSrcPar(voice, i), amt: modAmtPar(voice, i) }; }
-
-// ---- CLASSIC is gone (2026-11-19: wavetables only): a patch saved while the tone, MOD A or MOD B could play the
-// firmware's waves (TABLE 0) has each of them moved onto its table at the place that plays its wave (tables.js
-// classicPlace: BASIC, or NOISE for the noise), the base values and every key's edits (and their _o) alike. Saved
-// patches carry TABLE_RULE; older ones are upgraded once ----
-export const TABLE_RULE = 1;
-const WAVE_UKEYS = ['wave', 'awave', 'bwave'];
-export function upgradeTables(values, keys) {
-  const base = Array.from(values);
-  for (let v = 0; v < 6; v++) {
-    const pw = ukeyPar(v, 'pwm');
-    WAVE_UKEYS.forEach((u, which) => {
-      const w = ukeyPar(v, u), t = tablePar(v, which);
-      if (!base[t]) [values[t], values[w]] = classicPlace(base[w] || 0, base[pw] || 0);
-    });
-  }
-  if (keys) SOUNDS.forEach((def, s) => {
-    const v = def.engineVoice, pw = ukeyPar(v, 'pwm'), ks = keys[s];
-    if (!ks) return;
-    for (const n in ks) {
-      const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
-      const layers = [ed]; if (ed._o && typeof ed._o === 'object') layers.push(ed._o);
-      WAVE_UKEYS.forEach((u, which) => {
-        const w = ukeyPar(v, u), t = tablePar(v, which);
-        layers.forEach((o, k) => {
-          const get = (p) => (k ? o[p] ?? ed[p] : ed[p]) ?? base[p];
-          if (!(ed._lock || w in o || t in o || pw in o)) return; // (it plays the base's, moved above)
-          if (!get(t)) [o[t], o[w]] = classicPlace(get(w) || 0, get(pw) || 0);
-        });
-      });
-    }
-  });
-  return values;
-}
-// the starting values: on tables too
-upgradeTables(INIT_VALUES);
-
-// ---- the click (2026-11-19): METAMORF's in place of the firmware's sampled transients. A patch or sound from before
-// has its click (wave, volume, freq, and whether it went into the filter) moved to the nearest new click (oldClick).
-// Saved patches carry CLICK_RULE; older ones are upgraded once ----
-export const CLICK_RULE = 1;
-/** an old click (wave 0..35, volume and freq 0..127, into the filter 0/1) as a new click near it in kind (not chasing
- *  closeness: the old samples can't be matched) at a lowish level, the new click's five knobs, 0..127:
- *  { clickvol (LEVEL), click (SHAPE), clickfreq (TONE), clicklen (LENGTH), clickdir (DIRECT) } */
-export function oldClick(wave, vol, freq, into) {
-  const rate = Math.max(0.05, 1 + freq / 33.9 - 0.75), w = Math.round(wave) | 0, v = Math.max(0, Math.min(1, vol / 127));
-  // snap (0): a quick upward blip of the tone's pitch; offset (1): the tone starting part way into its cycle (a step)
-  const [shape, hz, ms] = w === 0 ? [0.5, 2000, 7.25 / rate] : w === 1 ? [0, 4000, 1] : CLICK_MAP[w - 2] || [0, 2000, 3];
-  const k = (x) => dec2(Math.max(0, Math.min(127, x)));
-  if (!v) return { clickvol: 0, click: 0, clickfreq: k(toneKnob(2000)), clicklen: k(lenKnob(3)), clickdir: into ? 0 : 127 }; // (off: METAMORF's default)
-  return { clickvol: k(127 * 0.3 * v), // (lowish, as Johnny asked: not a match for the old one's loudness)
-     click: k(127 * shape), clickfreq: k(toneKnob(w <= 1 ? hz : hz * rate)),
-    clicklen: k(lenKnob(w <= 1 ? ms : ms / rate)), clickdir: into ? 0 : 127 };
-}
-const CLICK_PARS = (v) => ({ clickvol: ukeyPar(v, 'clickvol'), click: ukeyPar(v, 'click'), clickfreq: ukeyPar(v, 'clickfreq'), clicklen: clickPar(v, 0), clickdir: clickPar(v, 1) });
-export function upgradeClicks(values, keys) {
-  const base = Array.from(values), put = (o, v, get) => {
-    const P = CLICK_PARS(v), n = oldClick(get(P.click) || 0, get(P.clickvol) || 0, get(P.clickfreq) || 0, get(extraPar(v, EX.ROUTE_CLICK)));
-    for (const u in n) o[P[u]] = n[u];
-  };
-  for (let v = 0; v < 6; v++) put(values, v, (p) => base[p]);
-  if (keys) SOUNDS.forEach((def, s) => {
-    const v = def.engineVoice, ks = keys[s], P = CLICK_PARS(v), rc = extraPar(v, EX.ROUTE_CLICK);
-    if (!ks) return;
-    for (const n in ks) {
-      const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
-      const layers = [ed]; if (ed._o && typeof ed._o === 'object') layers.push(ed._o);
-      layers.forEach((o, k) => {
-        if (!(ed._lock || P.click in o || P.clickvol in o || P.clickfreq in o || rc in o)) return; // (it plays the base's, moved above)
-        put(o, v, (p) => (k ? o[p] ?? ed[p] : ed[p]) ?? base[p]);
-      });
-    }
-  });
-  return values;
-}
-upgradeClicks(INIT_VALUES);
-for (const sc of VOICE_SCHEMAS) for (const e of sc) if (['clickvol', 'click', 'clickfreq', 'clicklen', 'clickdir'].includes(e.ukey)) e.def = INIT_VALUES[e.par];
-/** a bucket sound saved before the new click (no clicklen) with its click moved over */
-export function soundClicks(snd) {
-  const p = snd.params || {};
-  if (p.clicklen !== undefined) return snd;
-  return { ...snd, params: { ...p, ...oldClick(p.click ?? 0, p.clickvol ?? 0, p.clickfreq ?? 0, p.rclick ?? (snd.voice < 3 ? 1 : 0)) } };
-}
-for (const sc of VOICE_SCHEMAS) for (const e of sc) {
-  if (e.table || WAVE_UKEYS.includes(e.ukey)) e.def = INIT_VALUES[e.par];
-  if (WAVE_UKEYS.includes(e.ukey)) e.display = { type: 'num' }; // (a place along the table: no detents, no wave names)
-}
-
