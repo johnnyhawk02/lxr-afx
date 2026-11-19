@@ -648,6 +648,15 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .fxside { --kw: 72px; --ks: 50px; }
 .left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
 @container (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
+/* KNOB SIZE on the tab too (Johnny, 2026-11-19: "the fx master page does not follow the knob size"): its knobs are
+   the main panel's (--ks 58px), so the slider makes them the same size as there; its cells are as wide as 18 fit
+   across the three columns, and each row of knobs gets the room the knobs grow down by, so names never meet the
+   values of the row under them. The multi-way switch boxes move down with the knobs, so the names stay in line */
+.left > .fxside { --kw: 84px; --ks: 58px; --fxgrow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
+.left > .fxside .sect .row { padding-bottom: calc(var(--fxgrow) + 4px); }
+html:not(.phone) .fxside .vf.vsw:not(:has(> .tog)) > .swb { transform: translateY(calc(var(--fxgrow) / 2)); }
+html:not(.phone) .fxside .vf.vsw:not(:has(> .tog)) > .lab { transform: translateY(var(--fxgrow)); }
+html:not(.phone) .fxside .envm { transform: translateY(calc(var(--fxgrow) / 2)); }
 .faders .sect.off > .row { opacity: .42; }
 .faders { grid-template-columns: repeat(17, minmax(0, 1fr)); } /* 16 cells of the engine's sections, then the key's own: its FX SENDS one above the other, over LEVEL */
 
