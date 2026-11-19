@@ -4,7 +4,7 @@
    (1440 x 900, 1280 x 800): nothing scrolls. */
 :root {
   /* the screen's two colours, as r g b (SETTINGS > SCREEN COLOURS sets them on <html>); every other colour comes from them */
-  --panel-rgb: 167 181 140; --ink-rgb: 23 32 14; --shade-rgb: var(--ink-rgb); --glow: 1;
+  --panel-rgb: 200 236 223; --ink-rgb: 10 20 16; --shade-rgb: var(--ink-rgb); --glow: 1;
   --panel: rgb(var(--panel-rgb)); --ink: rgb(var(--ink-rgb)); --muted: rgb(var(--ink-rgb) / .62); --ghost: rgb(var(--ink-rgb) / .11);
   --tint: rgb(var(--ink-rgb) / .07); --rule: 1px solid rgb(var(--ink-rgb) / .32);
   --font: "VT323", ui-monospace, monospace;
@@ -708,8 +708,8 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .dtrack i { position: absolute; left: 0; right: 0; top: 0; bottom: 0; clip-path: inset(var(--t) 0 var(--b) 0);
   background: repeating-linear-gradient(to top, var(--ink) 0 4px, transparent 4px 6px); }
 .dtrack b { position: absolute; top: 50%; left: -4px; right: -4px; height: 2px; margin-top: -1px; background: var(--ink); }
-.seqsect .stepbox { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 5px; padding: 0 8px; cursor: crosshair; touch-action: none; }
-.stepd { display: flex; flex-direction: column; align-items: stretch; gap: 1px; min-width: 0; }
+.seqsect .stepbox { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0 10px; padding: 0 18px 0 16px; /* (room between the steps and round them: Johnny, "make space in and around the step seq") */ cursor: crosshair; touch-action: none; }
+.stepd { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
 .stepd output { font-size: 15px; height: 1.1em; text-align: center; font-variant-numeric: tabular-nums; }
 .stepd .lab { font-size: 13px; text-align: center; color: var(--ink); }
 .stepd .step { --f: 0; position: relative; height: var(--ks); border: 2px solid var(--ink); box-sizing: border-box; pointer-events: none; }
