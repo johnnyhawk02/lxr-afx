@@ -651,20 +651,31 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .keymake .mk { display: contents; }
 .keymake .btn { min-height: 0; height: 24px; padding: 0 4px; font-size: 15px; min-width: 0; white-space: nowrap; overflow: hidden; }
 
-/* ---- a knob's modulation (right-click a knob): the source's short name in the middle of a modulated knob's ring, and
-   the picker under the knob: the five sources on one row of equal cells, then AMOUNT and what the source does ---- */
+/* ---- a knob's modulation (right-click a knob): the sources' short name in the middle of a modulated knob's ring, the
+   range they swing it over as an arc outside the ring, a dot where they have it now; and the depths under the knob:
+   one row a source on one grid (name, a depth either way from the middle, its number), then STEP SEQ's eight steps
+   in the depth column ---- */
 .knob { position: relative; }
 .modtag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; letter-spacing: 0;
   padding: 1px 2px 0; background: var(--ink); color: var(--panel); text-shadow: none; border-radius: 2px; pointer-events: none; }
 .vf:not(.modded) .modtag { display: none; }
+.knob .mrange { fill: none; stroke: var(--ink); stroke-width: 2; opacity: .45; }
+.knob .mdot { fill: var(--ink); display: none; }
+.vf.modded.modlive .knob .mdot { display: inline; }
 .modpop { position: absolute; right: auto; width: 560px; z-index: 30; }
 .modpop h3 span { color: var(--ink); }
-.modpop .srcs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.modpop .srcs .btn { padding: 4px 2px; min-width: 0; font-size: 17px; }
-.modpop .amtrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 10px; align-items: center; }
-.modpop .amtrow .vf { grid-column: 1; --ks: 50px; }
-.modpop .amtrow .vf.off { opacity: .4; }
-.modpop .amtrow .cap { grid-column: 2 / 6; margin: 0; font-size: 15px; letter-spacing: 1px; line-height: 1.2; }
+.modpop .mrows { display: grid; grid-template-columns: 130px 1fr 56px; gap: 8px 10px; align-items: center; }
+.modpop .mrow { display: contents; }
+.modpop .mrow .lab { font-size: 17px; letter-spacing: .06em; color: var(--ghost); cursor: default; }
+.modpop .mrow.on .lab, .modpop .mrow.steps .lab { color: var(--ink); }
+.modpop .mrow output { text-align: right; font-size: 17px; font-variant-numeric: tabular-nums; }
+.htrack.pm i { width: auto; right: 0; clip-path: inset(0 var(--r) 0 var(--l)); }
+.htrack.pm b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }
+.modpop .stepbox { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; height: 64px; }
+.modpop .step { --f: 0; position: relative; cursor: ns-resize; touch-action: none; border: 2px solid var(--ink); }
+.modpop .step i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--f) * 100%); background: var(--ink); }
+.modpop .step.now { outline: 2px solid var(--ink); outline-offset: 2px; }
+.modpop .cap { margin: 12px 0 0; font-size: 15px; letter-spacing: 1px; line-height: 1.2; min-height: 2.4em; }
 
 /* ---- SOUND BLENDER: a popup over the screen, on the same 4-column grid throughout ---- */
 .blender { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgb(var(--panel-rgb) / .55); }
