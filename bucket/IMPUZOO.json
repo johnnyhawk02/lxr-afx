@@ -9,12 +9,12 @@
   "pwm": 0,
   "afreq": 52,
   "again": 127,
-  "awave": 25,
+  "awave": 31.25,
   "amode": 0,
   "fmenv": 0,
   "bfreq": 28,
   "bgain": 109,
-  "bwave": 25,
+  "bwave": 31.25,
   "ncolour": 127,
   "nmix": 0,
   "attack": 28,
@@ -126,6 +126,8 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127,
-  "table": 12
+  "table": 12,
+  "atable": 1,
+  "btable": 1
  }
 }

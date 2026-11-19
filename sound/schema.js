@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmrwisq';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos } from '../engine/lxr.js?v=mwmt9v3r';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwmrwisq';
+import { TABLE_NAMES, classicPlace } from './tables.js?v=mwmt9v3r';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -296,7 +296,7 @@ function buildSchema(voice) {
   const out = [];
   for (const [ukey, page, section, label, names, extra, disp] of MERGED) {
     const f = names.map((n) => byName.get(n)).find(Boolean);
-    if (f) { out.push({ ...f, ukey, page, section, label }); continue; }
+    if (f) { out.push({ ...f, ukey, page, section, label, ...(ukey === 'pwm' ? { hidden: true } : {}) }); continue; } // (PWM: the pulse is a place on BASIC now)
     const k = EX[extra], par = extraPar(voice, k), menu = disp && disp.type === 'menu';
     out.push({ key: extra + (voice + 1), par, ukey, label, text: extra, page, section, min: 0, max: menu ? disp.names.length - 1 : disp && disp.max !== undefined ? disp.max : 127,
       def: INIT_VALUES[par], display: disp || { type: 'num' }, morph: null, weight: 0, rand: 'still', extra: k, ...(ukey === 'kind' ? { hidden: true } : {}) });
@@ -326,11 +326,11 @@ function buildSchema(voice) {
   });
   // the tone's wavetable (chosen in the OSC section's heading, not a knob: section 'table' has no place in the grid).
   // Part of the sound; ALTER leaves it alone unless WILD
-  out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 0,
+  out.push({ key: 'TABLE' + (voice + 1), par: tablePar(voice), ukey: 'table', label: 'table', text: 'TABLE', page: 'tone', section: 'table', min: 1,
     max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
   // MOD A's and MOD B's (in their headings): on a table their WAVE knobs move along it, as the tone's does
   for (const [which, ab] of [[1, 'a'], [2, 'b']]) {
-    out.push({ key: ab.toUpperCase() + 'TABLE' + (voice + 1), par: tablePar(voice, which), ukey: ab + 'table', label: ab + ' table', text: ab.toUpperCase() + '_TABLE', page: 'tone', section: 'table', min: 0,
+    out.push({ key: ab.toUpperCase() + 'TABLE' + (voice + 1), par: tablePar(voice, which), ukey: ab + 'table', label: ab + ' table', text: ab.toUpperCase() + '_TABLE', page: 'tone', section: 'table', min: 1,
       max: TABLE_NAMES.length - 1, def: 0, display: { type: 'menu', names: TABLE_NAMES }, morph: null, weight: 0, rand: 'still', table: true });
   }
   return out;
@@ -496,3 +496,44 @@ const ROUTES = new Map(VOICE_SCHEMAS.flatMap((sc, voice) => sc.filter((e) => e.m
 export const routeOf = (par) => ROUTES.get(par) || null;
 // a knob's modulation parameters ({ src, amt }), by its merged name, or null if it can't be modulated
 export function modOf(voice, ukey) { const i = MOD_DIALS.indexOf(ukey); return i < 0 ? null : { src: modSrcPar(voice, i), amt: modAmtPar(voice, i) }; }
+
+// ---- CLASSIC is gone (2026-11-19: wavetables only): a patch saved while the tone, MOD A or MOD B could play the
+// firmware's waves (TABLE 0) has each of them moved onto its table at the place that plays its wave (tables.js
+// classicPlace: BASIC, or NOISE for the noise), the base values and every key's edits (and their _o) alike. Saved
+// patches carry TABLE_RULE; older ones are upgraded once ----
+export const TABLE_RULE = 1;
+const WAVE_UKEYS = ['wave', 'awave', 'bwave'];
+export function upgradeTables(values, keys) {
+  const base = Array.from(values);
+  for (let v = 0; v < 6; v++) {
+    const pw = ukeyPar(v, 'pwm');
+    WAVE_UKEYS.forEach((u, which) => {
+      const w = ukeyPar(v, u), t = tablePar(v, which);
+      if (!base[t]) [values[t], values[w]] = classicPlace(base[w] || 0, base[pw] || 0);
+    });
+  }
+  if (keys) SOUNDS.forEach((def, s) => {
+    const v = def.engineVoice, pw = ukeyPar(v, 'pwm'), ks = keys[s];
+    if (!ks) return;
+    for (const n in ks) {
+      const ed = ks[n]; if (!ed || typeof ed !== 'object') continue;
+      const layers = [ed]; if (ed._o && typeof ed._o === 'object') layers.push(ed._o);
+      WAVE_UKEYS.forEach((u, which) => {
+        const w = ukeyPar(v, u), t = tablePar(v, which);
+        layers.forEach((o, k) => {
+          const get = (p) => (k ? o[p] ?? ed[p] : ed[p]) ?? base[p];
+          if (!(ed._lock || w in o || t in o || pw in o)) return; // (it plays the base's, moved above)
+          if (!get(t)) [o[t], o[w]] = classicPlace(get(w) || 0, get(pw) || 0);
+        });
+      });
+    }
+  });
+  return values;
+}
+// the starting values: on tables too
+upgradeTables(INIT_VALUES);
+for (const sc of VOICE_SCHEMAS) for (const e of sc) {
+  if (e.table || WAVE_UKEYS.includes(e.ukey)) e.def = INIT_VALUES[e.par];
+  if (WAVE_UKEYS.includes(e.ukey)) e.display = { type: 'num' }; // (a place along the table: no detents, no wave names)
+}
+

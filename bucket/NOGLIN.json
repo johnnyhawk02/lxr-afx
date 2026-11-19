@@ -9,7 +9,7 @@
   "pwm": 0,
   "afreq": 50,
   "again": 0,
-  "awave": 50,
+  "awave": 62.5,
   "amode": 127,
   "fmenv": 127,
   "bfreq": 60,
@@ -125,6 +125,8 @@
   "modamt:rate": 127,
   "modsrc:drive": 0,
   "modamt:drive": 127,
-  "table": 1
+  "table": 1,
+  "atable": 1,
+  "btable": 1
  }
 }

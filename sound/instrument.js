@@ -9,13 +9,13 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwmrwisq';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwmt9v3r';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE } from './schema.js?v=mwmrwisq';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwmrwisq';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, INIT_VALUES } from './schema.js?v=mwmt9v3r';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwmt9v3r';
 // the voice and oscillator (0 tone, 1 MOD A, 2 MOD B) of the i-th table parameter from TABLE_BASE
 const tableSlot = (i) => (i < 6 ? [i, 0] : [Math.floor((i - 6) / 2), 1 + ((i - 6) % 2)]);
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwmrwisq';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwmt9v3r';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -57,7 +57,7 @@ export class LxrInstrument {
     this.e.loadInitKit();
     // each voice's TABLE, and whether a table not made yet is made here (not in the AudioWorklet: the page makes it and
     // posts it, then retable())
-    this.tableOf = new Float64Array(18); /* (the tone's 6, then MOD A and B's 12) */ this.build = typeof registerProcessor === 'undefined';
+    this.tableOf = INIT_VALUES.slice(TABLE_BASE, TABLE_BASE + 18); /* (the tone's 6, then MOD A and B's 12: the starting ones until a kit says) */ this.build = typeof registerProcessor === 'undefined'; this.retable();
     this.ratio = REAL_FS / sampleRate;
     this.gain = 0.8;
     this.voices = SOUNDS.map((_, i) => new Voice(this, i));
