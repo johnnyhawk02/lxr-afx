@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwo6leb9">
-<link rel="stylesheet" href="css/grey.css?v=mwo6leb9">
+<link rel="stylesheet" href="css/lcd.css?v=mwo6pktd">
+<link rel="stylesheet" href="css/grey.css?v=mwo6pktd">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -266,10 +266,11 @@
       <div class="blpick" id="bl-b"></div>
       <div class="bars" id="bl-bars" title="How far from A to B: knobs slide, switches flip halfway. Let go to hear it; double-click for 50%"></div>
       <div class="blnames"><span id="bl-an"></span><span id="bl-bn"></span></div>
-      <div class="blrow five">
+      <div class="blrow six">
         <button class="btn" id="bl-play" title="Hear the blend on the engine on screen">PLAY</button>
         <button class="btn" id="bl-alter">ALTER</button>
         <button class="btn" id="bl-mods" title="RANDOM MODS: 3 or 4 knobs get a modulation (LFO, velocity, amp env or pitch env) at a random amount; press again for another set">RANDOM MODS</button>
+        <button class="btn" id="bl-osc" title="RANDOM OSC: the oscillator at random, CLASSIC or a wavetable, at a random POSITION; press again for another. SAVE keeps it">RANDOM OSC</button>
         <button class="btn" id="bl-pair" title="Two new sounds from the bucket for A and B">NEW PAIR</button>
         <button class="btn" id="bl-key" title="Put the blend on the key on screen (UNDO takes it back)">PUT ON KEY</button>
       </div>
@@ -314,6 +315,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwo6leb9"></script>
+<script type="module" src="app/main.js?v=mwo6pktd"></script>
 </body>
 </html>

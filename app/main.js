@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo6leb9';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo6leb9';
-import { presetName, jumble } from './names.js?v=mwo6leb9';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo6leb9';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo6leb9';
-import { breed, isDud } from '../sound/breed.js?v=mwo6leb9';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo6leb9';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo6leb9';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo6leb9';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo6leb9';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo6leb9';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo6pktd';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo6pktd';
+import { presetName, jumble } from './names.js?v=mwo6pktd';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo6pktd';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo6pktd';
+import { breed, isDud } from '../sound/breed.js?v=mwo6pktd';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo6pktd';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwo6pktd';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo6pktd';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo6pktd';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo6pktd';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo6leb9', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo6pktd', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1476,7 +1476,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo6leb9').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo6pktd').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2304,7 +2304,7 @@ window.afx.presets = { list: () => presets, now: () => S.preset, dirty: presetDi
 // and the SAVED list. EXPORT LIST writes the saved sounds to a file; tools/add-to-bucket.mjs adds that file to the
 // repo's bucket/, so they stay a source for new sounds everywhere
 // ---------------------------------------------------------------------------------------------------------------
-const BL = { a: null, b: null, t: 50, alt: new Map(), mods: new Map(), modText: '', name: '' };
+const BL = { a: null, b: null, t: 50, alt: new Map(), mods: new Map(), modText: '', name: '', osc: null };
 const blVoice = () => SOUNDS[S.sel].engineVoice;
 const blBucket = () => bucket();
 const blFind = (name) => blBucket().find((s) => s.name === name) || null;
@@ -2316,11 +2316,21 @@ function blendNow() {
   const out = blend({ schema: sc, a: on(BL.a), b: on(BL.b), t: BL.t / 100, base: S.values });
   for (const [p, d] of BL.alt) { const e = sc.find((x) => x.par === p); if (e && out.has(p)) out.set(p, clamp(out.get(p) + d, 0, e.max)); }
   for (const [p, x] of BL.mods) out.set(p, x);
+  if (BL.osc) { out.set(tablePar(v), BL.osc.table); out.set(ukeyPar(v, 'wave'), BL.osc.wave); }
   return out;
 }
-const blFrom = () => `${BL.a.name} ${100 - BL.t}% + ${BL.b.name} ${BL.t}%${BL.alt.size ? ' altered' : ''}${BL.mods.size ? ' + mods' : ''}`;
+const blFrom = () => `${BL.a.name} ${100 - BL.t}% + ${BL.b.name} ${BL.t}%${BL.alt.size ? ' altered' : ''}${BL.mods.size ? ' + mods' : ''}${BL.osc ? ' on ' + oscText() : ''}`;
 // a new A or B starts clean: no ALTER nudges, no RANDOM MODS
-const blClean = () => { BL.alt.clear(); BL.mods.clear(); BL.modText = ''; };
+const blClean = () => { BL.alt.clear(); BL.mods.clear(); BL.modText = ''; BL.osc = null; };
+// RANDOM OSC: the tone's oscillator picked at random, CLASSIC (one in four) or one of the wavetables, and its POSITION
+// (the WAVE knob): on CLASSIC a wave from sine to pwm (no noise), on a table anywhere along it. It holds over the blend
+// until pressed again or a new A or B; SAVE keeps it (the sound's table and wave)
+function randomOsc() {
+  const table = rnd() < 0.25 ? 0 : 1 + Math.floor(rnd() * (TABLE_NAMES.length - 1));
+  const wave = table ? dec2(rnd() * WAVE_TOP) : 25 * Math.floor(rnd() * 5);
+  BL.osc = { table, wave };
+}
+const oscText = () => !BL.osc ? '' : BL.osc.table ? `${TABLE_NAMES[BL.osc.table].toUpperCase()} AT ${Math.round(BL.osc.wave / WAVE_TOP * 100)}%` : `CLASSIC ${['SINE', 'TRI', 'SAW', 'REC', 'PWM'][BL.osc.wave / 25]}`;
 // RANDOM MODS: 3 or 4 knobs, picked at random, each get a modulation source (LFO, velocity, amp env or pitch env) and an
 // amount either way (20 to 80 of 127). Pressed again, a new set replaces it (the routes A and B came with stay under
 // it). An LFO route on a sound whose LFO is too slow to hear gets the LFO sped up
@@ -2389,7 +2399,7 @@ function drawBlender() {
   blDrawBar(); drawBlendNames();
   $('bl-eng').textContent = `${phoneOn ? '' : `PLAYS ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} · `}${blBucket().length} SOUNDS IN THE BUCKET`;
   $('bl-alter').title = `Nudge the blend by the ALTER amount (${S.rand.alter}%${S.rand.wild ? ', WILD' : ''}, set in the RANDOM menu); press again to go further. A new A or B starts clean`;
-  $('bl-modtext').textContent = $('bl-modtext').title = BL.modText ? `MODS: ${BL.modText}` : 'MODS: AS A AND B HAVE THEM';
+  $('bl-modtext').textContent = $('bl-modtext').title = (BL.modText ? `MODS: ${BL.modText}` : 'MODS: AS A AND B HAVE THEM') + ` · OSC: ${BL.osc ? oscText() : 'AS A AND B HAVE IT'}`;
   if (!BL.name) BL.name = blNewName();
   $('bl-name').value = BL.name;
   drawSaved();
@@ -2410,6 +2420,7 @@ document.addEventListener('keydown', (e) => {
 $('bl-play').addEventListener('click', () => blPlay());
 $('bl-pair').addEventListener('click', () => { BL.a = blPick(); BL.b = blPick(BL.a); blClean(); drawBlender(); blPlay(); });
 $('bl-mods').addEventListener('click', () => { randomMods(); drawBlender(); blPlay(); });
+$('bl-osc').addEventListener('click', () => { randomOsc(); drawBlender(); blPlay(); detail(`SOUNDMAKER osc: <em>${oscText()}</em>`); });
 // ALTER: every control ALTER may move, nudged around the blend as it is now; the nudges stay as the slider moves
 $('bl-alter').addEventListener('click', () => {
   const v = blVoice(), now = blendNow(), base = (() => { const k = new Map(BL.alt); BL.alt.clear(); const b = blendNow(); BL.alt = k; return b; })();
