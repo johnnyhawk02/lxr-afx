@@ -37,3 +37,13 @@ html.look-grey .knob .chl { display: inline; stroke: #f4f3ee; stroke-width: 2; s
 html.look-grey .knob .notch { stroke: var(--ink); }
 html.look-grey .knob .mrange { stroke: var(--accent); stroke-width: 2.6; opacity: .95; }
 html.look-grey .knob .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }
+
+/* the subtle depth (app/panel3d.js, html.panel3d: the GREY look on the big screen): three.js draws the panel and the
+   knobs' heads on a canvas behind everything, so the flat background and the SVG heads give way; the printed scale,
+   the modulation arc and every box stay the page's own, where they were */
+html.panel3d #screen { isolation: isolate; background: none; box-shadow: none; }
+#screen > canvas.panel3d { display: none; }
+html.panel3d #screen > canvas.panel3d { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; border-radius: 6px; pointer-events: none; }
+html.panel3d .knob svg { filter: none; }
+html.panel3d .knob .skirt, html.panel3d .knob .skirt-top, html.panel3d .knob .chh, html.panel3d .knob .chl { display: none; }
+html.panel3d .start { background-color: rgb(172 174 172); }
