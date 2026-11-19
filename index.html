@@ -8,22 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=tidy1">
-<link rel="stylesheet" href="css/grey.css?v=tidy1">
+<link rel="stylesheet" href="css/lcd.css?v=mwnus9ak">
+<link rel="stylesheet" href="css/grey.css?v=mwnus9ak">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
 (function () {
   var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
-  // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
-  try { if (localStorage.getItem('lxr-afx-look') !== 'lcd') document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
+  // the look (SETTINGS > LOOK): LCD (the default, in MINT), unless GREY was chosen
+  try { if (localStorage.getItem('lxr-afx-look') === 'grey') document.documentElement.classList.add('look-grey'); } catch (e) { /* LCD, the default */ }
   // the GREY look's own panel colour (SETTINGS > PANEL COLOUR), before the first paint; app/main.js applyGreyColour() keeps it in step
   try { var gp = localStorage.getItem('lxr-afx-grey-panel'); if (/^#[0-9a-f]{6}$/i.test(gp)) { var q = [1, 3, 5].map(function (i) { return parseInt(gp.substr(i, 2), 16); });
     var st = document.documentElement.style; st.setProperty('--grey-panel', q.join(' ')); st.setProperty('--grey-ink', (0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2]) / 255 < 0.45 ? '236 236 230' : '24 25 27');
     document.documentElement.classList.add('panel-own'); } } catch (e) {}
   // the knob size (SETTINGS > KNOB SIZE): grows only the knob inside its printed scale, never the cell
-  try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 5 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.87 + 0.058 * kv).toFixed(3));
+  try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 7 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.85 + 0.05 * kv).toFixed(3));
     var ks = localStorage.getItem('lxr-afx-knob-style') || 'ribbed'; if (/^(round|ribbed|rubber)$/.test(ks)) document.documentElement.classList.add('knob-' + ks); } catch (e) { /* the defaults */ }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
@@ -155,7 +155,7 @@
         <p class="dim note">THE CAMERA ON THE GREY PANEL. WHERE EACH KNOB MEETS THE PANEL STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
         </div>
         <h3>KNOB SIZE</h3>
-        <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL+5</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="5" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">MAX</span></div>
+        <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL+7</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="7" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">MAX</span></div>
         <p class="dim note">UP TO NEARLY THE WHOLE CELL: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
         <div id="knob-style-row">
         <h3>KNOB STYLE</h3>
@@ -171,7 +171,7 @@
         <div class="randrow themes" id="themes"></div>
         <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
         <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
-        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
+        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to MINT">RESET</button></div>
         <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
         </div>
         <h3>HARDWARE KNOBS</h3>
@@ -330,6 +330,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=tidy1"></script>
+<script type="module" src="app/main.js?v=mwnus9ak"></script>
 </body>
 </html>

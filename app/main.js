@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnt3b0o';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnt3b0o';
-import { presetName, jumble } from './names.js?v=mwnt3b0o';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnt3b0o';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnt3b0o';
-import { breed, isDud } from '../sound/breed.js?v=mwnt3b0o';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnt3b0o';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnt3b0o';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnt3b0o';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnt3b0o';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnt3b0o';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnus9ak';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnus9ak';
+import { presetName, jumble } from './names.js?v=mwnus9ak';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnus9ak';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnus9ak';
+import { breed, isDud } from '../sound/breed.js?v=mwnus9ak';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnus9ak';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnus9ak';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnus9ak';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnus9ak';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnus9ak';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnt3b0o', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnus9ak', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1412,7 +1412,8 @@ $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 // them). A few looks to pick, or your own two; kept in this browser (not in presets). A dark panel loses the LCD's
 // backlight glow and shades towards black
 const COLOURS_STORE = 'lxr-afx-colours';
-const THEMES = [['LCD', '#a7b58c', '#17200e'], ['BLUE LCD', '#9cb6c6', '#0c1a28'], ['PAPER', '#e2ded0', '#1e1c18'],
+const THEMES = [['MINT', '#c8ecdf', '#0a1410'], ['LCD', '#a7b58c', '#17200e'], // (MINT first: the default, Johnny 2026-11-19 "make this the default look")
+  ['BLUE LCD', '#9cb6c6', '#0c1a28'], ['PAPER', '#e2ded0', '#1e1c18'],
   ['AMBER', '#1c1408', '#ffaa32'], ['GREEN CRT', '#08140a', '#6eff8c'], ['NIGHT', '#14285a', '#e6eeff']];
 let colours = { panel: THEMES[0][1], ink: THEMES[0][2] };
 try { const c = JSON.parse(localStorage.getItem(COLOURS_STORE)); if (c && /^#[0-9a-f]{6}$/i.test(c.panel) && /^#[0-9a-f]{6}$/i.test(c.ink)) colours = c; } catch (e) { /* the LCD */ }
@@ -1432,7 +1433,7 @@ for (const [name, panel, ink] of THEMES) {
   $('themes').append(b);
 }
 for (const [id, k] of [['col-panel', 'panel'], ['col-ink', 'ink']]) $(id).addEventListener('input', (e) => { colours = { ...colours, [k]: e.target.value.toLowerCase() }; applyColours(true); });
-$('col-reset').addEventListener('click', () => { colours = { panel: THEMES[0][1], ink: THEMES[0][2] }; applyColours(true); detail('screen colours: back to the <em>LCD</em>'); });
+$('col-reset').addEventListener('click', () => { colours = { panel: THEMES[0][1], ink: THEMES[0][2] }; applyColours(true); detail('screen colours: back to <em>MINT</em>'); });
 applyColours(false);
 // LOOK: GREY (the default: a plain grey panel, chicken-head knobs, css/grey.css) or LCD (the screen colours above).
 // Kept in this browser, like the colours. Johnny, 2026-11-19: "chicken feet knobs on a plain grey"
@@ -1448,7 +1449,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnt3b0o').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnus9ak').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1487,8 +1488,10 @@ applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'l
 // left end: what was XL+7, "the smallest the knobs should be") to MAX, nearly filling its cell. Its name and padlock
 // move down with it. A transform, so the cells and the grid never move. Kept in this browser. Johnny, 2026-11-19:
 // "give me more to the right, you seem scared of giving me big dials"
-const KNOB_SIZE_STORE = 'lxr-afx-knob-kd', KNOB_KD = [0.87, 1.45];
-const KNOB_SIZE_DEFAULT = 5;
+// (2026-11-19 later: "make this the default look and size, make more space between the knobs": the range is a little
+// smaller, 0.85 to 1.35, so the size Johnny had, 7, is the default with more room round each knob)
+const KNOB_SIZE_STORE = 'lxr-afx-knob-kd', KNOB_KD = [0.85, 1.35];
+const KNOB_SIZE_DEFAULT = 7;
 const knobKd = (v) => KNOB_KD[0] + (KNOB_KD[1] - KNOB_KD[0]) * v / 10;
 const knobSizeName = (v) => (v <= 0 ? 'XL' : v >= 10 ? 'MAX' : `XL+${v}`);
 function applyKnobSize(v, keep) {
