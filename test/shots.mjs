@@ -208,7 +208,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // it was, and the setting is kept
   { const boxes = () => p.$$eval('#faders .vf .knob', (ks) => ks.map((k) => { const c = k.getBoundingClientRect(), s = k.querySelector('svg').getBoundingClientRect(), b = k.querySelector('.skirt').getBoundingClientRect();
       return [Math.round(c.left), Math.round(c.top), Math.round(c.width), Math.round(s.width), b.width]; }));
-    const set = async (v) => { await p.click('#look-btn'); await p.$eval('#knob-size', (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.click('#settings-btn'); await p.waitForTimeout(80); };
+    const set = async (v) => { await p.click('#look-btn'); await p.$eval('#knob-size', (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.click('#look-btn'); await p.waitForTimeout(80); };
     await set(0); const m = await boxes();
     for (const v of [10, 5, 0]) {
       await set(v); const b = await boxes(), z = (0.87 + 0.058 * v) / 0.87;
