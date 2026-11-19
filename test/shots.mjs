@@ -204,15 +204,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (left > 16) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (16 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
-  // KNOB SIZE (SETTINGS): a slider from XL to XXL grows only the knob inside its printed scale; every cell, column and
-  // scale stays where it was, and the setting is kept
+  // KNOB SIZE (SETTINGS): a slider from XL to XXL grows the knobs, scale and all; every cell and column stays where
+  // it was, and the setting is kept
   { const boxes = () => p.$$eval('#faders .vf .knob', (ks) => ks.map((k) => { const c = k.getBoundingClientRect(), s = k.querySelector('svg').getBoundingClientRect(), b = k.querySelector('.skirt').getBoundingClientRect();
       return [Math.round(c.left), Math.round(c.top), Math.round(c.width), Math.round(s.width), b.width]; }));
     const set = async (v) => { await p.click('#settings-btn'); await p.$eval('#knob-size', (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.click('#settings-btn'); await p.waitForTimeout(80); };
     await set(0); const m = await boxes();
     for (const v of [10, 5, 0]) {
       await set(v); const b = await boxes(), z = (1.04 + 0.026 * v) / 1.04;
-      const moved = b.filter((x, i) => x[0] !== m[i][0] || x[1] !== m[i][1] || x[2] !== m[i][2] || x[3] !== m[i][3]).length;
+      const moved = b.filter((x, i) => x[0] !== m[i][0] || x[1] !== m[i][1] || x[2] !== m[i][2]).length;
       const off = b.filter((x, i) => Math.abs(x[4] - m[i][4] * z) > 1.5).length;
       if (moved || off || b.length !== m.length) { errors++; console.log(`${w}x${h} KNOB SIZE ${v}: ${moved} cells moved, ${off} knobs the wrong size`); }
       if (w === 1440 && h === 900 && v === 10) await p.screenshot({ path: `${out}/knobs-xxl-${w}x${h}.png` });

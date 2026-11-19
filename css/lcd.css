@@ -61,10 +61,19 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .lowkey { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lowkey > .dim { letter-spacing: .08em; }
 .lowkey b { font-weight: 400; min-width: 5.6em; justify-content: center; }
-/* KNOB SIZE: the big screen draws every knob's printed scale at 1.3x, tight in its cell between its value and name, and the
-   knob itself (.body) at --knob-body inside it (SETTINGS slider); switches at 1.175x. The phone keeps them as they were */
-html:not(.phone) { --ring: 1.3; --tog-zoom: 1.175; }
-html:not(.phone) .knob .body { transform: scale(var(--knob-body, 1.04)); transform-origin: 32px 32px; }
+/* KNOB SIZE: the big screen draws every knob at 1.25 x --knob-body (SETTINGS slider: 1.3x at XL to 1.63x at XXL), scale
+   and all; switches at 1.175x. The phone keeps them as they were */
+html:not(.phone) { --tog-zoom: 1.175; }
+/* the value above stays put (the section's name sits right over it); the knob moves down by half its growth, so its
+   scale's top stays under the value, and its name and padlock move down with it, into the room under each row */
+html:not(.phone) .knob svg { transform: translateY(calc(var(--grow, 0px) / 2)) scale(calc(1.25 * var(--knob-body, 1.04))); }
+html:not(.phone) .vf:has(> .knob, > .tog) { --grow: calc((var(--knob-body, 1.04) - 1.04) * 1.25 * var(--ks)); } /* (px a knob grows past XL) */
+html:not(.phone) .vf:has(> .knob, > .tog) > .lab { transform: translateY(var(--grow)); }
+html:not(.phone) .vf:has(> .tog) > .tog svg { transform: translateY(calc(var(--grow, 0px) / 2)) scale(var(--tog-zoom, 1)); } /* (a switch keeps its size, in line with the knobs) */
+html:not(.phone) .vf:has(> .knob, > .tog) > .lock { transform: translateY(calc(var(--grow, 0px) / 2)); }
+/* LEVEL is already big: it stays at XL */
+html:not(.phone) .faders .vf.big .knob svg { transform: scale(1.3); }
+html:not(.phone) .faders .vf.big > .lab, html:not(.phone) .faders .vf.big > .lock { transform: none; }
 .lowkey.knobsize input { width: 100%; min-width: 0; margin: 0; accent-color: rgb(var(--ink-rgb)); }
 .lowkey.knobsize em { font-style: normal; color: var(--ink); margin-left: .4em; }
 .lowkey.knobsize .end { text-align: right; }

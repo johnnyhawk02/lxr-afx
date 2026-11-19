@@ -164,15 +164,14 @@ function sync() {
     sun.shadow.camera.updateProjectionMatrix();
   }
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
-  const body = root.classList.contains('phone') ? 1 : parseFloat(getComputedStyle(root).getPropertyValue('--knob-body')) || 1.04;
-  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}:${body}`;
+  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}`;
   for (const el of screen.querySelectorAll('.knob')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;
     seen.add(el);
     let k = knobs.get(el); if (!k) knobs.set(el, (k = makeKnob()));
     const size = r.width / s, x = (r.left - ox) / s + size / 2, y = (r.top - oy) / s + size / 2;
-    k.position.set(x, -y, 0); k.scale.setScalar(size / 64 * body); // (SETTINGS > KNOB SIZE grows the knob inside its scale)
+    k.position.set(x, -y, 0); k.scale.setScalar(size / 64);
     const m = /rotate\(([-\d.e]+)/.exec(el.querySelector('.rot')?.getAttribute('transform') || '');
     k.userData.turn.rotation.z = -(m ? +m[1] : 0) * Math.PI / 180;
     let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
