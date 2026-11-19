@@ -936,7 +936,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .faders .vf.big .knob.fslide { width: 60px; height: 300px; margin: 18px 0 16px; }
 /* LEVEL in two rows now (the FX SENDS above it, one over the other): the fader as tall as they leave, AUTO at the
    cell's right edge (it reaches back into the empty end of the row beside it) */
-.faders .vf.big .knob.fslide { height: auto; flex: 1 1 0; min-height: 60px; margin: 10px 0 8px; }
+.faders .vf.big .knob.fslide { height: auto; flex: 1 1 0; min-height: 60px; margin: 16px 0 18px; } /* (room for the cap's half-height past each end, so it never covers AUTO or the LEVEL label) */
 .faders .vf.big { justify-content: flex-start; padding-top: 30px; }
 .faders .vf.big .auto { left: auto; right: 4px; }
 html:not(.phone) .faders .vf.big .knob.fslide svg { transform: none; }
