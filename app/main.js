@@ -591,8 +591,9 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // the synth panel's rows of sections, and its grid: the widest row (the metal's osc and fm; every engine's filter,
 // velocity and mix) fills 11 cells
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
-// in the order the sound flows: its sources, what bends them, the filter and the amp, then the LFO and the mix
-const ROWS = [['osc', 'noise', 'click', 'mod a'], ['mod b', 'pitch', 'filter in', 'filter'], ['amp', 'lfo', 'mix']]; // (row 4: modStrip)
+// in the order the sound flows: the oscillator, its pitch and the other sources; then the FM pair side by side into the
+// filter; then the amp, the LFO and the mix (Johnny, 2026-11-19: "the whole top section is a mess")
+const ROWS = [['osc', 'pitch', 'noise', 'click'], ['mod a', 'mod b', 'filter in', 'filter'], ['amp', 'lfo', 'mix']]; // (row 4: modStrip)
 const GRID_COLS = 16;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
@@ -1248,9 +1249,11 @@ const stripKeys = [];
 function buildStrip() {
   const box = $('keystrip'); box.innerHTML = ''; stripKeys.length = 0;
   SOUNDS.forEach((s, i) => {
-    if (!engineOn(i)) return;
+    if (!engineOn(i)) { $('sounds').append(soundBtns[i]); return; } // (an engine not in use: its button waits, hidden)
+    // the engine's button heads its keys (the tabs: a click shows that engine's knobs), as wide as they are
     const g = document.createElement('div'); g.className = 'kgroup';
-    g.innerHTML = `<span class="kz">${s.name}</span><div class="keys"></div>`;
+    g.innerHTML = '<div class="keys"></div>'; g.prepend(soundBtns[i]);
+    soundBtns[i].classList.toggle('narrow', s.zone.hi - s.zone.lo + 1 < 7);
     for (let note = s.zone.lo; note <= s.zone.hi; note++) {
       const k = document.createElement('button'); k.type = 'button'; k.className = 'k' + ([1, 3, 6, 8, 10].includes(note % 12) ? ' blk' : '');
       k.title = `${s.name} ${noteName(note)} #${note}`;
@@ -1608,7 +1611,7 @@ function typeSound(sound, name) {
 const MAKE_TYPES = [['kick', 'KICK'], ['tom', 'TOM'], ['mid perc', 'PERC'], ['zap', 'ZAP'], ['snare', 'SNARE'], ['clap', 'CLAP'], ['rim', 'RIM'],
   ['cowbell', 'BELL'], ['closed hat', 'C HAT'], ['open hat', 'O HAT'], ['cymbal', 'CYMBAL']];
 function makePanel(el) {
-  el.innerHTML = '<span class="dim mkl">MAKE<br>THIS<br>KEY</span><div class="mk"></div>';
+  el.innerHTML = '<span class="dim mkl">MAKE</span><div class="mk"></div>';
   const box = el.querySelector('.mk');
   for (const [name, text] of MAKE_TYPES) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = text; b.dataset.type = name;
@@ -2491,22 +2494,13 @@ function setPhone() {
 // what's left, so it never reflows and nothing scrolls. (index.html does the same before the first paint)
 // ---------------------------------------------------------------------------------------------------------------
 const FIT_W = 1780, FIT_H = 890;
-// the engine buttons sit right under their key groups in the strip above, FX under the key's buttons
-function alignEngines() {
-  const row = $('sounds'), sc = $('screen'), k = sc.getBoundingClientRect().width / sc.offsetWidth || 1;
-  const base = row.getBoundingClientRect().left;
-  const place = (b, el) => { const r = el.getBoundingClientRect(); Object.assign(b.style, { left: `${(r.left - base) / k}px`, width: `${r.width / k}px` }); b.classList.toggle('narrow', r.width / k < 150); };
-  document.querySelectorAll('#keystrip .kgroup').forEach((g, i) => place(soundBtns[i], g));
-  const tag = row.querySelector('.tag'); tag.style.left = `${parseFloat(soundBtns[0].style.left) - tag.offsetWidth - 12}px`;
-}
 function fitScreen() {
   const st = $('stage'), s = Math.min((innerWidth - 16) / FIT_W, (innerHeight - 16) / FIT_H);
   setPhone();
   if (phoneOn) { st.removeAttribute('style'); drawKeymap(); return; } // (the phone view lays itself out)
   Object.assign(st.style, { left: `${(innerWidth - FIT_W * s) / 2}px`, top: `${(innerHeight - FIT_H * s) / 2}px`, transform: `scale(${s})` });
-  drawKeymap(); alignEngines();
+  drawKeymap();
 }
 window.addEventListener('resize', fitScreen);
 fitScreen();
-document.fonts?.ready.then(alignEngines);
 window.afxReady = true; // index.html's load check

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnjsvax">
-<link rel="stylesheet" href="css/grey.css?v=mwnjsvax">
+<link rel="stylesheet" href="css/lcd.css?v=topsect1">
+<link rel="stylesheet" href="css/grey.css?v=topsect1">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -59,57 +59,7 @@
     </div>
     <div class="lcdbox midi" id="midi-status" title="Web MIDI input">MIDI: off</div>
     <div class="lcdbox last" id="last" aria-live="polite"><span class="dim">LAST</span> <b id="last-text">nothing played yet</b></div>
-    <div class="menu" id="smenu">
-      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="Tempo, how held keys come back, the keyboard's layout and the hardware knobs' mapping">SETTINGS ▾</button>
-      <div class="menupanel settings" id="settings-panel" hidden>
-        <h3>TEMPO</h3>
-        <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
-        <p class="dim note">FOR THE SEQUENCERS AND THE SYNCED ECHO: − AND + (SHIFT: BY 10), DOUBLE-CLICK THE NUMBER FOR 120</p>
-        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
-        <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
-        <h3>KEYBOARD</h3>
-        <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
-        <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
-        <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
-        <h3>LOOK</h3>
-        <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
-          <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
-          <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
-        </div>
-        <h3>KNOB SIZE</h3>
-        <div class="randrow looks" id="knob-sizes" role="group" aria-label="The size of the knobs">
-          <button class="btn" type="button" data-size="s" title="Smaller knobs, in the same places">S</button>
-          <button class="btn" type="button" data-size="m" title="The knobs at their usual size">M</button>
-          <button class="btn" type="button" data-size="l" title="Bigger knobs, in the same places">L</button>
-        </div>
-        <p class="dim note">ONLY THE KNOB GROWS OR SHRINKS: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
-        <div id="lcd-colours">
-        <h3>SCREEN COLOURS</h3>
-        <div class="randrow themes" id="themes"></div>
-        <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
-        <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
-        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
-        <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
-        </div>
-        <h3>HARDWARE KNOBS</h3>
-        <div class="randrow">
-          <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
-          <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
-          <span class="dim note">LEARN: PRESS, CLICK A CONTROL ON SCREEN, TURN A KNOB</span>
-        </div>
-      </div>
-    </div>
-    <div class="menu" id="tmenu">
-      <button class="btn" id="tools-btn" aria-haspopup="true" aria-expanded="false" title="Changes made to the whole key set at once">TOOLS ▾</button>
-      <div class="menupanel" id="tools-panel" hidden>
-        <h3>WAVETABLE</h3>
-        <div class="randrow">
-          <button class="btn" id="to-table" title="Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves stay on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
-          <span class="dim cap wide">EVERY KEY ONTO BASIC,<br>SOUNDING AS IT DID</span>
-        </div>
-      </div>
-    </div>
-    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUND BLENDER (B): blend two sounds from the bucket into a new one, and save it to the bucket">BLENDER<kbd>B</kbd></button>
+    <div class="topacts">
     <div class="menu" id="menu">
       <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
       <div class="menupanel" id="menu-panel" hidden>
@@ -159,27 +109,85 @@
         </div>
       </div>
     </div>
+    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUND BLENDER (B): blend two sounds from the bucket into a new one, and save it to the bucket">BLENDER<kbd>B</kbd></button>
+    <div class="menu" id="tmenu">
+      <button class="btn" id="tools-btn" aria-haspopup="true" aria-expanded="false" title="Changes made to the whole key set at once">TOOLS ▾</button>
+      <div class="menupanel" id="tools-panel" hidden>
+        <h3>WAVETABLE</h3>
+        <div class="randrow">
+          <button class="btn" id="to-table" title="Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves stay on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
+          <span class="dim cap wide">EVERY KEY ONTO BASIC,<br>SOUNDING AS IT DID</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu" id="smenu">
+      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="Tempo, how held keys come back, the keyboard's layout and the hardware knobs' mapping">SETTINGS ▾</button>
+      <div class="menupanel settings" id="settings-panel" hidden>
+        <h3>TEMPO</h3>
+        <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
+        <p class="dim note">FOR THE SEQUENCERS AND THE SYNCED ECHO: − AND + (SHIFT: BY 10), DOUBLE-CLICK THE NUMBER FOR 120</p>
+        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
+        <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
+        <h3>KEYBOARD</h3>
+        <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
+        <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
+        <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
+        <h3>LOOK</h3>
+        <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
+          <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
+          <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
+        </div>
+        <h3>KNOB SIZE</h3>
+        <div class="randrow looks" id="knob-sizes" role="group" aria-label="The size of the knobs">
+          <button class="btn" type="button" data-size="s" title="Smaller knobs, in the same places">S</button>
+          <button class="btn" type="button" data-size="m" title="The knobs at their usual size">M</button>
+          <button class="btn" type="button" data-size="l" title="Bigger knobs, in the same places">L</button>
+        </div>
+        <p class="dim note">ONLY THE KNOB GROWS OR SHRINKS: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
+        <div id="lcd-colours">
+        <h3>SCREEN COLOURS</h3>
+        <div class="randrow themes" id="themes"></div>
+        <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
+        <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
+        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
+        <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
+        </div>
+        <h3>HARDWARE KNOBS</h3>
+        <div class="randrow">
+          <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
+          <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
+          <span class="dim note">LEARN: PRESS, CLICK A CONTROL ON SCREEN, TURN A KNOB</span>
+        </div>
+      </div>
+    </div>
     <button class="btn" id="undo" disabled title="Take back the last change to the sounds (Z, or Cmd+Z / Ctrl+Z); press again to go further back">UNDO<kbd>Z</kbd></button>
+    </div>
   </header>
 
   <div class="main">
   <div class="left">
   <section class="keyhead" id="keyhead" aria-label="The key">
-    <div class="keyname"><span class="dim">KEY</span><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
-    <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
-    <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
-    <div class="keymake" id="make" role="group" aria-label="Make this key"></div>
-    <div class="keyacts" id="keyacts">
-      <button class="btn iconbtn" id="alter-key" aria-label="Alter key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><kbd>A</kbd></button>
-      <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span><kbd>L</kbd></button>
-      <button class="btn sm" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
-      <button class="btn sm" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
-      <button class="btn sm" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
+    <div class="khsec khkey"><h3>KEY</h3>
+      <div class="keyname"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
+      <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
+    </div>
+    <div class="khsec kheng"><h3>ENGINES <span class="dim">AND THEIR KEYS</span></h3>
+      <nav class="sounds" id="sounds" role="tablist" aria-label="Engines">
+        <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
+        <button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button>
+      </nav>
+    </div>
+    <div class="khsec khact"><h3>THIS KEY</h3>
+      <div class="keyacts" id="keyacts">
+        <button class="btn iconbtn" id="alter-key" aria-label="Alter key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><kbd>A</kbd></button>
+        <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span><kbd>L</kbd></button>
+        <button class="btn sm" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
+        <button class="btn sm" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
+        <button class="btn sm" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
+      </div>
+      <div class="keymake" id="make" role="group" aria-label="Make this key"></div>
     </div>
   </section>
-
-  <nav class="sounds" id="sounds" role="tablist" aria-label="Engines"><span class="dim tag">ENGINE</span><button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button></nav>
-
 
     <section class="editor">
       <div class="faders" id="faders"></div>
@@ -285,6 +293,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnjsvax"></script>
+<script type="module" src="app/main.js?v=topsect1"></script>
 </body>
 </html>
