@@ -23,7 +23,7 @@ function hashSound(snd, v) {
   }
   return h.toString(16);
 }
-const routed = (s) => Object.keys(s.params).some((k) => k.startsWith('modsrc:') && s.params[k]);
+const routed = (s) => Object.keys(s.params).some((k) => k.startsWith('mod:') && s.params[k] !== 127);
 const got = {};
 for (const s of BUCKET) got[s.name] = [hashSound(s, s.voice), hashSound(s, (s.voice + 3) % 6)];
 if (save) { fs.writeFileSync(FILE, JSON.stringify(got, null, 0) + '\n'); console.log(`saved ${Object.keys(got).length} sounds`); process.exit(0); }

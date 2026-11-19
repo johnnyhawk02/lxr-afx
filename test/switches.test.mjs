@@ -97,8 +97,7 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
   e.loadKit(kit);
   e.setParam(PAR.OSC_WAVE_DRUM1, 40);
   e.setParam(PAR.SYNC_LFO1, 0); e.setParam(PAR.FREQ_LFO1, 90); e.setParam(PAR.WAVE_LFO1, 0); // (an LFO fast enough to see move, whatever the kit had)
-  e.setRouteSrc(0, PAR.OSC_WAVE_DRUM1, SRC.LFO);
-  e.setRouteAmt(0, PAR.OSC_WAVE_DRUM1, 0.5);
+  e.setRouteAmt(0, PAR.OSC_WAVE_DRUM1, SRC.LFO, 0.5);
   e.trigger(0, 120, 60);
   const seen = new Set();
   let good = true;
