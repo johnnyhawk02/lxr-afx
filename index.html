@@ -7,14 +7,17 @@
 <meta name="description" content="A MIDI drum instrument for a 25-key keyboard: three engines (drum, snare, metal), every key its own sound. Engine: the LXR-02 firmware's drum voices, via Elixir.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/lcd.css?v=mwnim447">
+<link rel="stylesheet" href="css/grey.css?v=grey1">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
 (function () {
   var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
+  // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
+  try { if (localStorage.getItem('lxr-afx-look') !== 'lcd') document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
     var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
@@ -66,12 +69,19 @@
         <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
         <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
         <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
+        <h3>LOOK</h3>
+        <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
+          <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
+          <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
+        </div>
+        <div id="lcd-colours">
         <h3>SCREEN COLOURS</h3>
         <div class="randrow themes" id="themes"></div>
         <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
         <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
         <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
         <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
+        </div>
         <h3>HARDWARE KNOBS</h3>
         <div class="randrow">
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>

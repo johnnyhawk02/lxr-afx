@@ -746,7 +746,7 @@ function gknob(label, o) {
   const el = document.createElement('div'); el.className = 'vf';
   el.innerHTML = `<output></output><div class="knob" role="slider">${KNOB_SVG}</div><span class="lab"></span>`;
   el.querySelector('.lab').textContent = label;
-  const tr = el.querySelector('.knob'), out = el.querySelector('output'), ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr');
+  const tr = el.querySelector('.knob'), out = el.querySelector('output'), ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.rot');
   tr.setAttribute('aria-label', label);
   const draw = () => {
     const v = o.get();
@@ -900,7 +900,16 @@ const KNOB_SVG = (() => {
     const a = KNOB_A0 + i / (KNOB_N - 1) * KNOB_SWEEP, c = Math.cos(a), s = Math.sin(a);
     t += `<line class="tk" x1="${(32 + 20 * c).toFixed(2)}" y1="${(32 + 20 * s).toFixed(2)}" x2="${(32 + 28 * c).toFixed(2)}" y2="${(32 + 28 * s).toFixed(2)}"/>`;
   }
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}<path class="mrange"/><line class="ptr" x1="32" y1="32" x2="46" y2="32"/><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
+  // the GREY look's printed scale and chicken-head knob (css/grey.css shows them, the LCD look hides them): a fine
+  // tick at each of 11 steps, a round skirt, and the head, a pointer with a white line along it, turned with the value
+  let sc = '';
+  for (let i = 0; i <= 10; i++) {
+    const a = KNOB_A0 + i / 10 * KNOB_SWEEP, c = Math.cos(a), s = Math.sin(a), r0 = i % 5 ? 25.5 : 24;
+    sc += `<line class="sc" x1="${(32 + r0 * c).toFixed(2)}" y1="${(32 + r0 * s).toFixed(2)}" x2="${(32 + 28.5 * c).toFixed(2)}" y2="${(32 + 28.5 * s).toFixed(2)}"/>`;
+  }
+  const head = '<circle class="skirt" cx="32" cy="32" r="15.5"/><circle class="skirt-top" cx="32" cy="32" r="13.5"/>'
+    + '<path class="chh" d="M54 32C47 35 40 39.5 33 42.6A11 11 0 1 1 33 21.4C40 24.5 47 29 54 32Z"/><line class="chl" x1="35" y1="32" x2="51.5" y2="32"/>';
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${t}${sc}<path class="mrange"/><g class="rot">${head}<line class="ptr" x1="32" y1="32" x2="46" y2="32"/></g><line class="notch" x1="61" y1="32" x2="64" y2="32"/><circle class="mdot" cx="62" cy="32" r="2.6"/></svg>`;
 })();
 // a plus-minus knob (centre given: pan, coarse, fine, pregain, bass, tone) has its centre at the top, each half of its
 // range on its own side, and its ring lit from the top out to the value; any other knob lights from the bottom left
@@ -928,7 +937,7 @@ function vfader(e) {
     el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); selectModDial(e); });
     tr.addEventListener('pointerdown', () => selectModDial(e)); // (the bottom row's MODULATION follows the dial last touched)
   }
-  const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.ptr'), notch = tr.querySelector('.notch');
+  const ticks = tr.querySelectorAll('.tk'), ptr = tr.querySelector('.rot'), notch = tr.querySelector('.notch');
   tr.setAttribute('aria-label', e.label); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', e.max);
   tr.title = 'Drag up or down. Hold Shift for fine: tenths of a step';
   const c = e.display.type === 'pm' ? e.display.centre : undefined;
@@ -1262,6 +1271,17 @@ for (const [name, panel, ink] of THEMES) {
 for (const [id, k] of [['col-panel', 'panel'], ['col-ink', 'ink']]) $(id).addEventListener('input', (e) => { colours = { ...colours, [k]: e.target.value.toLowerCase() }; applyColours(true); });
 $('col-reset').addEventListener('click', () => { colours = { panel: THEMES[0][1], ink: THEMES[0][2] }; applyColours(true); detail('screen colours: back to the <em>LCD</em>'); });
 applyColours(false);
+// LOOK: GREY (the default: a plain grey panel, chicken-head knobs, css/grey.css) or LCD (the screen colours above).
+// Kept in this browser, like the colours. Johnny, 2026-11-19: "chicken feet knobs on a plain grey"
+const LOOK_STORE = 'lxr-afx-look';
+function applyLook(look, keep) {
+  document.documentElement.classList.toggle('look-grey', look === 'grey');
+  for (const b of $('looks').children) b.setAttribute('aria-pressed', b.dataset.look === look);
+  $('lcd-colours').hidden = look === 'grey';
+  if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
+}
+for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
+applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'lcd', false);
 function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)

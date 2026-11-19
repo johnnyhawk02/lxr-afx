@@ -1,0 +1,39 @@
+/* LXR-AFX, the GREY look (SETTINGS > LOOK; html.look-grey, the default): a plain grey metal panel, black chicken-head
+   knobs over a printed scale, a plain condensed type. Only colours, type and the knobs' drawing change: every box keeps
+   the LCD look's size and place, so the grid is the same in both. The LCD look (css/lcd.css) hides the knobs' parts */
+.knob .sc, .knob .skirt, .knob .skirt-top, .knob .chh, .knob .chl { display: none; }
+
+html.look-grey {
+  /* the two colours every shade comes from (over SCREEN COLOURS, which is the LCD look's) */
+  --panel-rgb: 172 174 172 !important; --ink-rgb: 24 25 27 !important; --shade-rgb: 0 0 0 !important; --glow: 0 !important;
+  --font: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --shadow: none; --ghost: rgb(var(--ink-rgb) / .13);
+  --accent: #e2561b; /* modulation: the range arc and the live dot */
+}
+html.look-grey * { font-size-adjust: cap-height 0.6; }
+html.look-grey body { background: #1d1e1f; }
+html.look-grey .screen {
+  border-color: #2b2c2d;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 30%, rgba(0, 0, 0, .06)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 2px, rgba(0, 0, 0, .02) 2px 3px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -2px 6px rgba(0, 0, 0, .18);
+}
+/* buttons: raised, lighter keys with a dark edge; pressed or chosen, dark */
+html.look-grey .btn { background: linear-gradient(180deg, rgb(255 255 255 / .34), rgb(255 255 255 / .1)); border-width: 2px; border-color: rgb(var(--ink-rgb) / .7);
+  box-shadow: 0 1px 0 rgb(0 0 0 / .25); }
+html.look-grey .btn:hover { background: rgb(255 255 255 / .42); }
+html.look-grey .btn:active, html.look-grey .btn[aria-pressed="true"], html.look-grey .btn[aria-selected="true"], html.look-grey .btn.big { background: var(--ink); color: rgb(var(--panel-rgb)); }
+html.look-grey .btn:disabled { background: transparent; }
+html.look-grey .lcdbox { background: rgb(0 0 0 / .06); border-color: rgb(var(--ink-rgb) / .7); }
+
+/* the chicken-head knob: a black skirt, the head turned to the value, a white line along it; the scale printed round */
+html.look-grey .knob svg { filter: drop-shadow(0 2px 1.5px rgb(0 0 0 / .4)); }
+html.look-grey .knob .tk, html.look-grey .knob .ptr { display: none; }
+html.look-grey .knob .sc { display: inline; stroke: var(--ink); stroke-width: 1.5; }
+html.look-grey .knob .skirt { display: inline; fill: #6b6d70; stroke: #3a3b3d; stroke-width: .8; }
+html.look-grey .knob .skirt-top { display: inline; fill: #85878a; }
+html.look-grey .knob .chh { display: inline; fill: #141516; stroke: #050505; stroke-width: .7; }
+html.look-grey .knob .chl { display: inline; stroke: #f4f3ee; stroke-width: 2; stroke-linecap: round; }
+html.look-grey .knob .notch { stroke: var(--ink); }
+html.look-grey .knob .mrange { stroke: var(--accent); stroke-width: 2.6; opacity: .95; }
+html.look-grey .knob .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }
