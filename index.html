@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwnr87we">
-<link rel="stylesheet" href="css/grey.css?v=mwnr87we">
+<link rel="stylesheet" href="css/lcd.css?v=mwnrj4b4">
+<link rel="stylesheet" href="css/grey.css?v=mwnrj4b4">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -135,6 +135,16 @@
         <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
           <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
           <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
+        </div>
+        <div id="lens-set">
+        <h3>LENS</h3>
+        <div class="randrow looks" id="lenses" role="group" aria-label="The camera's lens on the 3D panel">
+          <button class="btn" type="button" data-lens="flat" title="Straight down, no perspective: the knobs as they sit on the grid">FLAT</button>
+          <button class="btn" type="button" data-lens="tele" title="A long lens from high up: the faintest depth">TELE</button>
+          <button class="btn" type="button" data-lens="wide" title="A wide lens from close: the knobs lean out a little toward the edges">WIDE</button>
+          <button class="btn" type="button" data-lens="low" title="From a little lower, as you'd sit at it: the knobs' fronts show">LOW</button>
+        </div>
+        <p class="dim note">THE CAMERA ON THE GREY PANEL. WHERE EACH KNOB MEETS THE PANEL STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
         </div>
         <h3>KNOB SIZE</h3>
         <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="0" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">XXL</span></div>
@@ -304,6 +314,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwnr87we"></script>
+<script type="module" src="app/main.js?v=mwnrj4b4"></script>
 </body>
 </html>
