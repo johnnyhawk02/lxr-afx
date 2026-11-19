@@ -258,7 +258,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // changes the face and rolls; K too
   { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
     const g = await p.evaluate(() => { const r = (el) => el.getBoundingClientRect(), d = r(document.getElementById('rand-key')), a = r(document.getElementById('alter-key')), f = r(document.getElementById('faders')),
-      sends = r(document.querySelector('#faders .sect.sends')), heads = [...document.querySelectorAll('#keystrip .kgroup')].filter((g) => { const b = g.querySelector('.snd'), k = r(g); return !b || r(b).left < k.left - 1 || r(b).right > k.right + 1; }).length; // (each engine's name sits on its bracket
+      sends = r(document.querySelector('#faders .sect.sends')), heads = [...document.querySelectorAll('#keystrip .kgroup')].filter((g) => { const b = g.querySelector('.snd'), k = r(g); return !b || r(b).left < k.left - 1 || r(b).right > k.right + 1; }).length; // (each engine's name sits on its bracket)
       return { inActs: !!document.querySelector('#keyacts #rand-key'), inMenu: !!document.querySelector('#key-panel #alter-key'), shut: a.width === 0, square: Math.abs(d.width - d.height), size: d.width,
         sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, heads }; });
     if (!g.inActs || !g.inMenu || !g.shut || g.square > 0.5 || g.size < 24 || g.sendsTop > 14 || g.sendsRight > 14 || g.heads) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
