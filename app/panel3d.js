@@ -263,8 +263,10 @@ function sync() {
     if (!r || !r.width) continue;
     seen.add(el);
     let k = knobs.get(el); if (!k) knobs.set(el, (k = makeFader()));
-    const u = r.width / s / 40, m = /translate\(0 ([-\d.e]+)/.exec(el.querySelector('.cap')?.getAttribute('transform') || ''), ty = m ? +m[1] : 200;
-    const x = (r.left - ox) / s + 20 * u, y = (r.top - oy) / s + 100 * u;
+    // (the svg keeps its 40 x 200 drawing's shape inside a box that is often wider: scale by the tighter side and centre
+    // it, as the browser does, so the slot and cap land on the printed scale and never run out of the cell)
+    const u = Math.min(r.width / 40, r.height / 200) / s, m = /translate\(0 ([-\d.e]+)/.exec(el.querySelector('.cap')?.getAttribute('transform') || ''), ty = m ? +m[1] : 200;
+    const x = (r.left + r.width / 2 - ox) / s, y = (r.top + r.height / 2 - oy) / s;
     k.position.set(x, -y, 0); k.scale.setScalar(u); k.userData.ride.position.y = 100 - ty;
     let o = 1; for (let e = el; e && e !== screen; e = e.parentElement) o *= +getComputedStyle(e).opacity;
     if (k.userData.o !== o) { k.userData.o = o; for (const mesh of Object.values(k.userData.parts)) mesh.material = matAt(mesh.userData.mat, o); }
