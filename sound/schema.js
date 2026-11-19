@@ -21,9 +21,9 @@
 import { PAR, INIT_KIT } from '../engine/lxr-tables.js';
 import { PARAM_DTYPES, VOICE_PAGES, MOD_TARGETS, MOD_TARGET_VOICE_RANGES } from '../engine/lxr-ui-data.js';
 import { LFO_SYNC_NAMES, MOD_SOURCES, EXTRA_DEST, EXTRAS, EX, VOICE_KINDS, KINDS, extraDefaults, kitToPositions, WAVE_STEP, WAVE_MAX, WAVE_DETENT_NAMES,
-  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, slewMs } from '../engine/lxr.js?v=mwnglroa';
+  FILTER_STEP, FILTER_MAX, FILTER_DETENT_NAMES, MODE_MAX, wavePos, modePos, STEP_TIMES, slewMs } from '../engine/lxr.js?v=mwnh4p0m';
 import { EXTRA_CLICK_NAMES } from '../engine/lxr-clicks.js';
-import { TABLE_NAMES } from './tables.js?v=mwnglroa';
+import { TABLE_NAMES } from './tables.js?v=mwnh4p0m';
 
 export { PAR, MOD_TARGETS, MOD_TARGET_VOICE_RANGES };
 export const NUM_PARAMS = PAR.END_OF_SOUND_PARAMETERS;
@@ -405,6 +405,7 @@ export function showValue(e, v) {
   if (d.type === 'pm' && d.lr) { const x = v - d.centre; return x ? (x < 0 ? 'L' + Math.round(-x / d.centre * 100) : 'R' + Math.round(x / (127 - d.centre) * 100)) : 'C'; } // pan: L100 .. C .. R100
   if (d.type === 'pm') { const x = v - d.centre; return (x > 0 ? '+' : '') + num(x); }
   if (d.type === 'menu') return d.names[v] ?? String(v);
+  if (d.type === 'slew') return v > 0 ? slewMs(v) + 'ms' : 'off'; // (STEP SEQ's SLEW)
   if (d.type === 'detent') { // a name on a detent; between two, both (short) and how far along, in % (tri>saw 40)
     const k = Math.floor(v / d.step), t = v - k * d.step, sh = (n) => SHORT[n] || n;
     return t && d.names[k + 1] ? `${sh(d.names[k])}>${sh(d.names[k + 1])} ${Math.round(t / d.step * 100)}` : d.names[Math.min(k, d.names.length - 1)];

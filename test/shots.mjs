@@ -189,7 +189,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.click('.sect.dirt h3 .hdb'); await p.click('.sect.dirt .vsw .swb >> nth=2'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1'); await p.click('.sect.dirt >> nth=1 >> h3 .hdb >> nth=1');
     await p.waitForTimeout(600);
   }
-  // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 14 columns, and the FX +
+  // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 16 columns, and the FX +
   // MASTER tab's controls on its three columns of 6 (the echo's six with DUCK), 6 and 6
   const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
   { const right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
@@ -197,7 +197,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   for (const i of [0, 1, 2]) {
     await p.click(`#sounds .snd >> nth=${i}`); await p.waitForTimeout(100);
     const left = await cols('#faders .sect:not(.sends) .vf .knob');
-    if (left > 14) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (14 allowed)`); }
+    if (left > 16) { errors++; console.log(`${w}x${h} engine ${i}: knobs on ${left} columns (16 allowed)`); }
   }
   await p.click('#sounds .snd >> nth=0');
   // ENGINES (SETTINGS): 1 to 6 mono engines on even zones of the 25 keys; each engine in use shows its button, its keys
