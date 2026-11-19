@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LXR-AFX: subtle 3D mockup</title>
+<meta name="description" content="A MIDI drum instrument for a 25-key keyboard: three engines (drum, snare, metal), every key its own sound. Engine: the LXR-02 firmware's drum voices, via Elixir.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/lcd.css?v=topsect2">
+<link rel="stylesheet" href="css/grey.css?v=topsect2">
+<script>
+// a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
+// (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
+(function () {
+  var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
+  if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
+  // the look (SETTINGS > LOOK): GREY, a plain grey panel with chicken-head knobs (css/grey.css), unless LCD was chosen
+  try { document.documentElement.classList.add('look-grey'); } catch (e) { document.documentElement.classList.add('look-grey'); }
+  // the knob size (SETTINGS > KNOB SIZE): scales only the knob drawn in its cell, never the cell
+  try { var kz = { s: 0.8, l: 1.2 }[localStorage.getItem('lxr-afx-knob-size')]; if (kz) document.documentElement.style.setProperty('--knob-zoom', kz); } catch (e) { /* M */ }
+  // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
+  try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
+    var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
+    var dark = (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) / 255 < 0.4;
+    s.setProperty('--panel-rgb', p.join(' ')); s.setProperty('--ink-rgb', rgb(c.ink).join(' ')); s.setProperty('--shade-rgb', dark ? '0 0 0' : 'var(--ink-rgb)'); s.setProperty('--glow', dark ? 0 : 1);
+  } } catch (e) {}
+})();
+</script>
+<script type="importmap">{ "imports": { "three": "./mockup/vendor/three.module.min.js" } }</script>
+<style>
+/* MOCKUP: the panel and the knobs are drawn by three.js (mockup/subtle3d.js) behind the page; the page keeps its text,
+   printed scales, rules and buttons. Always the GREY look */
+#screen { isolation: isolate; }
+#screen > canvas.panel3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; border-radius: 6px; pointer-events: none; }
+html.look-grey .screen { background: none !important; box-shadow: none !important; }
+html.look-grey .knob svg { filter: none !important; }
+html.look-grey .knob .skirt, html.look-grey .knob .skirt-top, html.look-grey .knob .chh, html.look-grey .knob .chl { display: none !important; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<main class="screen" id="screen">
+  <header class="top">
+    <h1 class="logo">LXR<span>-</span>AFX</h1>
+    <span class="midilamp" id="midi-status" role="img" aria-label="MIDI: off" title="MIDI: off"><i></i>MIDI</span>
+    <div class="menu" id="pmenu">
+      <button class="btn pbtn" id="preset-btn" aria-haspopup="true" aria-expanded="false"><span class="dim">PRESET</span><b id="preset-name"></b><i id="preset-mark"></i><span>▾</span></button>
+      <div class="menupanel pleft" id="preset-panel" hidden>
+        <h3>THIS PATCH <span class="dim" id="preset-state"></span></h3>
+        <div class="randrow">
+          <input class="pname" id="preset-input" type="text" maxlength="18" spellcheck="false" autocomplete="off" aria-label="The patch's name" title="The patch's name: type one, or press NEW NAME for another made-up one">
+          <button class="btn" id="preset-roll" title="Another name, jumbled out of pieces of space and physics words">NEW NAME</button>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="preset-save" title="Keep this patch under its name: every key, the effects, the master and the BPM. Saved again, it replaces the saved one">SAVE</button>
+          <button class="btn" id="preset-save-new" title="Keep this patch as another preset, under a new name; the one it came from stays as it was saved">SAVE AS NEW</button>
+          <button class="btn" id="preset-revert" title="Go back to this preset as it was saved (UNDO brings your changes back)">REVERT</button>
+        </div>
+        <h3>SAVED <span class="dim" id="preset-count"></span></h3>
+        <div class="plist" id="preset-list"></div>
+        <h3>FILE</h3>
+        <div class="randrow">
+          <button class="btn" id="preset-export" title="Write every saved preset to a file on this computer">EXPORT</button>
+          <button class="btn" id="preset-import" title="Read presets from an exported file and add them to the list">IMPORT</button>
+          <input type="file" id="preset-file" accept=".json,application/json" hidden>
+        </div>
+      </div>
+    </div>
+    <div class="topacts">
+    <div class="menu" id="menu">
+      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
+      <div class="menupanel" id="menu-panel" hidden>
+        <h3>NEW PATCH</h3>
+        <div class="randrow">
+          <button class="btn" id="init-patch" title="A new patch: every key of all zones gets a fresh bucket sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">INIT PATCH</button>
+          <span class="dim note" id="init-info"></span>
+        </div>
+        <div class="randrow">
+          <button class="btn" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a bucket sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
+          <button class="btn" id="morph-ends" title="A new kick on the lowest key and something else (a snare, clap, rim, perc, cowbell, hat or cymbal) on the highest, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
+          <button class="btn" id="morph-run" title="A kick, a snare, a perc and a closed hat on four keys spread evenly from the lowest to the highest, every key between two of them morphed from one to the next. Press again for new ones. UNDO takes it back">KICK &gt; HAT</button>
+          <span class="dim cap">KEEP THE END KEYS,<br>MORPH BETWEEN</span><span class="dim cap">KICK AT THE BOTTOM,<br>ANOTHER AT THE TOP</span><span class="dim cap">KICK &gt; SNARE &gt;<br>PERC &gt; HAT</span>
+        </div>
+        <h3>NEW SOUNDS FROM <span class="dim">DICE, RANDOM, INIT</span></h3>
+        <div class="randrow srcrow">
+          <button class="btn" id="src-kit" data-src="kit" aria-pressed="true" title="A sound from the bucket as it is">BUCKET</button>
+          <button class="btn" id="src-breed" data-src="breed" aria-pressed="false" title="Two bucket sounds crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little">BREED</button>
+          <button class="btn" id="src-morph" data-src="morph" aria-pressed="false" title="Two bucket sounds blended at a random point between them: every knob in between, every switch from the nearer one">MORPH</button>
+          <button class="btn" id="src-kitstyle" data-src="kitstyle" aria-pressed="false" title="One bucket sound's switches, every knob a value another bucket sound has for it: new sounds in the ranges the bucket's sounds use">KIT-STYLE</button>
+          <button class="btn" id="src-free" data-src="free" aria-pressed="false" title="One bucket sound's switches, every knob anywhere in its drum-safe range: the wildest">FREE</button>
+          <button class="btn" id="src-recipe" data-src="recipe" aria-pressed="false" title="A named sound: kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell or zap, from a bucket sound of that type with its knobs set to the recipe">RECIPE</button>
+          <span class="dim cap wide" id="src-cap"></span>
+        </div>
+        <h3>THIS ENGINE <span class="dim" id="rand-name">DRUM</span></h3>
+        <div class="randrow">
+          <button class="btn" id="scatter" title="Every key of this engine gets a different sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
+          <button class="btn" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
+          <button class="btn" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">LEVEL</button>
+          <span class="dim cap" id="scatter-cap">NEW BUCKET SOUND<br>ON EVERY KEY</span><span class="dim cap">NUDGE THE SOUNDS<br>THE KEYS HAVE</span><span class="dim cap">MAKE THE KEYS<br>EQUALLY LOUD</span>
+        </div>
+        <h3>ALL THREE ENGINES</h3>
+        <div class="randrow">
+          <button class="btn" id="kit-scatter" title="Every key of all engines gets a sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
+          <button class="btn" id="kit-alter" title="Nudge every key of all engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
+          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">LEVEL ALL</button>
+          <span class="dim cap wide">THE SAME, FOR ALL 25 KEYS: DRUM, SNARE AND METAL</span>
+        </div>
+        <h3>HOW MUCH</h3>
+        <div class="bars" id="rand-bars" title="How far ALTER, ALTER ALL and ALTER KEY move each control"></div>
+        <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit, and may change the waveforms, modes, LFO, velocity and sample rate settings a bucket sound came with (it leaves those alone otherwise)"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER GOES ANYWHERE, SWITCHES TOO</span></label>
+        <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
+        <h3>KNOB PADLOCKS <span class="dim" id="lock-count">NONE LOCKED</span></h3>
+        <div class="randrow">
+          <button class="btn sm" id="lock-none" title="Open every knob's padlock, on all engines">UNLOCK ALL</button>
+          <span class="dim note">A LOCKED KNOB KEEPS ITS SETTING ON EVERY KEY, WHATEVER YOU PRESS HERE</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUND BLENDER (B): blend two sounds from the bucket into a new one, and save it to the bucket">BLENDER<kbd>B</kbd></button>
+    <div class="menu" id="tmenu">
+      <button class="btn" id="tools-btn" aria-haspopup="true" aria-expanded="false" title="Changes made to the whole key set at once">TOOLS ▾</button>
+      <div class="menupanel" id="tools-panel" hidden>
+        <h3>WAVETABLE</h3>
+        <div class="randrow">
+          <button class="btn" id="to-table" title="Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave (sine, triangle, saw, square, or its PWM pulse), so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves stay on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE knob is padlocked. UNDO takes it back">ALL KEYS TO WAVETABLE</button>
+          <span class="dim cap wide">EVERY KEY ONTO BASIC,<br>SOUNDING AS IT DID</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu" id="smenu">
+      <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="Tempo, how held keys come back, the keyboard's layout and the hardware knobs' mapping">SETTINGS ▾</button>
+      <div class="menupanel settings" id="settings-panel" hidden>
+        <h3>TEMPO</h3>
+        <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
+        <p class="dim note">FOR THE SEQUENCERS AND THE SYNCED ECHO: − AND + (SHIFT: BY 10), DOUBLE-CLICK THE NUMBER FOR 120</p>
+        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">RETURN</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
+        <p class="dim note">A HELD KEY COMING BACK WHEN A NEWER ONE IS LET GO: AT ONCE (OFF), OR ON THE NEXT STEP OF THE BPM</p>
+        <h3>KEYBOARD</h3>
+        <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
+        <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
+        <p class="dim note">THE LOWEST KEY OF THE THREE ZONES: − AND + MOVE THE WHOLE LAYOUT BY AN OCTAVE</p>
+        <h3>LOOK</h3>
+        <div class="randrow looks" id="looks" role="group" aria-label="The look of the screen">
+          <button class="btn" type="button" data-look="grey" title="A plain grey panel with chicken-head knobs">GREY</button>
+          <button class="btn" type="button" data-look="lcd" title="The LCD screen, in the colours below">LCD</button>
+        </div>
+        <h3>KNOB SIZE</h3>
+        <div class="randrow looks" id="knob-sizes" role="group" aria-label="The size of the knobs">
+          <button class="btn" type="button" data-size="s" title="Smaller knobs, in the same places">S</button>
+          <button class="btn" type="button" data-size="m" title="The knobs at their usual size">M</button>
+          <button class="btn" type="button" data-size="l" title="Bigger knobs, in the same places">L</button>
+        </div>
+        <p class="dim note">ONLY THE KNOB GROWS OR SHRINKS: EVERYTHING STAYS ON THE GRID. KEPT IN THIS BROWSER</p>
+        <div id="lcd-colours">
+        <h3>SCREEN COLOURS</h3>
+        <div class="randrow themes" id="themes"></div>
+        <div class="lowkey colour"><span class="dim">PANEL</span><input type="color" id="col-panel" aria-label="The screen's background colour" title="The screen's background colour"></div>
+        <div class="lowkey colour"><span class="dim">TEXT</span><input type="color" id="col-ink" aria-label="The colour of the text, knobs and lines" title="The colour of the text, knobs and lines"></div>
+        <div class="lowkey colour"><span class="dim"></span><button class="btn" id="col-reset" title="Back to the green LCD">RESET</button></div>
+        <p class="dim note">A LOOK FROM ABOVE, OR YOUR OWN TWO COLOURS: KEPT IN THIS BROWSER, NOT IN PRESETS</p>
+        </div>
+        <h3>HARDWARE KNOBS</h3>
+        <div class="randrow">
+          <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
+          <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BS2 MAP</button>
+          <span class="dim note">LEARN: PRESS, CLICK A CONTROL ON SCREEN, TURN A KNOB</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="undo" disabled title="Take back the last change to the sounds (Z, or Cmd+Z / Ctrl+Z); press again to go further back">UNDO<kbd>Z</kbd></button>
+    </div>
+  </header>
+
+  <div class="main">
+  <div class="left">
+  <section class="keyhead" id="keyhead" aria-label="The key">
+    <div class="khsec khkey"><h3>KEY</h3>
+      <div class="keyname"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span></div>
+      <div class="keyinfo"><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
+    </div>
+    <div class="khsec kheng"><h3>ENGINES <span class="dim">AND THEIR KEYS</span></h3>
+      <nav class="sounds" id="sounds" role="tablist" aria-label="Engines">
+        <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
+        <button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button>
+      </nav>
+    </div>
+    <div class="khsec khact"><h3>THIS KEY</h3>
+      <div class="keyacts" id="keyacts">
+        <button class="btn iconbtn" id="alter-key" aria-label="Alter key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><kbd>A</kbd></button>
+        <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span><kbd>L</kbd></button>
+        <button class="btn sm" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
+        <button class="btn sm" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
+        <button class="btn sm" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
+      </div>
+      <div class="keymake" id="make" role="group" aria-label="Make this key"></div>
+    </div>
+  </section>
+
+    <section class="editor">
+      <div class="faders" id="faders"></div>
+      <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
+      <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
+        <span class="dim" id="zones"></span></footer>
+    </section>
+    <aside class="fxside" id="fxside" aria-label="Effects" hidden>
+      <h2>SEND FX <span class="dim">EACH KEY'S ECHO + REVERB</span></h2>
+      <div id="fxglobal"></div>
+    </aside>
+  </div>
+  </div>
+
+  <!-- the phone view (a phone held upright, or ?phone): a pad for each of the 25 keys, and the few controls a hand needs -->
+  <div class="pv" id="pv">
+    <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b><button class="btn" id="pv-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="pv-menu">MENU</button></div>
+    <div class="pv-menu" id="pv-menu" hidden>
+      <button class="btn" id="pv-rand-eng">RANDOM: DRUM KEYS</button><span class="cap" id="pv-rand-eng-cap"></span>
+      <button class="btn" id="pv-alter-eng">ALTER: DRUM KEYS</button><span class="cap" id="pv-alter-eng-cap"></span>
+      <button class="btn" id="pv-alter-all">ALTER ALL</button><span class="cap">NUDGE THE SOUNDS OF ALL 25 KEYS</span>
+    </div>
+    <div class="pv-pads" id="pv-pads" role="group" aria-label="The 25 keys"></div>
+    <div class="pv-key"><b id="pv-key"></b><span id="pv-what"></span></div>
+    <div class="pv-row">
+      <button class="btn two pvdice" id="pv-dice" aria-label="New sound on this key"><span class="die" id="pv-die"></span><span>NEW SOUND</span></button>
+      <button class="btn two" id="pv-alter">ALTER</button>
+      <button class="btn" id="pv-lock" aria-pressed="false">LOCK</button>
+    </div>
+    <div class="pv-send" id="pv-echo"><span>ECHO</span><div class="track" role="slider" aria-label="This key's echo send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-send" id="pv-reverb"><span>REVERB</span><div class="track" role="slider" aria-label="This key's reverb send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
+    <div class="pv-row">
+      <button class="btn two" id="pv-init" aria-pressed="false">INIT PATCH</button>
+      <button class="btn two" id="pv-random">RANDOM ALL</button>
+      <button class="btn" id="pv-undo" disabled>UNDO</button>
+    </div>
+    <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
+  </div>
+  <div class="start" id="start">
+    <div class="splash">
+      <h1 class="splash-logo">LXR<span>-</span>AFX</h1>
+      <p class="splash-tag">DRUM SYNTH FOR 25 KEYS</p>
+      <div class="splash-keys" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <button class="btn big" id="start-btn"><span class="dk">CLICK TO START</span><span class="ph">START</span></button>
+    <p class="splash-hint dk">CLICK ANYWHERE OR PRESS ANY KEY: AUDIO AND MIDI START</p>
+    <p id="start-text"></p>
+    <p class="ph" id="start-phone">The sound blender: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
+    <p class="splash-foot dk">FREE AND OPEN SOURCE (GPL-3.0) · DRUM VOICES FROM THE LXR-02 FIRMWARE BY SONIC POTIONS</p>
+  </div>
+  <div class="blender" id="blender" hidden>
+    <div class="blbox" role="dialog" aria-label="Sound blender">
+      <h3>SOUND BLENDER <span class="dim" id="bl-eng"></span><button class="btn sm" id="bl-close" title="Close (Esc)">CLOSE</button></h3>
+      <div class="blpick" id="bl-a"></div>
+      <div class="blpick" id="bl-b"></div>
+      <div class="bars" id="bl-bars" title="How far from A to B: knobs slide, switches flip halfway. Let go to hear it; double-click for 50%"></div>
+      <div class="blnames"><span id="bl-an"></span><span id="bl-bn"></span></div>
+      <div class="blrow five">
+        <button class="btn" id="bl-play" title="Hear the blend on the engine on screen">PLAY</button>
+        <button class="btn" id="bl-alter">ALTER</button>
+        <button class="btn" id="bl-mods" title="RANDOM MODS: 3 or 4 knobs get a modulation (LFO, velocity, amp env or pitch env) at a random amount; press again for another set">RANDOM MODS</button>
+        <button class="btn" id="bl-pair" title="Two new sounds from the bucket for A and B">NEW PAIR</button>
+        <button class="btn" id="bl-key" title="Put the blend on the key on screen (UNDO takes it back)">PUT ON KEY</button>
+      </div>
+      <div class="dim blmods" id="bl-modtext"></div>
+      <div class="blmsg" id="bl-msg"></div>
+      <h3>SAVE TO THE BUCKET</h3>
+      <div class="blrow">
+        <input class="pname" id="bl-name" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="The new sound's name" title="The new sound's name: type one, or press NEW NAME">
+        <button class="btn" id="bl-roll" title="Another made-up name">NEW NAME</button>
+        <button class="btn" id="bl-save" title="Keep this sound: it joins the bucket at once (RANDOM, the dice and the blender draw from it) and the list below">SAVE</button>
+      </div>
+      <h3>SAVED <span class="dim" id="bl-count"></span></h3>
+      <div class="plist bllist" id="bl-list"></div>
+      <div class="blrow">
+        <button class="btn" id="bl-export" title="The saved sounds as a file (on a phone, through its share sheet): hand it over and they go into the repo's sound bucket for good">EXPORT LIST</button>
+        <button class="btn" id="bl-copy" title="The saved sounds as text on the clipboard, to paste into a message">COPY LIST</button>
+        <button class="btn" id="bl-clear" title="Empty the SAVED list once it's handed over, so the same sounds aren't sent twice (press twice; sounds already in the repo's bucket stay there)">CLEAR LIST</button>
+        <span class="dim note">HAND THE FILE (OR THE COPIED TEXT) OVER: THE SOUNDS GO INTO THE REPO'S BUCKET</span>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script>
+// the big screen is a fixed 16:8 panel (1780 x 890), scaled to fit the window and centred (app/main.js fitScreen does the
+// same on resize): set before the first paint so it never shows at the wrong size
+(function () {
+  if (document.documentElement.classList.contains('phone')) return;
+  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1780, (innerHeight - 16) / 890);
+  st.style.left = (innerWidth - 1780 * s) / 2 + 'px'; st.style.top = (innerHeight - 890 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
+})();
+</script>
+<script>
+// if the page's code fails to load or start (a stale cached file, an error), say so instead of sitting on START
+(function () {
+  let err = '';
+  addEventListener('error', function (e) { err = err || (e.message || 'a file failed to load'); }, true);
+  setTimeout(function () {
+    if (window.afxReady) return;
+    var t = document.getElementById('start-text');
+    if (t) t.textContent = 'The page didn\'t finish loading (' + (err || 'timed out') + '). Reload it with Cmd+Shift+R (Ctrl+Shift+R on a PC).';
+  }, 5000);
+})();
+</script>
+<script type="module" src="app/main.js?v=topsect2"></script>
+<script type="module" src="mockup/subtle3d.js"></script>
+</body>
+</html>
