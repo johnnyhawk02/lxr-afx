@@ -758,6 +758,19 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .blitem .blload { border-left: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blitem button:hover { background: var(--tint); }
 .blrow.five { grid-template-columns: repeat(5, 1fr); }
+/* ---- LOAD: the bucket's sounds in a list, on the same grid ---- */
+.ldrow { display: grid; grid-template-columns: 1fr 160px; gap: 8px; align-items: center; }
+.ldrow .pname { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+  border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
+.ldrow .dim { font-size: 15px; letter-spacing: 1px; text-align: right; }
+.ldtypes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
+.ldtypes .btn { padding: 4px 2px; min-width: 0; font-size: 15px; }
+.ldlist { max-height: min(460px, 52vh); margin-top: 10px; }
+.ldlist:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.ldlist .blitem { grid-template-columns: 1fr 110px 130px; }
+.ldlist .blitem span { font-size: 16px; letter-spacing: 1px; padding: 4px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); white-space: nowrap; overflow: hidden; }
+.ldlist .blitem.on, .ldlist .blitem.on button { background: var(--ink); color: var(--panel); }
+.ldnote { font-size: 15px; letter-spacing: 1px; margin-top: 8px; }
 .blmods { margin-top: 6px; font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- the PHONE is the blender alone (Johnny, 2026-11-18: "use the phone to solely generate and put sounds in the

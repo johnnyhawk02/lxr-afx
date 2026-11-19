@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo5uhvw';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo5uhvw';
-import { presetName, jumble } from './names.js?v=mwo5uhvw';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo5uhvw';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo5uhvw';
-import { breed, isDud } from '../sound/breed.js?v=mwo5uhvw';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo5uhvw';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo5uhvw';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo5uhvw';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo5uhvw';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo5uhvw';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo6leb9';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo6leb9';
+import { presetName, jumble } from './names.js?v=mwo6leb9';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo6leb9';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo6leb9';
+import { breed, isDud } from '../sound/breed.js?v=mwo6leb9';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo6leb9';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwo6leb9';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo6leb9';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo6leb9';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo6leb9';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo5uhvw', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo6leb9', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1476,7 +1476,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo5uhvw').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo6leb9').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1908,7 +1908,10 @@ function randKey(type) { // type: a recipe's name (the MAKE buttons), else the N
   rollDice();
   randChange(() => {
     const ed = { _kit: s.label, ...Object.fromEntries(s.vals) };
-    for (const [p, x] of now) if (p >= NUM_PARAMS) ed[p] = x; // the key keeps its sends
+    // the key keeps its sends, and whatever else past the firmware's parameters the new sound doesn't set; what it
+    // does set (its TABLE, the CLASSIC or wavetable osc, its depths and extras) comes with it
+    for (const [p, x] of now) if (p >= NUM_PARAMS && !(p in ed)) ed[p] = x;
+    keepSends(ed, now, SOUNDS[sound].engineVoice);
     dealRhythm(sound, ed, true); // and a rhythm, or none, as the RHYTHMS slider deals them
     ed[panPar(SOUNDS[sound].engineVoice)] = randPan(SOUNDS[sound].engineVoice); // and a pan in its range (a lock keeps the old one)
     keepLocked(ed, now);
@@ -2083,6 +2086,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault(); startAudio().then(() => play(S.sel, editKey[S.sel], 100)); // (on any other button, Space presses it)
   }
   else if (e.key === 'k' || e.key === 'K') randKey();
+  else if (e.key === 'o' || e.key === 'O') openLoader(true);
   else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
   else if (e.key === 'f' || e.key === 'F') $('fx-tab').click();
@@ -2512,6 +2516,66 @@ $('bl-copy').addEventListener('click', async () => {
 // what the status line says, said in the blender too (on a phone, where the status line isn't shown)
 new MutationObserver(() => { $('bl-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
 window.afx.blender = { open: openBlender, state: BL, now: blendNow, saved: () => savedSounds, bucket: blBucket };
+
+// ---------------------------------------------------------------------------------------------------------------
+// LOAD (O, or LOAD by the dice): a pop-up browser of the sound bucket. FIND by name, a row of types, the list (name,
+// type, oscillator: CLASSIC or its wavetable). A click puts that sound on the key on screen, whole (its TABLE, depths
+// and extras with it), and plays it; up and down step through the list doing the same. UNDO takes each one back
+// ---------------------------------------------------------------------------------------------------------------
+const LD = { type: 'all', find: '', at: -1, list: [] };
+const LD_TYPES = ['all', 'drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
+const ldTable = (s) => TABLE_NAMES[Math.round(s.params.table || 0)] || TABLE_NAMES[0];
+$('ld-types').innerHTML = LD_TYPES.map((t) => `<button class="btn" data-t="${t}">${t.toUpperCase()}</button>`).join('');
+function ldFill() {
+  const f = LD.find.trim().toUpperCase();
+  LD.list = bucket().filter((s) => (LD.type === 'all' || s.type === LD.type) && (!f || s.name.includes(f))).sort((a, b) => a.name.localeCompare(b.name));
+  $('ld-count').textContent = `${LD.list.length} SOUND${LD.list.length === 1 ? '' : 'S'}`;
+  for (const b of $('ld-types').children) b.setAttribute('aria-pressed', b.dataset.t === LD.type);
+  const cur = S.keyEdits[S.sel][editKey[S.sel]]?._kit;
+  LD.at = LD.list.findIndex((s) => labelOf(s) === cur);
+  $('ld-list').innerHTML = LD.list.map((s, i) => `<div class="blitem${i === LD.at ? ' on' : ''}" role="option" aria-selected="${i === LD.at}"><button class="blload" data-i="${i}" title="Put ${s.name} on this key and hear it">${s.name}</button><span>${s.type.toUpperCase()}</span><span>${ldTable(s).toUpperCase()}</span></div>`).join('')
+    || '<div class="blitem"><span>NOTHING BY THAT NAME</span></div>';
+  $('ld-key').textContent = `ON ${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}`;
+}
+function ldMark() {
+  [...$('ld-list').children].forEach((r, i) => { r.classList.toggle('on', i === LD.at); r.setAttribute('aria-selected', i === LD.at); });
+  $('ld-list').children[LD.at]?.scrollIntoView({ block: 'nearest' });
+}
+function ldLoad(i) {
+  const snd = LD.list[i]; if (!snd) return;
+  const sound = S.sel, note = editKey[sound], v = SOUNDS[sound].engineVoice;
+  if (keyLocked(sound, note)) { lockedMsg(); return; }
+  LD.at = i; ldMark();
+  const skip = new Set([PAR.VOL1 + v, panPar(v)]), vals = toVoice(snd, v).filter(([p]) => !skip.has(p)), label = labelOf(snd);
+  randChange(() => {
+    const now = keyPatch(sound, note).vals, ed = { _kit: label, ...Object.fromEntries(vals) };
+    ed[panPar(v)] = randPan(v); keepSends(ed, now, v); keepLocked(ed, now);
+    S.keyEdits[sound][note] = ed; levelKey(sound, note, true);
+    if (S.editAll) setEditAll(false);
+  }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${snd.name}</em> from the bucket (${ldTable(snd).toUpperCase()}) (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
+}
+function openLoader(open) {
+  $('loader').hidden = !open; $('load-key').setAttribute('aria-pressed', open);
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); ldFill(); $('ld-list').focus(); ldMark(); }
+}
+$('load-key').addEventListener('click', () => openLoader($('loader').hidden));
+$('ld-close').addEventListener('click', () => openLoader(false));
+$('loader').addEventListener('pointerdown', (e) => { if (e.target === $('loader')) openLoader(false); });
+$('ld-types').addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) { LD.type = b.dataset.t; ldFill(); } });
+$('ld-find').addEventListener('input', () => { LD.find = $('ld-find').value; ldFill(); });
+$('ld-list').addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (b) ldLoad(Number(b.dataset.i)); });
+// while it's open, its keys are its own (up/down step the list, Enter loads, Esc closes); the rest of the page's keys wait
+document.addEventListener('keydown', (e) => {
+  if ($('loader').hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); openLoader(false); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); ldLoad(Math.max(0, Math.min(LD.list.length - 1, LD.at + (e.key === 'ArrowDown' ? 1 : -1)))); }
+  else if (e.key === 'Enter' && e.target === $('ld-find')) { e.preventDefault(); ldLoad(Math.max(LD.at, 0)); }
+  else if ((e.metaKey || e.ctrlKey) && e.key === 'z') return;
+  else if (e.target.closest('input')) return;
+  else if (e.key === ' ') { e.preventDefault(); startAudio().then(() => play(S.sel, editKey[S.sel], 100)); }
+  else return;
+  e.stopImmediatePropagation();
+}, true);
 
 // with no morph, keys with nothing of their own all play the base: a zone with no key sounds starts scattered
 onSounds().forEach((i) => { if (!Object.keys(S.keyEdits[i]).length) scatter(i); });
