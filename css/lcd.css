@@ -717,6 +717,13 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .faders .sect h3.withbtn { display: flex; align-items: center; gap: 6px; overflow: visible; }
 .faders .sect h3 .tbl { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
 .faders .sect h3 .tbl.on { background: var(--ink); color: var(--panel); }
+/* the OSC heading's dropdown: the list of oscillators under its button, two to a row */
+.faders .sect h3 .tdd { position: relative; display: inline-flex; }
+.tblmenu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 260px;
+  padding: 8px; background: var(--panel); border: 2px solid var(--ink); border-radius: 3px; box-shadow: 6px 7px 0 rgba(11, 12, 10, .35); }
+.tblmenu[hidden] { display: none; }
+.tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
+.tblmenu .btn.on { background: var(--ink); color: var(--panel); }
 /* the wave display in the OSC heading: one cycle of what the tone plays, the frames either side faint */
 .faders .sect h3 .wv { flex: 1 1 auto; min-width: 40px; height: 22px; margin-left: 4px; overflow: visible; }
 .faders .sect h3 .wv path, .faders .sect h3 .wv line { fill: none; stroke: var(--ink); vector-effect: non-scaling-stroke; stroke-linejoin: round; }
