@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwo5n7te">
-<link rel="stylesheet" href="css/grey.css?v=mwo5n7te">
+<link rel="stylesheet" href="css/lcd.css?v=mwo5qz3d">
+<link rel="stylesheet" href="css/grey.css?v=mwo5qz3d">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -188,31 +188,11 @@
     </div>
     <div class="khsec khact"><h3>THIS KEY <span class="dim">DICE: <span class="dice-src"></span></span></h3>
       <div class="keyacts" id="keyacts">
-        <div class="menu" id="kmenu">
-          <button class="btn" id="key-btn" aria-haspopup="true" aria-expanded="false" title="This key: LOCK (L), CLEAR, COPY, PASTE"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span id="key-btn-text">KEY</span><span>▾</span></button>
-          <div class="menupanel keypanel" id="key-panel" hidden>
-            <h3>THIS KEY <span class="dim" id="key-panel-name"></span></h3>
-            <div class="randrow">
-              <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span><kbd>L</kbd></button>
-              <button class="btn" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
-            </div>
-            <div class="randrow">
-              <button class="btn" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
-              <button class="btn" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
-            </div>
-          </div>
-        </div>
-        <div class="menu" id="mkmenu">
-          <button class="btn" id="make-btn" aria-haspopup="true" aria-expanded="false" title="Make this key a kick, a snare, a hat… (a new sound of that type each press), or ALTER it (A)">MAKE ▾</button>
-          <div class="menupanel makepanel" id="make-panel" hidden>
-            <h3>MAKE THIS KEY <span class="dim">A NEW SOUND OF THE TYPE, EACH PRESS</span></h3>
-            <div class="keymake" id="make" role="group" aria-label="Make this key"></div>
-            <h3>OR NUDGE IT <span class="dim">BY THE ALTER AMOUNT (RANDOM MENU)</span></h3>
-            <div class="randrow">
-              <button class="btn iconbtn" id="alter-key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><span>ALTER</span><kbd>A</kbd></button>
-            </div>
-          </div>
-        </div>
+        <button class="btn iconbtn" id="alter-key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount set in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><span>ALTER</span><kbd>A</kbd></button>
+        <button class="btn keylock" id="lock-key" title="Freeze this key: nothing changes its sound until it's unlocked (L)"><svg viewBox="0 0 16 18" aria-hidden="true"><path class="shackle" d="M4 8V5a4 4 0 0 1 8 0v3"/><rect x="1.5" y="8" width="13" height="9" rx="1"/></svg><span>LOCK KEY</span><kbd>L</kbd></button>
+        <button class="btn" id="copy-key" title="Copy this key's sound (Cmd+C / Ctrl+C)">COPY</button>
+        <button class="btn" id="paste-key" disabled title="Paste the copied sound onto this key (Cmd+V / Ctrl+V; UNDO takes it back)">PASTE</button>
+        <button class="btn" id="clear-key" title="This key back to the engine's base sound">CLEAR</button>
       </div>
     </div>
   </section>
@@ -321,6 +301,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwo5n7te"></script>
+<script type="module" src="app/main.js?v=mwo5qz3d"></script>
 </body>
 </html>
