@@ -864,20 +864,22 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keyhead .menupanel .randrow > .btn { width: 100%; }
 .keylocked .keyhead #key-btn { background: var(--panel); color: var(--ink); border-color: var(--panel); }
 
-/* ---- a toggle switch in a knob's cell (vtoggle in app/main.js): a control with two settings, the same size as a
-   knob, so the grid holds. Lever up: its second setting (ON); down: its first. This look draws a slot with its block
-   at one end; css/grey.css draws a lever on a nut. A modulated one shows its sources' swing as a bar beside it and a
-   dot at the end the engine has it at now ---- */
+/* ---- a rocker switch in a knob's cell (vtoggle in app/main.js): a control with two settings, the same size as a
+   knob, so the grid holds. Top half pressed: its second setting (ON, marked I); bottom half: its first (O). This look
+   fills the pressed half; css/grey.css draws a black rocker in its bezel. A modulated one shows its sources' swing as a
+   bar beside it and a dot at the end the engine has it at now ---- */
 .tog, .vsw .swb.tog { display: block; width: var(--ks); height: var(--ks); padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
 .vsw .swb.tog:hover, .vsw .swb.tog[aria-pressed="true"] { background: transparent; }
 .tog:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .tog svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(var(--knob-zoom, 1)); transform-origin: 50% 50%;
   filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); pointer-events: none; }
-.tog .lev { transform-origin: 32px 32px; transition: transform .09s ease-in; }
-.tog[aria-checked="false"] .lev { transform: scaleY(-1); }
-.tog .tnut, .tog .tbush, .tog .tbat, .tog .thl, .tog .tsc { display: none; }
-.tog .tslot { fill: none; stroke: var(--ink); stroke-width: 3.4; }
-.tog .tblk { fill: var(--ink); }
+.tog .rbez { fill: none; stroke: var(--ink); stroke-width: 3.4; }
+.tog .rup, .tog .rdn { fill: transparent; transition: fill .08s; }
+.tog[aria-checked="true"] .rup, .tog[aria-checked="false"] .rdn { fill: var(--ink); }
+.tog .rhl { display: none; }
+.tog .rpiv { stroke: var(--ink); stroke-width: 2; }
+.tog .rmk { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; }
+.tog[aria-checked="true"] line.rmk, .tog[aria-checked="false"] circle.rmk { stroke: var(--panel); }
 .tog .mrange { stroke: var(--ink); stroke-width: 3; opacity: .45; }
 .tog .mdot { fill: var(--ink); display: none; }
 .vf.modded.modlive .tog .mdot { display: inline; }
