@@ -1,7 +1,7 @@
 // The GREY look's panel drawn with three.js, for a subtle depth (Johnny, 2026-11-19: "subtly 3d ... no boxes, just a
 // flat plane with knobs"). A canvas sits behind the screen's contents in place of the panel's flat background and draws
 // only a flat panel plane, lit, and a chicken-head knob in each knob's cell, turned with the app's own value, casting a
-// soft shadow. It looks straight down through an orthographic camera, so every knob stays on its grid cell and nothing
+// soft shadow. By default it looks straight down through an orthographic camera (SETTINGS > LENS has gentle others), so every knob stays on its grid cell and nothing
 // is drawn in perspective. The text, the printed scales, the rules and the buttons stay the page's own. On while the
 // look is GREY on the big screen (html.panel3d, css/grey.css); the LCD look and the phone keep the flat drawing
 import * as THREE from '../vendor/three/three.module.min.js';
@@ -27,8 +27,23 @@ renderer.shadowMap.type = THREE.VSMShadowMap;
 
 const scene = new THREE.Scene();
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-const camera = new THREE.OrthographicCamera(0, 1, 0, -1, 1, 4000);
-camera.position.set(0, 0, 2000);
+// the camera (SETTINGS > LENS, html data-lens): FLAT looks straight down with no perspective; the others are a lens at
+// a height over the panel (a multiple of its height) and, for LOW, set off toward the player, so the knobs' sides show
+// a little. Every lens is cut to frame the panel's surface exactly (an off-axis frustum), so where a knob meets the
+// panel stays on its grid cell under the page's printed scale: only the raised parts lean, by a few pixels at most
+const LENSES = { flat: null, tele: { d: 6 }, wide: { d: 1.5 }, low: { d: 1.6, dy: 0.6 } };
+const camera = new THREE.Camera();
+let lensKey = '';
+function setLens() {
+  const lens = LENSES[root.dataset.lens] === undefined ? null : LENSES[root.dataset.lens];
+  if (!lens) { camera.position.set(0, 0, 2000); camera.projectionMatrix.makeOrthographic(0, W, 0, -H, 1, 4000); }
+  else {
+    const D = lens.d * H, cx = W / 2, cy = -H / 2 - (lens.dy || 0) * H, n = D - 200, f = D + 100, k = n / D;
+    camera.position.set(cx, cy, D);
+    camera.projectionMatrix.makePerspective((0 - cx) * k, (W - cx) * k, (0 - cy) * k, (-H - cy) * k, n, f);
+  }
+  camera.updateMatrixWorld(); camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+}
 
 // the light: soft fill from everywhere, and one lamp up and to the left, high, so shadows fall short to the lower right
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8c8e, 1.0));
@@ -188,15 +203,16 @@ function sync() {
   if (w !== W || h !== H || renderer.getPixelRatio() !== Math.min(2, devicePixelRatio * s)) {
     W = w; H = h;
     renderer.setPixelRatio(Math.min(2, devicePixelRatio * s)); renderer.setSize(W, H, false);
-    Object.assign(camera, { left: 0, right: W, top: 0, bottom: -H }); camera.updateProjectionMatrix();
+    lensKey = '';
     panel.scale.set(W, H, 1); panel.position.set(W / 2, -H / 2, 0);
     sun.position.set(W / 2 - 900, -H / 2 + 1100, 1600); sun.target.position.set(W / 2, -H / 2, 0);
     Object.assign(sun.shadow.camera, { left: -W * 0.75, right: W * 0.75, top: H * 0.75, bottom: -H * 0.75, near: 100, far: 4000 });
     sun.shadow.camera.updateProjectionMatrix();
   }
+  if (lensKey !== (root.dataset.lens || 'flat')) { lensKey = root.dataset.lens || 'flat'; setLens(); }
   const ox = sr.left + screen.clientLeft * s, oy = sr.top + screen.clientTop * s;
   const style = knobStyle();
-  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}:${style}`;
+  const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}/${lensKey}:${style}`;
   for (const el of screen.querySelectorAll('.knob')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
     if (!r || !r.width) continue;
@@ -246,7 +262,7 @@ const relevant = (r) => r.type === 'childList' || r.attributeName === 'class' ||
   || r.attributeName === 'aria-checked' || (r.attributeName === 'transform' && r.target.classList?.contains('rot')) || (r.attributeName === 'style' && r.target.id === 'stage');
 new MutationObserver((rs) => { if (rs.some(relevant)) draw(); }).observe(document.getElementById('stage'),
   { subtree: true, childList: true, attributes: true, attributeFilter: ['transform', 'class', 'style', 'hidden', 'aria-checked'] });
-new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+new MutationObserver(draw).observe(root, { attributes: true, attributeFilter: ['class', 'style', 'data-lens'] });
 addEventListener('resize', draw);
 document.fonts?.ready.then(draw);
 draw(); setTimeout(draw, 300); setTimeout(draw, 1200);

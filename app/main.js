@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnrjspw';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnrjspw';
-import { presetName, jumble } from './names.js?v=mwnrjspw';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnrjspw';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnrjspw';
-import { breed, isDud } from '../sound/breed.js?v=mwnrjspw';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnrjspw';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwnrjspw';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnrjspw';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnrjspw';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnrjspw';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwnrl778';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwnrl778';
+import { presetName, jumble } from './names.js?v=mwnrl778';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwnrl778';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwnrl778';
+import { breed, isDud } from '../sound/breed.js?v=mwnrl778';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwnrl778';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwnrl778';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwnrl778';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwnrl778';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwnrl778';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnrjspw', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwnrl778', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1404,12 +1404,24 @@ function applyLook(look, keep) {
   for (const b of $('looks').children) b.setAttribute('aria-pressed', b.dataset.look === look);
   $('lcd-colours').hidden = look === 'grey';
   $('knob-style-row').hidden = look !== 'grey';
+  $('lens-set').hidden = look !== 'grey';
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnrjspw').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwnrl778').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
+// LENS: the camera on the GREY look's 3D panel (app/panel3d.js reads html data-lens): FLAT (straight down, the default),
+// TELE, WIDE or LOW. Kept in this browser. Johnny, 2026-11-19: "give a lens type or something on the camera"
+const LENS_STORE = 'lxr-afx-lens', LENS_NAMES = ['flat', 'tele', 'wide', 'low'];
+function applyLens(lens, keep) {
+  if (!LENS_NAMES.includes(lens)) lens = 'flat';
+  document.documentElement.dataset.lens = lens;
+  for (const b of $('lenses').children) b.setAttribute('aria-pressed', b.dataset.lens === lens);
+  if (keep) { try { localStorage.setItem(LENS_STORE, lens); } catch (e) { /* not kept */ } }
+}
+for (const b of $('lenses').children) b.addEventListener('click', () => { applyLens(b.dataset.lens, true); detail(`lens: <em>${b.textContent}</em>`); });
+{ let l = 'flat'; try { l = localStorage.getItem(LENS_STORE) || 'flat'; } catch (e) { /* FLAT */ } applyLens(l, false); }
 for (const b of $('looks').children) b.addEventListener('click', () => { applyLook(b.dataset.look, true); detail(`look: <em>${b.textContent}</em>`); });
 applyLook(document.documentElement.classList.contains('look-grey') ? 'grey' : 'lcd', false);
 // KNOB SIZE: the slider grows every knob, scale and all, from XL (the left end, the default) to XXL; its value and name
