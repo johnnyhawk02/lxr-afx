@@ -333,7 +333,7 @@ function onCC(cc, val) {
   const t = ccMap()[cc];
   if (!t) { showLastText(`CC${cc} ${val} · not mapped (LEARN maps it)`); return; }
   let text;
-  if (t.t === 'global' || t.t === 'sound') { showLastText(`CC${cc} · was the morph (gone): BS2 MAP or LEARN maps it`); return; }
+  if (t.t === 'global' || t.t === 'sound') { showLastText(`CC${cc} · was the morph (gone): BASS STATION 2 or LEARN maps it`); return; }
   if (t.t === 'randkey') { // a button: acts once as it goes past half way up
     const up = val >= 64, was = ccHeld[cc]; ccHeld[cc] = up;
     if (up && !was) randKey(); return;
@@ -668,6 +668,11 @@ function tablePicker(h3, voice, row) {
     });
     menu.append(it); return it;
   });
+  // the list's last line: ALL KEYS TO WAVETABLE (was the TOOLS menu's only button), next to the table it changes
+  const all = document.createElement('button'); all.type = 'button'; all.className = 'btn sm tblall'; all.textContent = 'ALL KEYS TO WAVETABLE';
+  all.title = 'Every key on the CLASSIC waves moves onto the BASIC wavetable, at the place that plays its wave, so it sounds as it did, with the WAVE knob now sweeping the table. Noise waves, locked keys, keys already on a table and padlocked engines stay. UNDO takes it back';
+  all.addEventListener('click', () => { openTableMenu(false); allToTable(); });
+  menu.append(all);
   faderDraws.push(() => {
     const i = tableNow(voice);
     b.textContent = TABLE_NAMES[i].toUpperCase() + ' \u25be'; b.classList.toggle('on', i > 0);
@@ -1430,7 +1435,7 @@ function drawStrip() {
 document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.closest('select')) e.preventDefault(); }, { passive: false, capture: true });
 
 // ---- the RANDOM menu ----
-function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); openTools(false); } }
+function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); openLook(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
 // ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
 // SCREEN COLOURS: the screen is drawn in two colours, a panel and an ink (css/lcd.css derives every other shade from
@@ -1538,19 +1543,22 @@ function applyKnobStyle(style, keep) {
 }
 for (const b of $('knob-styles').children) b.addEventListener('click', () => { applyKnobStyle(b.dataset.style, true); detail(`knob style: <em>${b.textContent}</em>`); });
 { let st = KNOB_STYLE_DEFAULT; try { st = localStorage.getItem(KNOB_STYLE_STORE) || KNOB_STYLE_DEFAULT; } catch (e) { /* the default */ } applyKnobStyle(st, false); }
-function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openTools(false); } }
+// ---- SETUP (how it plays) and LOOK (how it looks): the two top-bar menus SETTINGS was split into (Johnny, 2026-11-19) ----
+function openLook(open) { $('look-panel').hidden = !open; $('look-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openSettings(false); } }
+$('look-btn').addEventListener('click', () => openLook($('look-panel').hidden));
+function openSettings(open) { $('settings-panel').hidden = !open; $('settings-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openLook(false); } }
 $('settings-btn').addEventListener('click', () => openSettings($('settings-panel').hidden));
 $('learn').addEventListener('click', () => { if (learn) openSettings(false); }); // (armed, the menu gets out of the way of the control to click)
 document.addEventListener('pointerdown', (e) => {
   if (!$('menu-panel').hidden && !e.target.closest('#menu')) openMenu(false);
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
   if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
-  if (!$('tools-panel').hidden && !e.target.closest('#tmenu')) openTools(false);
+  if (!$('look-panel').hidden && !e.target.closest('#lmenu')) openLook(false);
   if (!$('key-panel').hidden && !e.target.closest('#kmenu')) openKeyMenu(false);
   if (!$('make-panel').hidden && !e.target.closest('#mkmenu')) openMake(false);
   if (!e.target.closest('.tdd')) openTableMenu(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openTools(false); openKeyMenu(false); openMake(false); openTableMenu(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openLook(false); openKeyMenu(false); openMake(false); openTableMenu(false); } });
 // THIS KEY's two menus (Johnny, 2026-11-19: "try and put these items into menus"): KEY (ALTER, LOCK, CLEAR, COPY, PASTE;
 // their shortcuts still work with the menu shut) and MAKE (the key made a kick, a snare...). A press in either shuts it
 function openKeyMenu(open) { $('key-panel').hidden = !open; $('key-btn').setAttribute('aria-expanded', open); if (open) openMake(false); }
@@ -1638,9 +1646,6 @@ async function randChange(fn, what, whole) {
 }
 const selVoice = () => SOUNDS[S.sel].engineVoice;
 
-// ---- TOOLS: changes made to the whole key set at once ----
-function openTools(open) { $('tools-panel').hidden = !open; $('tools-btn').setAttribute('aria-expanded', open); if (open) { openMenu(false); openPresets(false); openSettings(false); } }
-$('tools-btn').addEventListener('click', () => openTools($('tools-panel').hidden));
 // ALL KEYS TO WAVETABLE: every key on CLASSIC moved onto the BASIC table at the place that plays its wave (sine,
 // triangle, saw, square, or the pulse of its PWM: sound/tables.js classicOnBasic), so it sounds as it did. A noise wave
 // has no frame and stays on CLASSIC, and so do locked keys, keys already on a table, and an engine whose WAVE or TABLE
@@ -1677,9 +1682,7 @@ async function allToTable() {
   const rest = left();
   detail(n.moved ? `<em>${n.moved} key${n.moved === 1 ? '' : 's'}</em> moved onto the BASIC wavetable, each playing its wave as before${rest.length ? `; left on CLASSIC or as they were: ${rest.join(', ')}` : ''}${n.padlock ? `; ${n.padlock} engine${n.padlock === 1 ? '' : 's'} skipped (WAVE or TABLE padlocked)` : ''} (UNDO takes it back)`
     : `no key to move: ${rest.join(', ') || 'none on CLASSIC'}${n.padlock ? `, ${n.padlock} engine${n.padlock === 1 ? '' : 's'} padlocked` : ''}`);
-  openTools(false);
 }
-$('to-table').addEventListener('click', () => allToTable());
 
 // ---- AUTO LEVEL: the kits' sounds are of very different loudness, so each sound a randomiser deals or alters is
 // played offline and measured (sound/level.js), and its key gets a TRIM: a gain of its own, beside LEVEL, that brings
@@ -1786,11 +1789,11 @@ function bredSound(sound) {
 // deals a bucket sound as it is; BREED crosses two (bredSound); MORPH, KIT-STYLE, FREE and RECIPE are sound/makers.js,
 // each made from the engine's bucket sounds (pool) and, like BREED, played offline first so a dud is skipped (8 tries) ----
 const SOURCES = {
-  kit: { name: 'BUCKET', dice: 'new sound', made: 'a new bucket sound', cap: 'A BUCKET SOUND AS IT IS' },
-  breed: { name: 'BREED', dice: 'breed', made: 'a new bred sound', cap: 'TWO BUCKET SOUNDS CROSSED, SECTION BY SECTION' },
-  morph: { name: 'MORPH', dice: 'morph', made: 'a new morphed sound', cap: 'TWO BUCKET SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
-  kitstyle: { name: 'KIT-STYLE', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT BUCKET SOUND' },
-  free: { name: 'FREE', dice: 'free', made: 'a new free sound', cap: 'EVERY KNOB ANYWHERE IN ITS DRUM RANGE' },
+  kit: { name: 'AS THEY ARE', dice: 'new sound', made: 'a new bucket sound', cap: 'A BUCKET SOUND AS IT IS' },
+  breed: { name: 'BRED', dice: 'breed', made: 'a new bred sound', cap: 'TWO BUCKET SOUNDS CROSSED, SECTION BY SECTION' },
+  morph: { name: 'BLENDED', dice: 'morph', made: 'a new morphed sound', cap: 'TWO BUCKET SOUNDS BLENDED, 25 TO 75% OF THE WAY' },
+  kitstyle: { name: 'PATCHWORK', dice: 'kit-style', made: 'a new kit-style sound', cap: 'EVERY KNOB FROM A DIFFERENT BUCKET SOUND' },
+  free: { name: 'ANYTHING', dice: 'free', made: 'a new free sound', cap: 'EVERY KNOB ANYWHERE IN ITS DRUM RANGE' },
   recipe: { name: 'RECIPE', dice: 'recipe', made: 'a new recipe sound', cap: 'KICK, TOM, SNARE, CLAP, RIM, HATS, CYMBAL, COWBELL, ZAP' },
 };
 const source = () => (SOURCES[S.rand.source] ? S.rand.source : 'kit');
@@ -1845,7 +1848,7 @@ const madeText = () => SOURCES[source()].made;
 function drawSource() {
   const src = source(), d = SOURCES[src];
   for (const b of document.querySelectorAll('.srcrow .btn')) b.setAttribute('aria-pressed', b.dataset.src === src);
-  for (const el of document.querySelectorAll('.dice-src')) el.textContent = d.dice;
+  for (const el of document.querySelectorAll('.dice-src')) el.textContent = d.name; // (THIS KEY's heading: what the dice deals)
   const cap = $('src-cap'); if (cap) cap.textContent = d.cap;
   diceBtn.title = src === 'kit' ? 'NEW SOUND (K): a different bucket sound on this key only. UNDO takes it back; LEARN can put it on a button'
     : `${d.name} (K): a new sound on this key only (${d.cap.toLowerCase()}). UNDO takes it back; LEARN can put it on a button`;
@@ -1853,7 +1856,7 @@ function drawSource() {
 }
 function setSource(src) {
   S.rand.source = src; save(); drawSource();
-  detail(`NEW SOUNDS FROM <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and INIT PATCH)`);
+  detail(`NEW SOUNDS ARE <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and RANDOM PATCH)`);
 }
 for (const b of document.querySelectorAll('.srcrow .btn')) b.addEventListener('click', () => setSource(b.dataset.src));
 function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
@@ -1991,11 +1994,11 @@ $('init-patch').addEventListener('click', () => {
   const nl = lockedKeys();
   if (nl && !initArmed) { // locked keys are the ones you kept on purpose: asked once
     initArmed = setTimeout(disarmInit, 4000); drawInit();
-    detail(`INIT PATCH replaces every key, the <em>${nl} locked</em> too: press it again to go ahead`); return;
+    detail(`RANDOM PATCH replaces every key, the <em>${nl} locked</em> too: press it again to go ahead`); return;
   }
   disarmInit();
   let n;
-  randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'INIT PATCH', true).then(() => {
+  randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; if (S.editAll) setEditAll(false); }, 'RANDOM PATCH', true).then(() => {
     drawKeymap(); sendTrim(); drawPreset();
     detail(`new patch <em>${S.preset.name}</em>: reverb on ${n.reverb}, echo on ${n.echo} · BPM, FX, master reset${keptNote(onSounds())}`);
   });
@@ -2300,7 +2303,7 @@ function drawPreset() {
 }
 function openPresets(open) {
   $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
-  if (open) { openMenu(false); openSettings(false); openTools(false); drawPreset(); } else if (delArmed) { clearTimeout(delT); delArmed = null; }
+  if (open) { openMenu(false); openSettings(false); openLook(false); drawPreset(); } else { if (delArmed) { clearTimeout(delT); delArmed = null; } if (initArmed) disarmInit(); } // (RANDOM PATCH lives here now)
 }
 $('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
 $('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));
@@ -2420,7 +2423,7 @@ function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let
 function openBlender(open) {
   if (!open && phoneOn) return; // (on a phone the blender is the whole screen)
   $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); openTools(false); fillSides(); drawBlender(); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openLook(false); fillSides(); drawBlender(); }
 }
 $('blend-btn').addEventListener('click', () => openBlender($('blender').hidden));
 $('bl-close').addEventListener('click', () => openBlender(false));
@@ -2563,7 +2566,7 @@ $('bpm').textContent = S.fx.tempo.bpm;
 const RETURNS = ['NOW', '1/32', '1/16', '1/8', '1/4'];
 const drawRet = () => { $('ret').textContent = RETURNS[S.fx.tempo.ret] ?? '1/16'; };
 $('ret').addEventListener('click', (e) => { S.fx.tempo.ret = (S.fx.tempo.ret + (e.shiftKey ? RETURNS.length - 1 : 1)) % RETURNS.length; drawRet(); sendFx();
-  detail(`RETURN <em>${RETURNS[S.fx.tempo.ret]}</em>: let go of the newest key in a zone and the earlier held key comes back ${S.fx.tempo.ret ? 'on the next ' + RETURNS[S.fx.tempo.ret] : 'at once'}`); });
+  detail(`HELD KEY BACK <em>${RETURNS[S.fx.tempo.ret]}</em>: let go of the newest key in a zone and the earlier held key comes back ${S.fx.tempo.ret ? 'on the next ' + RETURNS[S.fx.tempo.ret] : 'at once'}`); });
 drawRet();
 function moveZones(by) {
   const to = S.zoneStart + by;
@@ -2668,7 +2671,7 @@ for (const [id, fn] of [['pv-rand-eng', () => $('scatter').click()], ['pv-alter-
 // what the big screen says and shows, said and shown here too: the message line, UNDO there to press, INIT PATCH asking
 const mirror = (el, opts, fn) => { new MutationObserver(fn).observe(el, opts); fn(); };
 mirror($('undo'), { attributes: true, attributeFilter: ['disabled'] }, () => { $('pv-undo').disabled = $('undo').disabled; });
-mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] }, () => { const a = $('init-patch').getAttribute('aria-pressed') === 'true'; $('pv-init').setAttribute('aria-pressed', a); $('pv-init').textContent = a ? 'PRESS AGAIN' : 'INIT PATCH'; });
+mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] }, () => { const a = $('init-patch').getAttribute('aria-pressed') === 'true'; $('pv-init').setAttribute('aria-pressed', a); $('pv-init').textContent = a ? 'PRESS AGAIN' : 'RANDOM PATCH'; });
 new MutationObserver(() => { $('pv-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
 drawPhone = () => {
   if (!phoneOn) return;
