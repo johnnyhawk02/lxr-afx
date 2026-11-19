@@ -9,17 +9,18 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwn6g4zj';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwn6rhup';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE } from './schema.js?v=mwn6g4zj';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwn6g4zj';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwn6g4zj';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE } from './schema.js?v=mwn6rhup';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwn6rhup';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwn6rhup';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
 // to the dry mix at unity. settings: see FX_DEFAULTS
 export const FX_DEFAULTS = {
-  echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100, sync: 0, div: 7 }, // sync: TIME is a note length (div)
+  echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100, sync: 0, div: 7, duck: 0 }, // sync: TIME is a note length (div);
+  // duck: how far the echoes go down while the dry sound plays (0 off .. 127 all the way), swelling back in the gaps
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
   tempo: { bpm: 120, ret: 2 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
   // next 1/32, 1/16, 1/8 or 1/4 (1..4)
@@ -79,6 +80,9 @@ export class LxrInstrument {
     this.beat = 0; this.retQ = 2; this.backs = SOUNDS.map(() => null);
     this.dirt = new Dirt(REAL_FS); this.key = new Float32Array(BLOCK);
     this.m = { ...FX_DEFAULTS.master }; this.env = 0; this.gr = 0;
+    // the echo's DUCK: its depth (0..1), the dry sound's envelope that drives it, and the gain it gives the echo per sample
+    this.duck = 0; this.duckEnv = 0; this.duckG = new Float32Array(BLOCK).fill(1);
+    this.duckA = Math.exp(-1 / (0.002 * REAL_FS)); this.duckR = Math.exp(-1 / (0.1 * REAL_FS));
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -127,6 +131,7 @@ export class LxrInstrument {
       [0.5, 0.5, echo.tone / 127, echo.feedback / 127].forEach((v, i) => this.echo.setParameter(i, v));
       this.echo.setDelaySync(echoSeconds(echo, this.bpm) * REAL_FS);
       this.ret[0] = 1; // returns fixed at unity
+      this.duck = (echo.duck || 0) / 127;
     }
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; }
     if (dirt) this.dirt.set(dirt);
@@ -190,6 +195,18 @@ export class LxrInstrument {
       for (let i = 0; i < BLOCK; i++) { const v = o[i] * t[i]; L[i] += v * pl; R[i] += v * pr; const a = v < 0 ? -v : v; if (a > pk) pk = a; }
       this.peak[n] = pk;
     }
+    // the echo's DUCK: the dry sound's level (fast up, 100 ms back down) turns the echo's return down by up to its depth,
+    // so the echoes sit under each hit and swell back up in the gaps
+    const dk = this.duck, dg = this.duckG;
+    if (dk > 0) {
+      let env = this.duckEnv; const a = this.duckA, r = this.duckR;
+      for (let i = 0; i < BLOCK; i++) {
+        const x = Math.max(Math.abs(L[i]), Math.abs(R[i]));
+        env = x + (x > env ? a : r) * (env - x);
+        dg[i] = 1 - dk * env / (env + 0.05); // half down at -26 dB, nearly all the way at a full hit
+      }
+      this.duckEnv = env;
+    } else this.duckEnv = 0;
     // the sends: each effect's bus gets every voice panned in at its send, saturated to int16, and comes back all wet
     const buses = [this.echo, this.verb];
     for (let k = 0; k < buses.length; k++) {
@@ -203,7 +220,9 @@ export class LxrInstrument {
       const bo = this.busOut; bo.fill(0);
       bus.process(bo, BLOCK, this.fxRng);
       const g = this.gain * this.ret[k] / 32768;
-      if (g) for (let i = 0; i < BLOCK; i++) { L[i] += bo[2 * i] * g; R[i] += bo[2 * i + 1] * g; }
+      if (!g) continue;
+      if (k === 0 && dk > 0) for (let i = 0; i < BLOCK; i++) { const h = g * dg[i]; L[i] += bo[2 * i] * h; R[i] += bo[2 * i + 1] * h; }
+      else for (let i = 0; i < BLOCK; i++) { L[i] += bo[2 * i] * g; R[i] += bo[2 * i + 1] * g; }
     }
     this._master(L, R, out);
     // a soft limit, so seven voices at once don't clip hard

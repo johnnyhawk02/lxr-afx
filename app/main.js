@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn6g4zj';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn6g4zj';
-import { presetName, jumble } from './names.js?v=mwn6g4zj';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn6g4zj';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn6g4zj';
-import { breed, isDud } from '../sound/breed.js?v=mwn6g4zj';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn6g4zj';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwn6g4zj';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn6g4zj';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn6g4zj';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn6g4zj';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn6rhup';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn6rhup';
+import { presetName, jumble } from './names.js?v=mwn6rhup';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn6rhup';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn6rhup';
+import { breed, isDud } from '../sound/breed.js?v=mwn6rhup';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn6rhup';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwn6rhup';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn6rhup';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn6rhup';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn6rhup';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn6g4zj', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn6rhup', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
@@ -728,6 +728,9 @@ const ECHO_TIME = {
   show: (v) => (E().sync ? ECHO_DIVS[v][0] : echoMs(v) + ' ms'),
   get dflt() { return FX_DEFAULTS.echo[E().sync ? 'div' : 'time']; },
 };
+// the echo's DUCK: how far the echoes go down while the dry sound plays, swelling back up in the gaps (0: off)
+const ECHO_DUCK = { max: 127, get: () => E().duck || 0, set: (v) => { E().duck = v; sendFx(); detail(`ECHO DUCK <em>${v ? Math.round(v / 1.27) + '%' : 'OFF'}</em>`); },
+  show: (v) => (v ? Math.round(v / 1.27) + '%' : 'off'), dflt: 0 };
 // a switch in a knob's cell: a button that steps through its settings, named on the button, lit away from the first
 function gswitch(label, names, title, get, set) {
   const el = document.createElement('div'); el.className = 'vf vsw';
@@ -743,7 +746,7 @@ const FX_PAGE = [
   ['echo', 'ECHO', [['time', ECHO_TIME], ['sync', 'switch', ['OFF', 'ON'], 'Sync: TIME in note lengths at the BPM (1/32 to 1/2, triplets and dotted), following the BPM', (v) => {
     E().sync = v; sendFx(); detail(v ? `ECHO SYNC <em>ON</em>: TIME ${ECHO_DIVS[E().div][0]} at ${S.fx.tempo.bpm} BPM` : `ECHO SYNC <em>OFF</em>: TIME ${echoMs(E().time)} ms`);
   }], ['feedback', 127], ['tone', 127], ['pingpong', 'switch', ['OFF', 'ON'], 'Ping-pong: each repeat on the other side', (v) => {
-    E().pingpong = v; sendFx(); detail(`ECHO PING-PONG <em>${v ? 'ON' : 'OFF'}</em>`); }, 'p-pong']]],
+    E().pingpong = v; sendFx(); detail(`ECHO PING-PONG <em>${v ? 'ON' : 'OFF'}</em>`); }, 'p-pong'], ['duck', ECHO_DUCK]]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
   'DIRT', // the distortion and its sidechain: buildDirt
@@ -1671,7 +1674,7 @@ $('start-btn').addEventListener('click', async () => {
 // control locks, the knob map, LOW KEY and the RANDOM menu's settings are the instrument's, not a patch's
 // ---------------------------------------------------------------------------------------------------------------
 const PRESET_STORE = 'lxr-afx-presets-v1';
-const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1 },
+const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1, duck: 127 },
   reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 240, ret: 4 },
   dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127, sc: 1, src: 3, scfilt: 2, freq: 127, sens: 127, decay: 127, dir: 1, target: 2 },
   master: { thresh: 40, ratio: 200, attack: 100, release: 1000, knee: 24, makeup: 24, level: 100 } };
@@ -1707,6 +1710,7 @@ function tidyPreset(p) {
   if (d.mod !== MOD_RULE) upgradeMod(values, keys); // (saved with the firmware's one LFO and one velocity target: now routes on the knobs)
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
+  if (fx.echo.duck === undefined) fx.echo.duck = 0; // (saved before the echo had DUCK: off)
   return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, mod: MOD_RULE, engines } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');

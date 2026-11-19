@@ -190,10 +190,10 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.waitForTimeout(600);
   }
   // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 14 columns, and the FX +
-  // MASTER tab's controls on its three columns of 5, 6 and 6
+  // MASTER tab's controls on its three columns of 6 (the echo's six with DUCK), 6 and 6
   const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
   { const right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
-    if (right > 17) { errors++; console.log(`${w}x${h}: the FX tab on ${right} columns (17 allowed)`); } }
+    if (right > 18) { errors++; console.log(`${w}x${h}: the FX tab on ${right} columns (18 allowed)`); } }
   for (const i of [0, 1, 2]) {
     await p.click(`#sounds .snd >> nth=${i}`); await p.waitForTimeout(100);
     const left = await cols('#faders .sect:not(.sends) .vf .knob');
