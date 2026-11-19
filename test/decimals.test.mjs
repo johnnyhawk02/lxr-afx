@@ -56,7 +56,7 @@ for (let v = 0; v < 6; v++) {
   assert.equal(back.params.decay, 61.23); assert.equal(back.params.coarse, 40.5); n += 4; }
 // modulation moves a control smoothly: an LFO on the coarse tune sweeps through the pitches between semitones
 { const inst = new LxrInstrument(44140); inst.loadKit(INIT_VALUES.slice(0, ALL_PARAMS));
-  const m = modOf(0, 'coarse'); inst.setParam(m.src, 1); inst.setParam(m.amt, 127 + 40);
+  const m = modOf(0, 'coarse'); inst.setParam(m.depths[1], 127 + 40);
   inst.setParam(ukeyPar(0, 'lfofreq'), 90); inst.e.trigger(0, 100, 60);
   const cents = new Set();
   for (let b = 0; b < 2000; b++) { inst.e.renderBlock(0); const c = 1200 * Math.log2(inst.e.voices[0].osc.freq / 440); cents.add(Math.round(((c % 100) + 100) % 100)); }
