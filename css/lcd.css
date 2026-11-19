@@ -61,6 +61,10 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .lowkey { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lowkey > .dim { letter-spacing: .08em; }
 .lowkey b { font-weight: 400; min-width: 5.6em; justify-content: center; }
+/* KNOB SIZE: the big screen draws every knob's printed scale at 1.3x, tight in its cell between its value and name, and the
+   knob itself (.body) at --knob-body inside it (SETTINGS slider); switches at 1.175x. The phone keeps them as they were */
+html:not(.phone) { --ring: 1.3; --tog-zoom: 1.175; }
+html:not(.phone) .knob .body { transform: scale(var(--knob-body, 1.04)); transform-origin: 32px 32px; }
 .lowkey.knobsize input { width: 100%; min-width: 0; margin: 0; accent-color: rgb(var(--ink-rgb)); }
 .lowkey.knobsize em { font-style: normal; color: var(--ink); margin-left: .4em; }
 .lowkey.knobsize .end { text-align: right; }
@@ -202,7 +206,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .vf output { font-size: 17px; }
 .vf .lab { font-size: 16px; }
 .knob { width: var(--ks); height: var(--ks); cursor: ns-resize; touch-action: none; }
-.knob svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(var(--knob-zoom, 1)); transform-origin: 50% 50%; filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
+.knob svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(var(--ring, 1)); transform-origin: 50% 50%; filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 .knob .tk { stroke: var(--ghost); stroke-width: 3.6; }
 .knob .tk.on { stroke: var(--ink); }
 .knob .ptr { stroke: var(--ink); stroke-width: 3.5; stroke-linecap: square; }
@@ -874,7 +878,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .tog, .vsw .swb.tog { display: block; width: var(--ks); height: var(--ks); padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
 .vsw .swb.tog:hover, .vsw .swb.tog[aria-pressed="true"] { background: transparent; }
 .tog:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.tog svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(calc(1 + (var(--knob-zoom, 1) - 1) / 2)); /* (a switch is taller than a knob: it grows half as much) */ transform-origin: 50% 50%;
+.tog svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(var(--tog-zoom, 1)); /* (a switch is taller than a knob: it grows less) */ transform-origin: 50% 50%;
   filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); pointer-events: none; }
 .tog .rbez { fill: none; stroke: var(--ink); stroke-width: 3.4; }
 .tog .rup, .tog .rdn { fill: transparent; transition: fill .08s; }
