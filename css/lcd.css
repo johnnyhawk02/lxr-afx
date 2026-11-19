@@ -393,6 +393,18 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
    level and the gain-reduction meter all sit in the same six cells */
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
 .fxside .mout .grm { grid-column: 2 / 7; align-self: center; padding-left: 8px; }
+/* the output meter: L and R on the gain reduction's cells (2 to 6), the side and its held peak in the first cell */
+.fxside .outm .row { align-items: center; }
+.fxside .outm .mrow + .mrow { margin-top: 4px; }
+.outm .ch { grid-column: 1; grid-row: 1; justify-self: start; font-size: 15px; color: var(--muted); }
+.outm output { grid-column: 1; grid-row: 1; justify-self: end; padding-right: 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.outm .segs { grid-column: 2 / 7; display: flex; gap: 2px; height: 14px; padding-left: 8px; }
+.outm .segs i { flex: 1; background: var(--ghost); }
+.outm .segs i.on, .outm .segs i.pk { background: var(--ink); }
+.outm .scale { grid-column: 2 / 7; position: relative; height: 16px; margin: 2px 0 0 8px; font-size: 13px; color: var(--muted); }
+.outm .scale span { position: absolute; top: 0; transform: translateX(-50%); }
+.outm .scale span:first-child { transform: none; } .outm .scale span:last-child { transform: translateX(-100%); }
+.fxside .outm h3 { display: flex; align-items: center; gap: 6px; }
 .fxside .sect h3 { padding-left: 0; }
 /* the key's sequencer (row 4, the cells after the LFO): ACTIVE and RANDOM in its heading, eight steps across its
    cells (1 and 5 marked as the beats), the step playing now outlined, and a LOCK on the knobs' LOCK line */

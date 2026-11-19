@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn72icf';
-import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn72icf';
-import { presetName, jumble } from './names.js?v=mwn72icf';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn72icf';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn72icf';
-import { breed, isDud } from '../sound/breed.js?v=mwn72icf';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn72icf';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwn72icf';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn72icf';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn72icf';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn72icf';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, modOf, MOD_SOURCES, MOD_AMT_ZERO, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwn7fouq';
+import { TABLE_NAMES, tableId, tableFor, waveShape, frameStep, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwn7fouq';
+import { presetName, jumble } from './names.js?v=mwn7fouq';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwn7fouq';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwn7fouq';
+import { breed, isDud } from '../sound/breed.js?v=mwn7fouq';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwn7fouq';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwn7fouq';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwn7fouq';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwn7fouq';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwn7fouq';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,9 +106,9 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn72icf', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwn7fouq', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -396,6 +396,27 @@ function showGr(db) {
   const n = Math.round(Math.min(24, grShown));
   document.querySelectorAll('.grm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
   const o = document.querySelector('.grm output'); if (o) o.textContent = (grShown >= 0.05 ? '-' + grShown.toFixed(1) : '0') + ' dB';
+}
+// the output meter: what goes out of the page, each side's peak on a bar from -48 to 0 dB (a segment per 2 dB, falling
+// back about 27 dB a second), the highest held a moment and read out in dB; CLIP lights for 3 s when the mix goes over
+// full scale (the last soft limit squashing it), or until it's pressed
+const METER_LO = -48, METER_SEGS = 24, METER_HOLD = 1500, CLIP_HOLD = 3000;
+const meter = [0, 1].map(() => ({ db: -120, pk: -120, pkAt: 0 }));
+let clipAt = -1e9;
+function showOut([l, r, cl, cr]) {
+  const now = performance.now();
+  if (cl || cr) clipAt = now;
+  const rows = document.querySelectorAll('.outm .mrow');
+  [l, r].forEach((v, c) => {
+    const m = meter[c], db = v > 1e-6 ? 20 * Math.log10(v) : -120;
+    m.db = Math.max(db, m.db - 0.9);
+    if (db >= m.pk) { m.pk = db; m.pkAt = now; } else if (now - m.pkAt > METER_HOLD) m.pk = Math.max(m.db, m.pk - 0.9);
+    const row = rows[c]; if (!row) return;
+    const n = Math.round((m.db - METER_LO) / (-METER_LO / METER_SEGS)), hold = Math.ceil((m.pk - METER_LO) / (-METER_LO / METER_SEGS)) - 1;
+    row.querySelectorAll('.segs i').forEach((x, i) => { x.classList.toggle('on', i < n); x.classList.toggle('pk', i === hold && i >= n); });
+    row.querySelector('output').textContent = m.pk > -60 ? m.pk.toFixed(1) : '-\u221e';
+  });
+  const cb = document.querySelector('.outm .clip'); if (cb) cb.setAttribute('aria-pressed', now - clipAt < CLIP_HOLD);
 }
 // the distortion's sidechain envelope: how far it's turning its target, a segment per twelfth
 let scShown = 0;
@@ -780,6 +801,14 @@ function buildFx() {
   const gm = document.createElement('div'); gm.className = 'grm';
   gm.innerHTML = `<span class="dim">GAIN REDUCTION</span><div class="segs">${'<i></i>'.repeat(24)}</div><output>0 dB</output>`;
   box.lastChild.querySelector('.row').append(gm); box.lastChild.classList.add('mout');
+  // under it: the output meter (showOut), left and right on the same cells as the gain reduction, a scale beneath
+  const om = document.createElement('div'); om.className = 'sect outm';
+  const ticks = [-48, -36, -24, -12, -6, 0].map((d) => `<span style="left:${(d - METER_LO) / -METER_LO * 100}%">${d}</span>`).join('');
+  om.innerHTML = `<h3><span class="t">METER</span> <button type="button" class="btn sm hdb clip" aria-pressed="false" title="Lights when the output goes over full scale (the last soft limit squashing it); press to clear">CLIP</button></h3>`
+    + ['L', 'R'].map((c) => `<div class="row mrow"><span class="ch">${c}</span><output>-\u221e</output><div class="segs">${'<i></i>'.repeat(METER_SEGS)}</div></div>`).join('')
+    + `<div class="row"><div class="scale">${ticks}</div></div>`;
+  om.querySelector('.clip').addEventListener('click', (e) => { clipAt = -1e9; e.currentTarget.setAttribute('aria-pressed', false); });
+  box.append(om);
 }
 // ---- the master distortion (sound/dirt.js): a dual-path bass drive. Its input stage, clip stages, tone and the two
 // path volumes on two rows; the sidechain under it, its header reading as a sentence (SIDECHAIN ON TURNS CUTOFF UP).
