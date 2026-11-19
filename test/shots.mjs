@@ -247,14 +247,14 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   { await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (bpm !== '121') { errors++; console.log('bpm', bpm); } }
   // NEW SOUND is the dice in the key's row of buttons, beside ALTER KEY (a picture too); FX SENDS heads the key's own
-  // two columns of the synth grid; the key strip starts on the key info's column. A press deals the key a new sound,
+  // two columns of the synth grid; each engine's button heads its keys, as wide as they are. A press deals the key a new sound,
   // changes the face and rolls; K too
   { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
     const g = await p.evaluate(() => { const r = (el) => el.getBoundingClientRect(), d = r(document.getElementById('rand-key')), a = r(document.getElementById('alter-key')), f = r(document.getElementById('faders')),
-      sends = r(document.querySelector('#faders .sect.sends')), strip = r(document.getElementById('keystrip')), info = r(document.querySelector('.keyinfo'));
+      sends = r(document.querySelector('#faders .sect.sends')), heads = [...document.querySelectorAll('#keystrip .kgroup')].filter((g) => { const b = g.querySelector('.snd'), k = g.querySelector('.keys'); return !b || Math.abs(r(b).left - r(k).left) > 1 || Math.abs(r(b).right - r(k).right) > 1; }).length;
       return { inActs: !!document.querySelector('#keyacts #rand-key'), next: a.left - d.right, mid: Math.abs((d.top + d.bottom) / 2 - (a.top + a.bottom) / 2), square: Math.abs(d.width - d.height), size: d.width,
-        alterText: document.getElementById('alter-key').textContent.replace(/A$/, '').trim(), sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, stripLeft: Math.abs(strip.left - info.left) }; });
-    if (!g.inActs || g.next < 0 || g.next > 12 || g.mid > 1.5 || g.square > 0.5 || g.size < 24 || g.alterText || g.sendsTop > 14 || g.sendsRight > 14 || g.stripLeft > 1) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
+        alterText: document.getElementById('alter-key').textContent.replace(/A$/, '').trim(), sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, heads }; });
+    if (!g.inActs || g.next < 0 || g.next > 12 || g.mid > 1.5 || g.square > 0.5 || g.size < 24 || g.alterText || g.sendsTop > 14 || g.sendsRight > 14 || g.heads) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
     const name = () => p.textContent('#kh-info'), face = () => p.getAttribute('#rand-key', 'data-face');
     const n0 = await name(), f0 = await face(); await p.click('#rand-key'); const rolling = await p.evaluate(() => document.getElementById('rand-key').classList.contains('roll'));
     await p.waitForTimeout(450); const n1 = await name(), f1 = await face(), done = await p.evaluate(() => !document.getElementById('rand-key').classList.contains('roll'));
