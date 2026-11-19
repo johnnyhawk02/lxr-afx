@@ -494,7 +494,6 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 /* what each button does, under it, in its column */
 .menupanel .randrow .cap { font-size: 14px; letter-spacing: 1px; line-height: 1.15; text-align: center; margin-top: -3px; }
 .menupanel .randrow .cap.wide { grid-column: 1 / -1; }
-#to-table { grid-column: span 2; }
 .menupanel .bars + .bars { margin-top: 6px; }
 .menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
 .menupanel .chk.lvl { margin-top: 6px; }
@@ -796,6 +795,8 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 .tblmenu[hidden] { display: none; }
 .tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
+#look-panel > div > h3:first-child { margin-top: 10px; border-top: var(--rule); padding-top: 8px; } /* (LOOK's sections that show on one look only) */
+.tblmenu .tblall { grid-column: 1 / -1; margin-top: 4px; } /* (ALL KEYS TO WAVETABLE: the list's last line) */
 /* the OSC section's wave display: three cells, its picture across all three; a canvas
    drawing the table as a slanted stack of frames (app/main.js drawWave) */
 /* the picture takes the cell's whole height above its label (the table's name is on the TABLE button, so no readout) */
@@ -885,6 +886,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keylocked .keyhead .menupanel .iconbtn svg { fill: var(--panel); }
 .makepanel .keymake { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
 .makepanel .keymake .mk { display: contents; }
+.makepanel #alter-key { grid-column: span 2; }
 .makepanel .keymake .btn { height: auto; min-height: 36px; font-size: 18px; padding: 0 4px; }
 .keylocked .keyhead .menupanel h3 { color: var(--ink); }
 .keyhead .menupanel .randrow > .btn { width: 100%; }

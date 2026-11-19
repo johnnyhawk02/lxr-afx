@@ -19,7 +19,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // ALTER KEY, LOCK KEY, CLEAR, COPY and PASTE live in THIS KEY's KEY menu, the MAKE buttons in its MAKE menu: the same
   { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
     await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; }
-    const menu = /^#(alter-key|lock-key|clear-key|copy-key|paste-key)$/.test(sel) ? ['#key-btn', '#key-panel'] : /^#make /.test(sel) ? ['#make-btn', '#make-panel'] : null;
+    const menu = /^#(lock-key|clear-key|copy-key|paste-key)$/.test(sel) ? ['#key-btn', '#key-panel'] : /^#make |^#alter-key$/.test(sel) ? ['#make-btn', '#make-panel'] : null;
     if (menu && !(await p.isVisible(sel))) { await click(menu[0]); const r = await click(sel, o); if (await p.isVisible(menu[1])) await click(menu[0]); return r; }
     return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
@@ -208,7 +208,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // it was, and the setting is kept
   { const boxes = () => p.$$eval('#faders .vf .knob', (ks) => ks.map((k) => { const c = k.getBoundingClientRect(), s = k.querySelector('svg').getBoundingClientRect(), b = k.querySelector('.skirt').getBoundingClientRect();
       return [Math.round(c.left), Math.round(c.top), Math.round(c.width), Math.round(s.width), b.width]; }));
-    const set = async (v) => { await p.click('#settings-btn'); await p.$eval('#knob-size', (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.click('#settings-btn'); await p.waitForTimeout(80); };
+    const set = async (v) => { await p.click('#look-btn'); await p.$eval('#knob-size', (el, v) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.click('#look-btn'); await p.waitForTimeout(80); };
     await set(0); const m = await boxes();
     for (const v of [10, 5, 0]) {
       await set(v); const b = await boxes(), z = (0.87 + 0.058 * v) / 0.87;
