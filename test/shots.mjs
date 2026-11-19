@@ -16,8 +16,12 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(x, y + (up ? -1 : 1) * dy * i / 4); await p.mouse.up(); };
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
   // LOW KEY, RETURN, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
+  // ALTER KEY, LOCK KEY, CLEAR, COPY and PASTE live in THIS KEY's KEY menu, the MAKE buttons in its MAKE menu: the same
   { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
-    await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; } return click(sel, o); }; }
+    await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; }
+    const menu = /^#(alter-key|lock-key|clear-key|copy-key|paste-key)$/.test(sel) ? ['#key-btn', '#key-panel'] : /^#make /.test(sel) ? ['#make-btn', '#make-panel'] : null;
+    if (menu && !(await p.isVisible(sel))) { await click(menu[0]); const r = await click(sel, o); if (await p.isVisible(menu[1])) await click(menu[0]); return r; }
+    return click(sel, o); }; }
   p.on('pageerror', (e) => { errors++; console.log('page error:', e.message); });
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
   await p.goto(url); await p.waitForTimeout(600);
@@ -246,15 +250,15 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   }
   { await p.click('#bpm-up'); const bpm = await p.textContent('#bpm'); await p.click('#bpm-down');
     if (bpm !== '121') { errors++; console.log('bpm', bpm); } }
-  // NEW SOUND is the dice in the key's row of buttons, beside ALTER KEY (a picture too); FX SENDS heads the key's own
+  // NEW SOUND is the dice in THIS KEY's row, ALTER KEY in its KEY menu (shut till pressed); FX SENDS heads the key's own
   // two columns of the synth grid; each engine's button heads its keys, as wide as they are. A press deals the key a new sound,
   // changes the face and rolls; K too
   { await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, afx.sounds[0].zone.lo + 1, 100); }); await p.waitForTimeout(80); await p.evaluate(() => afx.noteOff(afx.sounds[0].zone.lo + 1));
     const g = await p.evaluate(() => { const r = (el) => el.getBoundingClientRect(), d = r(document.getElementById('rand-key')), a = r(document.getElementById('alter-key')), f = r(document.getElementById('faders')),
       sends = r(document.querySelector('#faders .sect.sends')), heads = [...document.querySelectorAll('#keystrip .kgroup')].filter((g) => { const b = g.querySelector('.snd'), k = g.querySelector('.keys'); return !b || Math.abs(r(b).left - r(k).left) > 1 || Math.abs(r(b).right - r(k).right) > 1; }).length;
-      return { inActs: !!document.querySelector('#keyacts #rand-key'), next: a.left - d.right, mid: Math.abs((d.top + d.bottom) / 2 - (a.top + a.bottom) / 2), square: Math.abs(d.width - d.height), size: d.width,
-        alterText: document.getElementById('alter-key').textContent.replace(/A$/, '').trim(), sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, heads }; });
-    if (!g.inActs || g.next < 0 || g.next > 12 || g.mid > 1.5 || g.square > 0.5 || g.size < 24 || g.alterText || g.sendsTop > 14 || g.sendsRight > 14 || g.heads) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
+      return { inActs: !!document.querySelector('#keyacts #rand-key'), inMenu: !!document.querySelector('#key-panel #alter-key'), shut: a.width === 0, square: Math.abs(d.width - d.height), size: d.width,
+        sendsTop: sends.top - f.top, sendsRight: f.right - sends.right, heads }; });
+    if (!g.inActs || !g.inMenu || !g.shut || g.square > 0.5 || g.size < 24 || g.sendsTop > 14 || g.sendsRight > 14 || g.heads) { errors++; console.log(`${w}x${h} dice:`, JSON.stringify(g)); }
     const name = () => p.textContent('#kh-info'), face = () => p.getAttribute('#rand-key', 'data-face');
     const n0 = await name(), f0 = await face(); await p.click('#rand-key'); const rolling = await p.evaluate(() => document.getElementById('rand-key').classList.contains('roll'));
     await p.waitForTimeout(450); const n1 = await name(), f1 = await face(), done = await p.evaluate(() => !document.getElementById('rand-key').classList.contains('roll'));

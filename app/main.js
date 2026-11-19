@@ -1200,6 +1200,8 @@ function drawEditKey() {
   const locked = keyLocked(S.sel, note), nl = Object.values(edits).filter((e) => e._lock).length;
   $('clear-key').disabled = !here || locked;
   $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
+  $('key-btn-text').textContent = locked ? 'LOCKED' : 'KEY'; $('key-btn').classList.toggle('locked', locked); // (the KEY menu's button says so)
+  $('key-panel-name').textContent = `${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}`;
   diceBtn.disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const he = handEdits(edits[note]), hand = he ? ` · ${he} edit${he === 1 ? '' : 's'}` : '';
@@ -1342,9 +1344,18 @@ document.addEventListener('pointerdown', (e) => {
   if (!$('preset-panel').hidden && !e.target.closest('#pmenu')) openPresets(false);
   if (!$('settings-panel').hidden && !e.target.closest('#smenu')) openSettings(false);
   if (!$('tools-panel').hidden && !e.target.closest('#tmenu')) openTools(false);
+  if (!$('key-panel').hidden && !e.target.closest('#kmenu')) openKeyMenu(false);
+  if (!$('make-panel').hidden && !e.target.closest('#mkmenu')) openMake(false);
   if (!e.target.closest('.tdd')) openTableMenu(false);
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openTools(false); openTableMenu(false); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { openMenu(false); openPresets(false); openSettings(false); openTools(false); openKeyMenu(false); openMake(false); openTableMenu(false); } });
+// THIS KEY's two menus (Johnny, 2026-11-19: "try and put these items into menus"): KEY (ALTER, LOCK, CLEAR, COPY, PASTE;
+// their shortcuts still work with the menu shut) and MAKE (the key made a kick, a snare...). A press in either shuts it
+function openKeyMenu(open) { $('key-panel').hidden = !open; $('key-btn').setAttribute('aria-expanded', open); if (open) openMake(false); }
+function openMake(open) { $('make-panel').hidden = !open; $('make-btn').setAttribute('aria-expanded', open); if (open) openKeyMenu(false); }
+$('key-btn').addEventListener('click', () => openKeyMenu($('key-panel').hidden));
+$('make-btn').addEventListener('click', () => openMake($('make-panel').hidden));
+$('key-panel').addEventListener('click', (e) => { if (e.target.closest('.btn') && !learn) openKeyMenu(false); });
 
 // ---------------------------------------------------------------------------------------------------------------
 // randomisers (the logic of Elixir Desktop's, plus locks): every press starts from the voice's home (what it was before
@@ -1609,15 +1620,15 @@ function typeSound(sound, name) {
 const MAKE_TYPES = [['kick', 'KICK'], ['tom', 'TOM'], ['mid perc', 'PERC'], ['zap', 'ZAP'], ['snare', 'SNARE'], ['clap', 'CLAP'], ['rim', 'RIM'],
   ['cowbell', 'BELL'], ['closed hat', 'C HAT'], ['open hat', 'O HAT'], ['cymbal', 'CYMBAL']];
 function makePanel(el) {
-  el.innerHTML = '<span class="dim mkl">MAKE</span><div class="mk"></div>';
+  el.innerHTML = '<div class="mk"></div>';
   const box = el.querySelector('.mk');
   for (const [name, text] of MAKE_TYPES) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'; b.textContent = text; b.dataset.type = name;
-    b.addEventListener('click', () => { if (!learn) randKey(name); });
+    b.addEventListener('click', () => { if (!learn) { openMake(false); randKey(name); } });
     box.append(b);
   }
   const any = document.createElement('button'); any.type = 'button'; any.className = 'btn sm'; any.textContent = 'ANY'; any.dataset.type = '';
-  any.addEventListener('click', () => { if (!learn) { const ok = recipesFor(pool(S.sel)); if (ok.length) randKey(ok[Math.floor(rnd() * ok.length)]); } });
+  any.addEventListener('click', () => { if (!learn) { openMake(false); const ok = recipesFor(pool(S.sel)); if (ok.length) randKey(ok[Math.floor(rnd() * ok.length)]); } });
   box.append(any);
   faderDraws.push(() => {
     const ok = new Set(recipesFor(pool(S.sel))), locked = keyLocked(S.sel, editKey[S.sel]);
