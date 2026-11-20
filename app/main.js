@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbl0m5';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbl0m5';
-import { presetName, jumble } from './names.js?v=mwpbl0m5';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbl0m5';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbl0m5';
-import { breed, isDud } from '../sound/breed.js?v=mwpbl0m5';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbl0m5';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbl0m5';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbl0m5';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbl0m5';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbl0m5';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbl0m5';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbogpn';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbogpn';
+import { presetName, jumble } from './names.js?v=mwpbogpn';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbogpn';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbogpn';
+import { breed, isDud } from '../sound/breed.js?v=mwpbogpn';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbogpn';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbogpn';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbogpn';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbogpn';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbogpn';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbogpn';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbl0m5', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbogpn', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -945,7 +945,13 @@ function buildMacros(voice) {
     faderDraws.push(draw); macroDraws[k] = knob._draw;
   }
   const fl = document.createElement('div'); fl.className = 'sect sep fill mfill'; fl.style.gridArea = `1 / ${1 + 2 * NUM_MACROS} / 2 / ${GRID_COLS + 2}`;
-  fl.innerHTML = '<h3>macros</h3>'; box.append(fl);
+  fl.innerHTML = '<h3>macros</h3><div class="mslew"><span class="dim">slew</span><b class="lcdbox" role="slider" aria-label="Macro slew"></b></div>'; box.append(fl);
+  // SLEW: how long a macro takes to glide to where it's turned (0 to 2 s, finer near 0); drag up or down, double-click: off
+  const sb = fl.querySelector('.lcdbox'), slewMsOf = (p) => Math.round(2000 * (p / 127) ** 2), slewPos = () => Math.sqrt((M().slew || 0) / 2000) * 127;
+  const drawSlew = () => { const ms = M().slew || 0; sb.textContent = ms ? (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(2) + 's') : 'off'; sb.setAttribute('aria-valuenow', ms); };
+  dragger(sb, 'y', { min: 0, max: 127, len: 160, get: slewPos, put: (p) => { const ms = slewMsOf(clamp(p, 0, 127)); if (ms !== (M().slew || 0)) { M().slew = ms; sendFx(); drawSlew(); } } });
+  sb.addEventListener('dblclick', () => { M().slew = 0; sendFx(); drawSlew(); });
+  faderDraws.push(drawSlew);
   if (macroEdit >= 0) drawMacroPop();
 }
 // the plugin: where the DAW has the macros now (its automation), shown on the knobs (a knob being dragged is left alone)
@@ -1728,7 +1734,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbl0m5').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbogpn').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
