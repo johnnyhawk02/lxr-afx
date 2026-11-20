@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwov7au8';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwov7au8';
-import { presetName, jumble } from './names.js?v=mwov7au8';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwov7au8';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwov7au8';
-import { breed, isDud } from '../sound/breed.js?v=mwov7au8';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwov7au8';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwov7au8';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwov7au8';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwov7au8';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwov7au8';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwov7au8';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwowzows';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwowzows';
+import { presetName, jumble } from './names.js?v=mwowzows';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwowzows';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwowzows';
+import { breed, isDud } from '../sound/breed.js?v=mwowzows';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwowzows';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwowzows';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwowzows';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwowzows';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwowzows';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwowzows';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -44,6 +44,7 @@ const S = {
   // per-key edits: keyEdits[sound][note] = { parameter: value }, laid over that key's morph
   keyEdits: SOUNDS.map(() => ({})),
   editAll: false,
+  followKey: true, // FOLLOW KEY: a MIDI note picks its key for the editor (unticked: it plays, the editor stays put)
   ccMap: null, // knob map, CC number -> target; null: the Bass Station 2 default
   fx: structuredClone(FX_DEFAULTS), // the three send effects' settings (the FX page)
   preset: { id: null, name: '' }, // the patch's name, and the saved preset it is (null: not saved yet)
@@ -61,7 +62,7 @@ try {
     if (!d.panRule) d.locks = d.locks.filter((p) => !PAN_PARS.has(p)); // pan used to be locked by default: the randomisers now place it
     if (d.lockRule !== 2) { const was = new Set(VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par)); d.locks = d.locks.filter((p) => !was.has(p)); } // (these used to be locked as they came)
     S.locks = new Set(d.locks); Object.assign(S.rand, d.rand); S.rand.rhythms = 0; /* (no sequencer any more: Johnny, 2026-11-17) */ S.sel = d.sel | 0; S.page = d.page | 0;
-    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; if (d.engines) S.engines = clamp(d.engines | 0, 1, MAX_ENGINES); S.ccMap = d.ccMap || null;
+    if (d.keyEdits) d.keyEdits.forEach((k, i) => { S.keyEdits[i] = k || {}; }); S.editAll = false; /* (the knobs edit the key played, always: Johnny, 2026-11-17) */ if (d.zoneStart) S.zoneStart = d.zoneStart; if (d.engines) S.engines = clamp(d.engines | 0, 1, MAX_ENGINES); S.ccMap = d.ccMap || null; S.followKey = d.followKey !== false;
     if (d.preset && typeof d.preset.name === 'string') S.preset = { id: d.preset.id || null, name: d.preset.name };
     if (d.modRule !== MOD_RULE && d.modRule !== 2) {
       if (d.modRule !== 1) { upgradeMod(S.defaults); upgradeMod(S.values, S.keyEdits); } // (kept with the firmware's one LFO and one velocity target: now routes on the knobs)
@@ -76,7 +77,7 @@ const save = () => {
   saveT = setTimeout(() => {
     try {
       localStorage.setItem(STORE, JSON.stringify({ values: [...S.values], defaults: [...S.defaults], global: S.global, sounds: S.sounds,
-        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, modRule: MOD_RULE, preset: S.preset }));
+        locks: [...S.locks], rand: S.rand, sel: S.sel, page: S.page, keyEdits: S.keyEdits, editAll: S.editAll, followKey: S.followKey, zoneStart: S.zoneStart, engines: S.engines, ccMap: S.ccMap, fx: S.fx, panRule: 1, lockRule: 2, posRule: POS_RULE, modRule: MOD_RULE, preset: S.preset }));
     } catch (e) { /* storage blocked: it just isn't kept */ }
     drawPreset(); // (the name's mark: changed since it was saved)
   }, 300);
@@ -110,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwov7au8', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwowzows', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -153,8 +154,9 @@ function play(sound, note, vel, { hold = false, back = false } = {}) {
   if (ctx && ctx.state !== 'running') ctx.resume();
   send({ type: back ? 'back' : 'play', sound, note: m.note, vel, params: [...m.vals], hold, glide: hold }); // (glide: a key played, so MORPH TIME applies)
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
-  editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
+  if (fromMidi && !S.followKey) return; // FOLLOW KEY off: the key lights and plays, the editor stays on the key being edited
+  editKey[sound] = note;
   // the editor follows the sound you play, so the knobs and the screen are always on the key you just pressed
   if (sound !== S.sel) select(sound); else { drawFaders(); drawKeymap(); drawEditKey(); }
 }
@@ -243,7 +245,9 @@ const lockedMsg = () => detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])
 let midi = null;
 // the MIDI lamp beside the logo: lit while an input is connected, what it says in its tooltip
 function midiStatus(text, live) { const el = $('midi-status'); el.classList.toggle('live', !!live); el.title = text; el.setAttribute('aria-label', text); }
-function onMidi(e) {
+let fromMidi = false; // a MIDI note being played (the plugin's DAW notes come this way too): FOLLOW KEY decides if the editor goes to it
+function onMidi(e) { fromMidi = true; try { midiIn(e); } finally { fromMidi = false; } }
+function midiIn(e) {
   const [st, note, vel] = e.data;
   const ch = (st & 0x0f) + 1;
   if ((st & 0xf0) === 0xb0) { if (ch === 1) onCC(note, vel); return; } // a knob or slider (control change)
@@ -1488,6 +1492,11 @@ function drawEditKey() {
 }
 $('clear-key').addEventListener('click', () => { if (!keyLocked(S.sel, editKey[S.sel])) snapshot(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} CLEAR`); clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to the engine's base sound`); });
 $('lock-key').addEventListener('click', () => lockKey(S.sel, editKey[S.sel]));
+// FOLLOW KEY (Johnny, 2026-11-20): untick it to edit one key while MIDI (or the DAW) plays others. Kept with the patch's
+// state (this browser's, or the plugin's own in the DAW project)
+const drawFollow = () => { const b = $('follow-key'), on = S.followKey; b.textContent = `[${on ? 'x' : '\u00a0'}] FOLLOW KEY`; b.setAttribute('aria-pressed', on); };
+$('follow-key').addEventListener('click', () => { S.followKey = !S.followKey; save(); drawFollow(); detail(S.followKey ? 'FOLLOW KEY: <em>ON</em>, a MIDI note picks its key' : 'FOLLOW KEY: <em>OFF</em>, MIDI plays, the knobs stay on this key'); });
+drawFollow();
 $('alter-key').addEventListener('click', () => alterKey());
 
 // ---- copy and paste a key's sound: copy takes everything the key plays now (its pitch too); paste puts it on the
@@ -1623,7 +1632,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwov7au8').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwowzows').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The

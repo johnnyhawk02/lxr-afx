@@ -977,6 +977,11 @@ html .keyhead .kgroup .snd[aria-selected="true"] { background: var(--ink); color
 .keyline #kh-note { font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: .06em; flex: none; }
 .keyline #kh-num, .keyline #kh-engine { display: none; }
 .keyline #kh-info { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--muted); }
+/* FOLLOW KEY (Johnny, 2026-11-20): a small [x] box at the right of the key's name, like POST DISTORTION and FILTER IN.
+   It's in the KEY section, so a locked key leaves it working. No black pill on a click, no focus ring */
+.keyline .tick { margin-left: auto; flex: none; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; letter-spacing: .04em; white-space: pre; cursor: pointer; }
+.keyline .tick[aria-pressed="false"] { color: var(--muted); }
+.keyline .tick:focus, .keyline .tick:focus-visible { outline: none; }
 .keyhead .keystrip { height: 100px; }
 .keyhead .piano { top: 34px; height: 66px; }
 .keyhead .piano .k { height: 66px; }
