@@ -105,6 +105,18 @@
     finally { quiet = false; }
   });
 
+  // ---- Space is the DAW's (Johnny, 2026-11-20: Ableton's play/stop): the page doesn't take it, and with nothing on the
+  // page handling it (no preventDefault) the webview passes it up to the plugin window and on to the DAW. A text field
+  // still gets its spaces ----
+  const typing = (t) => t && t.closest && t.closest('input[type="text"], input:not([type]), textarea, [contenteditable]');
+  for (const type of ['keydown', 'keypress', 'keyup']) {
+    window.addEventListener(type, (e) => {
+      if ((e.key !== ' ' && e.code !== 'Space') || typing(e.target)) return;
+      e.stopImmediatePropagation();
+      const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur(); // (or a focused button would press)
+    }, true);
+  }
+
   // the plugin asks for the whole table (a new engine after the DAW's sample rate changed, or a restored project)
   on('keys?', () => { sendKeys(true); });
   emit('hello', '{}');

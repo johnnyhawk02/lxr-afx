@@ -32,6 +32,8 @@ The plugin plays MIDI channel 1, with the keys and zones laid out as in the web 
 - Each plugin's sound (the page's `lxr-afx-v3` state: the sounds, keys, locks, FX) is saved in the DAW project.
 - The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/LXR-AFX/shared.json`.
 
+**Keys:** Space belongs to the DAW (play/stop in Ableton). The page ignores it in the plugin, and the key goes on to the DAW.
+
 **Limits:**
 - A newly added copy plays nothing until its window has been opened once. Most DAWs open it on insert.
 - After that, it plays from the project with the window shut.
