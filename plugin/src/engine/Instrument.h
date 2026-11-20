@@ -42,7 +42,7 @@ class Instrument {
   void setFx(const json& fx);
   /** the MACRO knobs (FX_DEFAULTS.macros): their targets, and their settings unless macroHost */
   void setMacros(const json& m);
-  /** one MACRO knob's setting, 0..127 */
+  /** one MACRO knob's setting, -127..127 (0: no change) */
   void setMacro(int k, double v);
   double macro(int k) const { return k >= 0 && k < NUM_MACROS ? macroV[k] : 0; }
   static constexpr int NUM_MACROS = 8;

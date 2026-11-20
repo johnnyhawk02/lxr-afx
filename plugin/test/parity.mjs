@@ -92,8 +92,8 @@ scenarios.push({ name: 'echo synced, ping-pong off, duck', ops: mix(44100, fx({ 
 scenarios.push({ name: 'MORPH TIME 300 ms, RETURN now, compressor hard', ops: mix(48000, fx({ tempo: { morph: 300, ret: 0 }, master: { thresh: 30, ratio: 120, attack: 1, knee: 0, makeup: 9 } })) });
 scenarios.push({ name: 'wavetables on every voice, 96 kHz', ops: mix(96000, fx({}), (p, v, j) => { p.push([TABLE_BASE + v, 1 + ((v + j * 4) % 11)]); return p; }) });
 { // the MACRO knobs: set in the effects, then turned (and their targets changed) while keys play
-  const ops = mix(48000, fx({ macros: { v: [127, 80, 100, 64, 127, 50, 90, 127] } })), at = Math.floor(ops.length / 3);
-  ops.splice(at, 0, { op: 'msg', m: { type: 'macro', i: 2, v: 10 } }, { op: 'msg', m: { type: 'macro', i: 0, v: 0 } });
+  const ops = mix(48000, fx({ macros: { v: [127, -80, 100, -64, 127, 50, -90, 127] } })), at = Math.floor(ops.length / 3);
+  ops.splice(at, 0, { op: 'msg', m: { type: 'macro', i: 2, v: 10 } }, { op: 'msg', m: { type: 'macro', i: 0, v: -127 } });
   ops.splice(2 * at, 0, { op: 'msg', m: { type: 'fx', fx: fx({ macros: { t: [[['pan', -80], ['wave', 50]], [['ftype', 70]], [['lfofreq', 40]], [], [['level', -60]], [], [], [['cutoff', -100]]] } }) } },
     { op: 'msg', m: { type: 'macro', i: 0, v: 127 } });
   scenarios.push({ name: 'MACRO knobs', ops });
