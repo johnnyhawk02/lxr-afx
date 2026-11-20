@@ -1096,3 +1096,6 @@ html.look-grey .textmenu .mi { font-size: 18px; }
 html.phone .khact .keyrand { display: none; }
 #fxside .sect > h3 { display: flex; align-items: center; gap: 6px; height: 24px; flex: none; }
 #fxside .outm .clip { margin-left: auto; margin-right: 6px; }
+/* REVERB's tiny [x] POST DISTORTION box, at the right of its header */
+#fxside .tick { margin-left: auto; margin-right: 8px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 13px; letter-spacing: 1px; white-space: pre; cursor: pointer; }
+#fxside .tick[aria-pressed="false"] { color: var(--muted); }

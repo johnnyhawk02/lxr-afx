@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwopmijy';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwopmijy';
-import { presetName, jumble } from './names.js?v=mwopmijy';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwopmijy';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwopmijy';
-import { breed, isDud } from '../sound/breed.js?v=mwopmijy';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwopmijy';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwopmijy';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwopmijy';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwopmijy';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwopmijy';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwopmijy';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoq9d47';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoq9d47';
+import { presetName, jumble } from './names.js?v=mwoq9d47';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoq9d47';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoq9d47';
+import { breed, isDud } from '../sound/breed.js?v=mwoq9d47';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoq9d47';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoq9d47';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoq9d47';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoq9d47';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoq9d47';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoq9d47';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwopmijy', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoq9d47', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -987,7 +987,16 @@ function buildFx() {
     return el;
   };
   const by = (name) => FX_PAGE.find((it) => Array.isArray(it) && it[1] === name);
-  place(fxSect(by('ECHO')), 1, 6); place(fxSect(by('REVERB')), 1, 4);
+  place(fxSect(by('ECHO')), 1, 6);
+  // REVERB's POST DISTORTION box (Johnny, 2026-11-20), tiny, at the right of its header: ticked, the reverb's return
+  // joins the master after the distortion, so the tail stays clean; unticked, it goes through the distortion with the dry mix
+  const verb = place(fxSect(by('REVERB')), 1, 4), vh = verb.querySelector('h3');
+  vh.innerHTML = '<span class="t">REVERB</span>';
+  const post = document.createElement('button'); post.type = 'button'; post.className = 'tick';
+  post.title = 'POST DISTORTION: ticked, the reverb comes in after the master distortion, so its tail stays clean';
+  const drawPost = () => { const on = !!S.fx.reverb.post; post.textContent = `[${on ? 'x' : '\u00a0'}] POST DISTORTION`; post.setAttribute('aria-pressed', on); };
+  post.addEventListener('click', () => { S.fx.reverb.post = S.fx.reverb.post ? 0 : 1; sendFx(); drawPost(); detail(`REVERB <em>${S.fx.reverb.post ? 'POST' : 'PRE'}</em> DISTORTION`); });
+  faderDraws.push(drawPost); drawPost(); vh.append(post);
   place(buildDirt(), 2, 10);
   const comp = place(fxSect(by('COMPRESSOR')), 3, 8);
   const out = place(fxSect(by('OUTPUT')), 3, 2);
@@ -1567,7 +1576,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwopmijy').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoq9d47').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2304,7 +2313,7 @@ window.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------------------------------------------------------
 const PRESET_STORE = 'lxr-afx-presets-v1';
 const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1, duck: 127 },
-  reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 300, ret: 4 },
+  reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127, post: 1 }, tempo: { bpm: 300, ret: 4 },
   dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127 },
   master: { thresh: 40, ratio: 200, attack: 100, release: 1000, knee: 24, makeup: 24, level: 100 } };
 const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
