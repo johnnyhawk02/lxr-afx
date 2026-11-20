@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwok3pqq">
-<link rel="stylesheet" href="css/grey.css?v=mwok3pqq">
+<link rel="stylesheet" href="css/lcd.css?v=mwoly0hl">
+<link rel="stylesheet" href="css/grey.css?v=mwoly0hl">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -188,6 +188,7 @@
       <button class="btn seqbtn" id="seq-btn" type="button" aria-pressed="false" title="SEQUENCER (S): a piano roll of the 25 keys; draw notes, drag right to make them longer. It keeps playing when closed"><i></i><span>SEQUENCER</span><kbd>S</kbd></button>
     </div>
     <div class="khsec khact"><h3>THIS KEY <span class="dim">DICE: <span class="dice-src"></span></span></h3>
+      <div class="keyrand" id="keyrand" role="group" aria-label="A random bucket sound of one type"></div>
       <div class="keyacts" id="keyacts">
         <button class="btn" id="load-key" title="LOAD (O): browse the sound bucket and put a sound on this key, its oscillator (CLASSIC or wavetable) and all (UNDO takes it back)">LOAD</button>
         <button class="btn iconbtn" id="alter-key" title="ALTER KEY (A): nudge this key's sound by the ALTER amount set in the RANDOM menu (UNDO takes it back)"><svg viewBox="0 0 24 20" aria-hidden="true"><path d="M2 4h20M2 10h20M2 16h20"/><rect x="5" y="1.5" width="4" height="5"/><rect x="14" y="7.5" width="4" height="5"/><rect x="8" y="13.5" width="4" height="5"/></svg><span>ALTER</span><kbd>A</kbd></button>
@@ -327,6 +328,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwok3pqq"></script>
+<script type="module" src="app/main.js?v=mwoly0hl"></script>
 </body>
 </html>

@@ -1117,3 +1117,8 @@ html.look-grey .textmenu .mi { font-size: 18px; }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
 .screen.fxopen #faders { visibility: hidden; }
 .screen.fxopen .lockveil { display: none; }
+
+/* THIS KEY's type row (2026-11-20): a random bucket sound of each type, six buttons across the section over its buttons */
+.khact .keyrand { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.khact .keyrand .btn { min-width: 0; min-height: 0; height: 30px; padding: 0 2px; font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+html.phone .khact .keyrand { display: none; }
