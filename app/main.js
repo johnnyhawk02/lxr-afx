@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwomnmea';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwomnmea';
-import { presetName, jumble } from './names.js?v=mwomnmea';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwomnmea';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwomnmea';
-import { breed, isDud } from '../sound/breed.js?v=mwomnmea';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwomnmea';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwomnmea';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwomnmea';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwomnmea';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwomnmea';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwomnmea';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwomvczh';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwomvczh';
+import { presetName, jumble } from './names.js?v=mwomvczh';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwomvczh';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwomvczh';
+import { breed, isDud } from '../sound/breed.js?v=mwomvczh';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwomvczh';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwomvczh';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwomvczh';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwomvczh';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwomvczh';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwomvczh';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwomnmea', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwomvczh', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -559,11 +559,12 @@ function placeFx() {
   if ($('fxpop').hidden) return;
   const f = $('faders'), box = document.querySelector('.fxbox'), sc = $('screen');
   const sr = sc.getBoundingClientRect(), s = sr.width / sc.offsetWidth || 1, r = f.getBoundingClientRect();
-  // only as wide as its controls: FX_COLS of the 17 cells, each a synth cell's width, moved in whole cells so it sits
+  // only as big as its controls: FX_COLS of the 17 cells by FX_ROWS of the 4 rows, each a synth cell's width, moved in whole cells so it sits
   // near the middle with its columns still on the synth grid's columns
   const cs = getComputedStyle(f), pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+  const pt = parseFloat(cs.paddingTop), pb = parseFloat(cs.paddingBottom), row = (f.clientHeight - pt - pb) / 4; // (the synth grid's 4 rows)
   const cell = (f.clientWidth - pl - pr) / (GRID_COLS + 1), shift = Math.floor((GRID_COLS + 1 - FX_COLS) / 2) * cell;
-  const g = $('fxside'); g.style.width = f.offsetWidth - (GRID_COLS + 1 - FX_COLS) * cell + 'px'; g.style.height = f.offsetHeight + 'px';
+  const g = $('fxside'); g.style.width = f.offsetWidth - (GRID_COLS + 1 - FX_COLS) * cell + 'px'; g.style.height = f.offsetHeight - (4 - FX_ROWS) * row + 'px';
   const h = box.querySelector('h3').offsetHeight, b = box.clientLeft;
   box.style.left = (r.left - sr.left) / s - sc.clientLeft - b + shift + 'px';
   box.style.top = Math.max(0, (r.top - sr.top) / s - sc.clientTop - b - h) + 'px';
@@ -966,14 +967,14 @@ const FX_PAGE = [
     ['attack', 100, (v) => Math.max(1, v) + 'ms'], ['release', 1000, (v) => Math.max(10, v) + 'ms'], ['knee', 24, (v) => v + 'dB'], ['makeup', 24, (v) => '+' + v + 'dB']]],
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
 ];
-const FX_COLS = 12; // the FX + MASTER pop-up's width in grid cells: as many as its widest rows use
+const FX_COLS = 10, FX_ROWS = 3; // the FX + MASTER pop-up in grid cells: every cell used, none left empty
 function buildFx() {
-  // the FX + MASTER tab on the synth page's grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
-  // page"): the same 17 cells by 4 rows, one knob to a cell, so each knob sits where a synth knob sits. In the order the
-  // sound goes through: row 1 the send effects, rows 2 and 3 the master's distortion (its second row of knobs under a
-  // blank heading), row 4 the compressor and the output. A row's leftover cells are a filler
+  // the FX + MASTER pop-up on the synth page's grid (Johnny, 2026-11-20: "fx + master should have the same grid as the
+  // main page", then "tidy up fx"): synth-sized cells, one knob to a cell, 10 across and 3 down with no empty cell. In
+  // the order the sound goes through: row 1 the send effects (ECHO, REVERB), row 2 the master DISTORTION on one row,
+  // row 3 the COMPRESSOR with its gain-reduction VU, then the OUTPUT LEVEL with its L and R peak bars
   const box = $('fxside'); box.innerHTML = '';
-  const COLS = FX_COLS, next = [1, 1, 1, 1];
+  const next = Array(FX_ROWS).fill(1);
   const place = (el, r, n) => {
     el.style.gridArea = `${r} / ${next[r - 1]} / ${r + 1} / ${next[r - 1] + n}`;
     el.classList.add('sect'); if (r > 1) el.classList.add('rt'); if (next[r - 1] > 1) el.classList.add('sep');
@@ -989,31 +990,26 @@ function buildFx() {
     return el;
   };
   const by = (name) => FX_PAGE.find((it) => Array.isArray(it) && it[1] === name);
-  const [dist, dist2] = buildDirt();
   place(fxSect(by('ECHO')), 1, 6); place(fxSect(by('REVERB')), 1, 4);
-  place(dist, 2, 6);
-  place(dist2, 3, 4).classList.remove('rt'); // (no rule between the distortion's two rows)
-  place(fxSect(by('COMPRESSOR')), 4, 6);
-  const out = place(fxSect(by('OUTPUT')), 4, 6);
-  next.forEach((c, r) => { if (c <= COLS) { const f = document.createElement('div'); place(f, r + 1, COLS + 1 - c).classList.add('fill'); } });
-  // OUTPUT: the LEVEL knob in the first cell, the output's L and R bars (showOut) over their dB scale on cells 2 to 4,
-  // each with its name on the left and its held peak on the right, and the compressor's gain reduction VU meter
-  // (showGr) on cells 5 and 6. CLIP sits in the header
+  place(buildDirt(), 2, 10);
+  const comp = place(fxSect(by('COMPRESSOR')), 3, 8);
+  const out = place(fxSect(by('OUTPUT')), 3, 2);
+  // the COMPRESSOR's gain reduction VU meter (showGr) in its last two cells
+  const vu = document.createElement('div'); vu.className = 'vu'; vu.title = 'The compressor\'s gain reduction: the needle swings left as it turns the level down';
+  vu.innerHTML = vuFace() + '<output>0.0</output>';
+  comp.querySelector('.row').append(vu);
+  // OUTPUT: the LEVEL knob, then the output's L and R peak bars (showOut) standing up in the next cell. CLIP sits in the header
   out.classList.add('mout', 'outm');
   const clip = document.createElement('button'); clip.type = 'button'; clip.className = 'btn sm hdb clip'; clip.textContent = 'CLIP';
   clip.setAttribute('aria-pressed', 'false'); clip.title = 'Lights when the output goes over full scale (the last soft limit squashing it); press to clear';
   clip.addEventListener('click', () => { clipAt = -1e9; clip.setAttribute('aria-pressed', 'false'); });
   const h3 = out.querySelector('h3'); h3.innerHTML = '<span class="t">OUTPUT</span>'; h3.append(clip);
-  const ticks = [-48, -24, -12, -6, 0].map((d) => `<span style="left:${(d - METER_LO) / -METER_LO * 100}%">${d}</span>`).join('');
-  const bars = document.createElement('div'); bars.className = 'meters';
-  bars.innerHTML = ['L', 'R'].map((c) => `<div class="mrow"><span class="ch">${c}</span><div class="segs">${'<i></i>'.repeat(METER_SEGS)}</div><output>-\u221e</output></div>`).join('')
-    + `<div class="mscale"><span></span><div class="scale">${ticks}</div><span class="ch">dB</span></div>`;
-  const vu = document.createElement('div'); vu.className = 'vu'; vu.title = 'The compressor\'s gain reduction: the needle swings left as it turns the level down';
-  vu.innerHTML = vuFace() + '<output>0.0</output>';
-  out.querySelector('.row').append(bars, vu);
+  const bars = document.createElement('div'); bars.className = 'meters'; bars.title = 'The output\'s peak level, left and right (the number is the held peak in dB)';
+  bars.innerHTML = ['L', 'R'].map((c) => `<div class="mrow"><output>-\u221e</output><div class="segs">${'<i></i>'.repeat(METER_SEGS)}</div><span class="ch">${c}</span></div>`).join('');
+  out.querySelector('.row').append(bars);
 }
 // ---- the master distortion (sound/dirt.js): a dual-path bass drive. Its input stage, clip stages, tone and the two
-// path volumes on two rows.
+// path volumes, all on one row.
 // A section that's switched off is greyed, but its knobs still turn ----
 const hz = (f) => (f < 1000 ? Math.round(f) + 'Hz' : (f / 1000).toFixed(f < 9950 ? 1 : 0) + 'k');
 const sdb = (d) => (d > 0 ? '+' : '') + Math.round(d) + 'dB';
@@ -1044,20 +1040,18 @@ function buildDirt() {
     for (const items of rows) { const r = document.createElement('div'); r.className = 'row'; r.append(...items); el.append(r); }
     return el;
   };
-  const dist = sect(6, [
+  const dist = sect(10, [
     [knob('pregain', 'pregain', 48, (v) => sdb(pregainDb(v)), 24), knob('cutoff', 'cutoff', 127, (v) => hz(dirtHz(v))),
       sw('swap', 'filter', ['HP', 'LP'], 'The filter before the distortion: high-pass (the lows stay out of it) or low-pass'),
       sw('xover', 'xover', ['OFF', 'ON'], 'Crossover: the half the filter takes away goes to the clean path (HP: distorted highs, clean lows; LP: the other way round)'),
-      knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open')]]);
-  // its second row of knobs is a section of its own on the next grid row, under a blank heading
-  const dist2 = sect(4, [[knob('bass', 'bass', 24, (v) => sdb(bassDb(v)), 12), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64)), 64),
+      knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open'),
+      knob('bass', 'bass', 24, (v) => sdb(bassDb(v)), 12), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64)), 64),
       knob('dirty', 'dirty', 127, (v) => (v ? sdb(volDb(v)) : 'off')), knob('clean', 'clean', 127, (v) => (v ? sdb(volDb(v)) : 'off'))]]);
-  dist2.querySelector('h3').innerHTML = '&nbsp;';
   dist.querySelector('h3').append(Object.assign(document.createElement('span'), { className: 't', textContent: 'DISTORTION' }),
     hbtn('on', ['OFF', 'ON'], '', 'Switch the master distortion in or out'));
-  dirtSects = [[dist, 'on'], [dist2, 'on']];
+  dirtSects = [[dist, 'on']];
   faderDraws.push(drawDirt);
-  return [dist, dist2];
+  return dist;
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down; Shift is fine
@@ -1576,7 +1570,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwomnmea').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwomvczh').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
