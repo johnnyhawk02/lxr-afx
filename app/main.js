@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoso1ry';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoso1ry';
-import { presetName, jumble } from './names.js?v=mwoso1ry';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoso1ry';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoso1ry';
-import { breed, isDud } from '../sound/breed.js?v=mwoso1ry';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoso1ry';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoso1ry';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoso1ry';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoso1ry';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoso1ry';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoso1ry';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwot8lcp';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwot8lcp';
+import { presetName, jumble } from './names.js?v=mwot8lcp';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwot8lcp';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwot8lcp';
+import { breed, isDud } from '../sound/breed.js?v=mwot8lcp';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwot8lcp';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwot8lcp';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwot8lcp';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwot8lcp';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwot8lcp';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwot8lcp';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoso1ry', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwot8lcp', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -151,7 +151,7 @@ const editKey = SOUNDS.map((s) => s.zone.base);
 function play(sound, note, vel, { hold = false, back = false } = {}) {
   const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
-  send({ type: back ? 'back' : 'play', sound, note: m.note, vel, params: [...m.vals], hold });
+  send({ type: back ? 'back' : 'play', sound, note: m.note, vel, params: [...m.vals], hold, glide: hold }); // (glide: a key played, so MORPH TIME applies)
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
   editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
@@ -1581,7 +1581,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoso1ry').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwot8lcp').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2391,7 +2391,8 @@ const newName = () => presetName(Math.random, new Set([...presets.map((p) => p.n
 // the effects as given (a preset's, or an UNDO's), shown and sent
 function applyFx(fx) {
   for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], fx[k]);
-  drawBpm(); drawRet(); sendFx(); drawFaders();
+  if (fx.tempo && fx.tempo.morph === undefined) S.fx.tempo.morph = 0; // (a patch from before MORPH TIME: off)
+  drawBpm(); drawMorph(); drawRet(); sendFx(); drawFaders();
 }
 function applyPatch(d) {
   d.values.forEach((x, p) => { if (p < ALL_PARAMS) setValue(p, x, { quiet: true }); });
@@ -2832,6 +2833,15 @@ function drawZones() {
 // one tempo for everything: the key sequencers, STEP SEQ and a synced echo all follow it live
 function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 300); drawBpm(); sendFx(); }
 function drawBpm() { $('bpm').textContent = S.fx.tempo.bpm; }
+// MORPH TIME (beside the keyboard): the slider's 0..100 is 0..2 s on a square curve (fine at the short end), kept in
+// the patch as S.fx.tempo.morph (ms) and sent with the effects
+// (function declarations: applyFx may draw it before this line has run)
+function morphMs(x) { return Math.round(2000 * (x / 100) ** 2); }
+function morphText(ms) { return !ms ? 'OFF' : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`; }
+function drawMorph() { const ms = S.fx.tempo.morph || 0; $('morph').value = Math.round(100 * Math.sqrt(ms / 2000)); $('morph-val').textContent = morphText(ms); }
+$('morph').addEventListener('input', (e) => { S.fx.tempo.morph = morphMs(+e.target.value); $('morph-val').textContent = morphText(S.fx.tempo.morph); sendFx(); });
+$('morph').addEventListener('dblclick', () => { S.fx.tempo.morph = 0; drawMorph(); sendFx(); });
+drawMorph();
 $('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
 $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey ? 10 : 1)));
 $('bpm').addEventListener('dblclick', () => setBpm(120));

@@ -4,13 +4,14 @@
 //   { type: 'play', sound, note, vel, params, hold }  play a sound (params: [[par, value], ...] set first; hold: a
 //                                               key held down, so its sequence plays until 'release')
 //   { type: 'back', sound, note, vel, params }  the zone back to an earlier held key, on the next RETURN step
+//   (glide on 'play' / 'back': a key played, so with a MORPH TIME the sound glides there)
 //   { type: 'release', sound }                  every key of the zone let go
 //   { type: 'engines', n }                      ENGINES: how many engines are in use (1..6)
 //   { type: 'table', t }                        a wavetable the page made (sound/tables.js), for the voices whose TABLE it is
 // It posts { type: 'peaks', peaks, ..., waves } about 30 times a second for the level lights (waves: where each voice's
 // tone is on its WAVE dial now, modulation and all, for the wave display; mods: each voice's modulated knobs, how far
 // they are moved now; stepAt: the STEP SEQ step each voice's last hit played)
-import { LxrInstrument } from './instrument.js?v=mwoso1ry';
+import { LxrInstrument } from './instrument.js?v=mwot8lcp';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {
@@ -25,8 +26,8 @@ registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
       else if (m.type === 'table') this.inst.hold(m.t);
       else if (m.type === 'engines') this.inst.setEngines(m.n);
       else if (m.type === 'release') this.inst.release(m.sound);
-      else if (m.type === 'play') this.inst.play(m.sound, m.note, m.vel, m.params, m.hold !== false);
-      else if (m.type === 'back') this.inst.back(m.sound, m.note, m.vel, m.params);
+      else if (m.type === 'play') this.inst.play(m.sound, m.note, m.vel, m.params, m.hold !== false, !!m.glide);
+      else if (m.type === 'back') this.inst.back(m.sound, m.note, m.vel, m.params, !!m.glide);
     };
   }
   process(_, outputs) {
