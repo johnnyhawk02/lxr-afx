@@ -635,14 +635,13 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .fxside[hidden] { display: none; }
 .left > .editor[hidden] { display: none; }
 .sounds .fxtab { position: absolute; top: 0; right: 0; height: 38px; min-height: 0; padding: 2px 10px; gap: 6px; font-size: 20px; }
-.sounds .fxtab[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
+.fxtab[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 @container (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
 .sounds .fxtab kbd { margin-left: 6px; }
 /* FX + MASTER on the synth panel's own grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
    page"): the tab is a .faders grid in the same place, 17 equal cells by 4 equal rows, one knob to a cell, so every
    knob sits where a knob on the synth page sits, at the same size (KNOB SIZE and all). buildFx places the sections */
 .editor > .faders[hidden] { display: none; }
-.editor.fx .lockveil { display: none; }
 .keylocked .fxgrid { opacity: 1; pointer-events: auto; }
 /* the multi-way switch boxes and the sidechain's meter move down with the knobs as they grow, so the names stay in line */
 html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)), html:not(.phone) .fxgrid .envm { --grow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
@@ -870,7 +869,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .kgroup .snd .ch { font-size: 14px; }
 .kgroup .snd.narrow { padding: 12px 2px 0; font-size: 16px; }
 .keyhead .sounds .fxtab { position: static; margin-left: auto; height: 36px; flex: none; }
-.keylocked .keyhead .snd[aria-selected="true"], .keylocked .keyhead .fxtab[aria-selected="true"] { background: var(--panel); color: var(--ink); }
+.keylocked .keyhead .snd[aria-selected="true"], .keylocked .keyhead .fxtab[aria-pressed="true"] { background: var(--panel); color: var(--ink); }
 /* THIS KEY: its buttons on one line, MAKE's eleven types and ANY under them, two rows of six */
 .khact .keyacts { justify-self: auto; display: flex; gap: 6px; }
 .khact .keyacts .btn.sm { flex: 1 1 0; min-height: 36px; font-size: 17px; }
@@ -1107,3 +1106,14 @@ html.look-grey .keyhead .piano .k.seqon:not(.sel):not(.blk) { background: #f5b59
 .textmenu .mrow .mi.step { width: 30px; padding: 2px 0; text-align: center; }
 .textmenu .mrow output { min-width: 54px; text-align: center; }
 html.look-grey .textmenu .mi { font-size: 18px; }
+
+/* FX + MASTER as a pop-up (Johnny, 2026-11-20): placeFx lays its grid exactly over the synth knobs' grid (same 17 cells
+   by 4 rows, same knob size) with its title bar just above. The box is see-through so the GREY look's 3D panel draws
+   its knobs; the synth knobs under it are hidden, and a wide shadow dims the rest of the screen */
+.fxpop { display: block; background: none; overflow: hidden; }
+.fxpop .fxbox { position: absolute; width: auto; max-height: none; overflow: visible; padding: 0; background: none;
+  box-shadow: 6px 7px 0 rgba(11, 12, 10, .35), 0 0 0 4000px rgb(var(--panel-rgb) / .55); }
+.fxbox > h3:first-child { margin: 0; padding: 6px 12px 6px 22px; background: var(--panel); border-bottom: var(--rule); }
+.fxbox > .faders { border-color: transparent; border-radius: 0; }
+.screen.fxopen #faders { visibility: hidden; }
+.screen.fxopen .lockveil { display: none; }

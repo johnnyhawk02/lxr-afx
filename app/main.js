@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwojoi51';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwojoi51';
-import { presetName, jumble } from './names.js?v=mwojoi51';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwojoi51';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwojoi51';
-import { breed, isDud } from '../sound/breed.js?v=mwojoi51';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwojoi51';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwojoi51';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwojoi51';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwojoi51';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwojoi51';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwok3pqq';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwok3pqq';
+import { presetName, jumble } from './names.js?v=mwok3pqq';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwok3pqq';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwok3pqq';
+import { breed, isDud } from '../sound/breed.js?v=mwok3pqq';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwok3pqq';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwok3pqq';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwok3pqq';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwok3pqq';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwok3pqq';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -45,7 +45,6 @@ const S = {
   editAll: false,
   ccMap: null, // knob map, CC number -> target; null: the Bass Station 2 default
   fx: structuredClone(FX_DEFAULTS), // the three send effects' settings (the FX page)
-  view: 'synth', // the editor shows the engine's knobs ('synth') or the effects ('fx')
   preset: { id: null, name: '' }, // the patch's name, and the saved preset it is (null: not saved yet)
   engines: DEFAULT_ENGINES, // ENGINES: how many mono engines share the keys, 1 to 6 (Johnny, 2026-11-17)
   zoneStart: DEFAULT_ZONE_START, // the layout's lowest key (moved by octaves with LOW KEY) // the editor edits the last key pressed (false) or the base of every key (true)
@@ -110,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwojoi51', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwok3pqq', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -549,23 +548,44 @@ const soundBtns = SOUNDS.map((s, i) => {
   b.className = 'btn snd'; b.type = 'button'; b.setAttribute('role', 'tab');
   b.innerHTML = `<i></i><span>${s.name}</span><span class="ch">${noteName(s.zone.lo)}-${noteName(s.zone.hi)}</span>`;
   b.title = `${s.name}: keys ${noteName(s.zone.lo)} to ${noteName(s.zone.hi)} on MIDI channel 1, base ${noteName(s.zone.base)} (key ${i + 1})`;
-  b.addEventListener('click', () => select(i, 'synth'));
+  b.addEventListener('click', () => select(i));
   $('sounds').append(b);
   return b;
 });
 
-function select(i, view) {
-  S.sel = i; if (view) S.view = view; save();
+function select(i) {
+  S.sel = i; save();
   buildFaders(); drawSide(); drawEditKey(); drawView();
 }
-// the tab showing: the engine's knobs ('synth') or FX + MASTER ('fx', F)
-function drawView() {
-  const fx = S.view === 'fx';
-  $('fxside').hidden = !fx; $('faders').hidden = fx; document.querySelector('.editor').classList.toggle('fx', fx);
-  soundBtns.forEach((b, k) => b.setAttribute('aria-selected', !fx && k === S.sel));
-  $('fx-tab').setAttribute('aria-selected', fx);
+// the engine buttons: the one on screen lit
+function drawView() { soundBtns.forEach((b, k) => b.setAttribute('aria-selected', k === S.sel)); }
+// FX + MASTER (F): a pop-up over the knob panel (Johnny, 2026-11-20: "turn fxmaster into a popup"), like the SEQUENCER.
+// Its grid is laid exactly over the synth knobs' grid, the same 17 cells by 4 rows at the same size (KNOB SIZE and
+// all), so every effect knob sits in a cell where a synth knob sits; its title bar sits just above the panel. The synth
+// knobs under it are hidden (not dimmed) so the GREY look's 3D knobs don't show through; the rest of the screen dims
+function placeFx() {
+  if ($('fxpop').hidden) return;
+  const f = $('faders'), box = document.querySelector('.fxbox'), sc = $('screen');
+  const sr = sc.getBoundingClientRect(), s = sr.width / sc.offsetWidth || 1, r = f.getBoundingClientRect();
+  const g = $('fxside'); g.style.width = f.offsetWidth + 'px'; g.style.height = f.offsetHeight + 'px';
+  const h = box.querySelector('h3').offsetHeight, b = box.clientLeft;
+  box.style.left = (r.left - sr.left) / s - sc.clientLeft - b + 'px';
+  box.style.top = Math.max(0, (r.top - sr.top) / s - sc.clientTop - b - h) + 'px';
 }
-$('fx-tab').addEventListener('click', () => { S.view = S.view === 'fx' ? 'synth' : 'fx'; save(); drawView(); });
+function openFx(open) {
+  $('fxpop').hidden = !open; $('fx-tab').setAttribute('aria-pressed', open);
+  $('screen').classList.toggle('fxopen', open);
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); openSeq(false); placeFx(); }
+}
+$('fx-tab').addEventListener('click', () => openFx($('fxpop').hidden));
+$('fx-close').addEventListener('click', () => openFx(false));
+$('fxpop').addEventListener('pointerdown', (e) => { if (e.target === $('fxpop')) openFx(false); });
+window.addEventListener('resize', placeFx);
+new ResizeObserver(placeFx).observe($('faders'));
+document.addEventListener('keydown', (e) => {
+  if ($('fxpop').hidden || e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input, select, textarea')) return;
+  if (e.key === 'Escape' || e.key === 'f' || e.key === 'F') { e.preventDefault(); e.stopImmediatePropagation(); openFx(false); }
+}, true);
 function drawSide() {
   const s = SOUNDS[S.sel];
   $('rand-name').textContent = s.name;
@@ -1500,7 +1520,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwojoi51').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwok3pqq').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2204,7 +2224,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'o' || e.key === 'O') openLoader(true);
   else if (e.key === 'a' || e.key === 'A') alterKey();
   else if (e.key === 'l' || e.key === 'L') lockKey(S.sel, editKey[S.sel]);
-  else if (e.key === 'f' || e.key === 'F') $('fx-tab').click();
+  else if (e.key === 'f' || e.key === 'F') openFx(true);
 });
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -2523,7 +2543,7 @@ function blNewName() { const taken = new Set(blBucket().map((s) => s.name)); let
 function openBlender(open) {
   if (!open && phoneOn) return; // (on a phone the blender is the whole screen)
   $('blender').hidden = !open; $('blend-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); fillSides(); drawBlender(); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openFx(false); fillSides(); drawBlender(); }
 }
 $('blend-btn').addEventListener('click', () => openBlender($('blender').hidden));
 $('bl-close').addEventListener('click', () => openBlender(false));
@@ -2682,7 +2702,7 @@ function ldLoad(i) {
 }
 function openLoader(open) {
   $('loader').hidden = !open; $('load-key').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); ldFill(); $('ld-list').focus(); ldMark(); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openFx(false); ldFill(); $('ld-list').focus(); ldMark(); }
 }
 $('load-key').addEventListener('click', () => openLoader($('loader').hidden));
 $('ld-close').addEventListener('click', () => openLoader(false));
@@ -3016,7 +3036,7 @@ function sqBars(b) {
 }
 function openSeq(open) {
   $('seq').hidden = !open; $('seq-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); drawBpm(); sqBars(SQ.bars); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); openFx(false); drawBpm(); sqBars(SQ.bars); }
 }
 $('seq-btn').addEventListener('click', () => openSeq($('seq').hidden));
 $('sq-close').addEventListener('click', () => openSeq(false));

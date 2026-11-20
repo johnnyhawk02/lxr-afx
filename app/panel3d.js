@@ -245,7 +245,7 @@ function sync() {
   const seen = new Set(); let sig = `${W}x${H}@${renderer.getPixelRatio()}/${lensKey}:${style}/${panelColour()}`;
   for (const el of screen.querySelectorAll('.knob:not(.fslide)')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
-    if (!r || !r.width) continue;
+    if (!r || !r.width || el.checkVisibility?.({ visibilityProperty: true }) === false) continue; // (a hidden knob: the synth knobs under FX + MASTER)
     seen.add(el);
     let k = knobs.get(el); if (k && k.userData.style !== style) { scene.remove(k); k = null; }
     if (!k) knobs.set(el, (k = makeKnob(style)));
@@ -260,7 +260,7 @@ function sync() {
   }
   for (const el of screen.querySelectorAll('.knob.fslide')) { // (LEVEL's fader: its cap where the page has it)
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
-    if (!r || !r.width) continue;
+    if (!r || !r.width || el.checkVisibility?.({ visibilityProperty: true }) === false) continue; // (a hidden knob: the synth knobs under FX + MASTER)
     seen.add(el);
     let k = knobs.get(el); if (!k) knobs.set(el, (k = makeFader()));
     // (the svg keeps its 40 x 200 drawing's shape inside a box that is often wider: scale by the tighter side and centre
@@ -275,7 +275,7 @@ function sync() {
   }
   for (const el of screen.querySelectorAll('.tog')) {
     const svg = el.querySelector('svg'), r = svg && svg.getBoundingClientRect();
-    if (!r || !r.width) continue;
+    if (!r || !r.width || el.checkVisibility?.({ visibilityProperty: true }) === false) continue; // (a hidden knob: the synth knobs under FX + MASTER)
     seen.add(el);
     let k = knobs.get(el); if (!k) knobs.set(el, (k = makeRocker()));
     const size = r.width / s, x = (r.left - ox) / s + size / 2, y = (r.top - oy) / s + size / 2, on = el.getAttribute('aria-checked') === 'true';
