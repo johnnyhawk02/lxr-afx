@@ -428,7 +428,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .meters .scale { position: relative; height: 15px; font-size: 13px; color: var(--muted); }
 .meters .scale span { position: absolute; top: 0; transform: translateX(-50%); }
 .meters .scale span:first-child { transform: none; } .meters .scale span:last-child { transform: translateX(-100%); }
-.fxgrid .mout .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
+.fxgrid .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
 .vu svg { display: block; width: 100%; height: auto; overflow: hidden; }
 .vu svg .arc, .vu svg line { stroke: var(--ink); stroke-width: 1.5; fill: none; }
 .vu svg .hot { stroke: var(--ink); stroke-width: 4; fill: none; }
@@ -1081,9 +1081,19 @@ html.look-grey .textmenu .mi { font-size: 18px; }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
 .screen.fxopen #faders { visibility: hidden; }
 .screen.fxopen .lockveil { display: none; }
-#fxside { grid-template-columns: repeat(12, minmax(0, 1fr)); } /* FX_COLS in app/main.js: the pop-up is only as wide as its controls */
+#fxside { grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); } /* FX_COLS x FX_ROWS in app/main.js: the pop-up only as big as its controls */
+/* tidy FX (Johnny, 2026-11-20): the compressor's VU in its last two cells; OUTPUT's L and R peak bars standing up in the
+   cell after LEVEL, lit from the bottom, the held peak over each and its name under it */
+#fxside .vu { grid-column: 7 / 9; align-self: center; margin: 0 10px; }
+#fxside .mout .meters { grid-column: 2 / 3; align-self: start; display: flex; flex-direction: row; justify-content: center; gap: 8px; padding: 0 0 4px; }
+#fxside .meters .mrow { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; }
+#fxside .meters .segs { flex-direction: column-reverse; width: 14px; height: calc(var(--ks) * var(--kd, 1.16) - 4px); gap: 2px; }
+#fxside .meters output { font-size: 13px; min-width: 3.2em; text-align: center; }
+#fxside .meters .ch { font-size: 13px; }
 
 /* THIS KEY's type row (2026-11-20): a random bucket sound of each type, six buttons across the section over its buttons */
 .khact .keyrand { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .khact .keyrand .btn { min-width: 0; min-height: 0; height: 30px; padding: 0 2px; font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 html.phone .khact .keyrand { display: none; }
+#fxside .sect > h3 { display: flex; align-items: center; gap: 6px; height: 24px; flex: none; }
+#fxside .outm .clip { margin-left: auto; margin-right: 6px; }
