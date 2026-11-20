@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwoqfcuk">
-<link rel="stylesheet" href="css/grey.css?v=mwoqfcuk">
+<link rel="stylesheet" href="css/lcd.css?v=mwoqg8gx">
+<link rel="stylesheet" href="css/grey.css?v=mwoqg8gx">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -231,18 +231,7 @@
     </div>
     <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
   </div>
-  <div class="start" id="start">
-    <div class="splash">
-      <h1 class="splash-logo">LXR<span>-</span>AFX</h1>
-      <p class="splash-tag">DRUM SYNTH FOR 25 KEYS</p>
-      <div class="splash-keys" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    </div>
-    <button class="btn big" id="start-btn"><span class="dk">CLICK TO START</span><span class="ph">START</span></button>
-    <p class="splash-hint dk">CLICK ANYWHERE OR PRESS ANY KEY: AUDIO AND MIDI START</p>
-    <p id="start-text"></p>
-    <p class="ph" id="start-phone">SOUNDMAKER: blend two sounds from the bucket, ALTER and RANDOM MODS them, SAVE the good ones to the bucket, then EXPORT LIST.</p>
-    <p class="splash-foot dk">FREE AND OPEN SOURCE (GPL-3.0) · DRUM VOICES FROM THE LXR-02 FIRMWARE BY SONIC POTIONS</p>
-  </div>
+  <p class="load-err" id="load-err" hidden></p>
   <div class="blender" id="loader" hidden>
     <div class="blbox ldbox" role="dialog" aria-label="Load a bucket sound">
       <h3>LOAD A BUCKET SOUND <span class="dim" id="ld-key"></span><button class="btn sm" id="ld-close" title="Close (Esc)">CLOSE</button></h3>
@@ -303,17 +292,17 @@
 })();
 </script>
 <script>
-// if the page's code fails to load or start (a stale cached file, an error), say so instead of sitting on START
+// if the page's code fails to load or start (a stale cached file, an error), say so on the panel
 (function () {
   let err = '';
   addEventListener('error', function (e) { err = err || (e.message || 'a file failed to load'); }, true);
   setTimeout(function () {
     if (window.afxReady) return;
-    var t = document.getElementById('start-text');
-    if (t) t.textContent = 'The page didn\'t finish loading (' + (err || 'timed out') + '). Reload it with Cmd+Shift+R (Ctrl+Shift+R on a PC).';
+    var t = document.getElementById('load-err');
+    if (t) t.hidden = false, t.textContent = 'The page didn\'t finish loading (' + (err || 'timed out') + '). Reload it with Cmd+Shift+R (Ctrl+Shift+R on a PC).';
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwoqfcuk"></script>
+<script type="module" src="app/main.js?v=mwoqg8gx"></script>
 </body>
 </html>
