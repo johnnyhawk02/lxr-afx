@@ -66,6 +66,7 @@ html.panel3d #screen { isolation: isolate; background: none; box-shadow: none; }
 html.panel3d #screen > canvas.panel3d { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; border-radius: 6px; pointer-events: none; }
 html.panel3d .knob svg { filter: none; }
 html.panel3d .knob :is(.skirt, .skirt-top, .chh, .chl, .rdc, .rdl, .rbb, .rbr, .rbt, .rbl, .rub, .rut, .rud) { display: none !important; }
+html.panel3d .start { background-color: rgb(172 174 172); }
 
 /* a rocker switch (vtoggle in app/main.js), like a black KCD1: a matte black rocker in a black bezel, seen from above,
    O and I printed white. The raised end is lit along its edge and the rocker's face falls away from it; the pressed end
