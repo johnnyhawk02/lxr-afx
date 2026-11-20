@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbcimj';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbcimj';
-import { presetName, jumble } from './names.js?v=mwpbcimj';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbcimj';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbcimj';
-import { breed, isDud } from '../sound/breed.js?v=mwpbcimj';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbcimj';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbcimj';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbcimj';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbcimj';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbcimj';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbcimj';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbf7jb';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbf7jb';
+import { presetName, jumble } from './names.js?v=mwpbf7jb';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbf7jb';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbf7jb';
+import { breed, isDud } from '../sound/breed.js?v=mwpbf7jb';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbf7jb';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbf7jb';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbf7jb';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbf7jb';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbf7jb';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbf7jb';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbcimj', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbf7jb', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -914,8 +914,6 @@ const macroDraws = [], macroHeld = new Array(NUM_MACROS).fill(false);
 let macroEdit = -1;
 function buildMacros(voice) {
   const box = $('macros'); box.innerHTML = ''; macroDraws.length = 0;
-  // (amounts are positive now the knob goes either way: a target set negative before is turned round)
-  if (M().t.some((t) => t.some((x) => x[1] < 0))) { M().t.forEach((t) => t.forEach((x) => { x[1] = Math.abs(x[1]); })); send({ type: 'fx', fx: S.fx }); save(); }
   for (let k = 0; k < NUM_MACROS; k++) {
     const el = document.createElement('div'); el.className = 'sect mac' + (k ? ' sep' : ''); el.style.setProperty('--n', 2);
     el.style.gridArea = `1 / ${1 + 2 * k} / 2 / ${3 + 2 * k}`;
@@ -938,7 +936,7 @@ function buildMacros(voice) {
     const draw = () => {
       name.textContent = macroName(k);
       const t = M().t[k];
-      list.innerHTML = t.length ? t.slice(0, 4).map(([u, d]) => `<span><b>${dialLabel(voice, u)}</b><i>${Math.abs(d)}%</i></span>`).join('') + (t.length > 4 ? `<span class="dim">+${t.length - 4} more</span>` : '')
+      list.innerHTML = t.length ? t.slice(0, 4).map(([u, d]) => `<span><b>${dialLabel(voice, u)}</b><i>${d > 0 ? '+' : ''}${d}</i></span>`).join('') + (t.length > 4 ? `<span class="dim">+${t.length - 4} more</span>` : '')
         : '<span class="dim">no targets</span>';
       el.classList.toggle('off', !t.length);
     };
@@ -952,7 +950,7 @@ function buildMacros(voice) {
 function macroLive(v) {
   v.forEach((x, k) => { if (k < NUM_MACROS && !macroHeld[k] && Math.abs(x - M().v[k]) > 1e-3) { M().v[k] = x; if (macroDraws[k]) macroDraws[k](); } });
 }
-// a macro's targets: every knob that can be modulated, each with an amount (0: not a target), in a pop-up
+// a macro's targets: every knob that can be modulated, each with a depth either way (0: not a target), in a pop-up
 function openMacro(k) {
   macroEdit = k; $('macpop').hidden = k < 0;
   if (k >= 0) { openMenu(false); openPresets(false); openSettings(false); drawMacroPop(); }
@@ -971,18 +969,18 @@ function drawMacroPop() {
   const box = $('mac-list'); box.innerHTML = '';
   for (const u of MOD_DIALS) {
     const el = document.createElement('div'); el.className = 'mdep';
-    el.innerHTML = '<span class="lab"></span><div class="mtrack" role="slider"><i></i></div><output></output>';
+    el.innerHTML = '<span class="lab"></span><div class="mtrack" role="slider"><i></i><b></b></div><output></output>';
     el.querySelector('.lab').textContent = dialLabel(voice, u);
     const tr = el.querySelector('.mtrack'), fill = tr.querySelector('i'), out = el.querySelector('output');
-    tr.setAttribute('aria-label', dialLabel(voice, u) + ' depth'); tr.setAttribute('aria-valuemin', 0); tr.setAttribute('aria-valuemax', 100);
-    // (an amount only, 0..100: the knob itself goes either way; Johnny, 2026-11-20)
-    const get = () => Math.abs((M().t[k].find((x) => x[0] === u) || [u, 0])[1]);
+    tr.setAttribute('aria-label', dialLabel(voice, u) + ' depth'); tr.setAttribute('aria-valuemin', -100); tr.setAttribute('aria-valuemax', 100);
+    const get = () => (M().t[k].find((x) => x[0] === u) || [u, 0])[1];
     const draw = () => {
-      const d = get(); fill.style.left = '0'; fill.style.width = d + '%';
-      out.textContent = d ? d + '%' : 'off'; el.classList.toggle('on', d !== 0); tr.setAttribute('aria-valuenow', d);
+      const d = get(), a = 50 + Math.min(0, d) / 2, b = 50 + Math.max(0, d) / 2;
+      fill.style.left = a + '%'; fill.style.width = (b - a) + '%';
+      out.textContent = d ? (d > 0 ? '+' : '') + d : 'off'; el.classList.toggle('on', d !== 0); tr.setAttribute('aria-valuenow', d);
     };
-    const put = (x) => { x = clamp(Math.round(x), 0, 100); if (x !== get()) { setMacroTarget(k, u, x); draw(); drawFaders(); } };
-    dragger(tr, 'x', { min: 0, max: 100, get, put });
+    const put = (x) => { x = clamp(Math.round(x), -100, 100); if (x !== get()) { setMacroTarget(k, u, x); draw(); drawFaders(); } };
+    dragger(tr, 'x', { min: -100, max: 100, get, put });
     tr.addEventListener('dblclick', () => put(0));
     draw(); box.append(el);
   }
@@ -1728,7 +1726,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbcimj').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbf7jb').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
