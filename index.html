@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwov7au8">
-<link rel="stylesheet" href="css/grey.css?v=mwov7au8">
+<link rel="stylesheet" href="css/lcd.css?v=mwowzows">
+<link rel="stylesheet" href="css/grey.css?v=mwowzows">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -178,7 +178,7 @@
   <div class="left">
   <section class="keyhead" id="keyhead" aria-label="The key">
     <div class="khsec khkey">
-      <div class="keyline"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
+      <div class="keyline"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span><b id="kh-engine">DRUM</b><span id="kh-info"></span><button class="tick follow" type="button" id="follow-key" aria-pressed="true" title="FOLLOW KEY: ticked, a note from MIDI (or the DAW) picks its key, so the knobs jump to it. Unticked, MIDI still plays but the knobs stay on the key you're editing">[x] FOLLOW KEY</button></div>
       <nav class="sounds" id="sounds" role="tablist" aria-label="Engines">
         <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
       </nav>
@@ -315,6 +315,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwov7au8"></script>
+<script type="module" src="app/main.js?v=mwowzows"></script>
 </body>
 </html>
