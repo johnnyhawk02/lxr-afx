@@ -19,7 +19,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   any), two rows of six. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (INIT PATCH, random, alter, level, the ALTER amount, AUTO LEVEL, the knob padlocks)
   is in the **RANDOM** menu.
-- **MACROS**: eight big knobs in a row across the top of the synth panel, on its grid. Each one **adds to** the knobs it
+- **MACROS**: eight big knobs in a row at the top, above the keyboard (they change every key), on the synth grid. Each one **adds to** the knobs it
   targets, on every key of every engine, as the modulation sources do. At 0 nothing moves; turned up each target moves
   from where the key has it by up to its depth (either way). Click a macro's name or its list of targets for every knob that can be
   modulated, each with a depth either way (double-click: off), and a name of its own. They are MACRO 1 to MACRO 8 (a name of your own

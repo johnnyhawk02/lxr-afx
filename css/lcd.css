@@ -1106,10 +1106,9 @@ html.phone .khact .keyrand { display: none; }
 /* ---- the MACRO knobs (Johnny, 2026-11-20): a row of eight across the top of the synth panel, on its 17 columns (two
    cells each: a big knob, then what it moves; the last cell its name). The panel is a row taller for it (1780 x 1040),
    so the synth grid's four rows keep their size: the macro row is one of them, a fifth ---- */
-.editor { grid-template-rows: minmax(0, 1fr) minmax(0, 4fr) auto; }
-.editor > .faders.macros { grid-area: 1 / 1; grid-template-rows: minmax(0, 1fr); }
-.editor > #faders, .editor > .lockveil { grid-area: 2 / 1; }
-.editor > .status { grid-row: 3; }
+/* above the keyboard, as they are above it in what they change (Johnny, 2026-11-20): every key of every engine */
+html:not(.phone) .left { grid-template-rows: 146px auto minmax(0, 1fr); }
+.left > .faders.macros { grid-template-rows: minmax(0, 1fr); min-height: 0; }
 .macros .sect.mac .row { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; align-items: center; }
 .macros .sect h3 { padding: 0 8px; }
 .macros .mname { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

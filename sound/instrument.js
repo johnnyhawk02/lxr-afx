@@ -9,12 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpbogpn';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpe9ccj';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpbogpn';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwpbogpn';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpbogpn';
-import { blend } from './makers.js?v=mwpbogpn';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpe9ccj';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwpe9ccj';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpe9ccj';
+import { blend } from './makers.js?v=mwpe9ccj';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
