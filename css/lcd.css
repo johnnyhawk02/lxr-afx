@@ -1061,35 +1061,6 @@ html:not(.phone) .top { padding: 0 24px; }
 #blend-btn { grid-column: span 2; }
 #blend-btn kbd { display: inline-block; }
 
-/* ---- SEQUENCER (Johnny, 2026-11-20): SHOW holds FX + MASTER and SEQUENCER, two rows, level with THIS KEY's; the pop-up
-   is a piano roll of the keys (its canvas drawn by app/main.js). A key the loop is playing is lit on the keyboard,
-   the selected key too (a bar along its bottom), so the editor can stay on its key ---- */
-.khview .fxtab, .khview .seqbtn { height: 29px; font-size: 17px; width: 100%; min-height: 0; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.khview .seqbtn i { width: 9px; height: 9px; border: 1.5px solid currentColor; border-radius: 50%; flex: none; }
-.khview .seqbtn.running i { background: currentColor; }
-.khview .seqbtn[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
-.khview { gap: 8px; justify-content: flex-start; }
-.khview h3 { margin-bottom: 25px; }
-.keyhead .piano .k.seqon:not(.sel) { background: rgb(var(--ink-rgb) / .45); }
-.keyhead .piano .k.blk.seqon:not(.sel) { background: rgb(var(--ink-rgb) / .6); }
-.keyhead .piano .k.seqon { box-shadow: inset 0 -9px 0 var(--ink); }
-.keyhead .piano .k.blk.seqon { box-shadow: inset 0 -9px 0 var(--panel); }
-html.look-grey .keyhead .piano .k.seqon:not(.sel):not(.blk) { background: #f5b597; }
-.sqbox { width: 1600px; }
-.sqbox h3 .dim { flex: 1; }
-.sqrow { display: flex; align-items: center; gap: 18px; margin: 4px 0 12px; }
-.sqrow #sq-play { width: 120px; }
-.sqrow #sq-play[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
-.sqtempo { display: flex; align-items: center; gap: 10px; font-size: 17px; letter-spacing: .1em; }
-.sqtempo input { width: 420px; accent-color: var(--ink); }
-.sqtempo b { min-width: 3ch; text-align: right; font-size: 22px; font-weight: 400; }
-.sqbars { display: flex; align-items: center; gap: 6px; font-size: 17px; letter-spacing: .1em; }
-.sqbars span { margin-right: 4px; }
-.sqbars .btn { width: 44px; }
-.sqbars .btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
-.sqrow #sq-clear { margin-left: auto; }
-#sq-roll { display: block; width: 100%; height: auto; border: 1px solid var(--ink); cursor: crosshair; touch-action: none; }
-
 /* ---- the RANDOM menu as a plain text list (Johnny, 2026-11-20): one line per item, a grey heading per group, a tick
    on the chosen NEW SOUNDS ARE and on WILD; the line under the pointer goes inverse ---- */
 #menu-panel.textmenu { width: 340px; padding: 6px 0; max-height: calc(100vh - 120px); overflow-y: auto; }
