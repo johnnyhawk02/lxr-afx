@@ -11,7 +11,7 @@
 //            knob's depth from each modulation source (mod:<source>:<knob>, schema.js depthKey; only the ones not 0).
 //            A sound saved before then (one source a knob: modsrc:<knob>, modamt:<knob>) is read as depths
 // toVoice() puts it on any engine voice (schema.js mapVoice), so nothing of it is lost.
-import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice, dec2, MOD_AMT_ZERO, pairsToDepthKeys } from './schema.js?v=mwoq9d47';
+import { VOICE_SCHEMAS, NUM_PARAMS, ALL_PARAMS, INIT_VALUES, mapVoice, dec2, MOD_AMT_ZERO, pairsToDepthKeys } from './schema.js?v=mwoqemj2';
 
 export const TYPES = ['drum 1', 'drum 2', 'drum 3', 'snare', 'cymbal', 'hihat'];
 // the controls a sound keeps: the voice's own and their modulation, not its sends, sequencer or trim (those belong to a key)
