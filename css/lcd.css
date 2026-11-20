@@ -269,18 +269,21 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .k.sel { background: var(--ink); color: var(--panel); outline: 2px solid var(--ink); outline-offset: 2px; }
 .k:hover { background: var(--tint); }
 .k.sel:hover { background: var(--ink); }
-/* a locked key: the key's header inverts, and the knobs are veiled */
-.keylocked .keyhead { background: var(--ink); color: var(--panel); text-shadow: none; }
-.keylocked .keyhead .dim, .keylocked .keyhead .kz { color: var(--panel); opacity: .7; }
-.keylocked .keyhead .btn { border-color: var(--panel); color: var(--panel); }
-.keylocked .keyhead .btn:disabled { opacity: .35; }
-.keylocked .keyhead .keylock { background: var(--panel); color: var(--ink); }
-.keylocked .keyhead .k { border-color: var(--panel); color: var(--panel); }
-.keylocked .keyhead .k.blk { background: rgb(var(--panel-rgb) / .3); }
-.keylocked .keyhead .k.own::after { background: var(--panel); }
-.keylocked .keyhead .k.sel { background: var(--panel); color: var(--ink); outline-color: var(--panel); }
+/* a locked key: the header's SHOW and THIS KEY sections invert and the knobs are veiled; the key and its piano
+   keyboard stay as they are, so any key can still be picked (Johnny, 2026-11-20: "dont lock the keyboard") */
+.keylocked .keyhead .khsec:not(.khkey) { background: var(--ink); color: var(--panel); text-shadow: none; }
+.keylocked .keyhead .khsec:not(.khkey) .dim, .keylocked .keyhead .khsec:not(.khkey) .kz { color: var(--panel); opacity: .7; }
+.keylocked .keyhead .khsec:not(.khkey) .btn { border-color: var(--panel); color: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) .btn:disabled { opacity: .35; }
+.keylocked .keyhead .khsec:not(.khkey) .keylock { background: var(--panel); color: var(--ink); }
 .editor { position: relative; }
-.faders { grid-area: 1 / 1; }
+.faders, .lockveil { grid-area: 1 / 1; }
+.lockveil { display: none; z-index: 2; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none;
+  background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb) / .1) 0 3px, transparent 3px 11px); }
+.lockveil b { font-weight: 400; font-size: 34px; letter-spacing: .2em; background: var(--ink); color: var(--panel); padding: 2px 16px; text-shadow: none; }
+.lockveil span { background: var(--panel); padding: 0 8px; }
+.keylocked .lockveil { display: flex; }
+.keylocked .faders { opacity: .45; pointer-events: none; }
 @container (max-width: 1340px) {
   .keyhead { gap: 12px; padding: 4px 10px; }
   .keyname b { font-size: 40px; }
@@ -291,6 +294,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* ---- the FX page ---- */
 .snd.fx { letter-spacing: .1em; }
+.fxview .lockveil { display: none; }
 .fxview .faders { opacity: 1; pointer-events: auto; }
 .fxnote { flex: 1 0 100%; margin: 14px 8px 0; font-size: 19px; color: var(--muted); }
 .fxnote em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 4px; text-shadow: none; }
@@ -661,9 +665,9 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .keyacts .iconbtn svg { width: 26px; height: 22px; fill: var(--panel); stroke: currentColor; stroke-width: 2; }
 .keyacts .iconbtn:hover svg { fill: var(--tint); }
 .keyacts .iconbtn:active svg rect { fill: currentColor; }
-.keylocked .keyhead .dicebtn .die { border-color: var(--panel); }
-.keylocked .keyhead .dicebtn .pip { fill: var(--panel); }
-.keylocked .keyhead .iconbtn svg { fill: var(--ink); }
+.keylocked .keyhead .khsec:not(.khkey) .dicebtn .die { border-color: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) .dicebtn .pip { fill: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) .iconbtn svg { fill: var(--ink); }
 .keyacts .dicebtn:disabled { opacity: .35; cursor: default; }
 .keyacts .iconbtn kbd { margin-left: 0; }
 /* MAKE THIS KEY: under the key's buttons, two rows of six, right of the key strip */
@@ -853,7 +857,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .kgroup .snd .ch { font-size: 14px; }
 .kgroup .snd.narrow { padding: 12px 2px 0; font-size: 16px; }
 .keyhead .sounds .fxtab { position: static; margin-left: auto; height: 36px; flex: none; }
-.keylocked .keyhead .snd[aria-selected="true"], .keylocked .keyhead .fxtab[aria-pressed="true"] { background: var(--panel); color: var(--ink); }
+.keylocked .keyhead .khsec:not(.khkey) .snd[aria-selected="true"], .keylocked .keyhead .khsec:not(.khkey) .fxtab[aria-pressed="true"] { background: var(--panel); color: var(--ink); }
 /* THIS KEY: its buttons on one line, MAKE's eleven types and ANY under them, two rows of six */
 .khact .keyacts { justify-self: auto; display: flex; gap: 6px; }
 .khact .keyacts .btn.sm { flex: 1 1 0; min-height: 36px; font-size: 17px; }
@@ -861,7 +865,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .khact .keymake { grid-template-columns: auto repeat(6, minmax(0, 1fr)); gap: 4px 6px; align-self: stretch; margin-top: 2px; }
 .khact .keymake .mkl { font-size: 15px; padding-right: 6px; }
 .khact .keymake .btn { height: 26px; font-size: 15px; }
-.keylocked .keyhead .khsec h3 { color: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) h3 { color: var(--panel); }
 
 /* ---- THIS KEY in menus (Johnny, 2026-11-19: "try and put these items into menus"): the dice, then KEY and MAKE, on
    the five columns of the menu buttons above them (dice in the first, KEY over the next two, MAKE the last two) ---- */
@@ -886,14 +890,14 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keyhead .menupanel .btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; }
 .keyhead .menupanel .keylock { min-width: 0; font-size: 19px; }
 .keyhead .menupanel .iconbtn svg { width: 24px; height: 20px; fill: var(--panel); stroke: currentColor; stroke-width: 2; }
-.keylocked .keyhead .menupanel .dim { color: var(--muted); opacity: 1; }
-.keylocked .keyhead .menupanel .btn { border-color: var(--ink); color: var(--ink); }
-.keylocked .keyhead .menupanel .keylock { background: var(--ink); color: var(--panel); }
-.keylocked .keyhead .menupanel .iconbtn svg { fill: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) .menupanel .dim { color: var(--muted); opacity: 1; }
+.keylocked .keyhead .khsec:not(.khkey) .menupanel .btn { border-color: var(--ink); color: var(--ink); }
+.keylocked .keyhead .khsec:not(.khkey) .menupanel .keylock { background: var(--ink); color: var(--panel); }
+.keylocked .keyhead .khsec:not(.khkey) .menupanel .iconbtn svg { fill: var(--panel); }
 .makepanel .keymake { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
 .makepanel .keymake .mk { display: contents; }
 .makepanel .keymake .btn { height: auto; min-height: 36px; font-size: 18px; padding: 0 4px; }
-.keylocked .keyhead .menupanel h3 { color: var(--ink); }
+.keylocked .keyhead .khsec:not(.khkey) .menupanel h3 { color: var(--ink); }
 .keyhead .menupanel .randrow > .btn { width: 100%; }
 .keylocked .khact .keyacts .keylock { background: var(--panel); color: var(--ink); border-color: var(--panel); }
 
@@ -968,13 +972,6 @@ html .keyhead .kgroup .snd[aria-selected="true"] { background: var(--ink); color
 .keyhead .piano .k svg { top: auto; bottom: 6px; margin-top: 0; }
 .keyhead .piano .k.locked::after { display: none; }
 /* a locked key: the panel inverts, the keyboard with it */
-.keylocked .keyhead .kgroup::before { border-color: rgb(var(--panel-rgb)); }
-.keylocked .keyhead .piano .k { border-color: rgb(var(--panel-rgb)); color: rgb(var(--panel-rgb)); background: transparent; }
-.keylocked .keyhead .piano .k.blk { background: rgb(var(--panel-rgb) / .75); color: var(--ink); }
-.keylocked .keyhead .piano .k.sel { background: rgb(var(--panel-rgb)); color: var(--ink); }
-.keylocked .keyhead .piano .k.blk.sel { box-shadow: inset 0 0 0 4px rgb(var(--panel-rgb)); background: var(--ink); color: rgb(var(--panel-rgb)); }
-html .keylocked .keyhead .kgroup .snd { background: var(--ink); color: rgb(var(--panel-rgb)); border-color: rgb(var(--panel-rgb)); }
-html .keylocked .keyhead .kgroup .snd[aria-selected="true"] { background: rgb(var(--panel-rgb)); color: var(--ink); }
 
 /* KEY: the note and the sound it plays, no more (the bracket says the engine); a long name ends neatly, the full one
    in its tooltip */
@@ -997,7 +994,6 @@ html .keylocked .keyhead .kgroup .snd[aria-selected="true"] { background: rgb(va
 .keyhead .piano { top: 34px; height: 66px; }
 .keyhead .piano .k { height: 66px; }
 .keyhead .piano .k.blk { height: 40px; }
-.keylocked .keyline #kh-info { color: rgb(var(--panel-rgb) / .75); }
 
 /* ---- breathing room (Johnny, 2026-11-19: "give space around dials near the sides"): the knob panel, the key panel
    and the top bar all step in by the same 16px more on each side, so their 17 columns still line up and the dials
@@ -1025,11 +1021,6 @@ html:not(.phone) .top { padding: 0 24px; }
   border-radius: 1px; }
 .keyhead .piano .k.sel:not(.blk)::before { bottom: -12px; }
 .keyhead .piano .k.blk.sel::before { top: calc(66px + 6px); }
-/* a locked key: the same marks in the panel colour over the inverted panel */
-.keylocked .keyhead .piano .k.sel, .keylocked .keyhead .piano .k.blk.sel {
-  background: repeating-linear-gradient(135deg, rgb(var(--panel-rgb) / .6) 0 3px, var(--ink) 3px 7px);
-  box-shadow: inset 0 0 0 4px rgb(var(--panel-rgb)); color: rgb(var(--panel-rgb)); }
-.keylocked .keyhead .piano .k.sel::before { background: rgb(var(--panel-rgb)); }
 .keyhead .piano .k.sel:not(.blk) { z-index: 1; } /* (the black keys still lie over it) */
 
 /* SOUNDMAKER (was BLENDER, Johnny 2026-11-19): the longer name fills its top-bar cell, so its B key shows in the hover text only */
@@ -1070,6 +1061,7 @@ html.look-grey .textmenu .mi { font-size: 18px; }
   box-shadow: 6px 7px 0 rgba(11, 12, 10, .35), 0 0 0 4000px rgb(var(--panel-rgb) / .55); }
 .fxbox > h3:first-child { margin: 0; padding: 6px 12px 6px 22px; background: var(--panel); border-bottom: var(--rule); }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
+.screen.fxopen .lockveil { display: none; }
 #fxside { grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); } /* FX_COLS x FX_ROWS in app/main.js: the pop-up only as big as its controls */
 /* tidy FX (Johnny, 2026-11-20): the compressor's VU in its last two cells; OUTPUT's L and R peak bars standing up in the
    cell after LEVEL, lit from the bottom, the held peak over each and its name under it */
