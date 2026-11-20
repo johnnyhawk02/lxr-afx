@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwp4md1k">
-<link rel="stylesheet" href="css/grey.css?v=mwp4md1k">
+<link rel="stylesheet" href="css/lcd.css?v=mwp9javi">
+<link rel="stylesheet" href="css/grey.css?v=mwp9javi">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -307,7 +307,9 @@
 // same on resize): set before the first paint so it never shows at the wrong size
 (function () {
   if (document.documentElement.classList.contains('phone')) return;
-  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1780, (innerHeight - 16) / 1040);
+  // (in the plugin the panel fills the window edge to edge: no margin, no frame)
+  var g = window.lxrHost ? 0 : 16; if (window.lxrHost) document.documentElement.classList.add('plugin');
+  var st = document.getElementById('stage'), s = Math.min((innerWidth - g) / 1780, (innerHeight - g) / 1040);
   st.style.left = (innerWidth - 1780 * s) / 2 + 'px'; st.style.top = (innerHeight - 1040 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
 })();
 </script>
@@ -323,6 +325,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwp4md1k"></script>
+<script type="module" src="app/main.js?v=mwp9javi"></script>
 </body>
 </html>
