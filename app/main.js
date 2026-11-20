@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoivmy5';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoivmy5';
-import { presetName, jumble } from './names.js?v=mwoivmy5';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoivmy5';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoivmy5';
-import { breed, isDud } from '../sound/breed.js?v=mwoivmy5';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoivmy5';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoivmy5';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoivmy5';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoivmy5';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoivmy5';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoizok6';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoizok6';
+import { presetName, jumble } from './names.js?v=mwoizok6';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoizok6';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoizok6';
+import { breed, isDud } from '../sound/breed.js?v=mwoizok6';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoizok6';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoizok6';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoizok6';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoizok6';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoizok6';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoivmy5', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoizok6', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -261,7 +261,7 @@ const held = SOUNDS.map(() => []);
 function keyDown(sound, note, vel, quiet = false) {
   const st = held[sound], i = st.findIndex((k) => k.note === note);
   if (i >= 0) st.splice(i, 1);
-  st.push({ note, vel });
+  st.push({ note, vel, quiet });
   play(sound, note, vel, { hold: true, quiet });
 }
 function noteOff(note, quiet = false) {
@@ -272,7 +272,8 @@ function noteOff(note, quiet = false) {
   if (i < st.length) return; // not the newest key: the zone stays on the newest
   if (!st.length) { send({ type: 'release', sound }); return; }
   const prev = st[st.length - 1];
-  play(sound, prev.note, prev.vel, { hold: true, back: true, quiet });
+  // (going back to a note the sequencer holds stays quiet, so the editor stays on the key you picked)
+  play(sound, prev.note, prev.vel, { hold: true, back: true, quiet: quiet || prev.quiet });
 }
 // MIDI all notes off / all sound off: every zone let go
 function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0; send({ type: 'release', sound }); } }); }
@@ -1488,7 +1489,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoivmy5').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoizok6').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2148,8 +2149,8 @@ $('lock-none').addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------
-// the computer's keys: [ and ] (or the left and right arrows) step to the key before or after and play it, Space plays
-// the key again, K a new sound, A alter, L lock, Z undo, 1-3 pick an engine, Cmd/Ctrl+C and V copy and paste
+// the computer's keys: [ and ] (or the left and right arrows) step to the key before or after and play it, Space starts or stops the
+// sequencer, K a new sound, A alter, L lock, Z undo, 1-3 pick an engine, Cmd/Ctrl+C and V copy and paste
 // ---------------------------------------------------------------------------------------------------------------
 function stepKey(by) {
   const i = stripKeys.findIndex((k) => k.sound === S.sel && k.note === editKey[S.sel]);
@@ -2169,7 +2170,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === '[' || e.key === ']') stepKey(e.key === ']' ? 1 : -1);
   else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.target.closest('input, [role="slider"]')) { e.preventDefault(); stepKey(e.key === 'ArrowRight' ? 1 : -1); }
   else if (e.key === ' ' && !e.target.closest('input, textarea') && (!e.target.closest('button') || e.target.closest('.k'))) {
-    e.preventDefault(); startAudio().then(() => play(S.sel, editKey[S.sel], 100)); // (on any other button, Space presses it)
+    e.preventDefault(); sqRun ? sqStop() : sqStart(); // (Johnny: "space stops/starts" the sequencer; on any other button, Space presses it)
   }
   else if (e.key === 'k' || e.key === 'K') randKey();
   else if (e.key === 'o' || e.key === 'O') openLoader(true);
@@ -2669,7 +2670,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'Enter' && e.target === $('ld-find')) { e.preventDefault(); ldLoad(Math.max(LD.at, 0)); }
   else if ((e.metaKey || e.ctrlKey) && e.key === 'z') return;
   else if (e.target.closest('input')) return;
-  else if (e.key === ' ') { e.preventDefault(); startAudio().then(() => play(S.sel, editKey[S.sel], 100)); }
+  else if (e.key === ' ') { e.preventDefault(); sqRun ? sqStop() : sqStart(); }
   else return;
   e.stopImmediatePropagation();
 }, true);
