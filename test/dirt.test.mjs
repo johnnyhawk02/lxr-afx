@@ -42,21 +42,11 @@ for (const bass of [0, 24]) for (const clip of [0, 1]) for (const gain of [0, 12
   const lo = run(set, sine(60, 0.3)).L, hi = run(set, sine(6000, 0.3)).L;
   ok(rms(lo, fs / 2) > 0.18 && rms(hi, fs / 2) < 0.08, `xover clean path: lows ${rms(lo, fs / 2).toFixed(3)} highs ${rms(hi, fs / 2).toFixed(3)}`);
   const sw = run({ ...set, swap: 1 }, sine(60, 0.3)).L; ok(rms(sw, fs / 2) < 0.08, 'xover swapped: lows should leave the clean path'); }
-// the sidechain: a key burst opens the envelope, it falls away over DECAY, and it turns the cutoff
-{ const key = new Float32Array(N); for (let i = 0; i < fs / 10; i++) key[i] = 0.5 * Math.sin(2 * Math.PI * 60 * i / fs);
-  const d = new Dirt(fs); d.set({ ...DIRT_DEFAULTS, on: 1, sc: 1, src: 1, scfilt: 0, freq: 60, sens: 80, decay: 40, target: 1 }); d.wet = 1;
-  const L = sine(200, 0.2), R = L.slice(); const env = [];
-  for (let i = 0; i < N; i += 64) { d.process(L.subarray(i, i + 64), R.subarray(i, i + 64), key.subarray(i, i + 64)); env.push(d.env); }
-  const at = (t) => env[Math.floor(t * fs / 64)];
-  ok(at(0.05) > 0.8, 'sidechain envelope did not open: ' + at(0.05));
-  ok(at(0.9) < at(0.2) * 0.2, `sidechain envelope did not fall: ${at(0.2)} -> ${at(0.9)}`);
-  ok(d.readEnv() > 0.8 && d.readEnv() === 0, 'readEnv'); }
 // the instrument: a hit through the distortion and the compressor, then switched off (fades, then bypassed)
 { const inst = new LxrInstrument(48000); const L = new Float32Array(4800), R = new Float32Array(4800);
-  inst.setFx({ dirt: { ...DIRT_DEFAULTS, on: 1, gain: 100, sc: 1, src: 1 } });
+  inst.setFx({ dirt: { ...DIRT_DEFAULTS, on: 1, gain: 100 } });
   inst.play(0, 60, 120); inst.render(L, R);
   ok(L.every(Number.isFinite) && peak(L) > 0.05 && peak(L) <= 1, 'instrument through the distortion: peak ' + peak(L));
-  ok(inst.readSc() > 0, 'the drum did not drive the sidechain');
   inst.setFx({ dirt: { on: 0 } }); for (let k = 0; k < 20; k++) inst.render(L, R);
   ok(!inst.dirt.active, 'the distortion did not fade out to bypass'); }
 console.log(fails ? `${fails} of ${checks} checks failed` : `ok: ${checks} checks`); process.exit(fails ? 1 : 0);

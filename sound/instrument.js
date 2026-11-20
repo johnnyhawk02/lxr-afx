@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwom5wxi';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwomnmea';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwom5wxi';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwom5wxi';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwom5wxi';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwomnmea';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwomnmea';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwomnmea';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -78,7 +78,7 @@ export class LxrInstrument {
     this.seqOn = new Uint8Array(6); this.seqPat = new Uint8Array(6).fill(0b00010001); this.held = SOUNDS.map(() => null); this.bpm = 120;
     // the grid: beats since the start (it follows the BPM), and per sound a key coming back on a step: { at, note, vel, params }
     this.beat = 0; this.retQ = 2; this.backs = SOUNDS.map(() => null);
-    this.dirt = new Dirt(REAL_FS); this.key = new Float32Array(BLOCK);
+    this.dirt = new Dirt(REAL_FS);
     this.m = { ...FX_DEFAULTS.master }; this.env = 0; this.gr = 0;
     this.outPk = new Float32Array(4); // the output meter since the last read: left and right peaks (0..1), left and right over full scale (0/1)
     // the echo's DUCK: its depth (0..1), the dry sound's envelope that drives it, and the gain it gives the echo per sample
@@ -251,15 +251,11 @@ export class LxrInstrument {
       if (a > o[0]) o[0] = a; if (b > o[1]) o[1] = b;
     }
   }
-  // the master: the distortion (its sidechain hears the mix, or one engine's own output), then a soft-knee compressor
+  // the master: the distortion, then a soft-knee compressor
   // (a peak detector in dB, gain reduction smoothed by attack and release), the makeup gain and the level
   _master(L, R, voices) {
     const M = this.m, D = this.dirt;
-    if (D.active) {
-      const src = D.p.sc ? D.p.src | 0 : 0;
-      if (src >= 1 && src <= 3) { const n = SOUNDS[src - 1].engineVoice, o = voices[n], t = this.trimBuf[n], k = this.key, g = this.gain / 32768; for (let i = 0; i < BLOCK; i++) k[i] = o[i] * t[i] * g; }
-      D.process(L, R, src >= 1 && src <= 3 ? this.key : null);
-    } else D.readEnv();
+    if (D.active) D.process(L, R);
     const T = -M.thresh, ratio = Math.max(1, M.ratio / 10), W = M.knee, slope = 1 / ratio - 1;
     const ca = Math.exp(-1000 / (Math.max(1, M.attack) * REAL_FS)), cr = Math.exp(-1000 / (Math.max(10, M.release) * REAL_FS));
     const out = Math.pow(10, M.makeup / 20) * M.level / 100;
@@ -275,8 +271,6 @@ export class LxrInstrument {
     }
     this.env = env; this.gr = gr;
   }
-  /** the distortion's sidechain envelope (0..1) at its highest since the last call */
-  readSc() { return this.dirt.readEnv(); }
   /** the output since the last call: [left peak, right peak] (0..1, what goes out) and [left, right] over full scale (CLIP) */
   readOut() { const o = this.outPk, r = [o[0], o[1], o[2], o[3]]; o.fill(0); return r; }
   /** the most gain reduction (dB) since the last call */

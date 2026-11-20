@@ -377,7 +377,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .fxside .mout .row { display: flex; align-items: center; gap: 14px; }
 @container (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
 /* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
-   as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
+   as a sentence,, and a section switched off is greyed (its knobs still turn) */
 .fxgrid .sect.dirt .row + .row { margin-top: 2px; }
 .fxgrid .sect.dirt h3 { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
 .fxgrid .sect.dirt h3 .dim { font-size: 15px; letter-spacing: 1px; }
@@ -390,11 +390,6 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .vsw .swb[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 .vsw .swb:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .fxgrid .sect.dirt.off > .row { opacity: .42; }
-.envm { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.envm .segs { height: var(--ks); width: 14px; display: flex; flex-direction: column-reverse; gap: 2px; }
-.envm .segs i { flex: 1; background: var(--ghost); }
-.envm .segs i.on { background: var(--ink); }
-.envm .lab { font-size: 15px; }
 
 /* the synth panel on one grid (buildFaders): equal cells, one knob to a cell (a menu takes two), four equal rows, the
    key's FX sends and LEVEL in the last two columns. Rules sit on the cell edges and never move a knob */
@@ -644,11 +639,9 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .editor > .faders[hidden] { display: none; }
 .keylocked .fxgrid { opacity: 1; pointer-events: auto; }
 /* the multi-way switch boxes and the sidechain's meter move down with the knobs as they grow, so the names stay in line */
-html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)), html:not(.phone) .fxgrid .envm { --grow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
-html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .swb, html:not(.phone) .fxgrid .envm .segs { transform: translateY(calc(var(--grow) / 2)); }
-html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab, html:not(.phone) .fxgrid .envm .lab { transform: translateY(var(--grow)); }
-.fxgrid .envm { padding-top: 0; }
-.fxgrid .envm > output { font-size: 18px; min-height: 1.2em; }
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) { --grow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .swb { transform: translateY(calc(var(--grow) / 2)); }
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translateY(var(--grow)); }
 .faders .sect.off > .row { opacity: .42; }
 .faders { grid-template-columns: repeat(17, minmax(0, 1fr)); } /* 16 cells of the engine's sections, then the key's own: its FX SENDS one above the other, over LEVEL */
 

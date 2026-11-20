@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwom5wxi';
+import { read as readTable } from './wavetables.js?v=mwomnmea';
 
 export { PAR, CC, CC2 };
 
@@ -756,6 +756,33 @@ function filterBlock(v, buf) {
   SVF_calcBlockMorph(v.filter, v.fwAt, v.fwTo, v.fFirm, buf, BLOCK);
   v.fwAt.set(v.fwTo);
   v.fFirm = 0;
+}
+
+// The filter's frequency response (not in the firmware: for the panel's FILTER CURVE). The gain (linear) at each
+// frequency of hz, for CUTOFF and RESO (knob positions, 0..127) and the TYPE dial's position, from the same sums the
+// filters work out, as small signals (the soft clipping and FLT DRIVE left out). Between two detents, the two types'
+// weights crossfaded, as filterBlock does. Also the cutoff in Hz: filterResponse.hz
+export function filterResponse(cut, reso, pos, hz) {
+  const fn = Math.max(1e-5, valueShaperF2F(Math.min(Math.max(cut / 127, 0), 1), FILTER_SHAPER) * f(0.5 * f(0.9)));
+  let q = 1 - Math.min(Math.max(reso / 127, 0), 1); if (q < 0.1) q = 0.02;
+  const R = fn >= 0.4499 ? 1 : q, g = fastTan(Math.PI * fn);
+  const [k, t] = detent(pos, FILTER_STEP, FILTER_ORDER.length - 1), A = FW[FILTER_ORDER[k]], B = t > 0 ? FW[FILTER_ORDER[k + 1]] : A;
+  const w = A.map((a, i) => a + (B[i] - a) * t), wl = w[0] + w[1], wb = w[2] + 2 * R * w[3], wx = w[4] + w[6];
+  const f2 = fn * 2.21, q2 = (1 - q) * 1.4 + (1 - q) / (1 - f2), c1 = 1 - f2 + f2 * q2, c2 = 1 - f2;
+  filterResponse.hz = fn * REAL_FS;
+  return hz.map((h) => {
+    const om = 2 * Math.PI * Math.min(h, REAL_FS * 0.4999) / REAL_FS, si = Math.tan(om / 2) / g; // s = j·si (the bilinear map)
+    // the ZDF filter: D = s² + 2Rs + 1; LP = 1/D, BP = s/D
+    const dr = 1 - si * si, di = 2 * R * si, dd = dr * dr + di * di;
+    let re = wx + (wl * dr + wb * si * di) / dd, im = (-wl * di + wb * si * dr) / dd;
+    if (w[5]) { // LP2, the naive two-pole: f2² / ((1 - c1·z⁻¹)(1 - c2·z⁻¹) + f2²·q2·z⁻¹)
+      const zr = Math.cos(om), zi = -Math.sin(om);
+      const pr = 1 - c1 * zr, pi = -c1 * zi, qr = 1 - c2 * zr, qi = -c2 * zi;
+      const nr = pr * qr - pi * qi + f2 * f2 * q2 * zr, ni = pr * qi + pi * qr + f2 * f2 * q2 * zi, nn = nr * nr + ni * ni;
+      re += w[5] * f2 * f2 * nr / nn; im -= w[5] * f2 * f2 * ni / nn;
+    }
+    return Math.hypot(re, im);
+  });
 }
 
 // ---------------------------------------------------------------------------------------
