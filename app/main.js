@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwowzows';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwowzows';
-import { presetName, jumble } from './names.js?v=mwowzows';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwowzows';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwowzows';
-import { breed, isDud } from '../sound/breed.js?v=mwowzows';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwowzows';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwowzows';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwowzows';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwowzows';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwowzows';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwowzows';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwozujdr';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwozujdr';
+import { presetName, jumble } from './names.js?v=mwozujdr';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwozujdr';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwozujdr';
+import { breed, isDud } from '../sound/breed.js?v=mwozujdr';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwozujdr';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwozujdr';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwozujdr';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwozujdr';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwozujdr';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwozujdr';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwowzows', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwozujdr', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1632,7 +1632,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwowzows').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwozujdr').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2889,8 +2889,9 @@ function drawBpm() { $('bpm').textContent = S.fx.tempo.bpm; }
 // (function declarations: applyFx may draw it before this line has run)
 function morphMs(x) { return Math.round(2000 * (x / 100) ** 2); }
 function morphText(ms) { return !ms ? 'OFF' : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`; }
-function drawMorph() { const ms = S.fx.tempo.morph || 0; $('morph').value = Math.round(100 * Math.sqrt(ms / 2000)); $('morph-val').textContent = morphText(ms); }
-$('morph').addEventListener('input', (e) => { S.fx.tempo.morph = morphMs(+e.target.value); $('morph-val').textContent = morphText(S.fx.tempo.morph); sendFx(); });
+function drawMorph() { const ms = S.fx.tempo.morph || 0; $('morph').value = Math.round(100 * Math.sqrt(ms / 2000)); $('morph-val').textContent = morphText(ms); morphFill(); }
+function morphFill() { const r = $('morph'); r.style.setProperty('--f', `${r.value}%`); } // (the ink part of the track, up to the thumb)
+$('morph').addEventListener('input', (e) => { S.fx.tempo.morph = morphMs(+e.target.value); $('morph-val').textContent = morphText(S.fx.tempo.morph); morphFill(); sendFx(); });
 $('morph').addEventListener('dblclick', () => { S.fx.tempo.morph = 0; drawMorph(); sendFx(); });
 drawMorph();
 $('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
