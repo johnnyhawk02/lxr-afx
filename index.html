@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwpbogpn">
-<link rel="stylesheet" href="css/grey.css?v=mwpbogpn">
+<link rel="stylesheet" href="css/lcd.css?v=mwpe9ccj">
+<link rel="stylesheet" href="css/grey.css?v=mwpe9ccj">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -176,6 +176,7 @@
 
   <div class="main">
   <div class="left">
+  <div class="faders macros" id="macros" role="region" aria-label="Macros"></div>
   <section class="keyhead" id="keyhead" aria-label="The key">
     <div class="khsec khkey">
       <div class="keyline"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span><b id="kh-engine">DRUM</b><span id="kh-info"></span><button class="tick follow" type="button" id="follow-key" aria-pressed="true" title="FOLLOW KEY: ticked, a note from MIDI (or the DAW) picks its key, so the knobs jump to it. Unticked, MIDI still plays but the knobs stay on the key you're editing">[x] FOLLOW KEY</button></div>
@@ -203,7 +204,6 @@
   </section>
 
     <section class="editor">
-      <div class="faders macros" id="macros" role="region" aria-label="Macros"></div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
       <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
@@ -325,6 +325,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwpbogpn"></script>
+<script type="module" src="app/main.js?v=mwpe9ccj"></script>
 </body>
 </html>
