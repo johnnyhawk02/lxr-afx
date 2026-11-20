@@ -64,8 +64,8 @@ html.look-grey .knob .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6
 html.panel3d #screen { isolation: isolate; background: none; box-shadow: none; }
 #screen > canvas.panel3d { display: none; }
 html.panel3d #screen > canvas.panel3d { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; border-radius: 6px; pointer-events: none; }
-html.panel3d .knob svg { filter: none; }
-html.panel3d .knob :is(.skirt, .skirt-top, .chh, .chl, .rdc, .rdl, .rbb, .rbr, .rbt, .rbl, .rub, .rut, .rud) { display: none !important; }
+html.panel3d .knob:not(#fxside .knob) svg { filter: none; }
+html.panel3d .knob:not(#fxside .knob) :is(.skirt, .skirt-top, .chh, .chl, .rdc, .rdl, .rbb, .rbr, .rbt, .rbl, .rub, .rut, .rud) { display: none !important; }
 html.panel3d .start { background-color: rgb(172 174 172); }
 
 /* a rocker switch (vtoggle in app/main.js), like a black KCD1: a matte black rocker in a black bezel, seen from above,
@@ -87,8 +87,8 @@ html.look-grey .tog .rmk { fill: none; stroke: #f4f3ee; stroke-width: 1.7; strok
 html.look-grey .tog[aria-checked="true"] line.rmk, html.look-grey .tog[aria-checked="false"] circle.rmk { opacity: .7; }
 html.look-grey .tog .mrange { stroke: var(--accent); stroke-width: 2.6; opacity: .95; }
 html.look-grey .tog .mdot { fill: var(--accent); stroke: #fff; stroke-width: .6; }
-html.panel3d .tog svg { filter: none; }
-html.panel3d .tog svg > :not(.mrange):not(.mdot) { display: none; }
+html.panel3d .tog:not(#fxside .tog) svg { filter: none; }
+html.panel3d .tog:not(#fxside .tog) svg > :not(.mrange):not(.mdot) { display: none; }
 
 /* LEVEL's fader in the GREY look: a black cap with a white line over a dark slot (html.panel3d: three.js draws the cap) */
 html.look-grey .knob.fslide svg { filter: drop-shadow(0 2px 1.5px rgb(0 0 0 / .4)); }

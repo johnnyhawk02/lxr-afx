@@ -1070,14 +1070,13 @@ html:not(.phone) .top { padding: 0 24px; }
 html.look-grey .textmenu .mi { font-size: 18px; }
 
 /* FX + MASTER as a pop-up (Johnny, 2026-11-20): placeFx lays its grid exactly over the synth knobs' grid (same 17 cells
-   by 4 rows, same knob size) with its title bar just above. The box is see-through so the GREY look's 3D panel draws
-   its knobs; the synth knobs under it are hidden, and a wide shadow dims the rest of the screen */
+   by 4 rows, same knob size) with its title bar just above. The synth knobs stay drawn round it, lightly dimmed by a
+   wide shadow (Johnny: the page shouldn't go blank). The box is solid, so in the GREY look's 3D its knobs are the flat ones */
 .fxpop { display: block; background: none; overflow: hidden; }
-.fxpop .fxbox { position: absolute; width: auto; max-height: none; overflow: visible; padding: 0; background: none;
+.fxpop .fxbox { position: absolute; width: auto; max-height: none; overflow: visible; padding: 0; background: var(--panel);
   box-shadow: 6px 7px 0 rgba(11, 12, 10, .35), 0 0 0 4000px rgb(var(--panel-rgb) / .55); }
 .fxbox > h3:first-child { margin: 0; padding: 6px 12px 6px 22px; background: var(--panel); border-bottom: var(--rule); }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
-.screen.fxopen #faders { visibility: hidden; }
 .screen.fxopen .lockveil { display: none; }
 #fxside { grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); } /* FX_COLS x FX_ROWS in app/main.js: the pop-up only as big as its controls */
 /* tidy FX (Johnny, 2026-11-20): the compressor's VU in its last two cells; OUTPUT's L and R peak bars standing up in the
