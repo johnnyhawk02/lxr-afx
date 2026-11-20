@@ -22,7 +22,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **MACROS**: eight big knobs in a row across the top of the synth panel, on its grid. Each one **adds to** the knobs it
   targets, on every key of every engine, as the modulation sources do. They are **bipolar**: in the middle (0) nothing moves,
   turned right each target moves from where the key has it by up to its depth, turned left the other way. Click a macro's name or its list of targets for every knob that can be
-  modulated, each with an amount (double-click: off), and a name of its own. As they come: PITCH (coarse),
+  modulated, each with a depth either way (double-click: off), and a name of its own. As they come: PITCH (coarse),
   DECAY (decay, pitch decay), CUTOFF, RESO, DRIVE (drive, filter drive), FM (A gain, A freq), PUNCH (click volume,
   pitch amount) and NOISE (noise mix, colour). Kept in the patch and its presets; INIT PATCH leaves them. In the
   plugin they are the parameters **Macro 1** to **Macro 8**, so the DAW can automate and map them (with the window
