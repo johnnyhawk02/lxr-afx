@@ -1117,3 +1117,4 @@ html.look-grey .textmenu .mi { font-size: 18px; }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
 .screen.fxopen #faders { visibility: hidden; }
 .screen.fxopen .lockveil { display: none; }
+#fxside { grid-template-columns: repeat(12, minmax(0, 1fr)); } /* FX_COLS in app/main.js: the pop-up is only as wide as its controls */

@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwok3pqq';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwok3pqq';
-import { presetName, jumble } from './names.js?v=mwok3pqq';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwok3pqq';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwok3pqq';
-import { breed, isDud } from '../sound/breed.js?v=mwok3pqq';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwok3pqq';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwok3pqq';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwok3pqq';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwok3pqq';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwok3pqq';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwolxrfu';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwolxrfu';
+import { presetName, jumble } from './names.js?v=mwolxrfu';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwolxrfu';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwolxrfu';
+import { breed, isDud } from '../sound/breed.js?v=mwolxrfu';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwolxrfu';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwolxrfu';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwolxrfu';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwolxrfu';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwolxrfu';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,7 +109,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwok3pqq', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwolxrfu', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -567,9 +567,13 @@ function placeFx() {
   if ($('fxpop').hidden) return;
   const f = $('faders'), box = document.querySelector('.fxbox'), sc = $('screen');
   const sr = sc.getBoundingClientRect(), s = sr.width / sc.offsetWidth || 1, r = f.getBoundingClientRect();
-  const g = $('fxside'); g.style.width = f.offsetWidth + 'px'; g.style.height = f.offsetHeight + 'px';
+  // only as wide as its controls: FX_COLS of the 17 cells, each a synth cell's width, moved in whole cells so it sits
+  // near the middle with its columns still on the synth grid's columns
+  const cs = getComputedStyle(f), pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+  const cell = (f.clientWidth - pl - pr) / (GRID_COLS + 1), shift = Math.floor((GRID_COLS + 1 - FX_COLS) / 2) * cell;
+  const g = $('fxside'); g.style.width = f.offsetWidth - (GRID_COLS + 1 - FX_COLS) * cell + 'px'; g.style.height = f.offsetHeight + 'px';
   const h = box.querySelector('h3').offsetHeight, b = box.clientLeft;
-  box.style.left = (r.left - sr.left) / s - sc.clientLeft - b + 'px';
+  box.style.left = (r.left - sr.left) / s - sc.clientLeft - b + shift + 'px';
   box.style.top = Math.max(0, (r.top - sr.top) / s - sc.clientTop - b - h) + 'px';
 }
 function openFx(open) {
@@ -901,13 +905,14 @@ const FX_PAGE = [
     ['attack', 100, (v) => Math.max(1, v) + 'ms'], ['release', 1000, (v) => Math.max(10, v) + 'ms'], ['knee', 24, (v) => v + 'dB'], ['makeup', 24, (v) => '+' + v + 'dB']]],
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
 ];
+const FX_COLS = 12; // the FX + MASTER pop-up's width in grid cells: as many as its widest rows use
 function buildFx() {
   // the FX + MASTER tab on the synth page's grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
   // page"): the same 17 cells by 4 rows, one knob to a cell, so each knob sits where a synth knob sits. In the order the
   // sound goes through: row 1 the send effects, rows 2 and 3 the master's distortion (its second row of knobs under a
   // blank heading) with its sidechain beside it, row 4 the compressor and the output. A row's leftover cells are a filler
   const box = $('fxside'); box.innerHTML = '';
-  const COLS = GRID_COLS + 1, next = [1, 1, 1, 1];
+  const COLS = FX_COLS, next = [1, 1, 1, 1];
   const place = (el, r, n) => {
     el.style.gridArea = `${r} / ${next[r - 1]} / ${r + 1} / ${next[r - 1] + n}`;
     el.classList.add('sect'); if (r > 1) el.classList.add('rt'); if (next[r - 1] > 1) el.classList.add('sep');
@@ -1520,7 +1525,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwok3pqq').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwolxrfu').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
