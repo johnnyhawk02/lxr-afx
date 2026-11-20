@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwojcsh7';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwojcsh7';
-import { presetName, jumble } from './names.js?v=mwojcsh7';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwojcsh7';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwojcsh7';
-import { breed, isDud } from '../sound/breed.js?v=mwojcsh7';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwojcsh7';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwojcsh7';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwojcsh7';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwojcsh7';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwojcsh7';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwojoi51';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwojoi51';
+import { presetName, jumble } from './names.js?v=mwojoi51';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwojoi51';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwojoi51';
+import { breed, isDud } from '../sound/breed.js?v=mwojoi51';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwojoi51';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwojoi51';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwojoi51';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwojoi51';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwojoi51';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwojcsh7', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwojoi51', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1500,7 +1500,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwojcsh7').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwojoi51').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2237,7 +2237,7 @@ window.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------------------------------------------------------
 const PRESET_STORE = 'lxr-afx-presets-v1';
 const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1, duck: 127 },
-  reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 240, ret: 4 },
+  reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 300, ret: 4 },
   dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127, sc: 1, src: 3, scfilt: 2, freq: 127, sens: 127, decay: 127, dir: 1, target: 2 },
   master: { thresh: 40, ratio: 200, attack: 100, release: 1000, knee: 24, makeup: 24, level: 100 } };
 const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
@@ -2296,7 +2296,7 @@ const newName = () => presetName(Math.random, new Set([...presets.map((p) => p.n
 // the effects as given (a preset's, or an UNDO's), shown and sent
 function applyFx(fx) {
   for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], fx[k]);
-  $('bpm').textContent = S.fx.tempo.bpm; drawRet(); sendFx(); drawFaders();
+  drawBpm(); drawRet(); sendFx(); drawFaders();
 }
 function applyPatch(d) {
   d.values.forEach((x, p) => { if (p < ALL_PARAMS) setValue(p, x, { quiet: true }); });
@@ -2718,11 +2718,14 @@ function drawZones() {
   $('low-down').disabled = S.zoneStart - 12 < 0; $('low-up').disabled = S.zoneStart + 12 + 24 > 127;
 }
 // the tempo (for the sequencers and the synced echo): - and + by 1 (Shift: 10), double-click for 120
-function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 240); $('bpm').textContent = S.fx.tempo.bpm; sendFx(); }
+// one tempo for everything (Johnny: "the echo sync isnt synced to the seq tempo"): the top BPM box and the SEQUENCER's
+// TEMPO slider both set it, so the piano roll, the key sequencers, STEP SEQ and a synced echo all follow it live
+function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 300); drawBpm(); sendFx(); }
+function drawBpm() { const b = S.fx.tempo.bpm; $('bpm').textContent = b; $('sq-bpm').textContent = b; $('sq-tempo').value = b; }
 $('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
 $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey ? 10 : 1)));
 $('bpm').addEventListener('dblclick', () => setBpm(120));
-$('bpm').textContent = S.fx.tempo.bpm;
+drawBpm();
 // RETURN: when a zone goes back to an earlier held key, it plays it again now or on the next step of the grid
 const RETURNS = ['NOW', '1/32', '1/16', '1/8', '1/4'];
 const drawRet = () => { $('ret').textContent = RETURNS[S.fx.tempo.ret] ?? '1/16'; };
@@ -2995,7 +2998,7 @@ function sqStart() {
       const now = performance.now();
       while (sqRun && sqRun.next <= now + 4) {
         sqStep(sqRun.k); sqRun.pos = sqRun.k;
-        sqRun.k = (sqRun.k + 1) % sqSteps(); sqRun.next += 60000 / SQ.bpm / 4;
+        sqRun.k = (sqRun.k + 1) % sqSteps(); sqRun.next += 60000 / S.fx.tempo.bpm / 4;
         if (sqRun.next < now - 200) sqRun.next = now; // (the tab was asleep: don't rush to catch up)
       }
     }, 5);
@@ -3004,7 +3007,7 @@ function sqStart() {
     $('sq-play').textContent = 'STOP'; $('sq-play').setAttribute('aria-pressed', true); $('seq-btn').classList.add('running');
   });
 }
-function sqBpm(v) { SQ.bpm = clamp(Math.round(v), 40, 300); $('sq-bpm').textContent = SQ.bpm; $('sq-tempo').value = SQ.bpm; sqSave(); }
+const sqBpm = (v) => setBpm(v); // (the one tempo, see setBpm)
 function sqBars(b) {
   SQ.bars = b; for (const n of SQ.notes) n.l = Math.min(n.l, Math.max(1, sqSteps() - n.s));
   for (const x of $('sq-bars').children) x.setAttribute('aria-pressed', Number(x.dataset.b) === b);
@@ -3013,7 +3016,7 @@ function sqBars(b) {
 }
 function openSeq(open) {
   $('seq').hidden = !open; $('seq-btn').setAttribute('aria-pressed', open);
-  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); sqBpm(SQ.bpm); sqBars(SQ.bars); }
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); drawBpm(); sqBars(SQ.bars); }
 }
 $('seq-btn').addEventListener('click', () => openSeq($('seq').hidden));
 $('sq-close').addEventListener('click', () => openSeq(false));
