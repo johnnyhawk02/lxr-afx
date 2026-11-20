@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoq9d47';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoq9d47';
-import { presetName, jumble } from './names.js?v=mwoq9d47';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoq9d47';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoq9d47';
-import { breed, isDud } from '../sound/breed.js?v=mwoq9d47';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoq9d47';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoq9d47';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoq9d47';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoq9d47';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoq9d47';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoq9d47';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoqfcuk';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoqfcuk';
+import { presetName, jumble } from './names.js?v=mwoqfcuk';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoqfcuk';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoqfcuk';
+import { breed, isDud } from '../sound/breed.js?v=mwoqfcuk';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoqfcuk';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoqfcuk';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoqfcuk';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoqfcuk';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoqfcuk';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoqfcuk';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoq9d47', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoqfcuk', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1576,7 +1576,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoq9d47').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoqfcuk').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2720,7 +2720,7 @@ new MutationObserver(() => { $('bl-msg').innerHTML = $('detail').innerHTML; }).o
 window.afx.blender = { open: openBlender, state: BL, now: blendNow, saved: () => savedSounds, bucket: blBucket };
 
 // ---------------------------------------------------------------------------------------------------------------
-// LOAD (O, or LOAD by the dice): a pop-up browser of the sound bucket. FIND by name, a row of types, the list (name,
+// LOAD (the O key; its button left THIS KEY on 2026-11-20): a pop-up browser of the sound bucket. FIND by name, a row of types, the list (name,
 // type, oscillator: CLASSIC or its wavetable). A click puts that sound on the key on screen, whole (its TABLE, depths
 // and extras with it), and plays it; up and down step through the list doing the same. UNDO takes each one back
 // ---------------------------------------------------------------------------------------------------------------
@@ -2761,10 +2761,9 @@ function putBucket(snd) {
   }, `${SOUNDS[sound].name} ${noteName(note)}: <em>${snd.name}</em> from the bucket (${ldTable(snd).toUpperCase()}) (UNDO takes it back)`).then(() => { drawKeymap(); play(sound, note, 100); });
 }
 function openLoader(open) {
-  $('loader').hidden = !open; $('load-key').setAttribute('aria-pressed', open);
+  $('loader').hidden = !open;
   if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openFx(false); ldFill(); $('ld-list').focus(); ldMark(); }
 }
-$('load-key').addEventListener('click', () => openLoader($('loader').hidden));
 // THIS KEY's type row (Johnny, 2026-11-20: "add buttons to load a random sound from drum1 ... hihat"): each button puts
 // a random bucket sound of its type on the key, whole, like LOAD does; never the one the key already plays
 const RND_TYPES = LD_TYPES.slice(1), RND_LABEL = { 'drum 1': 'DRUM 1', 'drum 2': 'DRUM 2', 'drum 3': 'DRUM 3', snare: 'SNARE', cymbal: 'CYM', hihat: 'HIHAT' };
