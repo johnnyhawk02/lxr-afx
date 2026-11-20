@@ -9,11 +9,11 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwopmijy';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwoq9d47';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwopmijy';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwopmijy';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwopmijy';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwoq9d47';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwoq9d47';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwoq9d47';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -21,7 +21,8 @@ import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwopmijy';
 export const FX_DEFAULTS = {
   echo: { time: 74, feedback: 60, tone: 90, pingpong: 1, level: 100, sync: 0, div: 7, duck: 0 }, // sync: TIME is a note length (div);
   // duck: how far the echoes go down while the dry sound plays (0 off .. 127 all the way), swelling back in the gaps
-  reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100 },
+  reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100, post: 0 }, // post: its return joins the master after
+  // the distortion (1) rather than going through it with the dry mix (0)
   tempo: { bpm: 120, ret: 2 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
   // next 1/32, 1/16, 1/8 or 1/4 (1..4)
   // the master: the whole mix (dry and FX returns) through the distortion (sound/dirt.js), then a compressor, then
@@ -73,6 +74,7 @@ export class LxrInstrument {
     this.fxRng = new Rng(0x2545f491);
     this.ret = new Float32Array(3).fill(1);
     this.busIn = new Float32Array(BLOCK * 2); this.busOut = new Int16Array(BLOCK * 2);
+    this.verbPost = false; this.postL = new Float32Array(BLOCK); this.postR = new Float32Array(BLOCK); // (the reverb's return, POST DISTORTION)
     // the sequencer: per voice ACTIVE and its pattern, and per sound the held key it's playing: { note, vel, at, step,
     // cur } (at: the beat of its next step; step: the next step, 0..7; cur: the step played last, -1 before the first)
     this.seqOn = new Uint8Array(6); this.seqPat = new Uint8Array(6).fill(0b00010001); this.held = SOUNDS.map(() => null); this.bpm = 120;
@@ -147,7 +149,7 @@ export class LxrInstrument {
       this.ret[0] = 1; // returns fixed at unity
       this.duck = (echo.duck || 0) / 127;
     }
-    if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; }
+    if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; this.verbPost = !!reverb.post; }
     if (dirt) this.dirt.set(dirt);
     if (master) Object.assign(this.m, master);
   }
@@ -236,6 +238,7 @@ export class LxrInstrument {
       const g = this.gain * this.ret[k] / 32768;
       if (!g) continue;
       if (k === 0 && dk > 0) for (let i = 0; i < BLOCK; i++) { const h = g * dg[i]; L[i] += bo[2 * i] * h; R[i] += bo[2 * i + 1] * h; }
+      else if (k === 1 && this.verbPost) { const pl = this.postL, pr = this.postR; for (let i = 0; i < BLOCK; i++) { pl[i] = bo[2 * i] * g; pr[i] = bo[2 * i + 1] * g; } }
       else for (let i = 0; i < BLOCK; i++) { L[i] += bo[2 * i] * g; R[i] += bo[2 * i + 1] * g; }
     }
     this._master(L, R, out);
@@ -251,11 +254,12 @@ export class LxrInstrument {
       if (a > o[0]) o[0] = a; if (b > o[1]) o[1] = b;
     }
   }
-  // the master: the distortion, then a soft-knee compressor
+  // the master: the distortion (with POST DISTORTION, the reverb's return comes in after it), then a soft-knee compressor
   // (a peak detector in dB, gain reduction smoothed by attack and release), the makeup gain and the level
   _master(L, R, voices) {
     const M = this.m, D = this.dirt;
     if (D.active) D.process(L, R);
+    if (this.verbPost) { const pl = this.postL, pr = this.postR; for (let i = 0; i < BLOCK; i++) { L[i] += pl[i]; R[i] += pr[i]; } pl.fill(0); pr.fill(0); } // (REVERB POST DISTORTION: in after it)
     const T = -M.thresh, ratio = Math.max(1, M.ratio / 10), W = M.knee, slope = 1 / ratio - 1;
     const ca = Math.exp(-1000 / (Math.max(1, M.attack) * REAL_FS)), cr = Math.exp(-1000 / (Math.max(10, M.release) * REAL_FS));
     const out = Math.pow(10, M.makeup / 20) * M.level / 100;
