@@ -1127,7 +1127,7 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 /* the main dials' padlocks are hidden (Johnny, 2026-11-20: "i dont use the locks on the main dials"); RANDOM's
    UNLOCK ALL still opens any that were closed */
 #faders .lock { display: none; }
-/* the targets pop-up: every knob that can be modulated, a depth either way from the middle (double-click: off) */
+/* the targets pop-up: every knob that can be modulated, an amount from the left (double-click: off) */
 .macbox { width: 980px; }
 .maclist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; margin-top: 10px; }
 .mdep { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 10px; font-size: 17px; }
