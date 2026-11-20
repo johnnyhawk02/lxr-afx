@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwoivmy5">
-<link rel="stylesheet" href="css/grey.css?v=mwoivmy5">
+<link rel="stylesheet" href="css/lcd.css?v=mwoizok6">
+<link rel="stylesheet" href="css/grey.css?v=mwoizok6">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -189,7 +189,7 @@
     <div class="khsec khkey">
       <div class="keyline"><b id="kh-note">C3</b><span class="dim" id="kh-num">#60</span><b id="kh-engine">DRUM</b><span id="kh-info"></span></div>
       <nav class="sounds" id="sounds" role="tablist" aria-label="Engines">
-        <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space plays it again)"></div>
+        <div class="keystrip" id="keystrip" title="Click a key to pick it and hear it ([ and ] step to the next key, Space starts and stops the sequencer)"></div>
       </nav>
     </div>
     <div class="khsec khview"><h3>SHOW</h3>
@@ -212,7 +212,7 @@
       <div class="faders" id="faders"></div>
       <div class="faders fxgrid" id="fxside" role="region" aria-label="Effects" hidden></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
-      <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
+      <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space starts and stops the sequencer</span></span>
         <span class="dim" id="zones"></span></footer>
     </section>
   </div>
@@ -331,6 +331,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwoivmy5"></script>
+<script type="module" src="app/main.js?v=mwoizok6"></script>
 </body>
 </html>
