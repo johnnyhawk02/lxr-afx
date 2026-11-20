@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoqhl90';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoqhl90';
-import { presetName, jumble } from './names.js?v=mwoqhl90';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoqhl90';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoqhl90';
-import { breed, isDud } from '../sound/breed.js?v=mwoqhl90';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoqhl90';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoqhl90';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoqhl90';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoqhl90';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoqhl90';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoqhl90';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoqk2bj';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoqk2bj';
+import { presetName, jumble } from './names.js?v=mwoqk2bj';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoqk2bj';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoqk2bj';
+import { breed, isDud } from '../sound/breed.js?v=mwoqk2bj';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoqk2bj';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoqk2bj';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoqk2bj';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoqk2bj';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoqk2bj';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoqk2bj';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoqhl90', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoqk2bj', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -554,7 +554,7 @@ function drawView() { soundBtns.forEach((b, k) => b.setAttribute('aria-selected'
 // FX + MASTER (F): a pop-up over the knob panel (Johnny, 2026-11-20: "turn fxmaster into a popup"), like the SEQUENCER.
 // Its grid is laid exactly over the synth knobs' grid, the same 17 cells by 4 rows at the same size (KNOB SIZE and
 // all), so every effect knob sits in a cell where a synth knob sits; its title bar sits just above the panel. The synth
-// knobs stay drawn round it, lightly dimmed
+// knobs under it are hidden (not dimmed) so the GREY look's 3D knobs don't show through; the rest of the screen dims
 function placeFx() {
   if ($('fxpop').hidden) return;
   const f = $('faders'), box = document.querySelector('.fxbox'), sc = $('screen');
@@ -1576,7 +1576,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoqhl90').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoqk2bj').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2304,6 +2304,17 @@ const firstGesture = (e) => {
   if (ctx && ctx.state === 'running') for (const t of ['pointerdown', 'pointerup', 'touchend', 'keydown']) window.removeEventListener(t, firstGesture, true);
 };
 for (const t of ['pointerdown', 'pointerup', 'touchend', 'keydown']) window.addEventListener(t, firstGesture, true);
+// the splash: shown at load, fades by itself after a moment (or at once on the first press or key). It never takes
+// the press: it lets clicks through (CSS pointer-events: none)
+const SPLASH_MS = 1600;
+let splashT = 0;
+function hideSplash() {
+  const el = $('start'); if (!el || el.hidden || el.classList.contains('gone')) return;
+  clearTimeout(splashT); el.classList.add('gone');
+  setTimeout(() => { el.hidden = true; }, 650);
+}
+if (new URLSearchParams(location.search).has('nostart')) $('start').hidden = true; // screenshots
+else { splashT = setTimeout(hideSplash, SPLASH_MS); for (const t of ['pointerdown', 'keydown']) window.addEventListener(t, hideSplash, { capture: true, once: true }); }
 // ---------------------------------------------------------------------------------------------------------------
 // PRESETS: the whole patch (every key's sound, edits, lock, sequence and sends, the engines' base, the effects, the
 // master and the BPM) kept under a name in this browser (localStorage). A new patch gets a made-up name (names.js);
