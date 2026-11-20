@@ -2,17 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwom5wxi';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwom5wxi';
-import { presetName, jumble } from './names.js?v=mwom5wxi';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwom5wxi';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwom5wxi';
-import { breed, isDud } from '../sound/breed.js?v=mwom5wxi';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwom5wxi';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwom5wxi';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwom5wxi';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwom5wxi';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwom5wxi';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwomnmea';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwomnmea';
+import { presetName, jumble } from './names.js?v=mwomnmea';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwomnmea';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwomnmea';
+import { breed, isDud } from '../sound/breed.js?v=mwomnmea';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwomnmea';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwomnmea';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwomnmea';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwomnmea';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwomnmea';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwomnmea';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -109,9 +110,9 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwom5wxi', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwomnmea', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -204,7 +205,7 @@ function editValue(par, v, undo) { // undo: [what, merge] for UNDO, so one gestu
     const k = S.keyEdits[S.sel], base = S.values[par];
     setValue(par, v);
     for (const n in k) if (!k[n]._lock) { handEdit(k[n], par, k[n][par] ?? base, v); k[n][par] = v; }
-    send({ type: 'param', par, value: v }); save(); drawKeymap(); return;
+    send({ type: 'param', par, value: v }); save(); drawKeymap(); fcurveFor(par); return;
   }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
   if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
@@ -212,7 +213,7 @@ function editValue(par, v, undo) { // undo: [what, merge] for UNDO, so one gestu
   const was = keyPatch(S.sel, note).vals.get(par);
   handEdit(k[note] ||= {}, par, was, v); k[note][par] = v;
   send({ type: 'param', par, value: v }); // heard on what's still ringing
-  save(); drawKeymap(); drawEditKey();
+  save(); drawKeymap(); drawEditKey(); fcurveFor(par);
 }
 const keyEdited = (par) => { const o = S.keyEdits[S.sel][editKey[S.sel]]?._o; return !!o && par in o; };
 const handEdits = (ed) => (ed?._o ? Object.keys(ed._o).length : 0);
@@ -437,13 +438,6 @@ function showOut([l, r, cl, cr]) {
   });
   const cb = document.querySelector('.outm .clip'); if (cb) cb.setAttribute('aria-pressed', now - clipAt < CLIP_HOLD);
 }
-// the distortion's sidechain envelope: how far it's turning its target, a segment per twelfth
-let scShown = 0;
-function showSc(v) {
-  scShown = Math.max(v, scShown * 0.8);
-  const n = Math.round(Math.min(1, scShown) * 12);
-  document.querySelectorAll('.envm .segs i').forEach((x, i) => x.classList.toggle('on', i < n));
-}
 function showPeaks(peaks) {
   // the level lights follow the engine voices (both hats light with the hat voice)
   SOUNDS.forEach((s, i) => { if (peaks[s.engineVoice] > 0.02) { const led = soundBtns[i].querySelector('i'); led.classList.add('on'); clearTimeout(led._t); led._t = setTimeout(() => led.classList.remove('on'), 80); } });
@@ -628,7 +622,7 @@ for (const d of dice) d.addEventListener('animationend', () => d.classList.remov
 // the merged voice: every engine has every section (Johnny, 2026-11-17); FX and MASTER have a tab of their own
 // in the order the sound flows: the oscillator, its pitch and the other sources; then the FM pair side by side into the
 // filter; then the amp, the LFO and the mix (Johnny, 2026-11-19: "the whole top section is a mess")
-const ROWS = [['osc', 'pitch', 'noise', 'click'], ['mod a', 'mod b', 'filter in', 'filter'], ['amp', 'lfo', 'mix']]; // (row 4: modStrip)
+const ROWS = [['osc', 'pitch', 'noise', 'click'], ['mod a', 'mod b', 'filter in', 'filter'], ['amp', 'lfo', 'mix', 'fcurve']]; // (row 4: modStrip)
 const GRID_COLS = 16;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 const PART_LEVEL = { 'mod a': 'again', 'mod b': 'bgain', noise: 'nmix', pitch: 'pamt', click: 'clickvol' };
@@ -647,6 +641,7 @@ function buildFaders() {
     let col = 1;
     const sect = (n, cls) => { const el = document.createElement('div'); el.className = 'sect' + (cls || '') + (r ? ' rt' : '') + (col > 1 ? ' sep' : ''); el.style.setProperty('--n', n); cell(el, r + 1, r + 2, col, col + n); col += n; box.append(el); return el; };
     for (const sec of secs) {
+      if (sec === 'fcurve') { if (col + 3 <= GRID_COLS + 1) filterCurve(sect(3, ' fcurve'), voice); continue; } // (under the FILTER's knobs)
       const list = entries.filter((e) => e.section === sec);
       if (!list.length) continue;
       if (sec === 'seq') { seqPanel(sect(GRID_COLS + 1 - col, ' seq'), voice); continue; }
@@ -788,6 +783,74 @@ function showWaves(w) {
   drawWave(x);
 }
 
+// ---- FILTER CURVE (Johnny, 2026-11-20: "make a diagram showing what the filter does"): the filter's response, three
+// cells under its knobs. Frequency along (20 Hz to 20 kHz, log), loudness up (FC_LO to FC_HI dB), the curve worked out
+// from CUTOFF, RESO and TYPE by the engine's own sums (engine/lxr.js filterResponse), a tick at the cutoff, 0 dB dashed.
+// It follows the knobs, and while a key sounds, where modulation has them now ----
+const FC_LO = -36, FC_HI = 30, FC_KEYS = ['cutoff', 'reso', 'ftype'];
+const fcurve = { cv: null, voice: 0, el: null, last: '', liveAt: 0, timer: 0, live: false };
+const fcPars = (voice) => FC_KEYS.map((k) => VOICE_SCHEMAS[voice].find((e) => e.ukey === k));
+function filterCurve(el, voice) {
+  el.innerHTML = '<h3>filter curve</h3><div class="row"></div>';
+  const vc = document.createElement('div'); vc.className = 'vf wvcell fccell';
+  vc.innerHTML = '<output></output><div class="wvbox"></div><span class="lab"></span>';
+  vc.title = 'What the filter does to the sound: low notes on the left, high on the right, louder up, quieter down. It follows CUTOFF, RESO and TYPE';
+  el.querySelector('.row').append(vc);
+  const cv = document.createElement('canvas'); cv.className = 'wv'; cv.setAttribute('aria-hidden', 'true');
+  vc.querySelector('.wvbox').append(cv);
+  Object.assign(fcurve, { cv, voice, el: vc, last: '' });
+  if (window.ResizeObserver) new ResizeObserver(() => drawFilter()).observe(cv);
+  faderDraws.push(() => drawFilter());
+}
+// a change to one of the filter's knobs redraws it
+function fcurveFor(par) { if (fcurve.cv && fcPars(fcurve.voice).some((e) => e && e.par === par)) drawFilter(); }
+function drawFilter(live = false) {
+  const { cv, voice } = fcurve; if (!cv || !cv.isConnected) return;
+  const now = performance.now();
+  if (live) { // under modulation: no more than one picture each WV_GAP ms
+    const wait = fcurve.liveAt + WV_GAP - now;
+    if (wait > 0) { if (!fcurve.timer) fcurve.timer = setTimeout(() => { fcurve.timer = 0; drawFilter(true); }, wait); return; }
+    fcurve.liveAt = now;
+  }
+  // the knobs, and where modulation has them now
+  const m = new Map((modNow && modNow[voice]) || []);
+  let moving = false;
+  const [cut, reso, type] = fcPars(voice).map((e) => {
+    if (!e) return 0;
+    const mod = modOf(voice, e.ukey), d = mod ? m.get(mod.dest) : undefined, v = valueNow(e.par) || 0;
+    if (d === undefined) return v;
+    moving = true; return clamp(v + d * e.max, 0, e.max);
+  });
+  fcurve.live = moving;
+  const css = getComputedStyle(cv), ink = css.getPropertyValue('--ink').trim() || '#000', panel = css.getPropertyValue('--panel').trim() || '#fff';
+  const ratio = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  const W = Math.round(w * ratio), H = Math.round(h * ratio);
+  const key = `${cut.toFixed(2)}/${reso.toFixed(2)}/${type.toFixed(2)}/${W}x${H}/${ink}/${panel}`;
+  if (key === fcurve.last) return; fcurve.last = key;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const g = cv.getContext('2d'); g.setTransform(ratio, 0, 0, ratio, 0, 0); g.clearRect(0, 0, w, h);
+  const p = 3, lx = Math.log(20), rx = Math.log(20000);
+  const X = (hz) => p + (Math.log(hz) - lx) / (rx - lx) * (w - 2 * p), Y = (db) => p + (FC_HI - clamp(db, FC_LO, FC_HI)) / (FC_HI - FC_LO) * (h - 2 * p);
+  // the scale: faint lines at 100 Hz, 1k and 10k, and at 0 dB a dashed one
+  g.strokeStyle = ink; g.lineWidth = 1; g.globalAlpha = 0.2;
+  for (const f of [100, 1000, 10000]) { g.beginPath(); g.moveTo(Math.round(X(f)) + 0.5, p); g.lineTo(Math.round(X(f)) + 0.5, h - p); g.stroke(); }
+  g.globalAlpha = 0.45; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(p, Math.round(Y(0)) + 0.5); g.lineTo(w - p, Math.round(Y(0)) + 0.5); g.stroke(); g.setLineDash([]);
+  g.globalAlpha = 0.55; g.fillStyle = ink; g.font = `11px ${css.getPropertyValue('--font') || 'monospace'}`; g.textBaseline = 'bottom';
+  for (const [f, t] of [[100, '100'], [1000, '1k'], [10000, '10k']]) g.fillText(t, X(f) + 2, h - p);
+  // the curve, filled underneath
+  const n = Math.max(48, Math.round(w)), hz = Array.from({ length: n + 1 }, (_, i) => Math.exp(lx + i / n * (rx - lx)));
+  const gain = filterResponse(cut, reso, type, hz), fc = filterResponse.hz;
+  g.beginPath(); hz.forEach((f, i) => { const y = Y(20 * Math.log10(gain[i] + 1e-9)); i ? g.lineTo(X(f), y) : g.moveTo(X(f), y); });
+  g.lineJoin = 'round'; g.globalAlpha = 1; g.strokeStyle = ink; g.lineWidth = 2.2; g.stroke();
+  g.lineTo(X(20000), h - p); g.lineTo(X(20), h - p); g.closePath(); g.globalAlpha = 0.16; g.fill();
+  // the cutoff: a tick on the floor
+  if (fc >= 20 && fc <= 20000) { g.globalAlpha = 1; g.lineWidth = 2; g.beginPath(); g.moveTo(X(fc), h - p); g.lineTo(X(fc), h - p - 8); g.stroke(); }
+  // the label: the type (between two: both) and the cutoff
+  const [k, t] = [Math.floor(type / FILTER_STEP + 1e-6), (type / FILTER_STEP) % 1];
+  const name = FILTER_DETENT_NAMES[Math.min(k, FILTER_DETENT_NAMES.length - 1)] + (t > 0.02 && k < FILTER_DETENT_NAMES.length - 1 ? '>' + FILTER_DETENT_NAMES[k + 1] : '');
+  fcurve.el.querySelector('.lab').textContent = `${name} ${fc < 1000 ? Math.round(fc) : (fc / 1000).toFixed(1) + 'k'}`;
+}
+
 // ---- the key's 8-step sequencer: while the key is held and ACTIVE is on, it plays the lit steps in 1/16s on the BPM
 // grid, from the next 1/16 after the press, round and round; ACTIVE off, the key plays once as usual. RANDOM deals a
 // new pattern (and switches it on). One LOCK keeps NEW SOUND off both ----
@@ -898,7 +961,7 @@ const FX_PAGE = [
     E().pingpong = v; sendFx(); detail(`ECHO PING-PONG <em>${v ? 'ON' : 'OFF'}</em>`); }, 'p-pong'], ['duck', ECHO_DUCK]]],
   ['reverb', 'REVERB', [['size', 127], ['decay', 127], ['tone', 127], ['early', 127]]],
   'MASTER',
-  'DIRT', // the distortion and its sidechain: buildDirt
+  'DIRT', // the distortion: buildDirt
   ['master', 'COMPRESSOR', [['thresh', 40, (v) => (v ? '-' + v + 'dB' : 'off')], ['ratio', 200, (v) => (Math.max(10, v) / 10).toFixed(1) + ':1'],
     ['attack', 100, (v) => Math.max(1, v) + 'ms'], ['release', 1000, (v) => Math.max(10, v) + 'ms'], ['knee', 24, (v) => v + 'dB'], ['makeup', 24, (v) => '+' + v + 'dB']]],
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
@@ -908,7 +971,7 @@ function buildFx() {
   // the FX + MASTER tab on the synth page's grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
   // page"): the same 17 cells by 4 rows, one knob to a cell, so each knob sits where a synth knob sits. In the order the
   // sound goes through: row 1 the send effects, rows 2 and 3 the master's distortion (its second row of knobs under a
-  // blank heading) with its sidechain beside it, row 4 the compressor and the output. A row's leftover cells are a filler
+  // blank heading), row 4 the compressor and the output. A row's leftover cells are a filler
   const box = $('fxside'); box.innerHTML = '';
   const COLS = FX_COLS, next = [1, 1, 1, 1];
   const place = (el, r, n) => {
@@ -926,9 +989,9 @@ function buildFx() {
     return el;
   };
   const by = (name) => FX_PAGE.find((it) => Array.isArray(it) && it[1] === name);
-  const [dist, dist2, side] = buildDirt();
+  const [dist, dist2] = buildDirt();
   place(fxSect(by('ECHO')), 1, 6); place(fxSect(by('REVERB')), 1, 4);
-  place(dist, 2, 6); place(side, 2, 6);
+  place(dist, 2, 6);
   place(dist2, 3, 4).classList.remove('rt'); // (no rule between the distortion's two rows)
   place(fxSect(by('COMPRESSOR')), 4, 6);
   const out = place(fxSect(by('OUTPUT')), 4, 6);
@@ -950,7 +1013,7 @@ function buildFx() {
   out.querySelector('.row').append(bars, vu);
 }
 // ---- the master distortion (sound/dirt.js): a dual-path bass drive. Its input stage, clip stages, tone and the two
-// path volumes on two rows; the sidechain under it, its header reading as a sentence (SIDECHAIN ON TURNS CUTOFF UP).
+// path volumes on two rows.
 // A section that's switched off is greyed, but its knobs still turn ----
 const hz = (f) => (f < 1000 ? Math.round(f) + 'Hz' : (f / 1000).toFixed(f < 9950 ? 1 : 0) + 'k');
 const sdb = (d) => (d > 0 ? '+' : '') + Math.round(d) + 'dB';
@@ -992,20 +1055,9 @@ function buildDirt() {
   dist2.querySelector('h3').innerHTML = '&nbsp;';
   dist.querySelector('h3').append(Object.assign(document.createElement('span'), { className: 't', textContent: 'DISTORTION' }),
     hbtn('on', ['OFF', 'ON'], '', 'Switch the master distortion in or out'));
-  const env = document.createElement('div'); env.className = 'envm';
-  env.innerHTML = `<output></output><div class="segs">${'<i></i>'.repeat(12)}</div><span class="lab">env</span>`;
-  const side = sect(6, [[sw('src', 'source', ['MIX', 'ENG 1', 'ENG 2', 'ENG 3'], 'What the sidechain listens to: the whole mix, or one engine on its own'),
-    sw('scfilt', 'filter', ['LP', 'BP', 'HP'], "The sidechain's filter: low-pass, band-pass or high-pass at FREQ"),
-    knob('freq', 'freq', 127, (v) => hz(scHz(v))), knob('sens', 'sens', 127), knob('decay', 'decay', 127, (v) => { const ms = decayMs(v); return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's'; }), env]]);
-  const h = side.querySelector('h3');
-  h.append(Object.assign(document.createElement('span'), { className: 't', textContent: 'SIDECHAIN' }),
-    hbtn('sc', ['OFF', 'ON'], 'SIDECHAIN', 'Let the sidechain turn a knob of the distortion'),
-    Object.assign(document.createElement('span'), { className: 'dim', textContent: 'TURNS' }),
-    hbtn('target', ['PREGAIN', 'CUTOFF', 'TONE'], 'SIDECHAIN TURNS', 'The knob the sidechain turns'),
-    hbtn('dir', ['UP', 'DOWN'], 'SIDECHAIN DIRECTION', 'Which way it turns it: up to the top of its range, or down to the bottom'));
-  dirtSects = [[dist, 'on'], [dist2, 'on'], [side, 'sc']];
+  dirtSects = [[dist, 'on'], [dist2, 'on']];
   faderDraws.push(drawDirt);
-  return [dist, dist2, side];
+  return [dist, dist2];
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down; Shift is fine
@@ -1232,6 +1284,7 @@ function modLive(mods, steps) {
     dot.setAttribute('transform', k.fader ? `translate(0 ${faderY(v, k.e.max).toFixed(2)})` : `rotate(${knobDeg(v, k.e.max, k.c)} 32 32)`);
   }
   if (stripSteps) stripSteps(steps ? steps[voice] : -1);
+  drawFilter(true);
 }
 // ---- the bottom row: MODULATION, the selected dial's depth from every source (a press or a right-click on a
 // modulatable dial selects it), and the key's STEP SEQ: its eight steps, STEP TIME and SLEW. One cell each, on the grid
@@ -1523,7 +1576,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwom5wxi').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwomnmea').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2261,7 +2314,7 @@ window.addEventListener('keydown', (e) => {
 const PRESET_STORE = 'lxr-afx-presets-v1';
 const FX_MAX = { echo: { time: 127, feedback: 127, tone: 127, pingpong: 1, level: 127, sync: 1, div: ECHO_DIVS.length - 1, duck: 127 },
   reverb: { size: 127, decay: 127, tone: 127, early: 127, level: 127 }, tempo: { bpm: 300, ret: 4 },
-  dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127, sc: 1, src: 3, scfilt: 2, freq: 127, sens: 127, decay: 127, dir: 1, target: 2 },
+  dirt: { on: 1, pregain: 48, cutoff: 127, swap: 1, xover: 1, gain: 127, clip: 1, bass: 24, tone: 127, dirty: 127, clean: 127 },
   master: { thresh: 40, ratio: 200, attack: 100, release: 1000, knee: 24, makeup: 24, level: 100 } };
 const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 18);
 const cleanLabel = (s) => String(s ?? '').replace(/[<>&\u0000-\u001f]/g, '').slice(0, 48); // (labels are shown as HTML)
