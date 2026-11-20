@@ -48,7 +48,7 @@ class LxrProcessor : public juce::AudioProcessor {
   std::string takeMidi();
   /** bumps when a project is loaded, so an open editor reloads its page with that state */
   int generation() const { return gen.load(); }
-  /** the MACRO knobs as DAW parameters (0..1), so a DAW can automate and map them */
+  /** the MACRO knobs as DAW parameters (-1..1, 0 in the middle), so a DAW can automate and map them */
   static constexpr int NUM_MACROS = 8;
   juce::AudioParameterFloat* macros[NUM_MACROS] = {};
   double rate() const { return sr.load(); }

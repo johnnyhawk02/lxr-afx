@@ -11,7 +11,7 @@ LxrProcessor::LxrProcessor()
   // settings; the page shows them and sets them, the engine reads them every block
   for (int k = 0; k < NUM_MACROS; k++) {
     macros[k] = new juce::AudioParameterFloat(juce::ParameterID{"macro" + juce::String(k + 1), 1}, "Macro " + juce::String(k + 1),
-                                              juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f);
+                                              juce::NormalisableRange<float>(-1.0f, 1.0f), 0.0f);  // (-1..1, 0 in the middle: no change)
     addParameter(macros[k]);
     macroNow[k] = -1;
   }
@@ -108,8 +108,8 @@ void LxrProcessor::macroFromPage(const lxr::json& m) {
   const int g = m.contains("g") && m["g"].is_number() ? m["g"].get<int>() : 0;
   if (g == 1) macros[k]->beginChangeGesture();
   if (m.contains("v") && m["v"].is_number()) {
-    const float v = juce::jlimit(0.0f, 1.0f, (float)(m["v"].get<double>() / 127));
-    if (v != macros[k]->get()) { if (g) macros[k]->setValueNotifyingHost(v); else *macros[k] = v; }
+    const float v = juce::jlimit(-1.0f, 1.0f, (float)(m["v"].get<double>() / 127));
+    if (v != macros[k]->get()) { if (g) macros[k]->setValueNotifyingHost(macros[k]->convertTo0to1(v)); else *macros[k] = v; }
   }
   if (g == -1) macros[k]->endChangeGesture();
 }
@@ -122,7 +122,7 @@ void LxrProcessor::macrosFromStore(const std::string& store) {
     const auto& mc = s["fx"]["macros"];
     if (!mc.is_object() || !mc.contains("v") || !mc["v"].is_array()) return;
     for (int k = 0; k < NUM_MACROS && k < (int)mc["v"].size(); k++)
-      if (mc["v"][k].is_number()) *macros[k] = juce::jlimit(0.0f, 1.0f, (float)(mc["v"][k].get<double>() / 127));
+      if (mc["v"][k].is_number()) *macros[k] = juce::jlimit(-1.0f, 1.0f, (float)(mc["v"][k].get<double>() / 127));
   } catch (...) {}
 }
 

@@ -9,12 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwp9javi';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpb93w0';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwp9javi';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwp9javi';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwp9javi';
-import { blend } from './makers.js?v=mwp9javi';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpb93w0';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwpb93w0';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpb93w0';
+import { blend } from './makers.js?v=mwpb93w0';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -31,9 +31,9 @@ export const FX_DEFAULTS = {
   // the level
   dirt: { ...DIRT_DEFAULTS },
   master: { thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
-  // the eight MACRO knobs (the panel's top row, and the plugin's automatable parameters): v, each one's setting (0..127,
-  // 0: no change); t, each one's targets, [[knob (MOD_DIALS), depth -100..100], ...]: turned all the way up it moves
-  // every engine's knob by depth % of its range from where the key has it, as the modulation sources do
+  // the eight MACRO knobs (the panel's top row, and the plugin's automatable parameters): v, each one's setting (-127..127,
+  // 0, the middle: no change; Johnny, 2026-11-20: "the macros should be -ve 0 +ve"); t, each one's targets, [[knob (MOD_DIALS), depth -100..100], ...]: turned all the way right it moves
+  // every engine's knob by depth % of its range (all the way left: the other way) from where the key has it, as the modulation sources do
   macros: { // (n: each one's name)
     v: [0, 0, 0, 0, 0, 0, 0, 0], n: ['pitch', 'decay', 'cutoff', 'reso', 'drive', 'fm', 'punch', 'noise'],
     t: [[['coarse', 25]], [['decay', 60], ['pdecay', 30]], [['cutoff', 60]], [['reso', 50]], [['drive', 60], ['fdrive', 40]],
@@ -189,12 +189,12 @@ export class LxrInstrument {
       const list = Array.isArray(m.t[k]) ? m.t[k] : [];
       this.macroT[k] = list.map((x) => (Array.isArray(x) ? [MOD_DIALS.indexOf(x[0]), +x[1] || 0] : [-1, 0])).filter(([i, d]) => i >= 0 && d);
     }
-    if (Array.isArray(m.v) && !hostValues) for (let k = 0; k < NUM_MACROS; k++) this.macroV[k] = Math.max(0, Math.min(127, +m.v[k] || 0));
+    if (Array.isArray(m.v) && !hostValues) for (let k = 0; k < NUM_MACROS; k++) this.macroV[k] = Math.max(-127, Math.min(127, +m.v[k] || 0));
     this._macros();
   }
-  /** one MACRO knob's setting, 0..127 */
+  /** one MACRO knob's setting, -127..127 (0: no change) */
   setMacro(k, v) {
-    v = Math.max(0, Math.min(127, +v || 0)); if (!(k >= 0 && k < NUM_MACROS) || this.macroV[k] === v) return;
+    v = Math.max(-127, Math.min(127, +v || 0)); if (!(k >= 0 && k < NUM_MACROS) || this.macroV[k] === v) return;
     this.macroV[k] = v; this._macros();
   }
   // every engine voice's knobs moved by the macros: each knob the sum of every macro's setting times its depth
