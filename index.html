@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwoqg8gx">
-<link rel="stylesheet" href="css/grey.css?v=mwoqg8gx">
+<link rel="stylesheet" href="css/lcd.css?v=mwoqit7l">
+<link rel="stylesheet" href="css/grey.css?v=mwoqit7l">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -231,6 +231,14 @@
     </div>
     <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
   </div>
+  <div class="start" id="start" aria-hidden="true">
+    <div class="splash">
+      <h1 class="splash-logo">LXR<span>-</span>AFX</h1>
+      <p class="splash-tag">DRUM SYNTH FOR 25 KEYS</p>
+      <div class="splash-keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <p class="splash-foot dk">FREE AND OPEN SOURCE (GPL-3.0) · DRUM VOICES FROM THE LXR-02 FIRMWARE BY SONIC POTIONS</p>
+  </div>
   <p class="load-err" id="load-err" hidden></p>
   <div class="blender" id="loader" hidden>
     <div class="blbox ldbox" role="dialog" aria-label="Load a bucket sound">
@@ -303,6 +311,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwoqg8gx"></script>
+<script type="module" src="app/main.js?v=mwoqit7l"></script>
 </body>
 </html>
