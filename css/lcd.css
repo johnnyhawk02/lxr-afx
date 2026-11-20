@@ -1117,6 +1117,7 @@ html.look-grey .textmenu .mi { font-size: 18px; }
 .fxbox > .faders { border-color: transparent; border-radius: 0; }
 .screen.fxopen #faders { visibility: hidden; }
 .screen.fxopen .lockveil { display: none; }
+#fxside { grid-template-columns: repeat(12, minmax(0, 1fr)); } /* FX_COLS in app/main.js: the pop-up is only as wide as its controls */
 
 /* THIS KEY's type row (2026-11-20): a random bucket sound of each type, six buttons across the section over its buttons */
 .khact .keyrand { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
