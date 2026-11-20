@@ -9,12 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpbicgt';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpbl0m5';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpbicgt';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwpbicgt';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpbicgt';
-import { blend } from './makers.js?v=mwpbicgt';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpbl0m5';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwpbl0m5';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpbl0m5';
+import { blend } from './makers.js?v=mwpbl0m5';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -35,7 +35,7 @@ export const FX_DEFAULTS = {
   // 0: no change; bipolar was tried and dropped, Johnny 2026-11-20); t, each one's targets, [[knob (MOD_DIALS), depth -100..100], ...]: turned all the way up it moves
   // every engine's knob by depth % of its range from where the key has it, as the modulation sources do
   macros: { // (n: each one's name)
-    v: [0, 0, 0, 0, 0, 0, 0, 0], n: ['pitch', 'decay', 'cutoff', 'reso', 'drive', 'fm', 'punch', 'noise'],
+    v: [0, 0, 0, 0, 0, 0, 0, 0], n: ['', '', '', '', '', '', '', ''], // (named MACRO 1 to 8 unless named: each can move many things; Johnny, 2026-11-20)
     t: [[['coarse', 25]], [['decay', 60], ['pdecay', 30]], [['cutoff', 60]], [['reso', 50]], [['drive', 60], ['fdrive', 40]],
       [['again', 60], ['afreq', 20]], [['clickvol', 60], ['pamt', 30]], [['nmix', 50], ['ncolour', 40]]],
   },
