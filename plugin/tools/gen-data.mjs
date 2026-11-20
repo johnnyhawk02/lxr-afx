@@ -62,6 +62,9 @@ arr('uint8_t', 'EXTRA_LIVE', live, 48);
 // the depths: par - DEPTH_BASE -> voice, dest, src (voice -1: none)
 const routes = []; for (let p = S.DEPTH_BASE; p < S.STEP_BASE; p++) { const r = S.routeOf(p); routes.push(r && r.dest >= 0 ? [r.voice, r.dest, r.src] : [-1, -1, 0]); }
 w('struct Route { int voice, dest, src; };');
+// the knobs that can be modulated (for the MACRO knobs' targets, by name)
+w(`constexpr int NUM_MOD = ${S.NUM_MOD};`); w(`constexpr int NUM_SRC = ${S.NUM_SRC};`);
+w(`inline const char* const MOD_DIALS[${S.NUM_MOD}] = { ${S.MOD_DIALS.map((u) => JSON.stringify(u)).join(', ')} };`);
 w(`inline const Route ROUTES[${routes.length}] = {\n${routes.map((r) => `  {${r.join(', ')}}`).join(',\n')}\n};`);
 w(`inline const int SOUND_ENGINE_VOICE[6] = { ${S.SOUNDS.map((s) => s.engineVoice).join(', ')} };`);
 w(`inline const int SOUND_TRIGGER[6] = { ${S.SOUNDS.map((s) => s.trigger).join(', ')} };`);

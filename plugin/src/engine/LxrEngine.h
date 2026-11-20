@@ -15,7 +15,7 @@ constexpr int BLOCK = 64;
 constexpr int NUM_VOICES = 6;
 constexpr int EXTRA_DEST = 1000;
 constexpr int NUM_STEPS = 16;
-enum { SRC_OFF = 0, SRC_LFO, SRC_VEL, SRC_AMP, SRC_PITCH, SRC_STEP };
+enum { SRC_OFF = 0, SRC_LFO, SRC_VEL, SRC_AMP, SRC_PITCH, SRC_STEP, SRC_MACRO };
 enum { KIND_DRUM = 0, KIND_SNARE, KIND_CYM, KIND_HAT };
 
 struct Rng {
@@ -55,7 +55,7 @@ struct Voice {
   int hatDecays = 0; double decayClosed = 0, decayOpen = 0; int isOpen = 0;
 };
 
-struct RouteState { int dest; float a[6]; float c[6]; bool on; double d; };
+struct RouteState { int dest; float a[7]; float c[7]; bool on; double d; };
 
 class LxrEngine {
  public:

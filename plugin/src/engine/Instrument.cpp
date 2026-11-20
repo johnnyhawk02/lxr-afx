@@ -214,6 +214,49 @@ void Instrument::setFx(const json& fx) {
     m.thresh = num(ms, "thresh", m.thresh); m.ratio = num(ms, "ratio", m.ratio); m.attack = num(ms, "attack", m.attack);
     m.release = num(ms, "release", m.release); m.knee = num(ms, "knee", m.knee); m.makeup = num(ms, "makeup", m.makeup); m.level = num(ms, "level", m.level);
   }
+  if (has(fx, "macros")) setMacros(fx["macros"]);
+}
+
+void Instrument::setMacros(const json& mc) {
+  if (!mc.is_object()) return;
+  if (mc.contains("t") && mc["t"].is_array()) {
+    const json& t = mc["t"];
+    for (int k = 0; k < NUM_MACROS; k++) {
+      macroT[k].clear();
+      if (k >= (int)t.size() || !t[k].is_array()) continue;
+      for (const json& x : t[k]) {
+        if (!x.is_array() || x.size() < 2 || !x[0].is_string()) continue;
+        const std::string u = x[0].get<std::string>(); int i = -1;
+        for (int j = 0; j < NUM_MOD; j++) if (u == MOD_DIALS[j]) { i = j; break; }
+        const double d = x[1].is_number() ? x[1].get<double>() : 0;
+        if (i >= 0 && d == d && d != 0) macroT[k].push_back({i, d});
+      }
+    }
+  }
+  if (!macroHost && mc.contains("v") && mc["v"].is_array()) {
+    const json& v = mc["v"];
+    for (int k = 0; k < NUM_MACROS; k++) { const double x = k < (int)v.size() && v[k].is_number() ? v[k].get<double>() : 0; macroV[k] = x == x ? jsMax(0, jsMin(127, x)) : 0; }
+  }
+  macros();
+}
+
+void Instrument::setMacro(int k, double v) {
+  v = v == v ? jsMax(0, jsMin(127, v)) : 0;
+  if (k < 0 || k >= NUM_MACROS || macroV[k] == v) return;
+  macroV[k] = v; macros();
+}
+
+// sound/instrument.js _macros: every engine voice's knobs moved by the macros
+void Instrument::macros() {
+  double amt[NUM_MOD] = {};
+  for (int k = 0; k < NUM_MACROS; k++) { const double x = macroV[k] / 127; if (x != 0) for (auto& td : macroT[k]) amt[td.first] += x * td.second / 100; }
+  for (int v = 0; v < 6; v++) for (int i = 0; i < NUM_MOD; i++) {
+    const Route& r = ROUTES[(v * NUM_MOD + i) * NUM_SRC];
+    const int dest = r.voice >= 0 ? r.dest : -1;
+    if (dest < 0 || dest >= (int)e.routeIndex[v].size()) continue;
+    if (amt[i] == 0 && e.routeIndex[v][dest] < 0) continue;
+    e.setRouteAmt(v, dest, SRC_MACRO, amt[i]);
+  }
 }
 
 void Instrument::play(int sound, double note, double velocity, const Params* params, bool hold, bool glide) {

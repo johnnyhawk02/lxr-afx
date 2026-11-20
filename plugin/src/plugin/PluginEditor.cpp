@@ -42,11 +42,11 @@ std::optional<juce::WebBrowserComponent::Resource> resource(const juce::String& 
 }  // namespace
 
 LxrEditor::LxrEditor(LxrProcessor& p) : AudioProcessorEditor(&p), proc(p) {
-  // the page is a 16:8 panel that scales itself to fit
+  // the page is a 1780 x 1040 panel (a row taller than 16:8 for the MACRO knobs) that scales itself to fit
   setResizable(true, true);
-  setResizeLimits(712, 356, 3560, 1780);
-  if (auto* c = getConstrainer()) c->setFixedAspectRatio(2.0);
-  setSize(1424, 712);
+  setResizeLimits(712, 416, 3560, 2080);
+  if (auto* c = getConstrainer()) c->setFixedAspectRatio(1780.0 / 1040.0);
+  setSize(1424, 832);
   open();
   startTimerHz(30);
 }

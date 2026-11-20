@@ -36,6 +36,7 @@ function apply(m) {
     case 'fx': last.fx = m.fx; inst.setFx(m.fx); break;
     case 'engines': last.engines = m.n; inst.setEngines(m.n); break;
     case 'release': inst.release(m.sound); break;
+    case 'macro': if (m.v !== undefined) inst.setMacro(m.i, m.v); break;
     case 'play': inst.play(m.sound, m.note, m.vel, m.params, m.hold !== false, !!m.glide); break;
     case 'back': inst.back(m.sound, m.note, m.vel, m.params, !!m.glide); break;
     case 'table': break; // (made here: init() makes every built-in table)
@@ -103,6 +104,6 @@ globalThis.lxr = {
   poll() {
     if (n30 < rate / 30) return '';
     n30 = 0;
-    return JSON.stringify({ type: 'peaks', peaks: inst.readPeaks(), gr: inst.readGr(), out: inst.readOut(), steps: inst.readSteps(), waves: inst.e.voices.map((v) => v.osc.wraw), mods: inst.e.readMods(), stepAt: [...inst.e.stepPlayed] }, plain);
+    return JSON.stringify({ type: 'peaks', peaks: inst.readPeaks(), gr: inst.readGr(), out: inst.readOut(), steps: inst.readSteps(), waves: inst.e.voices.map((v) => v.osc.wraw), mods: inst.e.readMods(), macros: [...inst.macroV], stepAt: [...inst.e.stepPlayed] }, plain);
   },
 };

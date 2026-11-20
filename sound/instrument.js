@@ -9,12 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwozujdr';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwp4md1k';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwozujdr';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwozujdr';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwozujdr';
-import { blend } from './makers.js?v=mwozujdr';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwp4md1k';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwp4md1k';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwp4md1k';
+import { blend } from './makers.js?v=mwp4md1k';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -31,7 +31,18 @@ export const FX_DEFAULTS = {
   // the level
   dirt: { ...DIRT_DEFAULTS },
   master: { thresh: 12, ratio: 30, attack: 5, release: 120, knee: 6, makeup: 0, level: 100 },
+  // the eight MACRO knobs (the panel's top row, and the plugin's automatable parameters): v, each one's setting (0..127,
+  // 0: no change); t, each one's targets, [[knob (MOD_DIALS), depth -100..100], ...]: turned all the way up it moves
+  // every engine's knob by depth % of its range from where the key has it, as the modulation sources do
+  macros: { // (n: each one's name)
+    v: [0, 0, 0, 0, 0, 0, 0, 0], n: ['pitch', 'decay', 'cutoff', 'reso', 'drive', 'fm', 'punch', 'noise'],
+    t: [[['coarse', 25]], [['decay', 60], ['pdecay', 30]], [['cutoff', 60]], [['reso', 50]], [['drive', 60], ['fdrive', 40]],
+      [['again', 60], ['afreq', 20]], [['clickvol', 60], ['pamt', 30]], [['nmix', 50], ['ncolour', 40]]],
+  },
 };
+export const NUM_MACROS = 8;
+// where each knob (MOD_DIALS) of each engine voice is, as a modulation destination (-1: not on that voice)
+const MACRO_DEST = [0, 1, 2, 3, 4, 5].map((v) => MOD_DIALS.map((_, i) => { const r = routeOf(depthPar(v, i, 1)); return r && r.dest >= 0 ? r.dest : -1; }));
 // the master compressor's knobs in real units: threshold 0..-40 dB, ratio 1:1..20:1 (tenths), attack 1..100 ms,
 // release 10..1000 ms, knee 0..24 dB, makeup 0..24 dB
 // the echo's time knob (0..127) in milliseconds: 10 ms to 2 s, evenly in octaves
@@ -91,6 +102,8 @@ export class LxrInstrument {
     // MORPH TIME: every parameter's value as last set (NaN: never), and per sound the glide under way:
     // { a, b, t, dt, schema } (a: where it started, b: the key's sound, t: 0..1 of the way, dt: per block)
     this.cur = new Float64Array(ALL_PARAMS).fill(NaN); this.glides = SOUNDS.map(() => null); this.morphMs = 0;
+    // the MACRO knobs: each one's setting (0..127) and targets, [[MOD_DIALS index, depth -100..100], ...]
+    this.macroV = new Float64Array(NUM_MACROS); this.macroT = Array.from({ length: NUM_MACROS }, () => []);
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -167,6 +180,31 @@ export class LxrInstrument {
     if (reverb) { [reverb.size, reverb.decay, reverb.tone, reverb.early].forEach((v, i) => this.verb.setParameter(i, v / 127)); this.ret[1] = 1; this.verbPost = !!reverb.post; }
     if (dirt) this.dirt.set(dirt);
     if (master) Object.assign(this.m, master);
+    if (fx.macros) this.setMacros(fx.macros);
+  }
+  /** the MACRO knobs (FX_DEFAULTS.macros): their targets, and their settings unless hostValues (the plugin: the DAW's
+   * parameters set them, setMacro) */
+  setMacros(m, hostValues = this.macroHost) {
+    if (Array.isArray(m.t)) for (let k = 0; k < NUM_MACROS; k++) {
+      const list = Array.isArray(m.t[k]) ? m.t[k] : [];
+      this.macroT[k] = list.map((x) => (Array.isArray(x) ? [MOD_DIALS.indexOf(x[0]), +x[1] || 0] : [-1, 0])).filter(([i, d]) => i >= 0 && d);
+    }
+    if (Array.isArray(m.v) && !hostValues) for (let k = 0; k < NUM_MACROS; k++) this.macroV[k] = Math.max(0, Math.min(127, +m.v[k] || 0));
+    this._macros();
+  }
+  /** one MACRO knob's setting, 0..127 */
+  setMacro(k, v) {
+    v = Math.max(0, Math.min(127, +v || 0)); if (!(k >= 0 && k < NUM_MACROS) || this.macroV[k] === v) return;
+    this.macroV[k] = v; this._macros();
+  }
+  // every engine voice's knobs moved by the macros: each knob the sum of every macro's setting times its depth
+  _macros() {
+    const amt = new Float64Array(NUM_MOD);
+    for (let k = 0; k < NUM_MACROS; k++) { const x = this.macroV[k] / 127; if (x) for (const [i, d] of this.macroT[k]) amt[i] += x * d / 100; }
+    for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
+      const dest = MACRO_DEST[v][i]; if (dest < 0 || (!amt[i] && !this.e.routes[v].has(dest))) continue; // (no route made for nothing)
+      this.e.setRouteAmt(v, dest, SRC.MACRO, amt[i]);
+    }
   }
   /** hold: the key is held down, so with its sequencer ACTIVE it plays its pattern until release(), from the next
    * 1/16 of the grid; otherwise (or not held: a key auditioned) it plays once, now. glide: a key played (on the keys

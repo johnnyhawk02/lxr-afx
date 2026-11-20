@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwozujdr">
-<link rel="stylesheet" href="css/grey.css?v=mwozujdr">
+<link rel="stylesheet" href="css/lcd.css?v=mwp4md1k">
+<link rel="stylesheet" href="css/grey.css?v=mwp4md1k">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -203,6 +203,7 @@
   </section>
 
     <section class="editor">
+      <div class="faders macros" id="macros" role="region" aria-label="Macros"></div>
       <div class="faders" id="faders"></div>
       <div class="lockveil" id="lockveil"><b>KEY LOCKED</b><span>nothing changes this key · LOCK KEY (L) unlocks it</span></div>
       <footer class="status"><span id="detail">Play a key, then turn a knob: the change stays on that key. <span class="dim">[ ] step through the keys · Space plays it again</span></span>
@@ -259,6 +260,13 @@
       <div class="faders fxgrid" id="fxside" role="region" aria-label="Effects"></div>
     </div>
   </div>
+  <div class="blender macpop" id="macpop" hidden>
+    <div class="blbox macbox" role="dialog" aria-label="Macro targets">
+      <h3><span id="mac-num">MACRO 1</span> <span class="dim">WHAT IT MOVES, AND HOW FAR AT THE TOP · EVERY KEY OF EVERY ENGINE</span><button class="btn sm" id="mac-close">CLOSE</button></h3>
+      <div class="ldrow"><input class="pname" id="mac-name" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="The macro's name"><button class="btn" id="mac-clear">NO TARGETS</button></div>
+      <div class="maclist" id="mac-list"></div>
+    </div>
+  </div>
   <div class="blender" id="blender" hidden>
     <div class="blbox" role="dialog" aria-label="Soundmaker">
       <h3>SOUNDMAKER <span class="dim" id="bl-eng"></span><button class="btn sm" id="bl-close" title="Close (Esc)">CLOSE</button></h3>
@@ -299,8 +307,8 @@
 // same on resize): set before the first paint so it never shows at the wrong size
 (function () {
   if (document.documentElement.classList.contains('phone')) return;
-  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1780, (innerHeight - 16) / 890);
-  st.style.left = (innerWidth - 1780 * s) / 2 + 'px'; st.style.top = (innerHeight - 890 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
+  var st = document.getElementById('stage'), s = Math.min((innerWidth - 16) / 1780, (innerHeight - 16) / 1040);
+  st.style.left = (innerWidth - 1780 * s) / 2 + 'px'; st.style.top = (innerHeight - 1040 * s) / 2 + 'px'; st.style.transform = 'scale(' + s + ')';
 })();
 </script>
 <script>
@@ -315,6 +323,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwozujdr"></script>
+<script type="module" src="app/main.js?v=mwp4md1k"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwozujdr';
+import { read as readTable } from './wavetables.js?v=mwp4md1k';
 
 export { PAR, CC, CC2 };
 
@@ -878,7 +878,8 @@ function lfo_calcPhaseInc(freq, sync, bpm) {
 // the next (the press itself jumps to step 1)
 // ---------------------------------------------------------------------------------------
 export const MOD_SOURCES = ['off', 'lfo', 'velocity', 'amp env', 'pitch env', 'step seq'];
-export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4, STEP: 5 };
+export const SRC = { OFF: 0, LFO: 1, VEL: 2, AMP: 3, PITCH: 4, STEP: 5, MACRO: 6 }; // (MACRO: not one of MOD_SOURCES, not in a sound: the
+// panel's eight MACRO knobs, set by sound/instrument.js setMacros, pushing their knobs one way, base + amount)
 export const NUM_STEPS = 16;
 // STEP TIME's settings: [name, beats a step] (STEP_TIME_DEF: 1/16)
 export const STEP_TIMES = [['1/64', 1 / 16], ['1/32', 1 / 8], ['1/16', 1 / 4], ['1/8', 1 / 2], ['1/4', 1], ['1/2', 2], ['1 bar', 4]];
@@ -1716,7 +1717,7 @@ export class LxrEngine {
   setRouteAmt(voice, dest, src, amount) {
     const m = this.routes[voice];
     let r = m.get(dest);
-    if (!r) { r = { a: new Float32Array(6), c: new Float32Array(6), on: false, d: 0 }; m.set(dest, r); }
+    if (!r) { r = { a: new Float32Array(7), c: new Float32Array(7), on: false, d: 0 }; m.set(dest, r); }
     if (r.a[src] === f(amount)) return;
     r.a[src] = f(amount);
     const on = r.a.some((x) => x !== 0);
@@ -1780,7 +1781,7 @@ export class LxrEngine {
     for (const [dest, r] of this.routes[n]) {
       const a = r.a[src]; if (!a) continue;
       r.c[src] = src <= SRC.VEL ? f(a * f(f(val * 2) - 1)) : f(a * val);
-      let d = r.c[SRC.LFO]; for (let s = SRC.VEL; s <= SRC.STEP; s++) d = f(d + r.c[s]);
+      let d = r.c[SRC.LFO]; for (let s = SRC.VEL; s <= SRC.MACRO; s++) d = f(d + r.c[s]);
       r.d = d; this._modTo(n, dest, d);
     }
   }
@@ -1974,6 +1975,7 @@ export class LxrEngine {
       const v = this.voices[n];
       this._routesFrom(n, SRC.AMP, v.kind === 'drum' ? v.ampFilterInput : v.egValueOscVol);
       this._routesFrom(n, SRC.PITCH, v.pitchEg ? v.egPitchNow : 0);
+      this._routesFrom(n, SRC.MACRO, 1); // (the MACRO knobs: their amount as it is)
     }
     const o = this.out, V = this.voices;
     if (only >= 0 && !this.xmod) {
