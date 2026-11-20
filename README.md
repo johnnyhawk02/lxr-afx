@@ -22,9 +22,9 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **MACROS**: eight big knobs in a row across the top of the synth panel, on its grid. Each one **adds to** the knobs it
   targets, on every key of every engine, as the modulation sources do. At 0 nothing moves; turned up each target moves
   from where the key has it by up to its depth (either way). Click a macro's name or its list of targets for every knob that can be
-  modulated, each with a depth either way (double-click: off), and a name of its own. As they come: PITCH (coarse),
-  DECAY (decay, pitch decay), CUTOFF, RESO, DRIVE (drive, filter drive), FM (A gain, A freq), PUNCH (click volume,
-  pitch amount) and NOISE (noise mix, colour). Kept in the patch and its presets; INIT PATCH leaves them. In the
+  modulated, each with a depth either way (double-click: off), and a name of its own. They are MACRO 1 to MACRO 8 (a name of your own
+  if you give one); as they come they move: coarse; decay and pitch decay; cutoff; reso; drive and filter drive; A gain
+  and A freq; click volume and pitch amount; noise mix and colour. Kept in the patch and its presets; INIT PATCH leaves them. In the
   plugin they are the parameters **Macro 1** to **Macro 8**, so the DAW can automate and map them (with the window
   shut too). The panel is 1780 x 1040, a row taller than it was, for them.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
