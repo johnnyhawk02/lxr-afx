@@ -167,11 +167,11 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   }
   // FX: the key's sends sit with its knobs; the effects and the master on the FX + MASTER tab (F)
   await p.click('#fx-tab'); await p.waitForTimeout(150);
-  { const secs = await p.$$eval('.fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
+  { const secs = await p.$$eval('#fxside .sect h3', (h) => h.map((x) => (x.querySelector('.t') || x).textContent));
     const sends = await p.$$eval('#faders .sect', (v) => v.filter((x) => x.querySelector('h3')?.textContent === 'fx sends')[0]?.querySelectorAll('.vf').length);
     if (secs.join() !== 'ECHO,REVERB,DISTORTION,SIDECHAIN,COMPRESSOR,OUTPUT' || sends !== 2) { errors++; console.log('fx column:', secs, sends); }
-    const clip = await p.evaluate(() => { const f = document.querySelector('.fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
-      return [...document.querySelectorAll('.fxside .vf, .fxside .envm, .fxside .hdb')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
+    const clip = await p.evaluate(() => { const f = document.querySelector('#fxside').getBoundingClientRect(), sc = document.getElementById('screen').getBoundingClientRect();
+      return [...document.querySelectorAll('#fxside .vf, #fxside .envm, #fxside .hdb')].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > sc.bottom - 8 || r.right > sc.right - 8; }).length; });
     if (clip) { errors++; console.log(`${w}x${h}: ${clip} fx knobs cut off`); }
     // the master distortion: its ON switch, a switch in a knob's place, the sidechain's sentence; all saved
     const dirt = () => p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')).fx.dirt);
@@ -187,7 +187,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // the grid (Johnny: keep everything on a grid): every engine's knobs sit on the panel's 16 columns, and the FX +
   // MASTER tab's controls on its three columns of 6 (the echo's six with DUCK), 6 and 6
   const cols = (sel) => p.evaluate((sel) => new Set([...document.querySelectorAll(sel)].map((k) => { const b = k.getBoundingClientRect(); return Math.round(b.left + b.width / 2); })).size, sel);
-  { const right = await cols('.fxside .vf .knob, .fxside .vsw .swb, .fxside .envm .segs');
+  { const right = await cols('#fxside .vf .knob, #fxside .vsw .swb, #fxside .envm .segs');
     if (right > 18) { errors++; console.log(`${w}x${h}: the FX tab on ${right} columns (18 allowed)`); } }
   for (const i of [0, 1, 2]) {
     await p.click(`#sounds .snd >> nth=${i}`); await p.waitForTimeout(100);
@@ -424,8 +424,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // the scroll wheel and the trackpad change nothing, with the pointer over a knob, an effect's knob or the BPM
   { const read = () => p.evaluate(() => [...document.querySelectorAll('.knob')].map((k) => k.getAttribute('aria-valuenow')).join() + '|' + [...document.querySelectorAll('select')].map((s) => s.value).join() + '|' + document.getElementById('bpm').textContent);
     const before = await read(); let n = 0;
-    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '.fxside .knob']) {
-      if (sel === '.fxside .knob') await p.click('#fx-tab'); else if (await p.evaluate(() => !document.getElementById('fxside').hidden)) await p.click('#fx-tab');
+    for (const sel of ['#faders .vf .knob', '#faders .vf.big .knob', '#fxside .knob']) {
+      if (sel === '#fxside .knob') await p.click('#fx-tab'); else if (await p.evaluate(() => !document.getElementById('fxside').hidden)) await p.click('#fx-tab');
       const el = await p.$(sel); if (!el) { errors++; console.log('wheel: no', sel); continue; }
       const box = await el.boundingBox(); await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       for (const dy of [-240, 360]) { await p.mouse.wheel(0, dy); await p.waitForTimeout(30); if (await read() !== before) n++; }

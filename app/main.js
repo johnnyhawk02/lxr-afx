@@ -548,7 +548,7 @@ function select(i, view) {
 // the tab showing: the engine's knobs ('synth') or FX + MASTER ('fx', F)
 function drawView() {
   const fx = S.view === 'fx';
-  $('fxside').hidden = !fx; document.querySelector('.editor').hidden = fx;
+  $('fxside').hidden = !fx; $('faders').hidden = fx; document.querySelector('.editor').classList.toggle('fx', fx);
   soundBtns.forEach((b, k) => b.setAttribute('aria-selected', !fx && k === S.sel));
   $('fx-tab').setAttribute('aria-selected', fx);
 }
@@ -869,28 +869,38 @@ const FX_PAGE = [
   ['master', 'OUTPUT', [['level', 100, (v) => v + '%']]],
 ];
 function buildFx() {
-  // the FX + MASTER tab: three columns, the send effects, the master's distortion, then its compressor and output
-  const top = $('fxglobal'); top.innerHTML = '';
-  const cols = [0, 1, 2].map(() => { const c = document.createElement('div'); c.className = 'fxcol'; top.append(c); return c; });
-  let box = cols[0];
-  box.innerHTML = '<h2>SEND FX <span class="dim">EACH KEY\'S ECHO + REVERB</span></h2>';
-  for (const item of FX_PAGE) {
-    if (item === 'DIRT') { box.append(...buildDirt()); continue; }
-    if (typeof item === 'string') { box = cols[1]; const h = document.createElement('h2'); h.innerHTML = `${item} <span class="dim">EVERYTHING GOES THROUGH</span>`; box.append(h); continue; }
-    const [id, name, knobs] = item;
-    if (name === 'COMPRESSOR') { box = cols[2]; const h = document.createElement('h2'); h.innerHTML = '&nbsp;'; box.append(h); }
-    const el = document.createElement('div'); el.className = 'sect'; el.style.setProperty('--n', knobs.length);
+  // the FX + MASTER tab on the synth page's grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
+  // page"): the same 17 cells by 4 rows, one knob to a cell, so each knob sits where a synth knob sits. In the order the
+  // sound goes through: row 1 the send effects, rows 2 and 3 the master's distortion (its second row of knobs under a
+  // blank heading) with its sidechain beside it, row 4 the compressor and the output. A row's leftover cells are a filler
+  const box = $('fxside'); box.innerHTML = '';
+  const COLS = GRID_COLS + 1, next = [1, 1, 1, 1];
+  const place = (el, r, n) => {
+    el.style.gridArea = `${r} / ${next[r - 1]} / ${r + 1} / ${next[r - 1] + n}`;
+    el.classList.add('sect'); if (r > 1) el.classList.add('rt'); if (next[r - 1] > 1) el.classList.add('sep');
+    el.style.setProperty('--n', n); next[r - 1] += n; box.append(el); return el;
+  };
+  const fxSect = ([id, name, knobs]) => {
+    const el = document.createElement('div');
     el.innerHTML = `<h3>${name}</h3><div class="row"></div>`;
-    for (const [k, max, show, label, set, name] of knobs)
+    for (const [k, max, show, label, set, nm] of knobs)
       el.querySelector('.row').append(typeof max === 'object' ? gknob(k, max) // a knob of its own (the echo's TIME)
-        : max === 'switch' ? gswitch(name || k, show, label, () => S.fx[id][k], set)
+        : max === 'switch' ? gswitch(nm || k, show, label, () => S.fx[id][k], set)
           : gknob(label || k, { max, show, get: () => S.fx[id][k], set: (v) => { S.fx[id][k] = v; sendFx(); }, dflt: FX_DEFAULTS[id][k] }));
-    box.append(el);
-  }
+    return el;
+  };
+  const by = (name) => FX_PAGE.find((it) => Array.isArray(it) && it[1] === name);
+  const [dist, dist2, side] = buildDirt();
+  place(fxSect(by('ECHO')), 1, 6); place(fxSect(by('REVERB')), 1, 4);
+  place(dist, 2, 6); place(side, 2, 6);
+  place(dist2, 3, 4).classList.remove('rt'); // (no rule between the distortion's two rows)
+  place(fxSect(by('COMPRESSOR')), 4, 6);
+  const out = place(fxSect(by('OUTPUT')), 4, 6);
+  next.forEach((c, r) => { if (c <= COLS) { const f = document.createElement('div'); place(f, r + 1, COLS + 1 - c).classList.add('fill'); } });
   // OUTPUT: the LEVEL knob in the first cell, the output's L and R bars (showOut) over their dB scale on cells 2 to 4,
   // each with its name on the left and its held peak on the right, and the compressor's gain reduction VU meter
   // (showGr) on cells 5 and 6. CLIP sits in the header
-  const out = box.lastChild; out.classList.add('mout', 'outm');
+  out.classList.add('mout', 'outm');
   const clip = document.createElement('button'); clip.type = 'button'; clip.className = 'btn sm hdb clip'; clip.textContent = 'CLIP';
   clip.setAttribute('aria-pressed', 'false'); clip.title = 'Lights when the output goes over full scale (the last soft limit squashing it); press to clear';
   clip.addEventListener('click', () => { clipAt = -1e9; clip.setAttribute('aria-pressed', 'false'); });
@@ -939,10 +949,11 @@ function buildDirt() {
     [knob('pregain', 'pregain', 48, (v) => sdb(pregainDb(v)), 24), knob('cutoff', 'cutoff', 127, (v) => hz(dirtHz(v))),
       sw('swap', 'filter', ['HP', 'LP'], 'The filter before the distortion: high-pass (the lows stay out of it) or low-pass'),
       sw('xover', 'xover', ['OFF', 'ON'], 'Crossover: the half the filter takes away goes to the clean path (HP: distorted highs, clean lows; LP: the other way round)'),
-      knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open')],
-    [knob('bass', 'bass', 24, (v) => sdb(bassDb(v)), 12), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64)), 64),
-      knob('dirty', 'dirty', 127, (v) => (v ? sdb(volDb(v)) : 'off')), knob('clean', 'clean', 127, (v) => (v ? sdb(volDb(v)) : 'off'))],
-  ]);
+      knob('gain', 'gain', 127), sw('clip', 'clip', ['DIODE', 'LED'], 'Clipping: diodes clip early and hard; LEDs later, louder and more open')]]);
+  // its second row of knobs is a section of its own on the next grid row, under a blank heading
+  const dist2 = sect(4, [[knob('bass', 'bass', 24, (v) => sdb(bassDb(v)), 12), knob('tone', 'tone', 127, (v) => (v === 64 ? 'scoop' : (v > 64 ? '+' : '') + (v - 64)), 64),
+      knob('dirty', 'dirty', 127, (v) => (v ? sdb(volDb(v)) : 'off')), knob('clean', 'clean', 127, (v) => (v ? sdb(volDb(v)) : 'off'))]]);
+  dist2.querySelector('h3').innerHTML = '&nbsp;';
   dist.querySelector('h3').append(Object.assign(document.createElement('span'), { className: 't', textContent: 'DISTORTION' }),
     hbtn('on', ['OFF', 'ON'], '', 'Switch the master distortion in or out'));
   const env = document.createElement('div'); env.className = 'envm';
@@ -956,9 +967,9 @@ function buildDirt() {
     Object.assign(document.createElement('span'), { className: 'dim', textContent: 'TURNS' }),
     hbtn('target', ['PREGAIN', 'CUTOFF', 'TONE'], 'SIDECHAIN TURNS', 'The knob the sidechain turns'),
     hbtn('dir', ['UP', 'DOWN'], 'SIDECHAIN DIRECTION', 'Which way it turns it: up to the top of its range, or down to the bottom'));
-  dirtSects = [[dist, 'on'], [side, 'sc']];
+  dirtSects = [[dist, 'on'], [dist2, 'on'], [side, 'sc']];
   faderDraws.push(drawDirt);
-  return [dist, side];
+  return [dist, dist2, side];
 }
 // a knob in the LCD look: a ring of segments (lit up to the value), a pointer, and a notch outside the ring for the
 // base (editing a key) or the last key's morph (editing every key). Drag up or down; Shift is fine
