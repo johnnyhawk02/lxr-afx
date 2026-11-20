@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwos3mqv';
+import { read as readTable } from './wavetables.js?v=mwoso1ry';
 
 export { PAR, CC, CC2 };
 
@@ -747,7 +747,7 @@ export const FILTER_PROBE = { make: () => { const flt = makeFilter(); SVF_init(f
 const sameW = (a, b) => { for (let i = 0; i < 7; i++) if (a[i] !== b[i]) return false; return true; };
 // the TYPE dial's smoothing (Johnny, 2026-11-20: "add longer smoothing to the filter type"): the weights glide towards
 // where the dial (or its modulation) has them, a time constant of FILTER_GLIDE_MS, so a turn or a jump never snaps
-const FILTER_GLIDE_MS = 30, FILTER_GLIDE = 1 - Math.exp(-BLOCK / (FILTER_GLIDE_MS / 1000 * REAL_FS));
+const FILTER_GLIDE_MS = 90, FILTER_GLIDE = 1 - Math.exp(-BLOCK / (FILTER_GLIDE_MS / 1000 * REAL_FS));
 const FW_NEXT = new Float64Array(7);
 // settled on a detent, the firmware's code runs; between two, or gliding, the blend
 function filterBlock(v, buf) {
