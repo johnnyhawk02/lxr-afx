@@ -50,7 +50,17 @@ Only a change to how the engine **computes** sound needs the C++ (`src/engine/`)
 
 ## Building it yourself
 
-You need Xcode, CMake and Node.js.
+The quick way, on a Mac with just the Command Line Tools, CMake and Node.js (no Xcode):
+
+```
+plugin/build-local.sh
+```
+
+It pulls main, builds the VST3, AU and standalone app for this Mac's chip, checks the engine against the JS,
+then installs them to `~/Library/Audio/Plug-Ins/VST3`, `~/Library/Audio/Plug-Ins/Components` and `/Applications`
+(signed ad hoc, quarantine cleared). Pass `--no-pull` to build what's checked out.
+
+The universal build CI does needs Xcode:
 
 ```
 cd plugin
