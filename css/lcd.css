@@ -1090,3 +1090,20 @@ html.look-grey .keyhead .piano .k.seqon:not(.sel):not(.blk) { background: #f5b59
 .sqbars .btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 .sqrow #sq-clear { margin-left: auto; }
 #sq-roll { display: block; width: 100%; height: auto; border: 1px solid var(--ink); cursor: crosshair; touch-action: none; }
+
+/* ---- the RANDOM menu as a plain text list (Johnny, 2026-11-20): one line per item, a grey heading per group, a tick
+   on the chosen NEW SOUNDS ARE and on WILD; the line under the pointer goes inverse ---- */
+#menu-panel.textmenu { width: 340px; padding: 6px 0; max-height: calc(100vh - 120px); overflow-y: auto; }
+.textmenu h3 { margin: 6px 0 2px; padding: 6px 14px 0; font-size: 15px; letter-spacing: .14em; color: var(--muted); border-top: var(--rule); }
+.textmenu h3:first-child { margin-top: 0; padding-top: 2px; border-top: 0; }
+.textmenu .mi { display: block; position: relative; width: 100%; min-height: 28px; padding: 2px 14px 2px 34px; font: inherit; font-size: 20px;
+  letter-spacing: 1px; line-height: 24px; text-transform: uppercase; text-align: left; color: var(--ink); background: transparent; border: 0;
+  border-radius: 0; cursor: pointer; white-space: nowrap; }
+.textmenu .mi:hover, .textmenu .mi:focus-visible { background: var(--ink); color: var(--panel); outline: 0; text-shadow: none; }
+.textmenu .mi[aria-pressed="true"]::before { content: "✓"; position: absolute; left: 13px; }
+.textmenu .mi:disabled { opacity: .4; cursor: default; background: transparent; color: var(--ink); }
+.textmenu .mrow { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 14px 2px 34px; font-size: 20px; letter-spacing: 1px; }
+.textmenu .mrow > span { flex: 1; }
+.textmenu .mrow .mi.step { width: 30px; padding: 2px 0; text-align: center; }
+.textmenu .mrow output { min-width: 54px; text-align: center; }
+html.look-grey .textmenu .mi { font-size: 18px; }

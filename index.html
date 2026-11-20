@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwoj4x4f">
-<link rel="stylesheet" href="css/grey.css?v=mwoj4x4f">
+<link rel="stylesheet" href="css/lcd.css?v=mwojcsh7">
+<link rel="stylesheet" href="css/grey.css?v=mwojcsh7">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -71,44 +71,35 @@
     <div class="topacts">
     <div class="menu" id="menu">
       <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
-      <div class="menupanel" id="menu-panel" hidden>
-        <h3>ALL KEYS <span class="dim">EVERY ENGINE</span></h3>
-        <div class="randrow">
-          <button class="btn" id="kit-scatter" title="Every key of all engines gets a sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
-          <button class="btn" id="kit-alter" title="Nudge every key of all engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
-          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
+      <div class="menupanel textmenu" id="menu-panel" role="menu" hidden>
+        <h3>ALL ENGINES</h3>
+        <button class="mi" role="menuitem" id="kit-scatter" title="Every key of all engines gets a sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
+        <button class="mi" role="menuitem" id="kit-alter" title="Nudge every key of all engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
+        <button class="mi" role="menuitem" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
+        <h3><span id="rand-name">ENGINE 1</span> ONLY</h3>
+        <button class="mi" role="menuitem" id="scatter" title="Every key of this engine gets a different sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
+        <button class="mi" role="menuitem" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
+        <button class="mi" role="menuitem" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
+        <h3>MORPH ACROSS THE KEYS</h3>
+        <button class="mi" role="menuitem" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a bucket sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
+        <button class="mi" role="menuitem" id="morph-rand" title="The lowest key's sound to the highest key's, as MORPH KEYS does, but every key between gets a random spot between the two instead of an even step, so neighbouring keys can be far apart. The two end keys stay as they are. Press again for new spots. UNDO takes it back">RANDOM MORPH KEYS</button>
+        <button class="mi" role="menuitem" id="morph-ends" title="A new kick on the lowest key and something else (a snare, clap, rim, perc, cowbell, hat or cymbal) on the highest, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
+        <button class="mi" role="menuitem" id="morph-run" title="A kick, a snare, a perc and a closed hat on four keys spread evenly from the lowest to the highest, every key between two of them morphed from one to the next. Press again for new ones. UNDO takes it back">KICK &gt; HAT</button>
+        <button class="mi" role="menuitem" id="morph-ksh" title="A kick on the lowest key, a snare in the middle and a hihat on the highest, each a bucket sound as it is, then every key between gets a random spot along kick to snare to hat. Press again for new sounds and spots. UNDO takes it back">RANDOM KICK &gt; SNARE &gt; HAT</button>
+        <h3>NEW SOUNDS ARE</h3>
+        <div class="srcrow" role="group">
+        <button class="mi" role="menuitemradio" id="src-kit" data-src="kit" aria-pressed="true" title="A sound from the bucket as it is">AS THEY ARE</button>
+        <button class="mi" role="menuitemradio" id="src-breed" data-src="breed" aria-pressed="false" title="Two bucket sounds crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little">BRED</button>
+        <button class="mi" role="menuitemradio" id="src-morph" data-src="morph" aria-pressed="false" title="Two bucket sounds blended at a random point between them: every knob in between, every switch from the nearer one">BLENDED</button>
+        <button class="mi" role="menuitemradio" id="src-kitstyle" data-src="kitstyle" aria-pressed="false" title="One bucket sound's switches, every knob a value another bucket sound has for it: new sounds in the ranges the bucket's sounds use">PATCHWORK</button>
+        <button class="mi" role="menuitemradio" id="src-free" data-src="free" aria-pressed="false" title="One bucket sound's switches, every knob anywhere in its drum-safe range: the wildest">ANYTHING</button>
+        <button class="mi" role="menuitemradio" id="src-recipe" data-src="recipe" aria-pressed="false" title="A named sound: kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell or zap, from a bucket sound of that type with its knobs set to the recipe">RECIPE</button>
         </div>
-        <h3><span id="rand-name">ENGINE 1</span> ONLY <span class="dim">ITS KEYS</span></h3>
-        <div class="randrow">
-          <button class="btn" id="scatter" title="Every key of this engine gets a different sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
-          <button class="btn" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
-          <button class="btn" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
-        </div>
-        <h3>SWEEP ACROSS THE KEYS <span class="dim">LOWEST KEY TO HIGHEST</span></h3>
-        <div class="randrow">
-          <button class="btn" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a bucket sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
-          <button class="btn" id="morph-ends" title="A new kick on the lowest key and something else (a snare, clap, rim, perc, cowbell, hat or cymbal) on the highest, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
-          <button class="btn" id="morph-run" title="A kick, a snare, a perc and a closed hat on four keys spread evenly from the lowest to the highest, every key between two of them morphed from one to the next. Press again for new ones. UNDO takes it back">KICK &gt; HAT</button>
-          <span class="dim cap">KEEP THE END KEYS,<br>MORPH BETWEEN</span><span class="dim cap">KICK AT THE BOTTOM,<br>ANOTHER AT THE TOP</span><span class="dim cap">KICK &gt; SNARE &gt;<br>PERC &gt; HAT</span>
-        </div>
-        <h3>NEW SOUNDS ARE <span class="dim">DICE, RANDOM, PATCH</span></h3>
-        <div class="randrow srcrow">
-          <button class="btn" id="src-kit" data-src="kit" aria-pressed="true" title="A sound from the bucket as it is">AS THEY ARE</button>
-          <button class="btn" id="src-breed" data-src="breed" aria-pressed="false" title="Two bucket sounds crossed section by section (oscillator, FM, envelope, click, filter, LFO), then nudged a little">BRED</button>
-          <button class="btn" id="src-morph" data-src="morph" aria-pressed="false" title="Two bucket sounds blended at a random point between them: every knob in between, every switch from the nearer one">BLENDED</button>
-          <button class="btn" id="src-kitstyle" data-src="kitstyle" aria-pressed="false" title="One bucket sound's switches, every knob a value another bucket sound has for it: new sounds in the ranges the bucket's sounds use">PATCHWORK</button>
-          <button class="btn" id="src-free" data-src="free" aria-pressed="false" title="One bucket sound's switches, every knob anywhere in its drum-safe range: the wildest">ANYTHING</button>
-          <button class="btn" id="src-recipe" data-src="recipe" aria-pressed="false" title="A named sound: kick, tom, snare, clap, rim, closed hat, open hat, cymbal, cowbell or zap, from a bucket sound of that type with its knobs set to the recipe">RECIPE</button>
-          <span class="dim cap wide" id="src-cap"></span>
-        </div>
-        <h3>ALTER AMOUNT</h3>
-        <div class="bars" id="rand-bars" title="How far ALTER, ALTER ALL and ALTER KEY move each control"></div>
-        <label class="chk wild" title="ALTER may take a control anywhere in its range, not only where drums usually sit, and may change the waveforms, modes, LFO, velocity and sample rate settings a bucket sound came with (it leaves those alone otherwise)"><input type="checkbox" id="wild"><i></i>WILD <span class="dim">ALTER GOES ANYWHERE, SWITCHES TOO</span></label>
-        <h3>KNOB PADLOCKS <span class="dim" id="lock-count">NONE LOCKED</span></h3>
-        <div class="randrow">
-          <button class="btn sm" id="lock-none" title="Open every knob's padlock, on all engines">UNLOCK ALL</button>
-          <span class="dim note">A LOCKED KNOB KEEPS ITS SETTING ON EVERY KEY, WHATEVER YOU PRESS HERE</span>
-        </div>
+        <h3>ALTER</h3>
+        <div class="mrow" title="How far ALTER, ALTER ALL and ALTER KEY move each control"><span>AMOUNT</span><button class="mi step" id="alter-down" aria-label="Less">−</button><output id="alter-amt">10%</output><button class="mi step" id="alter-up" aria-label="More">+</button></div>
+        <button class="mi" role="menuitemcheckbox" id="wild" aria-pressed="false" title="ALTER may take a control anywhere in its range, not only where drums usually sit, and may change the waveforms, modes, LFO, velocity and sample rate settings a bucket sound came with (it leaves those alone otherwise)">WILD</button>
+        <h3>KNOB PADLOCKS <span id="lock-count">NONE LOCKED</span></h3>
+        <button class="mi" role="menuitem" id="lock-none" title="Open every knob's padlock, on all engines">UNLOCK ALL</button>
       </div>
     </div>
     <button class="btn" id="blend-btn" aria-pressed="false" title="SOUNDMAKER (B): blend two sounds from the bucket into a new one, and save it to the bucket">SOUNDMAKER<kbd>B</kbd></button>
@@ -331,6 +322,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwoj4x4f"></script>
+<script type="module" src="app/main.js?v=mwojcsh7"></script>
 </body>
 </html>
