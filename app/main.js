@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwo87pp1';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwo87pp1';
-import { presetName, jumble } from './names.js?v=mwo87pp1';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwo87pp1';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwo87pp1';
-import { breed, isDud } from '../sound/breed.js?v=mwo87pp1';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwo87pp1';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwo87pp1';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwo87pp1';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwo87pp1';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwo87pp1';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoivmy5';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoivmy5';
+import { presetName, jumble } from './names.js?v=mwoivmy5';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoivmy5';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoivmy5';
+import { breed, isDud } from '../sound/breed.js?v=mwoivmy5';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoivmy5';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoivmy5';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoivmy5';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoivmy5';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoivmy5';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwo87pp1', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoivmy5', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -148,11 +148,12 @@ const lastMorph = SOUNDS.map(() => null);
 const editKey = SOUNDS.map((s) => s.zone.base);
 // hold: a key held down (on the keyboard or the strip), so an ACTIVE sequence plays until it's let go; otherwise (a
 // randomiser auditioning a key) it plays once. back: the zone going back to an earlier held key (see noteOff)
-function play(sound, note, vel, { hold = false, back = false } = {}) {
+function play(sound, note, vel, { hold = false, back = false, quiet = false } = {}) {
   const m = keyPatch(sound, note);
   if (ctx && ctx.state !== 'running') ctx.resume();
   send({ type: back ? 'back' : 'play', sound, note: m.note, vel, params: [...m.vals], hold });
   lastMorph[sound] = { key: note, values: m.vals, semitones: m.semitones };
+  if (quiet) { showLast(sound, note); return; } // (the sequencer playing: the screen stays on the key you're editing)
   editKey[sound] = note;
   showLast(sound, note, vel, m.semitones);
   // the editor follows the sound you play, so the knobs and the screen are always on the key you just pressed
@@ -257,13 +258,13 @@ function onMidi(e) {
 // of a key that isn't the newest changes nothing; letting go of the last one stops the zone's sequence. The three zones
 // don't affect each other
 const held = SOUNDS.map(() => []);
-function keyDown(sound, note, vel) {
+function keyDown(sound, note, vel, quiet = false) {
   const st = held[sound], i = st.findIndex((k) => k.note === note);
   if (i >= 0) st.splice(i, 1);
   st.push({ note, vel });
-  play(sound, note, vel, { hold: true });
+  play(sound, note, vel, { hold: true, quiet });
 }
-function noteOff(note) {
+function noteOff(note, quiet = false) {
   const sound = soundOfNote(note); if (sound < 0) return;
   const st = held[sound], i = st.findIndex((k) => k.note === note);
   if (i < 0) return;
@@ -271,7 +272,7 @@ function noteOff(note) {
   if (i < st.length) return; // not the newest key: the zone stays on the newest
   if (!st.length) { send({ type: 'release', sound }); return; }
   const prev = st[st.length - 1];
-  play(sound, prev.note, prev.vel, { hold: true, back: true });
+  play(sound, prev.note, prev.vel, { hold: true, back: true, quiet });
 }
 // MIDI all notes off / all sound off: every zone let go
 function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0; send({ type: 'release', sound }); } }); }
@@ -1487,7 +1488,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwo87pp1').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoivmy5').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2849,3 +2850,162 @@ function fitScreen() {
 window.addEventListener('resize', fitScreen);
 fitScreen();
 window.afxReady = true; // index.html's load check
+
+// ---------------------------------------------------------------------------------------------------------------
+// SEQUENCER (Johnny, 2026-11-20: "a popup with a simple midi sequencer that shows all 25 notes. a pencil draws a
+// note, dragging right extends its length"): a piano roll of the keyboard's keys, a loop of 1, 2 or 4 bars in 1/16s.
+// Click an empty cell to draw a note and drag right to make it longer; click a note to rub it out (or drag it from
+// its start to change its length). It plays the keys as if they were pressed (each zone stays mono, last note wins),
+// without moving the editor off the key on screen. The pattern, its BPM and its length are kept in this browser
+// ---------------------------------------------------------------------------------------------------------------
+const SQ_KEY = 'lxr-afx-seq', SQ_ROW = 22, SQ_LABEL = 64;
+const SQ = (() => {
+  try { const d = JSON.parse(localStorage.getItem(SQ_KEY)); if (d && Array.isArray(d.notes)) return { bpm: clamp(d.bpm | 0 || 120, 40, 300), bars: [1, 2, 4].includes(d.bars) ? d.bars : 1, notes: d.notes.filter((n) => Number.isFinite(n.n) && n.s >= 0 && n.l >= 1) }; } catch (e) {}
+  return { bpm: 120, bars: 1, notes: [] };
+})();
+const sqSave = () => { try { localStorage.setItem(SQ_KEY, JSON.stringify(SQ)); } catch (e) {} };
+const sqSteps = () => SQ.bars * 16;
+const sqRange = () => { const on = onSounds(); return [SOUNDS[on[0]].zone.lo, SOUNDS[on[on.length - 1]].zone.hi]; };
+let sqRun = null, sqDrag = null, sqHover = null;
+const sqHeld = new Set();
+function sqGeom() {
+  const cv = $('sq-roll'), [lo, hi] = sqRange(), rows = hi - lo + 1;
+  return { cv, lo, hi, rows, cw: (cv.width - SQ_LABEL) / sqSteps() };
+}
+function sqDraw() {
+  const { cv, lo, hi, rows, cw } = sqGeom(), g = cv.getContext('2d'), cs = getComputedStyle(cv);
+  const ink = cs.getPropertyValue('--ink').trim() || '#000', ir = cs.getPropertyValue('--ink-rgb').trim() || '0 0 0', panel = cs.getPropertyValue('--panel').trim() || '#fff';
+  const a = (o) => `rgb(${ir} / ${o})`, H = rows * SQ_ROW, W = cv.width;
+  if (cv.height !== H) cv.height = H;
+  g.fillStyle = panel; g.fillRect(0, 0, W, H);
+  for (let r = 0; r < rows; r++) { // the rows, top = the highest key; the black keys' rows shaded
+    const note = hi - r, y = r * SQ_ROW;
+    if (isBlack(note)) { g.fillStyle = a(.08); g.fillRect(SQ_LABEL, y, W - SQ_LABEL, SQ_ROW); }
+    g.fillStyle = isBlack(note) ? ink : panel; g.fillRect(0, y, SQ_LABEL - 4, SQ_ROW);
+    g.fillStyle = isBlack(note) ? panel : ink; g.font = '15px ' + cs.fontFamily; g.textBaseline = 'middle';
+    g.fillText(noteName(note), 8, y + SQ_ROW / 2 + 1);
+    g.fillStyle = a(note % 12 === 0 ? .45 : .18); g.fillRect(0, y + SQ_ROW - 1, W, 1);
+  }
+  for (let k = 0; k <= sqSteps(); k++) { // the beats and bars stronger than the 1/16s
+    g.fillStyle = a(k % 16 === 0 ? .7 : k % 4 === 0 ? .35 : .12);
+    g.fillRect(Math.round(SQ_LABEL + k * cw) - (k === sqSteps() ? 1 : 0), 0, k % 16 === 0 ? 2 : 1, H);
+  }
+  if (sqHover && !sqDrag) { g.fillStyle = a(.12); g.fillRect(SQ_LABEL + sqHover.k * cw, (hi - sqHover.note) * SQ_ROW, cw, SQ_ROW); }
+  for (const n of SQ.notes) {
+    if (n.n < lo || n.n > hi || n.s >= sqSteps()) continue;
+    const x = SQ_LABEL + n.s * cw + 1, y = (hi - n.n) * SQ_ROW + 2, w = Math.min(n.l, sqSteps() - n.s) * cw - 2;
+    g.fillStyle = ink; g.fillRect(x, y, w, SQ_ROW - 4);
+    g.fillStyle = panel; g.fillRect(x + w - 4, y + 4, 2, SQ_ROW - 12); // (its end: the grip that says it stretches)
+  }
+  if (sqRun) { const x = SQ_LABEL + sqRun.pos * cw; g.fillStyle = a(.18); g.fillRect(x, 0, cw, H); g.fillStyle = ink; g.fillRect(x, 0, 2, H); }
+}
+function sqAt(e) {
+  const { cv, hi, rows, cw } = sqGeom(), r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
+  const row = Math.floor(y / SQ_ROW); if (row < 0 || row >= rows) return null;
+  return { note: hi - row, k: x < SQ_LABEL ? -1 : clamp(Math.floor((x - SQ_LABEL) / cw), 0, sqSteps() - 1) };
+}
+const sqNoteAt = (note, k) => SQ.notes.find((n) => n.n === note && k >= n.s && k < n.s + n.l);
+// the longest a note starting at s can be: up to the next note on its row, or the loop's end
+const sqRoom = (n) => Math.min(sqSteps(), ...SQ.notes.filter((m) => m !== n && m.n === n.n && m.s > n.s).map((m) => m.s)) - n.s;
+function sqAudition(note, on) {
+  const sound = soundOfNote(note); if (sound < 0) return;
+  if (on) startAudio().then(() => keyDown(sound, note, 100, true)); else noteOff(note, true);
+}
+$('sq-roll').addEventListener('pointerdown', (e) => {
+  const p = sqAt(e); if (!p) return;
+  e.preventDefault(); $('sq-roll').setPointerCapture(e.pointerId);
+  if (p.k < 0) { sqDrag = { audition: p.note }; sqAudition(p.note, true); return; } // the key names play their key
+  const hit = sqNoteAt(p.note, p.k);
+  if (hit) { sqDrag = { n: hit, k: p.k, moved: false, rub: true }; return; }
+  const n = { n: p.note, s: p.k, l: 1 }; SQ.notes.push(n);
+  sqDrag = { n, k: p.k, moved: true, audition: p.note }; sqAudition(p.note, true); sqDraw();
+});
+$('sq-roll').addEventListener('pointermove', (e) => {
+  const p = sqAt(e);
+  if (!sqDrag) { const h = p && p.k >= 0 ? p : null; if (JSON.stringify(h) !== JSON.stringify(sqHover)) { sqHover = h; sqDraw(); } return; }
+  if (!sqDrag.n || !p) return;
+  const k = clamp(Math.floor((e.clientX - $('sq-roll').getBoundingClientRect().left) * $('sq-roll').width / $('sq-roll').getBoundingClientRect().width - SQ_LABEL) / sqGeom().cw, 0, sqSteps() - 1);
+  if (Math.floor(k) === sqDrag.k && !sqDrag.moved) return;
+  sqDrag.moved = true;
+  const n = sqDrag.n, l = clamp(Math.floor(k) - n.s + 1, 1, sqRoom(n));
+  if (l !== n.l) { n.l = l; sqDraw(); }
+});
+const sqUp = () => {
+  if (!sqDrag) return;
+  if (sqDrag.audition != null) sqAudition(sqDrag.audition, false);
+  if (sqDrag.rub && !sqDrag.moved) SQ.notes.splice(SQ.notes.indexOf(sqDrag.n), 1);
+  sqDrag = null; sqSave(); sqDraw();
+};
+$('sq-roll').addEventListener('pointerup', sqUp); $('sq-roll').addEventListener('pointercancel', sqUp);
+$('sq-roll').addEventListener('pointerleave', () => { if (sqHover) { sqHover = null; sqDraw(); } });
+// playing: a clock that looks ahead a few ms at a time and fires each 1/16 when it's due (notes ending on a step let
+// go before the ones starting on it play)
+// (Johnny: "the seq doesnt switch the key editor though, but hilites the notes being played so i can stay on the page
+// to edit"): a playing note lights its key on the keyboard for as long as it lasts, and the editor stays where it is
+const sqLight = (note, on) => { for (const x of stripKeys) if (x.note === note) x.k.classList.toggle('seqon', on); };
+function sqOff(n) { sqHeld.delete(n); noteOff(n.n, true); if (![...sqHeld].some((m) => m.n === n.n)) sqLight(n.n, false); }
+function sqStep(k) {
+  const total = sqSteps();
+  for (const n of SQ.notes) if ((n.s + n.l) % total === k && sqHeld.has(n)) sqOff(n);
+  for (const n of [...sqHeld]) if (!SQ.notes.includes(n)) sqOff(n); // (rubbed out while it played)
+  for (const n of SQ.notes) if (n.s === k && soundOfNote(n.n) >= 0) { sqHeld.add(n); keyDown(soundOfNote(n.n), n.n, 100, true); sqLight(n.n, true); }
+}
+function sqStop() {
+  if (!sqRun) return;
+  clearInterval(sqRun.timer); cancelAnimationFrame(sqRun.raf); sqRun = null;
+  for (const n of [...sqHeld]) sqOff(n);
+  $('sq-play').textContent = 'PLAY'; $('seq-btn').classList.remove('running'); $('sq-play').setAttribute('aria-pressed', false); sqDraw();
+}
+function sqStart() {
+  if (sqRun) return;
+  startAudio().then(() => {
+    if (sqRun) return;
+    sqRun = { next: performance.now() + 20, k: 0, pos: 0 };
+    sqRun.timer = setInterval(() => {
+      const now = performance.now();
+      while (sqRun && sqRun.next <= now + 4) {
+        sqStep(sqRun.k); sqRun.pos = sqRun.k;
+        sqRun.k = (sqRun.k + 1) % sqSteps(); sqRun.next += 60000 / SQ.bpm / 4;
+        if (sqRun.next < now - 200) sqRun.next = now; // (the tab was asleep: don't rush to catch up)
+      }
+    }, 5);
+    const frame = () => { if (!sqRun) return; sqDraw(); sqRun.raf = requestAnimationFrame(frame); };
+    frame();
+    $('sq-play').textContent = 'STOP'; $('sq-play').setAttribute('aria-pressed', true); $('seq-btn').classList.add('running');
+  });
+}
+function sqBpm(v) { SQ.bpm = clamp(Math.round(v), 40, 300); $('sq-bpm').textContent = SQ.bpm; $('sq-tempo').value = SQ.bpm; sqSave(); }
+function sqBars(b) {
+  SQ.bars = b; for (const n of SQ.notes) n.l = Math.min(n.l, Math.max(1, sqSteps() - n.s));
+  for (const x of $('sq-bars').children) x.setAttribute('aria-pressed', Number(x.dataset.b) === b);
+  if (sqRun) sqRun.k %= sqSteps();
+  sqSave(); sqDraw();
+}
+function openSeq(open) {
+  $('seq').hidden = !open; $('seq-btn').setAttribute('aria-pressed', open);
+  if (open) { openMenu(false); openPresets(false); openSettings(false); openBlender(false); openLoader(false); sqBpm(SQ.bpm); sqBars(SQ.bars); }
+}
+$('seq-btn').addEventListener('click', () => openSeq($('seq').hidden));
+$('sq-close').addEventListener('click', () => openSeq(false));
+$('seq').addEventListener('pointerdown', (e) => { if (e.target === $('seq')) openSeq(false); });
+$('sq-play').addEventListener('click', () => (sqRun ? sqStop() : sqStart()));
+$('sq-tempo').addEventListener('input', () => sqBpm(Number($('sq-tempo').value)));
+$('sq-tempo').addEventListener('dblclick', () => sqBpm(120));
+$('sq-bars').addEventListener('click', (e) => { const b = e.target.closest('[data-b]'); if (b) sqBars(Number(b.dataset.b)); });
+let sqClearArmed = 0;
+$('sq-clear').addEventListener('click', () => { // (press twice: a whole pattern is a lot to lose)
+  if (!SQ.notes.length) return;
+  if (Date.now() - sqClearArmed > 2000) { sqClearArmed = Date.now(); $('sq-clear').textContent = 'SURE?'; setTimeout(() => { $('sq-clear').textContent = 'CLEAR'; }, 2000); return; }
+  sqClearArmed = 0; $('sq-clear').textContent = 'CLEAR'; for (const n of [...sqHeld]) sqOff(n); SQ.notes.length = 0; sqSave(); sqDraw();
+});
+// while it's open, Space plays and stops it, Esc (or Q) closes it. It keeps playing after it's closed, so you can edit
+// the key's sound while it loops (the SEQUENCER button's lamp shows it's running); Q opens it again
+document.addEventListener('keydown', (e) => {
+  if ($('seq').hidden) { if ((e.key === 'q' || e.key === 'Q') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, select, textarea')) { e.preventDefault(); e.stopImmediatePropagation(); openSeq(true); } return; }
+  if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') { e.preventDefault(); openSeq(false); }
+  else if (e.key === ' ') { e.preventDefault(); sqRun ? sqStop() : sqStart(); }
+  else if ((e.metaKey || e.ctrlKey) && e.key === 'z') return;
+  else return;
+  e.stopImmediatePropagation();
+}, true);
