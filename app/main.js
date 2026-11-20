@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbf7jb';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbf7jb';
-import { presetName, jumble } from './names.js?v=mwpbf7jb';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbf7jb';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbf7jb';
-import { breed, isDud } from '../sound/breed.js?v=mwpbf7jb';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbf7jb';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbf7jb';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbf7jb';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbf7jb';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbf7jb';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbf7jb';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpbicgt';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpbicgt';
+import { presetName, jumble } from './names.js?v=mwpbicgt';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpbicgt';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpbicgt';
+import { breed, isDud } from '../sound/breed.js?v=mwpbicgt';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpbicgt';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwpbicgt';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpbicgt';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpbicgt';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpbicgt';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpbicgt';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbf7jb', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpbicgt', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -906,7 +906,7 @@ function showSteps(steps) {
 
 // ---- the MACRO knobs: a row of eight across the top of the synth panel, on its grid (two cells each: the knob, then
 // what it moves). Each one adds to the knobs it targets on every key of every engine (sound/instrument.js setMacros),
-// from nothing in the middle (0) to each target's depth all the way right, and the other way to the left. In the plugin they are the DAW's parameters Macro 1 to 8 ----
+// from nothing at 0 to each target's depth at the top. In the plugin they are the DAW's parameters Macro 1 to 8 ----
 const M = () => S.fx.macros;
 const dialLabel = (voice, u) => (VOICE_SCHEMAS[voice].find((e) => e.ukey === u) || VOICE_SCHEMAS.flat().find((e) => e.ukey === u))?.label || u;
 const macroName = (k) => (M().n && M().n[k]) || (M().t[k][0] ? dialLabel(SOUNDS[S.sel].engineVoice, M().t[k][0][0]) : 'macro ' + (k + 1));
@@ -914,15 +914,15 @@ const macroDraws = [], macroHeld = new Array(NUM_MACROS).fill(false);
 let macroEdit = -1;
 function buildMacros(voice) {
   const box = $('macros'); box.innerHTML = ''; macroDraws.length = 0;
+  M().v.forEach((v, k) => { if (!(v >= 0 && v <= 127)) M().v[k] = clamp(+v || 0, 0, 127); }); // (a setting from the bipolar try, below 0)
   for (let k = 0; k < NUM_MACROS; k++) {
     const el = document.createElement('div'); el.className = 'sect mac' + (k ? ' sep' : ''); el.style.setProperty('--n', 2);
     el.style.gridArea = `1 / ${1 + 2 * k} / 2 / ${3 + 2 * k}`;
     el.innerHTML = `<h3><button type="button" class="mname"></button></h3><div class="row"></div>`;
     const name = el.querySelector('.mname'), row = el.querySelector('.row');
     name.addEventListener('click', () => openMacro(k));
-    // (bipolar: the middle is 0, no change; left takes the targets the other way. The knob's own scale is 0..254)
-    const knob = gknob('', { max: 254, centre: 127, dflt: 127, show: (u) => { const p = Math.round((u - 127) / 1.27); return (p > 0 ? '+' : '') + p + '%'; },
-      get: () => M().v[k] + 127, set: (u) => { const v = u - 127; M().v[k] = v; send({ type: 'macro', i: k, v }); save(); } });
+    const knob = gknob('', { max: 127, dflt: 0, show: (v) => Math.round(v / 1.27) + '%', get: () => M().v[k],
+      set: (v) => { M().v[k] = v; send({ type: 'macro', i: k, v }); save(); } });
     knob.classList.add('mknob');
     // the DAW's touch: a drag is one gesture, so its automation records it as one move
     const tr = knob.querySelector('.knob');
@@ -1726,7 +1726,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbf7jb').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpbicgt').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The

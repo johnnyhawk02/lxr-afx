@@ -1137,3 +1137,5 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 .mtrack { position: relative; height: 18px; cursor: ew-resize; touch-action: none; background: repeating-linear-gradient(90deg, var(--ghost) 0 4px, transparent 4px 6px); }
 .mtrack i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 6px); }
 .mtrack b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }
+/* a locked key leaves the MACRO row live and clear: the macros aren't the key's (Johnny, 2026-11-20) */
+.keylocked .faders.macros { opacity: 1; pointer-events: auto; }

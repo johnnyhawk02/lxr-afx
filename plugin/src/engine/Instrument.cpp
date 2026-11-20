@@ -235,13 +235,13 @@ void Instrument::setMacros(const json& mc) {
   }
   if (!macroHost && mc.contains("v") && mc["v"].is_array()) {
     const json& v = mc["v"];
-    for (int k = 0; k < NUM_MACROS; k++) { const double x = k < (int)v.size() && v[k].is_number() ? v[k].get<double>() : 0; macroV[k] = x == x ? jsMax(-127, jsMin(127, x)) : 0; }
+    for (int k = 0; k < NUM_MACROS; k++) { const double x = k < (int)v.size() && v[k].is_number() ? v[k].get<double>() : 0; macroV[k] = x == x ? jsMax(0, jsMin(127, x)) : 0; }
   }
   macros();
 }
 
 void Instrument::setMacro(int k, double v) {
-  v = v == v ? jsMax(-127, jsMin(127, v)) : 0;
+  v = v == v ? jsMax(0, jsMin(127, v)) : 0;
   if (k < 0 || k >= NUM_MACROS || macroV[k] == v) return;
   macroV[k] = v; macros();
 }
