@@ -1082,7 +1082,7 @@ html.phone .khact .keyrand { display: none; }
 .faders .vtick { position: relative; display: flex; align-items: center; gap: 4px; max-width: 100%; }
 .faders .vtick .tick { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; letter-spacing: .04em; white-space: pre; cursor: pointer; text-align: left; }
 .faders .vtick .tick[aria-checked="false"] { color: var(--muted); }
-.faders .vtick.keyed .tick { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
+.faders .vtick .tick:focus, .faders .vtick .tick:focus-visible { outline: none; } /* (no black pill or focus ring: a click just flips [ ] / [x]; Johnny) */
 .faders .vtick.changed .tick::after { content: "*"; }
 .faders .vtick .lock { position: relative; left: auto; top: auto; flex: none; }
 .faders .sect.fin h3 { letter-spacing: .06em; padding: 0 4px 0 8px; text-overflow: clip; }
