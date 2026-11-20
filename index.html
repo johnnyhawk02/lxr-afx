@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwoizok6">
-<link rel="stylesheet" href="css/grey.css?v=mwoizok6">
+<link rel="stylesheet" href="css/lcd.css?v=mwoj4x4f">
+<link rel="stylesheet" href="css/grey.css?v=mwoj4x4f">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -194,7 +194,7 @@
     </div>
     <div class="khsec khview"><h3>SHOW</h3>
       <button class="btn fxtab" id="fx-tab" type="button" role="tab" aria-selected="false" title="The send effects and the master (F)"><span>FX + MASTER</span><kbd>F</kbd></button>
-      <button class="btn seqbtn" id="seq-btn" type="button" aria-pressed="false" title="SEQUENCER (Q): a piano roll of the 25 keys; draw notes, drag right to make them longer. It keeps playing when closed"><i></i><span>SEQUENCER</span><kbd>Q</kbd></button>
+      <button class="btn seqbtn" id="seq-btn" type="button" aria-pressed="false" title="SEQUENCER (S): a piano roll of the 25 keys; draw notes, drag right to make them longer. It keeps playing when closed"><i></i><span>SEQUENCER</span><kbd>S</kbd></button>
     </div>
     <div class="khsec khact"><h3>THIS KEY <span class="dim">DICE: <span class="dice-src"></span></span></h3>
       <div class="keyacts" id="keyacts">
@@ -265,7 +265,7 @@
   </div>
   <div class="blender" id="seq" hidden>
     <div class="blbox sqbox" role="dialog" aria-label="Sequencer">
-      <h3>SEQUENCER <span class="dim">CLICK TO DRAW A NOTE · DRAG RIGHT TO MAKE IT LONGER · CLICK A NOTE TO RUB IT OUT · SPACE PLAYS</span><button class="btn sm" id="sq-close" title="Close (Esc or Q): it keeps playing">CLOSE</button></h3>
+      <h3>SEQUENCER <span class="dim">CLICK TO DRAW A NOTE · DRAG RIGHT TO MAKE IT LONGER · CLICK A NOTE TO RUB IT OUT · SPACE PLAYS</span><button class="btn sm" id="sq-close" title="Close (Esc or S): it keeps playing">CLOSE</button></h3>
       <div class="sqrow">
         <button class="btn" id="sq-play" aria-pressed="false" title="Play or stop the loop (Space)">PLAY</button>
         <label class="sqtempo"><span>TEMPO</span><input type="range" id="sq-tempo" min="40" max="300" step="1" value="120" aria-label="Tempo in BPM" title="Tempo (double-click for 120)"><b id="sq-bpm">120</b><span class="dim">BPM</span></label>
@@ -331,6 +331,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwoizok6"></script>
+<script type="module" src="app/main.js?v=mwoj4x4f"></script>
 </body>
 </html>

@@ -2,17 +2,17 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoizok6';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoizok6';
-import { presetName, jumble } from './names.js?v=mwoizok6';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoizok6';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoizok6';
-import { breed, isDud } from '../sound/breed.js?v=mwoizok6';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoizok6';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoizok6';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoizok6';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoizok6';
-import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoizok6';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoj4x4f';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoj4x4f';
+import { presetName, jumble } from './names.js?v=mwoj4x4f';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoj4x4f';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoj4x4f';
+import { breed, isDud } from '../sound/breed.js?v=mwoj4x4f';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoj4x4f';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoj4x4f';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoj4x4f';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoj4x4f';
+import { DIRT_DEFAULTS, dirtHz, scHz, decayMs, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoj4x4f';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoizok6', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoj4x4f', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); showSc(e.data.sc || 0); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -1489,7 +1489,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoizok6').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoj4x4f').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -3000,11 +3000,11 @@ $('sq-clear').addEventListener('click', () => { // (press twice: a whole pattern
   if (Date.now() - sqClearArmed > 2000) { sqClearArmed = Date.now(); $('sq-clear').textContent = 'SURE?'; setTimeout(() => { $('sq-clear').textContent = 'CLEAR'; }, 2000); return; }
   sqClearArmed = 0; $('sq-clear').textContent = 'CLEAR'; for (const n of [...sqHeld]) sqOff(n); SQ.notes.length = 0; sqSave(); sqDraw();
 });
-// while it's open, Space plays and stops it, Esc (or Q) closes it. It keeps playing after it's closed, so you can edit
-// the key's sound while it loops (the SEQUENCER button's lamp shows it's running); Q opens it again
+// while it's open, Space plays and stops it, Esc (or S) closes it. It keeps playing after it's closed, so you can edit
+// the key's sound while it loops (the SEQUENCER button's lamp shows it's running); S opens it again
 document.addEventListener('keydown', (e) => {
-  if ($('seq').hidden) { if ((e.key === 'q' || e.key === 'Q') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, select, textarea')) { e.preventDefault(); e.stopImmediatePropagation(); openSeq(true); } return; }
-  if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') { e.preventDefault(); openSeq(false); }
+  if ($('seq').hidden) { if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest('input, select, textarea')) { e.preventDefault(); e.stopImmediatePropagation(); openSeq(true); } return; }
+  if (e.key === 'Escape' || e.key === 's' || e.key === 'S') { e.preventDefault(); openSeq(false); }
   else if (e.key === ' ') { e.preventDefault(); sqRun ? sqStop() : sqStart(); }
   else if ((e.metaKey || e.ctrlKey) && e.key === 'z') return;
   else return;
