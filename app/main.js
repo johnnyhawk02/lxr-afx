@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoqk2bj';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoqk2bj';
-import { presetName, jumble } from './names.js?v=mwoqk2bj';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoqk2bj';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoqk2bj';
-import { breed, isDud } from '../sound/breed.js?v=mwoqk2bj';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoqk2bj';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwoqk2bj';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoqk2bj';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoqk2bj';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoqk2bj';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoqk2bj';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwoql6w5';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwoql6w5';
+import { presetName, jumble } from './names.js?v=mwoql6w5';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwoql6w5';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwoql6w5';
+import { breed, isDud } from '../sound/breed.js?v=mwoql6w5';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwoql6w5';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwoql6w5';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwoql6w5';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwoql6w5';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwoql6w5';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwoql6w5';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoqk2bj', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwoql6w5', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -208,7 +208,6 @@ function editValue(par, v, undo) { // undo: [what, merge] for UNDO, so one gestu
     send({ type: 'param', par, value: v }); save(); drawKeymap(); fcurveFor(par); return;
   }
   const note = editKey[S.sel], k = S.keyEdits[S.sel];
-  if (keyLocked(S.sel, note)) { lockedMsg(); drawFaders(); return; }
   snapshot(undo ? undo[0] : `${SOUNDS[S.sel].name} ${noteName(note)} ${parLabel(par)}`, undo ? undo[1] : `key/${S.sel}/${note}/${par}`);
   const was = keyPatch(S.sel, note).vals.get(par);
   handEdit(k[note] ||= {}, par, was, v); k[note][par] = v;
@@ -219,7 +218,8 @@ const keyEdited = (par) => { const o = S.keyEdits[S.sel][editKey[S.sel]]?._o; re
 const handEdits = (ed) => (ed?._o ? Object.keys(ed._o).length : 0);
 function clearKey(sound, note) { if (keyLocked(sound, note)) return; delete S.keyEdits[sound][note]; save(); }
 // ---- key locks: a locked key keeps exactly the sound it had when locked. Its whole sound (and its pitch) is kept
-// as its edits, so nothing (randomisers, scatter, morph, seed, base edits, clear) reaches it until it's unlocked ----
+// as its edits, so no randomiser (dice, RANDOM, ALTER, scatter, morph, seed, base edits, clear) reaches it until it's
+// unlocked. Its knobs still turn by hand (Johnny, 2026-11-20): the lock shows only as the padlock on its piano key ----
 const keyLocked = (sound, note) => !!S.keyEdits[sound][note]?._lock;
 function lockKey(sound, note) {
   const ed = S.keyEdits[sound][note];
@@ -233,7 +233,7 @@ function lockKey(sound, note) {
     if (S.editAll) S.editAll = false;
   }
   save(); drawFaders(); drawKeymap(); drawEditKey();
-  detail(`${SOUNDS[sound].name} ${noteName(note)}: ${keyLocked(sound, note) ? 'locked, nothing changes it now' : 'unlocked'}`);
+  detail(`${SOUNDS[sound].name} ${noteName(note)}: ${keyLocked(sound, note) ? 'locked: the dice and RANDOM leave it, its knobs still turn by hand' : 'unlocked'}`);
 }
 const lockedMsg = () => detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} is locked: <em>LOCK KEY</em> (L) unlocks it`);
 
@@ -1156,7 +1156,6 @@ function vtoggle(e) {
   b.addEventListener('click', () => { if (!learn) put(1 - on()); });
   // double-click on the name: back to where it was before you changed it (on a key), or the kit's value
   el.querySelector('.lab').addEventListener('dblclick', () => {
-    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
     if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
     else put(S.defaults[e.par]);
   });
@@ -1228,7 +1227,6 @@ function vfader(e, fader) {
   // double-click: on a key, the control goes back to where it was before you changed it; on every key, back to the
   // kit's value
   const reset = () => {
-    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
     if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
     else put(S.defaults[e.par]);
   };
@@ -1436,7 +1434,6 @@ function drawEditKey() {
     here ? `its own sound${hand}` : `the ${SOUNDS[S.sel].name.toLowerCase()} base sound`;
   $('kh-note').textContent = noteName(note); $('kh-num').textContent = '#' + note;
   $('kh-engine').textContent = SOUNDS[S.sel].name; $('kh-info').textContent = what; $('kh-info').title = what;
-  $('screen').classList.toggle('keylocked', locked);
   drawStrip();
 }
 $('clear-key').addEventListener('click', () => { if (!keyLocked(S.sel, editKey[S.sel])) snapshot(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])} CLEAR`); clearKey(S.sel, editKey[S.sel]); drawFaders(); drawKeymap(); drawEditKey(); detail(`${SOUNDS[S.sel].name} ${noteName(editKey[S.sel])}: back to the engine's base sound`); });
@@ -1576,7 +1573,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoqk2bj').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwoql6w5').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
