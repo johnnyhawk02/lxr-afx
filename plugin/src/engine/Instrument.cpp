@@ -237,19 +237,25 @@ void Instrument::setMacros(const json& mc) {
     const json& v = mc["v"];
     for (int k = 0; k < NUM_MACROS; k++) { const double x = k < (int)v.size() && v[k].is_number() ? v[k].get<double>() : 0; macroV[k] = x == x ? jsMax(0, jsMin(127, x)) : 0; }
   }
+  if (mc.contains("slew")) {
+    double ms = mc["slew"].is_number() ? mc["slew"].get<double>() : 0; ms = ms == ms ? jsMax(0, ms) : 0;
+    macroCoef = ms > 0 ? std::exp(-BLOCK / (ms / 1000 * REAL_FS)) : 0;
+  }
+  if (macroCoef == 0) for (int k = 0; k < NUM_MACROS; k++) macroCur[k] = macroV[k];
   macros();
 }
 
 void Instrument::setMacro(int k, double v) {
   v = v == v ? jsMax(0, jsMin(127, v)) : 0;
   if (k < 0 || k >= NUM_MACROS || macroV[k] == v) return;
-  macroV[k] = v; macros();
+  macroV[k] = v; if (macroCoef != 0) return;  // (the blocks glide it there)
+  macroCur[k] = v; macros();
 }
 
 // sound/instrument.js _macros: every engine voice's knobs moved by the macros
 void Instrument::macros() {
   double amt[NUM_MOD] = {};
-  for (int k = 0; k < NUM_MACROS; k++) { const double x = macroV[k] / 127; if (x != 0) for (auto& td : macroT[k]) amt[td.first] += x * td.second / 100; }
+  for (int k = 0; k < NUM_MACROS; k++) { const double x = macroCur[k] / 127; if (x != 0) for (auto& td : macroT[k]) amt[td.first] += x * td.second / 100; }
   for (int v = 0; v < 6; v++) for (int i = 0; i < NUM_MOD; i++) {
     const Route& r = ROUTES[(v * NUM_MOD + i) * NUM_SRC];
     const int dest = r.voice >= 0 ? r.dest : -1;
@@ -352,6 +358,14 @@ void Instrument::block(float* L, float* R) {
     Glide& g = glides[s]; if (!g.on) continue;
     g.t = jsMin(1, g.t + g.dt); stepGlide(g);
     if (g.t >= 1) g.on = false;
+  }
+  if (macroCoef != 0) {  // the MACRO knobs' SLEW
+    bool moved = false;
+    for (int k = 0; k < NUM_MACROS; k++) {
+      const double v = macroV[k], c = macroCur[k]; if (c == v) continue;
+      const double n = v + (c - v) * macroCoef; macroCur[k] = std::fabs(n - v) < 1e-3 ? v : n; moved = true;
+    }
+    if (moved) macros();
   }
   for (int s = 0; s < 6; s++) {
     Held& h = held[s]; if (!h.on) continue;

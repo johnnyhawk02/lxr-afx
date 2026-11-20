@@ -9,12 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpbl0m5';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY, SRC } from '../engine/lxr.js?v=mwpbogpn';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpbl0m5';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwpbl0m5';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpbl0m5';
-import { blend } from './makers.js?v=mwpbl0m5';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, MOD_DIALS, NUM_MOD, depthPar, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwpbogpn';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwpbogpn';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwpbogpn';
+import { blend } from './makers.js?v=mwpbogpn';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -35,7 +35,7 @@ export const FX_DEFAULTS = {
   // 0: no change; bipolar was tried and dropped, Johnny 2026-11-20); t, each one's targets, [[knob (MOD_DIALS), depth -100..100], ...]: turned all the way up it moves
   // every engine's knob by depth % of its range from where the key has it, as the modulation sources do
   macros: { // (n: each one's name)
-    v: [0, 0, 0, 0, 0, 0, 0, 0], n: ['', '', '', '', '', '', '', ''], // (named MACRO 1 to 8 unless named: each can move many things; Johnny, 2026-11-20)
+    v: [0, 0, 0, 0, 0, 0, 0, 0], slew: 0, n: ['', '', '', '', '', '', '', ''], // (named MACRO 1 to 8 unless named: each can move many things; Johnny, 2026-11-20)
     t: [[['coarse', 25]], [['decay', 60], ['pdecay', 30]], [['cutoff', 60]], [['reso', 50]], [['drive', 60], ['fdrive', 40]],
       [['again', 60], ['afreq', 20]], [['clickvol', 60], ['pamt', 30]], [['nmix', 50], ['ncolour', 40]]],
   },
@@ -103,7 +103,7 @@ export class LxrInstrument {
     // { a, b, t, dt, schema } (a: where it started, b: the key's sound, t: 0..1 of the way, dt: per block)
     this.cur = new Float64Array(ALL_PARAMS).fill(NaN); this.glides = SOUNDS.map(() => null); this.morphMs = 0;
     // the MACRO knobs: each one's setting (0..127) and targets, [[MOD_DIALS index, depth -100..100], ...]
-    this.macroV = new Float64Array(NUM_MACROS); this.macroT = Array.from({ length: NUM_MACROS }, () => []);
+    this.macroV = new Float64Array(NUM_MACROS); this.macroCur = new Float64Array(NUM_MACROS); this.macroCoef = 0; this.macroT = Array.from({ length: NUM_MACROS }, () => []);
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -190,17 +190,21 @@ export class LxrInstrument {
       this.macroT[k] = list.map((x) => (Array.isArray(x) ? [MOD_DIALS.indexOf(x[0]), +x[1] || 0] : [-1, 0])).filter(([i, d]) => i >= 0 && d);
     }
     if (Array.isArray(m.v) && !hostValues) for (let k = 0; k < NUM_MACROS; k++) this.macroV[k] = Math.max(0, Math.min(127, +m.v[k] || 0));
+    // SLEW: how long (ms) a macro takes to glide to a new setting, a smooth curve (0: at once)
+    if (m.slew !== undefined) { const ms = Math.max(0, +m.slew || 0); this.macroCoef = ms > 0 ? Math.exp(-BLOCK / (ms / 1000 * REAL_FS)) : 0; }
+    if (!this.macroCoef) this.macroCur.set(this.macroV);
     this._macros();
   }
   /** one MACRO knob's setting, 0..127 */
   setMacro(k, v) {
     v = Math.max(0, Math.min(127, +v || 0)); if (!(k >= 0 && k < NUM_MACROS) || this.macroV[k] === v) return;
-    this.macroV[k] = v; this._macros();
+    this.macroV[k] = v; if (this.macroCoef) return; // (the blocks glide it there)
+    this.macroCur[k] = v; this._macros();
   }
   // every engine voice's knobs moved by the macros: each knob the sum of every macro's setting times its depth
   _macros() {
     const amt = new Float64Array(NUM_MOD);
-    for (let k = 0; k < NUM_MACROS; k++) { const x = this.macroV[k] / 127; if (x) for (const [i, d] of this.macroT[k]) amt[i] += x * d / 100; }
+    for (let k = 0; k < NUM_MACROS; k++) { const x = this.macroCur[k] / 127; if (x) for (const [i, d] of this.macroT[k]) amt[i] += x * d / 100; }
     for (let v = 0; v < 6; v++) for (let i = 0; i < NUM_MOD; i++) {
       const dest = MACRO_DEST[v][i]; if (dest < 0 || (!amt[i] && !this.e.routes[v].has(dest))) continue; // (no route made for nothing)
       this.e.setRouteAmt(v, dest, SRC.MACRO, amt[i]);
@@ -258,6 +262,15 @@ export class LxrInstrument {
       const g = this.glides[s]; if (!g) continue;
       g.t = Math.min(1, g.t + g.dt); this._step(g);
       if (g.t >= 1) this.glides[s] = null;
+    }
+    // the MACRO knobs' SLEW: each a block nearer its setting
+    if (this.macroCoef) {
+      let moved = false;
+      for (let k = 0; k < NUM_MACROS; k++) {
+        const v = this.macroV[k], c = this.macroCur[k]; if (c === v) continue;
+        const n = v + (c - v) * this.macroCoef; this.macroCur[k] = Math.abs(n - v) < 1e-3 ? v : n; moved = true;
+      }
+      if (moved) this._macros();
     }
     // the sequences' steps due in this block, a 1/16 (a quarter of a beat) apart; the pattern and ACTIVE are read as
     // they are now, so editing them while the key is held is heard at once

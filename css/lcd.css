@@ -1139,3 +1139,6 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 .mtrack b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }
 /* a locked key leaves the MACRO row live and clear: the macros aren't the key's (Johnny, 2026-11-20) */
 .keylocked .faders.macros { opacity: 1; pointer-events: auto; }
+/* the macros' SLEW: a small number box under MACROS, dragged up or down */
+.macros .mslew { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px; font-size: 15px; text-transform: uppercase; }
+.macros .mslew .lcdbox { min-width: 4.2em; justify-content: center; cursor: ns-resize; touch-action: none; user-select: none; }

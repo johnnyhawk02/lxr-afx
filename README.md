@@ -26,7 +26,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   if you give one); as they come they move: coarse; decay and pitch decay; cutoff; reso; drive and filter drive; A gain
   and A freq; click volume and pitch amount; noise mix and colour. Kept in the patch and its presets; INIT PATCH leaves them. In the
   plugin they are the parameters **Macro 1** to **Macro 8**, so the DAW can automate and map them (with the window
-  shut too). The panel is 1780 x 1040, a row taller than it was, for them.
+  shut too). SLEW (the number box under MACROS: drag up or down, double-click off) glides every macro to where it is
+  turned, up to 2 s, in the plugin too. The panel is 1780 x 1040, a row taller than it was, for them.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a

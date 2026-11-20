@@ -100,7 +100,7 @@ class Instrument {
   std::vector<double> cur;
   Glide glides[6];
   double morphMs = 0;
-  double macroV[NUM_MACROS] = {};
+  double macroV[NUM_MACROS] = {}, macroCur[NUM_MACROS] = {}, macroCoef = 0;
   std::vector<std::pair<int, double>> macroT[NUM_MACROS];
   void macros();
   float trimBuf[6][BLOCK] = {};
