@@ -9,11 +9,12 @@
 //
 // The engine is the LXR-02 firmware's drum engine ported to JS (engine/lxr.js, sample exact). It runs at
 // 44 140 Hz in 64-sample blocks; render() resamples that to the output rate.
-import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwoso1ry';
+import { LxrEngine, REAL_FS, BLOCK, FxBus, ReverbBus, Rng, FX_DELAY } from '../engine/lxr.js?v=mwot8lcp';
 import { SOUNDS, VOICE_SCHEMAS, SEND_BASE, REPEAT_BASE, SEQ_ON_BASE, SEQ_PAT_BASE, TRIM_BASE, trimDb, ALL_PARAMS, EXTRA_BASE, NUM_EXTRAS, EXTRA_LIVE, setEngines,
-  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwoso1ry';
-import { tableFor, hold, holds, drop } from './tables.js?v=mwoso1ry';
-import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwoso1ry';
+  MOD_BASE, MOD_AMT_ZERO, routeOf, TABLE_BASE, DEPTH_BASE, STEP_BASE, STEPX_BASE, STEP2_BASE, STEPLEN_BASE } from './schema.js?v=mwot8lcp';
+import { tableFor, hold, holds, drop } from './tables.js?v=mwot8lcp';
+import { Dirt, DIRT_DEFAULTS } from './dirt.js?v=mwot8lcp';
+import { blend } from './makers.js?v=mwot8lcp';
 
 // The two send effects (as in Elixir Desktop): the firmware's delay as an echo and its reverb (written for the firmware
 // but never switched on there), each a bus of its own, all wet, fed by every voice at its send and added
@@ -23,8 +24,9 @@ export const FX_DEFAULTS = {
   // duck: how far the echoes go down while the dry sound plays (0 off .. 127 all the way), swelling back in the gaps
   reverb: { size: 70, decay: 90, tone: 64, early: 64, level: 100, post: 0 }, // post: its return joins the master after
   // the distortion (1) rather than going through it with the dry mix (0)
-  tempo: { bpm: 120, ret: 2 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
-  // next 1/32, 1/16, 1/8 or 1/4 (1..4)
+  tempo: { bpm: 120, ret: 2, morph: 0 }, // for the sequencer, and RETURN: a zone back to an earlier held key now (0) or on the
+  // next 1/32, 1/16, 1/8 or 1/4 (1..4). morph: MORPH TIME, ms (0: off): a key played glides its engine's sound from
+  // where the last key left it to its own, over this long
   // the master: the whole mix (dry and FX returns) through the distortion (sound/dirt.js), then a compressor, then
   // the level
   dirt: { ...DIRT_DEFAULTS },
@@ -86,6 +88,9 @@ export class LxrInstrument {
     // the echo's DUCK: its depth (0..1), the dry sound's envelope that drives it, and the gain it gives the echo per sample
     this.duck = 0; this.duckEnv = 0; this.duckG = new Float32Array(BLOCK).fill(1);
     this.duckA = Math.exp(-1 / (0.002 * REAL_FS)); this.duckR = Math.exp(-1 / (0.1 * REAL_FS));
+    // MORPH TIME: every parameter's value as last set (NaN: never), and per sound the glide under way:
+    // { a, b, t, dt, schema } (a: where it started, b: the key's sound, t: 0..1 of the way, dt: per block)
+    this.cur = new Float64Array(ALL_PARAMS).fill(NaN); this.glides = SOUNDS.map(() => null); this.morphMs = 0;
     this.setFx(FX_DEFAULTS);
     this._block(this.A); this._block(this.B);
   }
@@ -102,8 +107,18 @@ export class LxrInstrument {
     SOUNDS.forEach((s, i) => { if (i < n) on[s.engineVoice] = 1; else { this.held[i] = null; this.backs[i] = null; } });
     this.e.only = on;
   }
-  loadKit(values) { this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this.setParam(p, values[p]); }
+  loadKit(values) {
+    this.glides.fill(null);
+    this.e.loadKit(values); for (let p = SEND_BASE; p < Math.min(values.length, ALL_PARAMS); p++) this._set(p, values[p]);
+    for (let p = 0; p < Math.min(values.length, SEND_BASE); p++) this.cur[p] = values[p];
+  }
+  /** one parameter from the page: a glide under way leaves it alone from now on (a knob turned mid-morph wins) */
   setParam(par, value) {
+    for (const g of this.glides) if (g && g.b.has(par)) { g.a.delete(par); g.b.delete(par); }
+    this._set(par, value);
+  }
+  _set(par, value) {
+    if (par < ALL_PARAMS) this.cur[par] = value;
     if (par >= STEPLEN_BASE) { if (par < ALL_PARAMS) this.e.setStepLen(par - STEPLEN_BASE, value); return; } // STEP SEQ's LENGTH
     if (par >= STEP2_BASE) { const i = par - STEP2_BASE; this.e.setStep(i >> 3, 8 + (i & 7), value / 127); return; } // steps 9 to 16
     if (par >= STEPX_BASE) { // STEP SEQ's STEP TIME or SLEW
@@ -141,7 +156,7 @@ export class LxrInstrument {
   /** the effects' settings: { echo, reverb, master, tempo }, each as FX_DEFAULTS (0..127 values) */
   setFx(fx) {
     const { echo, reverb, master, tempo, dirt } = fx;
-    if (tempo) { this.setBpm(tempo.bpm); if (tempo.ret !== undefined) this.retQ = tempo.ret; } // (first: a synced echo follows it)
+    if (tempo) { this.setBpm(tempo.bpm); if (tempo.ret !== undefined) this.retQ = tempo.ret; if (tempo.morph !== undefined) this.morphMs = Math.max(0, +tempo.morph || 0); } // (first: a synced echo follows it)
     if (echo) {
       this.echo.delay.type = echo.pingpong ? 1 : 0;
       [0.5, 0.5, echo.tone / 127, echo.feedback / 127].forEach((v, i) => this.echo.setParameter(i, v));
@@ -154,24 +169,41 @@ export class LxrInstrument {
     if (master) Object.assign(this.m, master);
   }
   /** hold: the key is held down, so with its sequencer ACTIVE it plays its pattern until release(), from the next
-   * 1/16 of the grid; otherwise (or not held: a key auditioned) it plays once, now */
-  play(sound, note, velocity, params, hold = true) {
-    if (params) for (const [par, v] of params) this.setParam(par, v);
+   * 1/16 of the grid; otherwise (or not held: a key auditioned) it plays once, now. glide: a key played (on the keys
+   * or MIDI), so with a MORPH TIME its sound glides there from where the engine is (see _glide) */
+  play(sound, note, velocity, params, hold = true, glide = false) {
+    this.glides[sound] = null;
+    if (params && glide && this.morphMs > 0) this._glide(sound, params);
+    else if (params) for (const [par, v] of params) this._set(par, v);
     const vel = Math.max(1, Math.min(127, velocity | 0)), v = SOUNDS[sound].engineVoice;
     this.backs[sound] = null;
     if (hold && this.seqOn[v]) { this.held[sound] = { note, vel, at: Math.ceil(this.beat * 4 - 1e-6) / 4, step: 0, cur: -1 }; return; }
     this.held[sound] = null;
     this._hit(sound, vel, note);
   }
+  // MORPH TIME: the key's parameters glide from where they are now to the key's own over morphMs, as MORPH KEYS
+  // blends two sounds (makers.js blend: knobs slide, menus and targets flip halfway, a part off on one side takes the
+  // other side's settings). A parameter never set yet goes straight there. The hit itself is at once
+  _glide(sound, params) {
+    const a = new Map(), b = new Map();
+    for (const [p, v] of params) {
+      const x = p < ALL_PARAMS ? this.cur[p] : NaN;
+      if (Number.isNaN(x) || x === v) this._set(p, v); else { a.set(p, x); b.set(p, v); }
+    }
+    if (!b.size) return;
+    const g = { a, b, t: 0, dt: BLOCK / REAL_FS * 1000 / this.morphMs, schema: VOICE_SCHEMAS[SOUNDS[sound].engineVoice] };
+    this.glides[sound] = g; this._step(g);
+  }
+  _step(g) { for (const [p, v] of blend({ schema: g.schema, a: g.a, b: g.b, t: g.t })) this._set(p, v); }
   // a hit of a sound's voice, at the trim it has now
   _hit(sound, vel, note) { const d = SOUNDS[sound]; this.e.trigger(d.trigger, vel, note); this.trimNow[d.engineVoice] = this.trim[d.engineVoice]; }
   /** the zone's newest key let go while an earlier one is held: the newest's sequence stops, and the earlier key plays
    * again (held, so its own sequence starts over) at once or on the next RETURN step of the grid */
-  back(sound, note, vel, params) {
+  back(sound, note, vel, params, glide = false) {
     this.held[sound] = null;
     const div = [0, 8, 4, 2, 1][this.retQ] || 0; // steps per beat
-    if (!div) { this.play(sound, note, vel, params); return; }
-    this.backs[sound] = { at: Math.ceil(this.beat * div - 1e-6) / div, note, vel, params };
+    if (!div) { this.play(sound, note, vel, params, true, glide); return; }
+    this.backs[sound] = { at: Math.ceil(this.beat * div - 1e-6) / div, note, vel, params, glide };
   }
   /** every key of a sound let go: its sequence stops, and a key waiting to come back doesn't */
   release(sound) { this.held[sound] = null; this.backs[sound] = null; }
@@ -182,7 +214,13 @@ export class LxrInstrument {
   _block(dst) {
     // keys coming back on a step of the grid that falls in this block (1.45 ms), then the grid moves on
     const step = BLOCK * this.bpm / 60 / REAL_FS;
-    for (let s = 0; s < this.backs.length; s++) { const b = this.backs[s]; if (b && b.at < this.beat + step) this.play(s, b.note, b.vel, b.params); }
+    for (let s = 0; s < this.backs.length; s++) { const b = this.backs[s]; if (b && b.at < this.beat + step) this.play(s, b.note, b.vel, b.params, true, b.glide); }
+    // MORPH TIME: each glide a block further on
+    for (let s = 0; s < this.glides.length; s++) {
+      const g = this.glides[s]; if (!g) continue;
+      g.t = Math.min(1, g.t + g.dt); this._step(g);
+      if (g.t >= 1) this.glides[s] = null;
+    }
     // the sequences' steps due in this block, a 1/16 (a quarter of a beat) apart; the pattern and ACTIVE are read as
     // they are now, so editing them while the key is held is heard at once
     for (let s = 0; s < this.held.length; s++) {
