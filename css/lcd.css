@@ -378,18 +378,18 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 @container (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
 /* the master distortion: switches stand in a knob's place (a button named with its setting), the header buttons read
    as a sentence, a section switched off is greyed (its knobs still turn), and the sidechain's envelope meter */
-.fxside .sect.dirt .row + .row { margin-top: 2px; }
-.fxside .sect.dirt h3 { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
-.fxside .sect.dirt h3 .dim { font-size: 15px; letter-spacing: 1px; }
-.fxside .hdb { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; }
-.fxside .hdb:first-of-type { margin-left: 2px; }
+.fxgrid .sect.dirt .row + .row { margin-top: 2px; }
+.fxgrid .sect.dirt h3 { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
+.fxgrid .sect.dirt h3 .dim { font-size: 15px; letter-spacing: 1px; }
+.fxgrid .hdb { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; }
+.fxgrid .hdb:first-of-type { margin-left: 2px; }
 .vsw .swb { width: calc(var(--kw) - 8px); height: var(--ks); display: flex; align-items: center; justify-content: center;
   border: 2px solid var(--ink); border-radius: 3px; background: transparent; color: var(--ink); font: inherit; font-size: 15px;
   letter-spacing: 0; padding: 0; cursor: pointer; }
 .vsw .swb:hover { background: var(--tint); }
 .vsw .swb[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 .vsw .swb:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.fxside .sect.dirt.off > .row { opacity: .42; }
+.fxgrid .sect.dirt.off > .row { opacity: .42; }
 .envm { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .envm .segs { height: var(--ks); width: 14px; display: flex; flex-direction: column-reverse; gap: 2px; }
 .envm .segs i { flex: 1; background: var(--ghost); }
@@ -421,7 +421,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
    level and the gain-reduction meter all sit in the same six cells */
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
 /* OUTPUT: LEVEL in cell 1, the meters on cells 2 to 6, each row a name, a bar and a reading on the same three columns */
-.fxside .mout .meters { grid-column: 2 / 5; align-self: center; padding-left: 8px; display: flex; flex-direction: column; gap: 4px; }
+.fxgrid .mout .meters { grid-column: 2 / 5; align-self: center; padding-left: 8px; display: flex; flex-direction: column; gap: 4px; }
 .meters .mrow, .meters .mscale { display: grid; grid-template-columns: 1em 1fr 3.2em; align-items: center; gap: 0 6px; margin: 0; font-size: 15px; }
 .meters .ch { color: var(--muted); font-size: 15px; }
 .meters output { font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
@@ -433,7 +433,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .meters .scale { position: relative; height: 15px; font-size: 13px; color: var(--muted); }
 .meters .scale span { position: absolute; top: 0; transform: translateX(-50%); }
 .meters .scale span:first-child { transform: none; } .meters .scale span:last-child { transform: translateX(-100%); }
-.fxside .mout .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
+.fxgrid .mout .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
 .vu svg { display: block; width: 100%; height: auto; overflow: hidden; }
 .vu svg .arc, .vu svg line { stroke: var(--ink); stroke-width: 1.5; fill: none; }
 .vu svg .hot { stroke: var(--ink); stroke-width: 4; fill: none; }
@@ -441,7 +441,7 @@ html:not(.phone) #start-text { font-size: 20px; margin-top: 28px; color: var(--m
 .vu svg .vul { fill: var(--muted); font-size: 9px; letter-spacing: 1px; }
 .vu svg .needle { stroke-width: 2; stroke-linecap: round; }
 .vu output { position: absolute; right: 5px; bottom: 1px; font-size: 13px; font-variant-numeric: tabular-nums; }
-.fxside .outm h3 { display: flex; align-items: center; gap: 6px; }
+.fxgrid .outm h3 { display: flex; align-items: center; gap: 6px; }
 .fxside .sect h3 { padding-left: 0; }
 /* the key's sequencer (row 4, the cells after the LFO): ACTIVE and RANDOM in its heading, eight steps across its
    cells (1 and 5 marked as the beats), the step playing now outlined, and a LOCK on the knobs' LOCK line */
@@ -638,25 +638,18 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .sounds .fxtab[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 @container (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
 .sounds .fxtab kbd { margin-left: 6px; }
-/* the effects on the tab: send FX in the first column, the master's distortion in the second, compressor and output in
-   the third, each section on the knob grid */
-#fxglobal { display: grid; grid-template-columns: repeat(3, auto); column-gap: 0; align-items: start; justify-content: space-between; }
-.fxcol { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; }
-.fxcol + .fxcol { border-left: var(--rule); }
-.fxcol:first-child { padding-left: 4px; }
-.fxside > h2 { display: none; }
-.left > .fxside { --kw: 72px; --ks: 50px; }
-.left > .fxside .vf .lab { font-size: 15px; } .left > .fxside .vf output { font-size: 16px; }
-@container (max-width: 1340px) { .left > .fxside { --kw: 66px; --ks: 44px; } .fxcol { padding: 0 12px; } }
-/* KNOB SIZE on the tab too (Johnny, 2026-11-19: "the fx master page does not follow the knob size"): its knobs are
-   the main panel's (--ks 58px), so the slider makes them the same size as there; its cells are as wide as 18 fit
-   across the three columns, and each row of knobs gets the room the knobs grow down by, so names never meet the
-   values of the row under them. The multi-way switch boxes move down with the knobs, so the names stay in line */
-.left > .fxside { --kw: 84px; --ks: 58px; --fxgrow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
-.left > .fxside .sect .row { padding-bottom: calc(var(--fxgrow) + 4px); }
-html:not(.phone) .fxside .vf.vsw:not(:has(> .tog)) > .swb { transform: translateY(calc(var(--fxgrow) / 2)); }
-html:not(.phone) .fxside .vf.vsw:not(:has(> .tog)) > .lab { transform: translateY(var(--fxgrow)); }
-html:not(.phone) .fxside .envm { transform: translateY(calc(var(--fxgrow) / 2)); }
+/* FX + MASTER on the synth panel's own grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
+   page"): the tab is a .faders grid in the same place, 17 equal cells by 4 equal rows, one knob to a cell, so every
+   knob sits where a knob on the synth page sits, at the same size (KNOB SIZE and all). buildFx places the sections */
+.editor > .faders[hidden] { display: none; }
+.editor.fx .lockveil { display: none; }
+.keylocked .fxgrid { opacity: 1; pointer-events: auto; }
+/* the multi-way switch boxes and the sidechain's meter move down with the knobs as they grow, so the names stay in line */
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)), html:not(.phone) .fxgrid .envm { --grow: max(0px, calc((var(--kd, 1.16) - 1.1) * var(--ks))); }
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .swb, html:not(.phone) .fxgrid .envm .segs { transform: translateY(calc(var(--grow) / 2)); }
+html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab, html:not(.phone) .fxgrid .envm .lab { transform: translateY(var(--grow)); }
+.fxgrid .envm { padding-top: 0; }
+.fxgrid .envm > output { font-size: 18px; min-height: 1.2em; }
 .faders .sect.off > .row { opacity: .42; }
 .faders { grid-template-columns: repeat(17, minmax(0, 1fr)); } /* 16 cells of the engine's sections, then the key's own: its FX SENDS one above the other, over LEVEL */
 
