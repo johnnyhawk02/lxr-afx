@@ -1075,3 +1075,14 @@ html.phone .khact .keyrand { display: none; }
 .morphtime h3 { display: flex; justify-content: space-between; }
 .morphtime h3 .dim { margin-left: 0; font-size: 17px; color: var(--ink); }
 .morphtime input { width: 100%; min-width: 0; margin: 0; height: 16px; accent-color: rgb(var(--ink-rgb)); }
+
+/* FILTER IN (Johnny, 2026-11-20): three small [x] boxes, TONE, NOISE and CLICK, stacked in one cell, like REVERB's
+   POST DISTORTION box, each with its padlock at its right */
+.faders .sect.fin .ticks { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; padding: 0 6px; min-width: 0; }
+.faders .vtick { position: relative; display: flex; align-items: center; gap: 4px; max-width: 100%; }
+.faders .vtick .tick { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; letter-spacing: .04em; white-space: pre; cursor: pointer; text-align: left; }
+.faders .vtick .tick[aria-checked="false"] { color: var(--muted); }
+.faders .vtick.keyed .tick { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
+.faders .vtick.changed .tick::after { content: "*"; }
+.faders .vtick .lock { position: relative; left: auto; top: auto; flex: none; }
+.faders .sect.fin h3 { letter-spacing: .06em; padding: 0 4px 0 8px; text-overflow: clip; }

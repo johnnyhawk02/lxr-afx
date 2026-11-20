@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwot8lcp';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwot8lcp';
-import { presetName, jumble } from './names.js?v=mwot8lcp';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwot8lcp';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwot8lcp';
-import { breed, isDud } from '../sound/breed.js?v=mwot8lcp';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwot8lcp';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwot8lcp';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwot8lcp';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwot8lcp';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwot8lcp';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwot8lcp';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwothj39';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwothj39';
+import { presetName, jumble } from './names.js?v=mwothj39';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwothj39';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwothj39';
+import { breed, isDud } from '../sound/breed.js?v=mwothj39';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwothj39';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwothj39';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwothj39';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwothj39';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwothj39';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwothj39';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -110,7 +110,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwot8lcp', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwothj39', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
   node.connect(ctx.destination);
@@ -645,6 +645,7 @@ function buildFaders() {
       const list = entries.filter((e) => e.section === sec);
       if (!list.length) continue;
       if (sec === 'seq') { seqPanel(sect(GRID_COLS + 1 - col, ' seq'), voice); continue; }
+      if (sec === 'filter in') { const el = sect(1, ' fin'); el.innerHTML = '<h3>filter in</h3><div class="ticks"></div>'; for (const e of list) el.lastChild.append(vtick(e)); continue; } // (three small boxes stacked in one cell; Johnny, 2026-11-20)
       const el = sect(list.length + (sec === 'osc' ? 3 : 0)); // (the OSC section: its wave display three cells of its own, after its knobs; Johnny, 2026-11-19)
       el.innerHTML = `<h3>${sec}</h3><div class="row"></div>`;
       const row = el.querySelector('.row');
@@ -1174,6 +1175,44 @@ function vtoggle(e) {
   if (mod) modDots.push({ tr: b, el, e, mod, tog: true });
   return el;
 }
+// a small [x] box in FILTER IN (Johnny, 2026-11-20: "a checkbox for each lined up one above each other"), like REVERB's
+// POST DISTORTION box: TONE, NOISE and CLICK stacked in one cell, each with its padlock. A click flips it; a double-click
+// on it puts it back (on a key, to before you changed it; on every key, to the kit's value)
+function vtick(e) {
+  const el = document.createElement('div'); el.className = 'vtick';
+  const name = e.label.replace(/ in$/, '').toUpperCase();
+  el.innerHTML = `<button class="tick" type="button" role="switch"></button><button class="lock" type="button" aria-label="Lock ${e.label}">${LOCK_SVG}</button>`;
+  const b = el.querySelector('.tick'), lock = el.querySelector('.lock');
+  b.setAttribute('aria-label', e.label); b.title = `${e.label.toUpperCase()}: ticked, the ${name.toLowerCase()} goes through the filter. Click to flip`;
+  const on = () => (valueNow(e.par) >= 0.5 ? 1 : 0);
+  const draw = () => {
+    const v = on();
+    b.textContent = `[${v ? 'x' : '\u00a0'}] ${name}`; b.setAttribute('aria-checked', v === 1);
+    el.classList.toggle('changed', !editing() && valueNow(e.par) !== S.defaults[e.par]);
+    el.classList.toggle('keyed', editing() && keyEdited(e.par));
+    const locked = S.locks.has(e.par);
+    lock.setAttribute('aria-pressed', locked);
+    lock.title = locked ? `${e.label.toUpperCase()} is locked: the dice, RANDOM and ALTER leave it as it is, on every key. Click to unlock` : `Lock ${e.label.toUpperCase()}: the dice, RANDOM and ALTER then leave it as it is, on every key`;
+  };
+  const put = (x) => {
+    if (x === valueNow(e.par)) return;
+    editValue(e.par, x); draw();
+    detail(`${SOUNDS[S.sel].name} ${editing() ? noteName(editKey[S.sel]) + ' ' : 'ALL KEYS '}${e.label.toUpperCase()} <em>${showValue(e, x)}</em>`);
+  };
+  b.addEventListener('click', () => { if (!learn) put(1 - on()); });
+  b.addEventListener('dblclick', () => {
+    if (editing() && keyLocked(S.sel, editKey[S.sel])) { lockedMsg(); return; }
+    if (editing()) { const was = S.keyEdits[S.sel][editKey[S.sel]]?._o?.[e.par]; if (was !== undefined) put(was); }
+    else put(S.defaults[e.par]);
+  });
+  el.dataset.learn = JSON.stringify({ t: 'par', label: [e.label] });
+  lock.addEventListener('click', () => {
+    const l = !S.locks.has(e.par); if (l) S.locks.add(e.par); else S.locks.delete(e.par); save(); draw(); drawLocks();
+    detail(l ? `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>locked</em>: the dice, RANDOM and ALTER leave it as it is, on every ${SOUNDS[S.sel].name.toLowerCase()} key` : `${SOUNDS[S.sel].name} ${e.label.toUpperCase()} <em>unlocked</em>`);
+  });
+  faderDraws.push(draw);
+  return el;
+}
 function vfader(e, fader) {
   if (e.max === 1 && e.display.type === 'menu') return vtoggle(e); // (two settings: a switch)
   const el = document.createElement('div'); el.className = 'vf';
@@ -1581,7 +1620,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwot8lcp').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwothj39').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
