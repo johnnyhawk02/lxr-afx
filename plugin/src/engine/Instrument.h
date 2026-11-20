@@ -40,6 +40,14 @@ class Instrument {
   void loadKit(const std::vector<double>& values);
   void setParam(int par, double value);
   void setFx(const json& fx);
+  /** the MACRO knobs (FX_DEFAULTS.macros): their targets, and their settings unless macroHost */
+  void setMacros(const json& m);
+  /** one MACRO knob's setting, 0..127 */
+  void setMacro(int k, double v);
+  double macro(int k) const { return k >= 0 && k < NUM_MACROS ? macroV[k] : 0; }
+  static constexpr int NUM_MACROS = 8;
+  /** the plugin: the DAW's parameters set the macros (setMacro), not the page's 'fx' */
+  bool macroHost = false;
   void setEngines(int n);
   void play(int sound, double note, double velocity, const Params* params, bool hold, bool glide);
   void back(int sound, double note, double vel, const Params* params, bool glide);
@@ -92,6 +100,9 @@ class Instrument {
   std::vector<double> cur;
   Glide glides[6];
   double morphMs = 0;
+  double macroV[NUM_MACROS] = {};
+  std::vector<std::pair<int, double>> macroT[NUM_MACROS];
+  void macros();
   float trimBuf[6][BLOCK] = {};
 };
 

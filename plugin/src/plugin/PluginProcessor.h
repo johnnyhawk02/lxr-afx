@@ -48,10 +48,16 @@ class LxrProcessor : public juce::AudioProcessor {
   std::string takeMidi();
   /** bumps when a project is loaded, so an open editor reloads its page with that state */
   int generation() const { return gen.load(); }
+  /** the MACRO knobs as DAW parameters (0..1), so a DAW can automate and map them */
+  static constexpr int NUM_MACROS = 8;
+  juce::AudioParameterFloat* macros[NUM_MACROS] = {};
   double rate() const { return sr.load(); }
 
  private:
   void push(lxr::json m);
+  void macroFromPage(const lxr::json& m);
+  void macrosFromStore(const std::string& store);
+  float macroNow[NUM_MACROS];
   lxr::Dsp dsp;
   std::atomic<double> sr{48000};
   std::mutex inMx; std::vector<lxr::json> inbox, work;

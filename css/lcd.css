@@ -14,12 +14,12 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body { background: radial-gradient(120% 80% at 50% 0%, #2a2d28, #161815) fixed; padding: 8px; overflow: hidden; font-family: var(--font); color: var(--ink); }
-/* the stage holds the screen. On a laptop or desktop it is a fixed 16:8 panel, 1780 x 890, that fitScreen (app/main.js)
+/* the stage holds the screen. On a laptop or desktop it is a fixed panel, 1780 x 1040 (16:8 until the MACRO row made it a row taller), that fitScreen (app/main.js)
    scales to fit the window and centres, the bezel's dark surround filling the rest; the layout inside never reflows.
-   The size rules below are container queries on the stage, not media queries, so they see 1780 x 890 at any window
+   The size rules below are container queries on the stage, not media queries, so they see 1780 x 1040 at any window
    size (and the phone's own size on a phone) */
 .stage { container-type: size; width: 100%; height: 100%; }
-html:not(.phone) .stage { position: absolute; left: 8px; top: 8px; width: 1780px; height: 890px; transform-origin: 0 0; }
+html:not(.phone) .stage { position: absolute; left: 8px; top: 8px; width: 1780px; height: 1040px; transform-origin: 0 0; }
 button { font: inherit; color: inherit; }
 
 .screen {
@@ -1099,3 +1099,35 @@ html.phone .khact .keyrand { display: none; }
 .faders .vtick.changed .tick::after { content: "*"; }
 .faders .vtick .lock { position: relative; left: auto; top: auto; flex: none; }
 .faders .sect.fin h3 { letter-spacing: .06em; padding: 0 4px 0 8px; text-overflow: clip; }
+
+/* ---- the MACRO knobs (Johnny, 2026-11-20): a row of eight across the top of the synth panel, on its 17 columns (two
+   cells each: a big knob, then what it moves; the last cell its name). The panel is a row taller for it (1780 x 1040),
+   so the synth grid's four rows keep their size: the macro row is one of them, a fifth ---- */
+.editor { grid-template-rows: minmax(0, 1fr) minmax(0, 4fr) auto; }
+.editor > .faders.macros { grid-area: 1 / 1; grid-template-rows: minmax(0, 1fr); }
+.editor > #faders, .editor > .lockveil { grid-area: 2 / 1; }
+.editor > .status { grid-row: 3; }
+.macros .sect.mac .row { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; align-items: center; }
+.macros .sect h3 { padding: 0 8px; }
+.macros .mname { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.macros .mname:hover { text-decoration: underline; }
+html:not(.phone) .macros .vf.mknob .knob { width: 72px; height: 72px; margin-top: 2px; }
+html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a big knob, as LEVEL's: inside the row, never over its name) */
+.macros .vf.mknob .lab { display: none; }
+.macros .mtargets { align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 0 8px 0 2px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.macros .mtargets span { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; overflow: hidden; text-transform: uppercase; letter-spacing: .02em; }
+.macros .mtargets b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.macros .mtargets i { font-style: normal; font-variant-numeric: tabular-nums; }
+.macros .mtargets:hover b { text-decoration: underline; }
+.macros .sect.mac.off .vf { opacity: .42; }
+.macros .sect.mfill::before { display: block; }
+/* the targets pop-up: every knob that can be modulated, a depth either way from the middle (double-click: off) */
+.macbox { width: 980px; }
+.maclist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; margin-top: 10px; }
+.mdep { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 10px; font-size: 17px; }
+.mdep .lab { text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mdep.on .lab { color: var(--ink); }
+.mdep output { text-align: right; font-variant-numeric: tabular-nums; }
+.mtrack { position: relative; height: 18px; cursor: ew-resize; touch-action: none; background: repeating-linear-gradient(90deg, var(--ghost) 0 4px, transparent 4px 6px); }
+.mtrack i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(90deg, var(--ink) 0 4px, transparent 4px 6px); }
+.mtrack b { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }

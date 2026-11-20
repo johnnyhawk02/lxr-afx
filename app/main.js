@@ -1,19 +1,19 @@
 // LXR-AFX: the page. Seven sounds on MIDI channels 1 to 7; every key from C1 to C5 plays a morph of its sound (C3 plays
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
-import { SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
+import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwozujdr';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwozujdr';
-import { presetName, jumble } from './names.js?v=mwozujdr';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwozujdr';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwozujdr';
-import { breed, isDud } from '../sound/breed.js?v=mwozujdr';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwozujdr';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwozujdr';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwozujdr';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS } from '../sound/instrument.js?v=mwozujdr';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwozujdr';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwozujdr';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwp4md1k';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwp4md1k';
+import { presetName, jumble } from './names.js?v=mwp4md1k';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwp4md1k';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwp4md1k';
+import { breed, isDud } from '../sound/breed.js?v=mwp4md1k';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwp4md1k';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwp4md1k';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwp4md1k';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwp4md1k';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwp4md1k';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwp4md1k';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,9 +111,9 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwozujdr', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwp4md1k', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
-  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); } };
+  node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
   send({ type: 'kit', values: S.values });
   send({ type: 'fx', fx: S.fx });
@@ -681,6 +681,7 @@ function buildFaders() {
   faderDraws.push(() => drawAuto(auto));
   // the right: the three effects (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
+  buildMacros(voice);
   drawFaders();
 }
 function drawFaders() { faderDraws.forEach((d) => d()); }
@@ -903,6 +904,98 @@ function showSteps(steps) {
   seqSteps.forEach((b, i) => b.classList.toggle('now', i === playing));
 }
 
+// ---- the MACRO knobs: a row of eight across the top of the synth panel, on its grid (two cells each: the knob, then
+// what it moves). Each one adds to the knobs it targets on every key of every engine (sound/instrument.js setMacros),
+// from nothing at 0 to each target's depth at the top. In the plugin they are the DAW's parameters Macro 1 to 8 ----
+const M = () => S.fx.macros;
+const dialLabel = (voice, u) => (VOICE_SCHEMAS[voice].find((e) => e.ukey === u) || VOICE_SCHEMAS.flat().find((e) => e.ukey === u))?.label || u;
+const macroName = (k) => (M().n && M().n[k]) || (M().t[k][0] ? dialLabel(SOUNDS[S.sel].engineVoice, M().t[k][0][0]) : 'macro ' + (k + 1));
+const macroDraws = [], macroHeld = new Array(NUM_MACROS).fill(false);
+let macroEdit = -1;
+function buildMacros(voice) {
+  const box = $('macros'); box.innerHTML = ''; macroDraws.length = 0;
+  for (let k = 0; k < NUM_MACROS; k++) {
+    const el = document.createElement('div'); el.className = 'sect mac' + (k ? ' sep' : ''); el.style.setProperty('--n', 2);
+    el.style.gridArea = `1 / ${1 + 2 * k} / 2 / ${3 + 2 * k}`;
+    el.innerHTML = `<h3><button type="button" class="mname"></button></h3><div class="row"></div>`;
+    const name = el.querySelector('.mname'), row = el.querySelector('.row');
+    name.addEventListener('click', () => openMacro(k));
+    const knob = gknob('', { max: 127, dflt: 0, show: (v) => Math.round(v / 1.27) + '%', get: () => M().v[k],
+      set: (v) => { M().v[k] = v; send({ type: 'macro', i: k, v }); save(); } });
+    knob.classList.add('mknob');
+    // the DAW's touch: a drag is one gesture, so its automation records it as one move
+    const tr = knob.querySelector('.knob');
+    tr.addEventListener('pointerdown', (e) => { if (e.button) return; macroHeld[k] = true; send({ type: 'macro', i: k, g: 1 }); });
+    const up = () => { if (!macroHeld[k]) return; macroHeld[k] = false; send({ type: 'macro', i: k, v: M().v[k], g: -1 }); };
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) tr.addEventListener(ev, up);
+    const list = document.createElement('button'); list.type = 'button'; list.className = 'mtargets';
+    list.addEventListener('click', () => openMacro(k));
+    row.append(knob, list);
+    box.append(el);
+    const draw = () => {
+      name.textContent = macroName(k);
+      const t = M().t[k];
+      list.innerHTML = t.length ? t.slice(0, 4).map(([u, d]) => `<span><b>${dialLabel(voice, u)}</b><i>${d > 0 ? '+' : ''}${d}</i></span>`).join('') + (t.length > 4 ? `<span class="dim">+${t.length - 4} more</span>` : '')
+        : '<span class="dim">no targets</span>';
+      el.classList.toggle('off', !t.length);
+    };
+    faderDraws.push(draw); macroDraws[k] = knob._draw;
+  }
+  const fl = document.createElement('div'); fl.className = 'sect sep fill mfill'; fl.style.gridArea = `1 / ${1 + 2 * NUM_MACROS} / 2 / ${GRID_COLS + 2}`;
+  fl.innerHTML = '<h3>macros</h3>'; box.append(fl);
+  if (macroEdit >= 0) drawMacroPop();
+}
+// the plugin: where the DAW has the macros now (its automation), shown on the knobs (a knob being dragged is left alone)
+function macroLive(v) {
+  v.forEach((x, k) => { if (k < NUM_MACROS && !macroHeld[k] && Math.abs(x - M().v[k]) > 1e-3) { M().v[k] = x; if (macroDraws[k]) macroDraws[k](); } });
+}
+// a macro's targets: every knob that can be modulated, each with a depth either way (0: not a target), in a pop-up
+function openMacro(k) {
+  macroEdit = k; $('macpop').hidden = k < 0;
+  if (k >= 0) { openMenu(false); openPresets(false); openSettings(false); drawMacroPop(); }
+}
+function setMacroTarget(k, u, d) {
+  const t = M().t[k], i = t.findIndex((x) => x[0] === u);
+  if (!d) { if (i >= 0) t.splice(i, 1); } else if (i >= 0) t[i][1] = d; else t.push([u, d]);
+  sendFx(); // (the targets go with the effects)
+}
+function drawMacroPop() {
+  const k = macroEdit; if (k < 0) return;
+  const voice = SOUNDS[S.sel].engineVoice;
+  $('mac-num').textContent = 'MACRO ' + (k + 1);
+  const nm = $('mac-name'); if (document.activeElement !== nm) nm.value = (M().n && M().n[k]) || '';
+  nm.placeholder = macroName(k).toUpperCase();
+  const box = $('mac-list'); box.innerHTML = '';
+  for (const u of MOD_DIALS) {
+    const el = document.createElement('div'); el.className = 'mdep';
+    el.innerHTML = '<span class="lab"></span><div class="mtrack" role="slider"><i></i><b></b></div><output></output>';
+    el.querySelector('.lab').textContent = dialLabel(voice, u);
+    const tr = el.querySelector('.mtrack'), fill = tr.querySelector('i'), out = el.querySelector('output');
+    tr.setAttribute('aria-label', dialLabel(voice, u) + ' depth'); tr.setAttribute('aria-valuemin', -100); tr.setAttribute('aria-valuemax', 100);
+    const get = () => (M().t[k].find((x) => x[0] === u) || [u, 0])[1];
+    const draw = () => {
+      const d = get(), a = 50 + Math.min(0, d) / 2, b = 50 + Math.max(0, d) / 2;
+      fill.style.left = a + '%'; fill.style.width = (b - a) + '%';
+      out.textContent = d ? (d > 0 ? '+' : '') + d : 'off'; el.classList.toggle('on', d !== 0); tr.setAttribute('aria-valuenow', d);
+    };
+    const put = (x) => { x = clamp(Math.round(x), -100, 100); if (x !== get()) { setMacroTarget(k, u, x); draw(); drawFaders(); } };
+    dragger(tr, 'x', { min: -100, max: 100, get, put });
+    tr.addEventListener('dblclick', () => put(0));
+    draw(); box.append(el);
+  }
+}
+$('mac-close').addEventListener('click', () => openMacro(-1));
+$('macpop').addEventListener('pointerdown', (e) => { if (e.target === $('macpop')) openMacro(-1); });
+$('mac-clear').addEventListener('click', () => { if (macroEdit < 0) return; M().t[macroEdit] = []; sendFx(); drawFaders(); drawMacroPop(); });
+$('mac-name').addEventListener('input', (e) => {
+  if (macroEdit < 0) return; if (!M().n) M().n = FX_DEFAULTS.macros.n.slice();
+  M().n[macroEdit] = e.target.value.trim().toLowerCase().slice(0, 12); save(); drawFaders();
+});
+document.addEventListener('keydown', (e) => {
+  if ($('macpop').hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); openMacro(-1); }
+}, true);
+
 // ---- the FX page: the three send effects every key feeds (each key's sends are its FX SENDS knobs) ----
 function gknob(label, o) {
   const el = document.createElement('div'); el.className = 'vf';
@@ -919,7 +1012,7 @@ function gknob(label, o) {
   const put = (v) => { v = clamp(Math.round(v), 0, o.max); if (v !== o.get()) { o.set(v); draw(); } };
   dragger(tr, 'y', { min: 0, get max() { return o.max; }, len: 160, get: o.get, put, held: (h) => el.classList.toggle('held', h) });
   const reset = () => put(o.dflt); el.querySelector('.lab').addEventListener('dblclick', reset); tr.addEventListener('dblclick', reset);
-  faderDraws.push(draw);
+  faderDraws.push(draw); el._draw = draw;
   return el;
 }
 const sendFx = () => { send({ type: 'fx', fx: S.fx }); save(); };
@@ -1632,7 +1725,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwozujdr').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwp4md1k').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2185,7 +2278,7 @@ function initPatch() {
 }
 // a new patch starts from the effects as they come: BPM, the echo, the reverb, the distortion, the compressor and the
 // output level back to their starting settings (RETURN is how the keys play, not part of the sound: it stays)
-function resetFx() { const d = structuredClone(FX_DEFAULTS); applyFx({ ...d, tempo: { bpm: d.tempo.bpm } }); }
+function resetFx() { const d = structuredClone(FX_DEFAULTS); applyFx({ ...d, tempo: { bpm: d.tempo.bpm }, macros: undefined }); } // (the MACRO knobs stay)
 let initArmed = 0;
 const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filter((e) => e._lock).length, 0);
 function drawInit() {
@@ -2444,6 +2537,7 @@ function applyFx(fx) {
   for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], fx[k]);
   if (fx.tempo && fx.tempo.morph === undefined) S.fx.tempo.morph = 0; // (a patch from before MORPH TIME: off)
   drawBpm(); drawMorph(); drawRet(); sendFx(); drawFaders();
+  if (fx.macros) S.fx.macros.v.forEach((v, i) => send({ type: 'macro', i, v })); // (in the plugin the DAW's parameters hold them)
 }
 function applyPatch(d) {
   d.values.forEach((x, p) => { if (p < ALL_PARAMS) setValue(p, x, { quiet: true }); });
@@ -3041,7 +3135,7 @@ function setPhone() {
 // 16:8"), laid out at that size always and scaled to fit the window, up or down, and centred; the dark surround fills
 // what's left, so it never reflows and nothing scrolls. (index.html does the same before the first paint)
 // ---------------------------------------------------------------------------------------------------------------
-const FIT_W = 1780, FIT_H = 890;
+const FIT_W = 1780, FIT_H = 1040; // (890 until the MACRO row: Johnny, 2026-11-20, "change the proportion of the device so they fit on comfortably")
 function fitScreen() {
   const st = $('stage'), s = Math.min((innerWidth - 16) / FIT_W, (innerHeight - 16) / FIT_H);
   setPhone();

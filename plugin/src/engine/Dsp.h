@@ -23,6 +23,9 @@ class Dsp {
   std::string poll();
   /** the wavetables were made: hand them to the voices */
   void retable() { if (inst) inst->retable(); }
+  /** the MACRO knobs: the plugin's parameters set them (host: the page's 'fx' no longer does), k 0..7, v 0..127 */
+  void setMacroHost(bool host) { macroHost = host; if (inst) inst->macroHost = host; }
+  void setMacro(int k, double v) { if (inst) inst->setMacro(k, v); }
   std::string lastError;
 
  private:
@@ -32,7 +35,7 @@ class Dsp {
   void keyUp(int note);
   void allOff();
   std::unique_ptr<Instrument> inst;
-  double rate = 48000; int n30 = 0;
+  double rate = 48000; int n30 = 0; bool macroHost = false;
   json lastKit, lastFx; int lastEngines = 0;
   std::array<Key, 128> keys;
   std::array<std::vector<HeldKey>, 6> held;

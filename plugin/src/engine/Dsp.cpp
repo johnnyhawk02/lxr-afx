@@ -48,6 +48,7 @@ Params paramsOf(const json& a) {
 void Dsp::init(double sampleRate) {
   rate = sampleRate;
   inst = std::make_unique<Instrument>(sampleRate);
+  inst->macroHost = macroHost;
   for (auto& h : held) h.clear();
   if (lastEngines) inst->setEngines(lastEngines);
   if (lastKit.is_array()) inst->loadKit(numbers(lastKit));
@@ -73,6 +74,7 @@ void Dsp::msg(const json& m) {
   else if (type == "fx") { lastFx = m["fx"]; inst->setFx(m["fx"]); }
   else if (type == "engines") { lastEngines = (int)numOr(m, "n", 3); inst->setEngines(lastEngines); }
   else if (type == "release") inst->release((int)numOr(m, "sound", 0) % 6);
+  else if (type == "macro") { if (m.contains("v") && m["v"].is_number()) inst->setMacro((int)numOr(m, "i", -1), m["v"].get<double>()); }
   else if (type == "play" || type == "back") {
     const int sound = (int)numOr(m, "sound", 0); if (sound < 0 || sound > 5) return;
     Params p; const bool hasP = m.contains("params") && m["params"].is_array(); if (hasP) p = paramsOf(m["params"]);
@@ -146,6 +148,7 @@ std::string Dsp::poll() {
     for (auto& r : inst->e.routes[v]) if (r.on) { if (!first) s += ','; first = false; s += '[' + std::to_string(r.dest) + ','; appendNum(s, r.d); s += ']'; }
     s += ']';
   }
+  s += "],\"macros\":["; for (int k = 0; k < Instrument::NUM_MACROS; k++) { if (k) s += ','; appendNum(s, inst->macro(k)); }
   s += "],\"stepAt\":["; for (int v = 0; v < 6; v++) { if (v) s += ','; s += std::to_string((int)inst->e.stepPlayed[v]); }
   s += "]}";
   return s;

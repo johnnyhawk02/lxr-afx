@@ -19,6 +19,14 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   any), two rows of six. A locked key turns the header black and veils the knobs. Everything that randomises a
   whole engine or all three (INIT PATCH, random, alter, level, the ALTER amount, AUTO LEVEL, the knob padlocks)
   is in the **RANDOM** menu.
+- **MACROS**: eight big knobs in a row across the top of the synth panel, on its grid. Each one **adds to** the knobs it
+  targets, on every key of every engine, as the modulation sources do: at 0 nothing moves, turned up each target moves
+  from where the key has it by up to its depth. Click a macro's name or its list of targets for every knob that can be
+  modulated, each with a depth either way (double-click: off), and a name of its own. As they come: PITCH (coarse),
+  DECAY (decay, pitch decay), CUTOFF, RESO, DRIVE (drive, filter drive), FM (A gain, A freq), PUNCH (click volume,
+  pitch amount) and NOISE (noise mix, colour). Kept in the patch and its presets; INIT PATCH leaves them. In the
+  plugin they are the parameters **Macro 1** to **Macro 8**, so the DAW can automate and map them (with the window
+  shut too). The panel is 1780 x 1040, a row taller than it was, for them.
 - **FX and master** (the right-hand column, full height): the two send effects from Elixir Desktop (the firmware's
   delay as an echo, and its reverb, both returned at full level), then the **master**: everything, dry and FX returns, through the
   **distortion**, then a soft-knee compressor (threshold, ratio, attack, release, knee, makeup) with a

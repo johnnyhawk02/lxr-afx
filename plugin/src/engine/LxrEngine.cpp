@@ -889,7 +889,7 @@ void LxrEngine::routesFrom(int n, int src, double val) {
   for (auto& r : routes[n]) {
     const double a = r.a[src]; if (a == 0) continue;
     r.c[src] = (float)(src <= SRC_VEL ? f(a * f(f(val * 2) - 1)) : f(a * val));
-    double d = r.c[SRC_LFO]; for (int s = SRC_VEL; s <= SRC_STEP; s++) d = f(d + r.c[s]);
+    double d = r.c[SRC_LFO]; for (int s = SRC_VEL; s <= SRC_MACRO; s++) d = f(d + r.c[s]);
     r.d = d; modTo(n, r.dest, d);
   }
 }
@@ -1058,6 +1058,7 @@ void LxrEngine::renderBlock() {
     Voice& v = voices[n];
     routesFrom(n, SRC_AMP, v.kind == KIND_DRUM ? v.ampFilterInput : v.egValueOscVol);
     routesFrom(n, SRC_PITCH, v.pitchEg ? v.egPitchNow : 0);
+    routesFrom(n, SRC_MACRO, 1);  // (the MACRO knobs: their amount as it is)
   }
   for (auto& v : voices) SVF_recalcFreq(v.filter);
   for (int n = 0; n < 6; n++) if (onlyAll || only[n]) async(voices[n]);
