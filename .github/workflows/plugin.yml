@@ -1,0 +1,55 @@
+# The plugin (plugin/): builds LXR-AFX as a universal (Apple silicon + Intel) VST3, AU and standalone app on macOS,
+# checks the C++ engine against the web app's JS sample for sample, and (on main) puts the build up as the
+# "plugin-latest" release. The web app itself is untouched by this.
+name: plugin
+on:
+  push:
+    branches: [main]
+    paths: ['plugin/**', 'engine/**', 'sound/**', 'app/**', 'css/**', 'vendor/**', 'index.html', '.github/workflows/plugin.yml']
+  pull_request:
+    paths: ['plugin/**', 'engine/**', 'sound/**', 'app/**', 'css/**', 'vendor/**', 'index.html', '.github/workflows/plugin.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: plugin-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 60
+    defaults: { run: { working-directory: plugin } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Data and page from the web app
+        run: npm install --no-audit --no-fund && node tools/gen-data.mjs && node tools/bundle.mjs
+      - name: Configure
+        run: cmake -B build/cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+      - name: Build
+        run: cmake --build build/cmake --config Release --target LXR_AFX_VST3 --target LXR_AFX_AU --target LXR_AFX_Standalone --target lxr_parity -- -quiet
+      - name: Same sound as the web app (Apple silicon)
+        run: node test/parity.mjs build/cmake/Release/lxr_parity --quick
+      - name: Same sound as the web app (Intel, under Rosetta)
+        continue-on-error: true
+        run: |
+          printf '#!/bin/sh\nexec arch -x86_64 "%s"\n' "$PWD/build/cmake/Release/lxr_parity" > parity-x86 && chmod +x parity-x86
+          node test/parity.mjs ./parity-x86 --quick
+      - name: Package
+        run: |
+          A=build/cmake/LXR_AFX_artefacts/Release
+          mkdir -p out
+          for b in "$A/VST3/LXR-AFX.vst3" "$A/AU/LXR-AFX.component" "$A/Standalone/LXR-AFX.app"; do codesign --force --deep -s - "$b"; lipo -info "$(find "$b/Contents/MacOS" -type f | head -1)"; done
+          ditto -c -k --keepParent "$A/VST3/LXR-AFX.vst3" out/LXR-AFX-vst3.zip
+          ditto -c -k --keepParent "$A/AU/LXR-AFX.component" out/LXR-AFX-au.zip
+          ditto -c -k --keepParent "$A/Standalone/LXR-AFX.app" out/LXR-AFX-app.zip
+      - uses: actions/upload-artifact@v4
+        with: { name: LXR-AFX-mac, path: plugin/out/*.zip }
+      - name: Release (main only)
+        if: github.ref == 'refs/heads/main'
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete plugin-latest --yes --cleanup-tag || true
+          gh release create plugin-latest out/*.zip --prerelease --target "$GITHUB_SHA" --title "LXR-AFX plugin (latest build)" \
+            --notes "Built from ${GITHUB_SHA::7}. Unzip, put LXR-AFX.vst3 in ~/Library/Audio/Plug-Ins/VST3 (LXR-AFX.component in ~/Library/Audio/Plug-Ins/Components), then run: xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/LXR-AFX.vst3  (see plugin/README.md)"
