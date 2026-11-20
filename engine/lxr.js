@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwoow1i4';
+import { read as readTable } from './wavetables.js?v=mwoozl98';
 
 export { PAR, CC, CC2 };
 
@@ -712,7 +712,7 @@ FW[FILTER_PEAK] = [0, 2, 0, 1, -1, 0, 0];
 FW[FILTER_NAIVE_2_POLE] = [0, 0, 0, 0, 0, 1, 0];
 FW[FILTER_OFF] = [0, 0, 0, 0, 0, 0, 1];
 function voice_setFilterPos(v, x) {
-  const [k, t] = detent(x, FILTER_STEP, FILTER_ORDER.length - 1);
+  const [k, u] = detent(x, FILTER_STEP, FILTER_ORDER.length - 1), t = filterWarp(k, u);
   v.filterType = FILTER_ORDER[k];
   if (t > 0) { v.filterB = FILTER_ORDER[k + 1]; v.filterT = t; } else v.filterB = 0;
   const A = FW[v.filterType], B = t > 0 ? FW[v.filterB] : A, first = !v.fwTo;
@@ -763,15 +763,50 @@ function filterBlock(v, buf) {
   v.fFirm = 0;
 }
 
+// The TYPE dial's curve (Johnny, 2026-11-20: "a curve rather than linear control of the dial ... slower just at the
+// transition"): between two detents the blend doesn't follow the dial in a straight line. Each pair of types gets a curve
+// of its own, worked out once from how much the filter's response changes along the blend (in dB, over the audio band, at
+// a few cutoffs and resos), so equal turns of the dial make about equal changes of sound: where the sound changes fast
+// (HP into NOTCH, NOTCH through PEAK's cancelling middle, PEAK into LP2) the dial has more travel. u: how far past detent k
+let FILTER_WARPS = null;
+const WARP_N = 32;
+function filterWarp(k, u) {
+  if (u <= 0 || u >= 1) return u;
+  if (!FILTER_WARPS) {
+    const hz = Array.from({ length: 48 }, (_, i) => 20 * Math.pow(1000, i / 47)), at = [[40, 20], [64, 40], [90, 90]];
+    FILTER_WARPS = FILTER_ORDER.slice(0, -1).map((_, j) => {
+      const db = (t) => at.map(([c, r]) => filterResponseAt(c, r, j, t, hz).map((x) => Math.max(-40, 20 * Math.log10(x + 1e-9))));
+      const d = []; let prev = db(0);
+      for (let i = 1; i <= WARP_N; i++) {
+        const now = db(i / WARP_N); let s = 0;
+        now.forEach((row, a) => row.forEach((x, b) => { s += Math.abs(x - prev[a][b]); }));
+        d.push(s); prev = now;
+      }
+      const mean = d.reduce((a, b) => a + b, 0) / d.length, c = [0];
+      d.forEach((x) => c.push(c[c.length - 1] + x + 0.1 * mean)); // (a floor, so the curve never goes flat)
+      return c.map((x) => x / c[WARP_N]); // the share of the change done at t = i / WARP_N
+    });
+  }
+  // the dial's u is the share of the change: find the blend t that has done that much
+  const c = FILTER_WARPS[k]; let i = 1;
+  while (i < WARP_N && c[i] < u) i++;
+  return (i - 1 + (u - c[i - 1]) / (c[i] - c[i - 1])) / WARP_N;
+}
+
 // The filter's frequency response (not in the firmware: for the panel's FILTER CURVE). The gain (linear) at each
 // frequency of hz, for CUTOFF and RESO (knob positions, 0..127) and the TYPE dial's position, from the same sums the
 // filters work out, as small signals (the soft clipping and FLT DRIVE left out). Between two detents, the two types'
 // weights crossfaded, as filterBlock does. Also the cutoff in Hz: filterResponse.hz
 export function filterResponse(cut, reso, pos, hz) {
+  const [k, u] = detent(pos, FILTER_STEP, FILTER_ORDER.length - 1);
+  return filterResponseAt(cut, reso, k, filterWarp(k, u), hz);
+}
+// the response with types k and k + 1 blended t of the way (no warp)
+function filterResponseAt(cut, reso, k, t, hz) {
   const fn = Math.max(1e-5, valueShaperF2F(Math.min(Math.max(cut / 127, 0), 1), FILTER_SHAPER) * f(0.5 * f(0.9)));
   let q = 1 - Math.min(Math.max(reso / 127, 0), 1); if (q < 0.1) q = 0.02;
   const R = fn >= 0.4499 ? 1 : q, g = fastTan(Math.PI * fn);
-  const [k, t] = detent(pos, FILTER_STEP, FILTER_ORDER.length - 1), A = FW[FILTER_ORDER[k]], B = t > 0 ? FW[FILTER_ORDER[k + 1]] : A;
+  const A = FW[FILTER_ORDER[k]], B = t > 0 ? FW[FILTER_ORDER[k + 1]] : A;
   const w = A.map((a, i) => a + (B[i] - a) * t), wl = w[0] + w[1], wb = w[2] + 2 * R * w[3], wx = w[4] + w[6];
   const f2 = fn * 2.21, q2 = (1 - q) * 1.4 + (1 - q) / (1 - f2), c1 = 1 - f2 + f2 * q2, c2 = 1 - f2;
   filterResponse.hz = fn * REAL_FS;
