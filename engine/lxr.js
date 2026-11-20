@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwomvczh';
+import { read as readTable } from './wavetables.js?v=mwoow1i4';
 
 export { PAR, CC, CC2 };
 
@@ -745,16 +745,21 @@ function SVF_calcBlockMorph(flt, from, to, entering, buf, size) {
 // (for test/switches.test.mjs: the filter on its own)
 export const FILTER_PROBE = { make: () => { const flt = makeFilter(); SVF_init(flt); return flt; }, setReso: SVF_setReso, setCutoff: SVF_directSetFilterValue, setPos: voice_setFilterPos, block: (v, buf) => filterBlock(v, buf) };
 const sameW = (a, b) => { for (let i = 0; i < 7; i++) if (a[i] !== b[i]) return false; return true; };
-// on a detent the firmware's code runs (from one detent straight to another too: a menu switch, as the firmware does it);
-// between two, or gliding into a detent from between, the blend
+// the TYPE dial's smoothing (Johnny, 2026-11-20: "add longer smoothing to the filter type"): the weights glide towards
+// where the dial (or its modulation) has them, a time constant of FILTER_GLIDE_MS, so a turn or a jump never snaps
+const FILTER_GLIDE_MS = 30, FILTER_GLIDE = 1 - Math.exp(-BLOCK / (FILTER_GLIDE_MS / 1000 * REAL_FS));
+const FW_NEXT = new Float64Array(7);
+// settled on a detent, the firmware's code runs; between two, or gliding, the blend
 function filterBlock(v, buf) {
-  if (!v.fwTo || (!v.filterB && (v.fFirm || sameW(v.fwAt, v.fwTo)))) {
+  if (!v.fwTo || (!v.filterB && sameW(v.fwAt, v.fwTo))) {
     SVF_calcBlockZDF(v.filter, v.filterType, buf, BLOCK);
-    if (v.fwTo) v.fwAt.set(v.fwTo);
     v.fFirm = v.filterType; return;
   }
-  SVF_calcBlockMorph(v.filter, v.fwAt, v.fwTo, v.fFirm, buf, BLOCK);
-  v.fwAt.set(v.fwTo);
+  let near = true;
+  for (let i = 0; i < 7; i++) { const d = v.fwTo[i] - v.fwAt[i]; FW_NEXT[i] = v.fwAt[i] + d * FILTER_GLIDE; if (Math.abs(d) > 2e-3) near = false; }
+  if (near) FW_NEXT.set(v.fwTo);
+  SVF_calcBlockMorph(v.filter, v.fwAt, FW_NEXT, v.fFirm, buf, BLOCK);
+  v.fwAt.set(FW_NEXT);
   v.fFirm = 0;
 }
 

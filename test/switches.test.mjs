@@ -83,8 +83,8 @@ sweep('fm/mix', MODE_MAX, MODE_MAX, (v) => (v < 3 ? PAR.MIX_MOD_1 + v : undefine
     ok(z < 1.03, `filter dial ${name} (reso ${reso}, cutoff ${cut}): steps at block edges ${z.toFixed(2)}x the others (zipper)`);
   }
   for (const [w, x, y] of [[108, 90, 97], [0, 108, 100], [108, 0, 100]]) { // (w first: what the filter not playing at x last held)
-    // (from the block after the move: the move itself glides over one block)
-    const moved = play((k) => (k < 100 ? w : k < 200 ? x : y), 0.5, 0.02, 205).slice(201 * BLOCK), sat = play(() => y, 0.5, 0.02, 205).slice(201 * BLOCK);
+    // (once the move has glided in: a few hundred ms)
+    const moved = play((k) => (k < 100 ? w : k < 200 ? x : y), 0.5, 0.02, 405).slice(400 * BLOCK), sat = play(() => y, 0.5, 0.02, 405).slice(400 * BLOCK);
     const err = rms(moved.map((m, i) => m - sat[i])) / rms(sat);
     ok(err < 0.05, `filter dial ${w}, ${x} -> ${y}: ${(err * 100).toFixed(1)}% off where it settles (a cold filter)`);
   }
