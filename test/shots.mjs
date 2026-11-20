@@ -26,7 +26,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   p.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('console:', m.text()); } });
   await p.goto(url); await p.waitForTimeout(600);
   await p.screenshot({ path: `${out}/start-${w}x${h}.png` });
-  await p.click('#start-btn'); await p.waitForTimeout(800);
+  await p.mouse.click(4, 4); await p.waitForTimeout(800); // (the first press starts audio)
     for (const [ch, n] of [[1, 52], [1, 60], [1, 70], [1, 55]]) { await p.evaluate(([c, k]) => window.afx.noteOn(c, k, 110), [ch, n]); await p.waitForTimeout(150); }
   // an edit goes to the last drum key played (G2), not the base
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3') || 'null'));
@@ -437,7 +437,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
 // LFO, LEVEL, the sends) are open again, a knob locked by hand stays locked, and the sounds are as they were
 { const p = await b.newPage({ viewport: { width: 1440, height: 790 } });
   p.on('pageerror', (e) => { errors++; console.log('page error (kept settings):', e.message); });
-  await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.click('#start-btn'); await p.waitForTimeout(500);
+  await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.mouse.click(4, 4); await p.waitForTimeout(500);
   const sc = VOICE_SCHEMAS[0], D = sc.find((e) => e.label === 'decay').par, old = VOICE_SCHEMAS.flat().filter((e) => e.rand === 'still' || e.rand === 'mix').map((e) => e.par);
   const sig = () => p.evaluate(() => JSON.stringify(afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) o.push(afx.patch(i, k)); return o; })));
   await p.evaluate(() => { document.getElementById('bpm-up').click(); document.getElementById('bpm-down').click(); }); await p.waitForTimeout(500); const before = await sig(); // (the page has kept its settings by now)
@@ -456,8 +456,6 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
   const bad = (what, ...x) => { errors++; console.log(`phone ${w}x${h}, ${what}:`, J(x).slice(0, 500)); };
   p.on('pageerror', (e) => bad('page error', e.message));
   await p.goto(url); await p.waitForFunction(() => window.afxReady); await p.waitForTimeout(400);
-  const start = await p.evaluate(() => getComputedStyle(document.getElementById('start-phone')).display !== 'none' && !document.getElementById('start').hidden);
-  await p.tap('#start-btn'); await p.waitForTimeout(500);
   const lay = await p.evaluate(() => { const r = (e) => e.getBoundingClientRect(), box = document.querySelector('.blbox');
     const btns = [...box.querySelectorAll('button, select, input, .htrack')].filter((e) => e.offsetParent !== null);
     return { phone: document.documentElement.classList.contains('phone'), open: !document.getElementById('blender').hidden,
@@ -466,7 +464,7 @@ for (const [w, h] of [[412, 780], [412, 915], [360, 640]]) {
       small: btns.filter((e) => e.tagName === 'BUTTON' && !e.closest('.bllist') && r(e).height < 38).map((e) => e.id || e.textContent),
       hiddenOk: ['bl-close', 'bl-key'].every((id) => document.getElementById(id).offsetParent === null),
       shown: [...document.querySelectorAll('.top, .main, .keyhead, #faders, #pv')].filter((e) => e.offsetParent !== null).length }; });
-  if (!start || !lay.phone || !lay.open || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.wide.length || lay.small.length || !lay.hiddenOk || lay.shown) bad('layout', start, lay);
+  if (!lay.phone || !lay.open || lay.scroll[0] > 0 || lay.scroll[1] > 0 || lay.wide.length || lay.small.length || !lay.hiddenOk || lay.shown) bad('layout', lay);
   if (w === 412 && h === 915) await p.screenshot({ path: `${out}/phone-blender.png` });
   // a blend, altered, modulated, saved; Escape doesn't close it
   const tr = await p.locator('#bl-bars .htrack').boundingBox(); await p.touchscreen.tap(tr.x + tr.width * 0.75, tr.y + tr.height / 2); await p.waitForTimeout(200);
