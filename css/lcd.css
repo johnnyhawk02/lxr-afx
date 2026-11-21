@@ -953,16 +953,11 @@ html.phone .khact .keyrand { display: none; }
    leaves it live */
 .morphtime { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .morphtime h3 { display: flex; justify-content: space-between; }
-.morphtime h3 .dim { margin-left: 0; font-size: calc(17px * var(--fz, 1)); color: var(--ink); }
-/* drawn in the panel's own ink, no browser white: a thin ink track (filled to the thumb) and a solid ink block */
-.morphtime input { -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; margin: 0; height: 16px; background: transparent; cursor: pointer; --f: 0%; }
-.morphtime input:focus { outline: none; }
-.morphtime input:focus-visible { outline: 1px dashed var(--ink); outline-offset: 2px; }
-.morphtime input::-webkit-slider-runnable-track { height: 4px; border: 0; background: linear-gradient(90deg, var(--ink) var(--f), rgb(var(--ink-rgb) / .25) var(--f)); }
-.morphtime input::-moz-range-track { height: 4px; border: 0; background: rgb(var(--ink-rgb) / .25); }
-.morphtime input::-moz-range-progress { height: 4px; background: var(--ink); }
-.morphtime input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 16px; margin-top: -6px; border: 0; border-radius: 0; background: var(--ink); }
-.morphtime input::-moz-range-thumb { width: 10px; height: 16px; border: 0; border-radius: 0; background: var(--ink); }
+/* a knob like the macros', centred in its two cells */
+.morphtime { flex: 1; }
+.morphtime .mtknob { flex: 1; justify-content: center; }
+.morphtime .mtknob .knob { width: 72px; height: 72px; }
+.morphtime .mtknob .lab { display: none; }
 
 /* FILTER IN (Johnny, 2026-11-20): three small [x] boxes, TONE, NOISE and CLICK, stacked in one cell, like REVERB's
    POST DISTORTION box */

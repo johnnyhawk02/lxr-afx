@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq4bra2';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq4bra2';
-import { presetName, jumble } from './names.js?v=mwq4bra2';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq4bra2';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq4bra2';
-import { breed, isDud } from '../sound/breed.js?v=mwq4bra2';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq4bra2';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq4bra2';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq4bra2';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq4bra2';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq4bra2';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq4bra2';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq8go9v';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq8go9v';
+import { presetName, jumble } from './names.js?v=mwq8go9v';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq8go9v';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq8go9v';
+import { breed, isDud } from '../sound/breed.js?v=mwq8go9v';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq8go9v';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq8go9v';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq8go9v';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq8go9v';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq8go9v';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq8go9v';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq4bra2', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq8go9v', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -1672,7 +1672,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq4bra2').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq8go9v').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2874,16 +2874,23 @@ function drawZones() {
 // the tempo: - and + by 1 (Shift: 10), double-click for 120. STEP SEQ, a synced echo and RETURN all follow it live
 function setBpm(v) { S.fx.tempo.bpm = clamp(Math.round(v), 40, 300); drawBpm(); sendFx(); }
 function drawBpm() { $('bpm').textContent = S.fx.tempo.bpm; }
-// MORPH TIME (beside the keyboard): the slider's 0..100 is 0..2 s on a square curve (fine at the short end), kept in
-// the patch as S.fx.tempo.morph (ms) and sent with the effects
+// MORPH TIME (beside the keyboard): a knob like the others, its 0..100 is 0..2 s on a square curve (fine at the short
+// end), kept in the patch as S.fx.tempo.morph (ms) and sent with the effects
 // (function declarations: applyFx may draw it before this line has run)
 function morphMs(x) { return Math.round(2000 * (x / 100) ** 2); }
 function morphText(ms) { return !ms ? 'OFF' : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s`; }
-function drawMorph() { const ms = S.fx.tempo.morph || 0; $('morph').value = Math.round(100 * Math.sqrt(ms / 2000)); $('morph-val').textContent = morphText(ms); morphFill(); }
-function morphFill() { const r = $('morph'); r.style.setProperty('--f', `${r.value}%`); } // (the ink part of the track, up to the thumb)
-$('morph').addEventListener('input', (e) => { S.fx.tempo.morph = morphMs(+e.target.value); $('morph-val').textContent = morphText(S.fx.tempo.morph); morphFill(); sendFx(); });
-$('morph').addEventListener('dblclick', () => { S.fx.tempo.morph = 0; drawMorph(); sendFx(); });
-drawMorph();
+var morphKnob = null, morphReady = false; // (var: an early applyFx finds them unset, and the knob comes below)
+function drawMorph() {
+  if (!morphReady) return;
+  if (!morphKnob) {
+    morphKnob = gknob('', { max: 100, dflt: 0, show: (v) => morphText(morphMs(v)), get: () => Math.round(100 * Math.sqrt((S.fx.tempo.morph || 0) / 2000)),
+      set: (v) => { S.fx.tempo.morph = morphMs(v); sendFx(); } });
+    morphKnob.classList.add('mtknob'); morphKnob.querySelector('.knob').setAttribute('aria-label', 'Morph time, off to 2 seconds');
+    $('morphtime').append(morphKnob);
+  }
+  morphKnob._draw(); // (its own draw: the editor's rebuild clears faderDraws)
+}
+morphReady = true; drawMorph();
 $('bpm-down').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm - (e.shiftKey ? 10 : 1)));
 $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey ? 10 : 1)));
 $('bpm').addEventListener('dblclick', () => setBpm(120));
