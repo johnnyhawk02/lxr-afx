@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq233o1';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq233o1';
-import { presetName, jumble } from './names.js?v=mwq233o1';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq233o1';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq233o1';
-import { breed, isDud } from '../sound/breed.js?v=mwq233o1';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq233o1';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq233o1';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq233o1';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq233o1';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq233o1';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq233o1';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq3bngq';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq3bngq';
+import { presetName, jumble } from './names.js?v=mwq3bngq';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq3bngq';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq3bngq';
+import { breed, isDud } from '../sound/breed.js?v=mwq3bngq';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq3bngq';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq3bngq';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq3bngq';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq3bngq';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq3bngq';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq3bngq';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq233o1', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq3bngq', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -585,13 +585,12 @@ let faderDraws = [];
 const DICE_PIPS = { tl: [5, 5], tr: [19, 5], ml: [5, 12], mr: [19, 12], bl: [5, 19], br: [19, 19], c: [12, 12] };
 const DICE_FACES = [[], ['c'], ['tl', 'br'], ['tl', 'c', 'br'], ['tl', 'tr', 'bl', 'br'], ['tl', 'tr', 'c', 'bl', 'br'], ['tl', 'tr', 'ml', 'mr', 'bl', 'br']];
 const diceBtn = document.createElement('button');
-diceBtn.type = 'button'; diceBtn.className = 'dicebtn'; diceBtn.id = 'rand-key';
+diceBtn.type = 'button'; diceBtn.className = 'btn'; diceBtn.id = 'rand-key'; diceBtn.textContent = 'DICE'; // (a plain button like the rest of THIS KEY, Johnny 2026-11-21; the phone view keeps its pip dice)
 diceBtn.title = 'NEW SOUND (K): a different bucket sound on this key only. UNDO takes it back; LEARN can put it on a button';
 diceBtn.setAttribute('aria-label', 'New sound on this key');
-diceBtn.innerHTML = `<span class="die"><svg viewBox="0 0 28 28" aria-hidden="true">${Object.entries(DICE_PIPS).map(([k, [x, y]]) => `<rect class="pip" data-p="${k}" x="${x}" y="${y}" width="4" height="4"/>`).join('')}</svg></span>`;
 let diceFace = 0, diceT = 0;
-$('pv-die').innerHTML = diceBtn.querySelector('.die').innerHTML; // the phone view's dice: the same face
-const dice = [diceBtn, $('pv-dice')];
+$('pv-die').innerHTML = `<svg viewBox="0 0 28 28" aria-hidden="true">${Object.entries(DICE_PIPS).map(([k, [x, y]]) => `<rect class="pip" data-p="${k}" x="${x}" y="${y}" width="4" height="4"/>`).join('')}</svg>`; // the phone view's dice
+const dice = [$('pv-dice')];
 function showDice(n) { diceFace = n; diceBtn.dataset.face = n; for (const d of dice) for (const r of d.querySelectorAll('.pip')) r.classList.toggle('on', DICE_FACES[n].includes(r.dataset.p)); }
 function rollDice() {
   clearInterval(diceT);
@@ -1520,7 +1519,7 @@ function drawEditKey() {
   const here = editCount(edits[note]), from = edits[note] && edits[note]._kit;
   const locked = keyLocked(S.sel, note);
   $('clear-key').disabled = !here || locked;
-  $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK KEY';
+  $('lock-key').setAttribute('aria-pressed', locked); $('lock-key').querySelector('span').textContent = locked ? 'LOCKED' : 'LOCK';
   diceBtn.disabled = locked; $('alter-key').disabled = locked; $('paste-key').disabled = locked || !clip;
   // the key header: the key, its engine, and what it plays
   const he = handEdits(edits[note]), hand = he ? ` · ${he} edit${he === 1 ? '' : 's'}` : '';
@@ -1671,7 +1670,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq233o1').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq3bngq').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
