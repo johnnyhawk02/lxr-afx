@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwq4bra2">
-<link rel="stylesheet" href="css/grey.css?v=mwq4bra2">
+<link rel="stylesheet" href="css/lcd.css?v=mwq8go9v">
+<link rel="stylesheet" href="css/grey.css?v=mwq8go9v">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -191,9 +191,8 @@
       </nav>
     </div>
     <div class="khsec khview">
-      <div class="morphtime" title="MORPH TIME: how long a key you play takes to glide from the sound the engine was making to its own (the knobs slide, the menus flip halfway). OFF: at once">
-        <h3>MORPH <span class="dim" id="morph-val">OFF</span></h3>
-        <input type="range" id="morph" min="0" max="100" step="1" value="0" aria-label="Morph time: how long a key takes to glide from the last key's sound to its own, off to 2 seconds">
+      <div class="morphtime" id="morphtime" title="MORPH TIME: how long a key you play takes to glide from the sound the engine was making to its own (the knobs slide, the menus flip halfway). OFF: at once. Double-click: off">
+        <h3>MORPH</h3>
       </div>
     </div>
     <div class="khsec khact"><h3>THIS KEY <span class="dim">DICE: <span class="dice-src"></span></span></h3>
@@ -331,6 +330,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwq4bra2"></script>
+<script type="module" src="app/main.js?v=mwq8go9v"></script>
 </body>
 </html>
