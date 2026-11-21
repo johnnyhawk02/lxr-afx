@@ -2,18 +2,18 @@
 // the base). The editor changes the base; the morphs follow from it. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, MOD_TARGETS, MOD_TARGET_VOICE_RANGES, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, voiceOfTarget, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpmbm84';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpmbm84';
-import { presetName, jumble } from './names.js?v=mwpmbm84';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpmbm84';
-import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpmbm84';
-import { breed, isDud } from '../sound/breed.js?v=mwpmbm84';
-import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpmbm84';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwpmbm84';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpmbm84';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpmbm84';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpmbm84';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpmbm84';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, STEP_TIMES, slewMs, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpn7jds';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpn7jds';
+import { presetName, jumble } from './names.js?v=mwpn7jds';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpn7jds';
+import { MAKERS, recipe, recipesFor, blend } from '../sound/makers.js?v=mwpn7jds';
+import { breed, isDud } from '../sound/breed.js?v=mwpn7jds';
+import { morphKey, combinedAmount, newSeed, pitchOffset, keyDistance, BASE_NOTE } from '../sound/morph.js?v=mwpn7jds';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwpn7jds';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpn7jds';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpn7jds';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpn7jds';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpn7jds';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -111,7 +111,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpmbm84', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpn7jds', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.steps) showSteps(e.data.steps); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -1734,7 +1734,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpmbm84').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpn7jds').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2492,6 +2492,20 @@ const cleanName = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9 .+#-]/g
 const cleanLabel = (s) => String(s ?? '').replace(/[<>&\u0000-\u001f]/g, '').slice(0, 48); // (labels are shown as HTML)
 const intIn = (x, lo, hi) => clamp(Math.round(Number(x)) || 0, lo, hi);
 const numIn = (x, lo, hi) => clamp(Math.round(Number(x) * 100) / 100 || 0, lo, hi); // (a knob's value: a decimal kept to two places)
+// a preset's MACRO knobs, checked and tidied: settings 0..127, SLEW 0..2 s, names, and targets [knob, depth -100..100]
+// (none, or not an object: the default macros)
+function tidyMacros(m) {
+  const d = structuredClone(FX_DEFAULTS.macros);
+  if (!m || typeof m !== 'object') return d;
+  const arr = (x) => (Array.isArray(x) ? x : []);
+  return {
+    v: d.v.map((x, k) => (Number.isFinite(Number(arr(m.v)[k])) ? numIn(arr(m.v)[k], 0, 127) : x)),
+    slew: Number.isFinite(Number(m.slew)) ? intIn(m.slew, 0, 2000) : d.slew,
+    n: d.n.map((x, k) => (typeof arr(m.n)[k] === 'string' ? cleanLabel(arr(m.n)[k]).toLowerCase().slice(0, 12) : x)),
+    t: Array.isArray(m.t) ? d.t.map((_, k) => arr(m.t[k]).filter((x) => Array.isArray(x) && MOD_DIALS.includes(x[0]) && Number(x[1]))
+      .slice(0, MOD_DIALS.length).map(([u, dep]) => [u, intIn(dep, -100, 100)]).filter(([, dep]) => dep)) : d.t,
+  };
+}
 // a preset from storage or a file, checked and tidied: only what a patch can hold gets in (null: not a preset)
 function tidyPreset(p) {
   const d = p && p.data;
@@ -2525,6 +2539,7 @@ function tidyPreset(p) {
   const fx = {};
   for (const k in FX_MAX) { fx[k] = {}; for (const f in FX_MAX[k]) if (d.fx && d.fx[k] && Number.isFinite(Number(d.fx[k][f]))) fx[k][f] = intIn(d.fx[k][f], k === 'tempo' && f === 'bpm' ? 40 : 0, FX_MAX[k][f]); }
   if (fx.echo.duck === undefined) fx.echo.duck = 0; // (saved before the echo had DUCK: off)
+  fx.macros = tidyMacros(d.fx && d.fx.macros); // (saved before presets kept the MACRO knobs: the default macros)
   return { id: /^[a-z0-9]{6,24}$/.test(p.id) ? p.id : newId(), name: cleanName(p.name) || 'UNNAMED', t: Number(p.t) || 0, data: { values, keys, fx, pos: POS_RULE, mod: MOD_RULE, engines } };
 }
 const newId = () => Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36).padStart(4, '0');
@@ -2543,7 +2558,7 @@ const presetDirty = () => { const p = presetSaved(); return !p || canon(p.data) 
 const newName = () => presetName(Math.random, new Set([...presets.map((p) => p.name), S.preset.name]));
 // the effects as given (a preset's, or an UNDO's), shown and sent
 function applyFx(fx) {
-  for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], fx[k]);
+  for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], structuredClone(fx[k])); // (a copy: turning a MACRO mustn't change the preset kept)
   if (fx.tempo && fx.tempo.morph === undefined) S.fx.tempo.morph = 0; // (a patch from before MORPH TIME: off)
   drawBpm(); drawMorph(); drawRet(); sendFx(); drawFaders();
   if (fx.macros) S.fx.macros.v.forEach((v, i) => send({ type: 'macro', i, v })); // (in the plugin the DAW's parameters hold them)
