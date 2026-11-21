@@ -15,6 +15,7 @@ LxrProcessor::LxrProcessor()
     addParameter(macros[k]);
     macroNow[k] = -1;
   }
+  for (auto& c : ccMacro) c = -1;
   inbox.reserve(256); work.reserve(256);
 }
 LxrProcessor::~LxrProcessor() { if (tableThread.joinable()) tableThread.join(); }
@@ -67,6 +68,14 @@ void LxrProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuff
     const int st = d[0], d1 = msg.getRawDataSize() > 1 ? d[1] : 0, d2 = msg.getRawDataSize() > 2 ? d[2] : 0;
     dsp.midi(st, d1, d2);
     const int t = st & 0xf0;
+    if (t == 0xb0 && (st & 0x0f) == 0 && d1 < 128) { // channel 1, a CC MIDI LEARN put on a MACRO: its parameter (the DAW hears it)
+      const int k = ccMacro[d1].load(std::memory_order_relaxed);
+      if (k >= 0 && k < NUM_MACROS) {
+        const float v = juce::jlimit(0.0f, 1.0f, d2 / 127.0f);
+        if (v != macros[k]->get()) macros[k]->setValueNotifyingHost(v);
+        if (v != macroNow[k]) { macroNow[k] = v; dsp.setMacro(k, (double)v * 127); }
+      }
+    }
     if (t == 0x80 || t == 0x90 || t == 0xb0) {
       if (!seen.empty()) seen += ',';
       seen += '[' + std::to_string(st) + ',' + std::to_string(d1) + ',' + std::to_string(d2) + ']';
@@ -114,6 +123,22 @@ void LxrProcessor::macroFromPage(const lxr::json& m) {
   if (g == -1) macros[k]->endChangeGesture();
 }
 
+// the page's saved knob map (ccMap: { "21": { "t": "macro", "k": 0 }, ... }): which CCs move which macro
+void LxrProcessor::ccFromStore(const std::string& store) {
+  int m[128]; for (auto& x : m) x = -1;
+  try {
+    const auto s = lxr::json::parse(store);
+    if (s.is_object() && s.contains("ccMap") && s["ccMap"].is_object())
+      for (auto it = s["ccMap"].begin(); it != s["ccMap"].end(); ++it) {
+        const auto& t = it.value();
+        if (!t.is_object() || t.value("t", "") != "macro" || !t.contains("k") || !t["k"].is_number()) continue;
+        const int k = t["k"].get<int>(), cc = juce::String(it.key()).getIntValue();
+        if (k >= 0 && k < NUM_MACROS && cc >= 0 && cc < 128) m[cc] = k;
+      }
+  } catch (...) {}
+  for (int i = 0; i < 128; i++) ccMacro[i].store(m[i], std::memory_order_relaxed);
+}
+
 // a project's saved page state: its MACRO settings onto the parameters
 void LxrProcessor::macrosFromStore(const std::string& store) {
   try {
@@ -130,7 +155,7 @@ void LxrProcessor::pageState(const juce::String& message) {
   try {
     auto j = lxr::json::parse(message.toStdString());
     std::lock_guard<std::mutex> l(stateMx);
-    if (j.contains("store") && j["store"].is_string()) storeText = j["store"].get<std::string>();
+    if (j.contains("store") && j["store"].is_string()) { storeText = j["store"].get<std::string>(); ccFromStore(storeText); }
     if (j.contains("keys") && j["keys"].is_array()) keys = std::move(j["keys"]);
   } catch (...) {}
 }
@@ -181,6 +206,7 @@ void LxrProcessor::setStateInformation(const void* data, int sizeInBytes) {
       keys = j["keys"].is_array() ? j["keys"] : lxr::json::array();
       if (!storeText.empty()) restore["store"] = lxr::json::parse(storeText);
       if (!storeText.empty()) macrosFromStore(storeText);
+      ccFromStore(storeText);
       restore["keys"] = keys;
     }
     push(std::move(restore));
