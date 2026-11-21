@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq42j4n';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq42j4n';
-import { presetName, jumble } from './names.js?v=mwq42j4n';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq42j4n';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq42j4n';
-import { breed, isDud } from '../sound/breed.js?v=mwq42j4n';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq42j4n';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq42j4n';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq42j4n';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq42j4n';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq42j4n';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq42j4n';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq4bra2';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq4bra2';
+import { presetName, jumble } from './names.js?v=mwq4bra2';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq4bra2';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq4bra2';
+import { breed, isDud } from '../sound/breed.js?v=mwq4bra2';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq4bra2';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq4bra2';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq4bra2';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq4bra2';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq4bra2';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq4bra2';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq42j4n', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq4bra2', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -1672,7 +1672,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq42j4n').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq4bra2').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -1725,6 +1725,18 @@ function applyKnobSize(v, keep) {
 }
 $('knob-size').addEventListener('input', (e) => { applyKnobSize(e.target.value, true); detail(`knob size: <em>${knobSizeName(+e.target.value)}</em>`); });
 { let v = KNOB_SIZE_DEFAULT; try { const k = localStorage.getItem(KNOB_SIZE_STORE); if (k !== null && k !== '') v = +k; } catch (e) { /* the default */ } applyKnobSize(v, false); }
+// FONT SIZE: the slider scales every label, value and menu (--font-zoom, read by --fz in css/lcd.css), 90% to 130%,
+// 110% by default (a little bigger than it was). The type only: the cells and the grid never move. Kept in this browser.
+// Johnny, 2026-11-21: hard to read the text on the MacBook
+const FONT_SIZE_STORE = 'lxr-afx-font-size', FONT_SIZE_DEFAULT = 110;
+function applyFontSize(v, keep) {
+  v = Math.round(Math.min(130, Math.max(90, Number.isFinite(+v) ? +v : FONT_SIZE_DEFAULT)) / 5) * 5;
+  document.documentElement.style.setProperty('--font-zoom', (v / 100).toFixed(2));
+  $('font-size').value = v; $('font-size-val').textContent = v + '%';
+  if (keep) { try { localStorage.setItem(FONT_SIZE_STORE, String(v)); } catch (e) { /* not kept */ } }
+}
+$('font-size').addEventListener('input', (e) => { applyFontSize(e.target.value, true); detail(`font size: <em>${e.target.value}%</em>`); });
+{ let v = FONT_SIZE_DEFAULT; try { const k = localStorage.getItem(FONT_SIZE_STORE); if (k !== null && k !== '') v = +k; } catch (e) { /* the default */ } applyFontSize(v, false); }
 // KNOB STYLE (the GREY look): CHICKEN head, ROUND, RIBBED or RUBBER, drawn flat (css/grey.css) and in 3D (app/panel3d.js).
 // Kept in this browser. Johnny, 2026-11-19: "give me a choice of knobs"
 const KNOB_STYLE_STORE = 'lxr-afx-knob-style', KNOB_STYLES = ['chicken', 'round', 'ribbed', 'rubber'], KNOB_STYLE_DEFAULT = 'ribbed'; // (Johnny: "i want these knobs by default")
