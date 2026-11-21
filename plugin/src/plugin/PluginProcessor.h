@@ -3,6 +3,7 @@
 // a queue; the meters come back the same way. The page's state (its localStorage) is kept in the DAW's project.
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 
 #include <atomic>
 #include <mutex>
@@ -52,6 +53,14 @@ class LxrProcessor : public juce::AudioProcessor {
   static constexpr int NUM_MACROS = 8;
   juce::AudioParameterFloat* macros[NUM_MACROS] = {};
   double rate() const { return sr.load(); }
+
+  // ---- the editor's page (PluginEditor; message thread only) ----
+  // The webview outlives the editor: shutting the window only takes it off screen, so opening it again shows the page
+  // at once, as it was, with no reload and no splash. pageGen is the generation() it was loaded for, pageShared the
+  // shared settings it knows: when either is out of date the next editor loads a fresh page.
+  std::unique_ptr<juce::WebBrowserComponent> page;
+  int pageGen = -1;
+  std::string pageShared;
 
  private:
   void push(lxr::json m);

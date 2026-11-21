@@ -28,6 +28,8 @@ The plugin plays MIDI channel 1, with the keys and zones laid out as in the web 
 
 **Knobs and menus** are the web page itself. Everything you change goes to the engine just as it goes to the AudioWorklet in the browser.
 
+**The window** keeps its page loaded while it's shut, so opening it again is instant, just as you left it (no reload, no splash). Only loading a project, or changing a shared setting (the LOOK, presets...) in another copy, makes the next window load the page afresh. While a page loads, the window shows the panel's colour, never black.
+
 **Saving:**
 - Each plugin's sound (the page's `lxr-afx-v3` state: the sounds, keys, locks, FX) is saved in the DAW project.
 - The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/LXR-AFX/shared.json`.
