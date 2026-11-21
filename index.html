@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwq8w4vi">
-<link rel="stylesheet" href="css/grey.css?v=mwq8w4vi">
+<link rel="stylesheet" href="css/lcd.css?v=mwqeg5cn">
+<link rel="stylesheet" href="css/grey.css?v=mwqeg5cn">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -57,11 +57,6 @@
           <button class="btn" id="preset-save-new" title="Keep this patch as another preset, under a new name; the one it came from stays as it was saved">SAVE AS NEW</button>
           <button class="btn" id="preset-revert" title="Go back to this preset as it was saved (UNDO brings your changes back)">REVERT</button>
         </div>
-        <h3>START AGAIN</h3>
-        <div class="randrow">
-          <button class="btn" id="init-patch" title="A new patch: every key of all zones gets a fresh bucket sound (levelled and panned as RANDOM ALL deals them), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">RANDOM PATCH</button>
-          <span class="dim note" id="init-info"></span>
-        </div>
         <h3>SAVED <span class="dim" id="preset-count"></span></h3>
         <div class="plist" id="preset-list"></div>
         <h3>FILE</h3>
@@ -74,22 +69,18 @@
     </div>
     <div class="topacts">
     <div class="menu" id="menu">
-      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds, a nudge or even levels for a whole engine or all of them, and how much">RANDOM ▾</button>
+      <button class="btn" id="menu-btn" aria-haspopup="true" aria-expanded="false" title="New sounds or a nudge for the whole patch or one engine, and how much">RANDOM ▾</button>
       <div class="menupanel textmenu" id="menu-panel" role="menu" hidden>
-        <h3>ALL ENGINES</h3>
-        <button class="mi" role="menuitem" id="kit-scatter" title="Every key of all engines gets a sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM ALL</button>
+        <h3>WHOLE PATCH</h3>
+        <button class="mi" role="menuitem" id="init-patch" title="A new patch: every key of all zones gets a fresh bucket sound (levelled and panned), 30% of the keys a reverb send and 20% an echo send. Locked keys and hand edits are replaced; a knob with a closed padlock keeps its setting on every key. BPM goes back to 120 and the echo, reverb, distortion, compressor and output level to their starting settings; RETURN and the zone levels stay. UNDO takes it all back">NEW PATCH</button>
         <button class="mi" role="menuitem" id="kit-alter" title="Nudge every key of all engines around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER ALL</button>
-        <button class="mi" role="menuitem" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
         <h3><span id="rand-name">ENGINE 1</span> ONLY</h3>
         <button class="mi" role="menuitem" id="scatter" title="Every key of this engine gets a different sound of its type from the sound bucket. Locked keys stay, and so does every knob with a closed padlock">RANDOM</button>
         <button class="mi" role="menuitem" id="alter" title="Nudge every key of this engine around what it plays now, by the ALTER amount. Locked keys stay, and so does every knob with a closed padlock">ALTER</button>
-        <button class="mi" role="menuitem" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">EVEN LEVELS</button>
         <h3>MORPH ACROSS THE KEYS</h3>
         <button class="mi" role="menuitem" id="morph-keys" title="The lowest key's sound to the highest key's, every key between a step of the way from one to the other (across every engine). The two end keys stay as they are, so set them first; an end with no sound of its own gets a bucket sound. Gains slide, a part that's off at one end fades in with the other end's settings, switches flip halfway. Locked keys and knobs with a closed padlock stay. UNDO takes it back">MORPH KEYS</button>
-        <button class="mi" role="menuitem" id="morph-rand" title="The lowest key's sound to the highest key's, as MORPH KEYS does, but every key between gets a random spot between the two instead of an even step, so neighbouring keys can be far apart. The two end keys stay as they are. Press again for new spots. UNDO takes it back">RANDOM MORPH KEYS</button>
         <button class="mi" role="menuitem" id="morph-ends" title="A new kick on the lowest key and something else (a snare, clap, rim, perc, cowbell, hat or cymbal) on the highest, then every key between morphed from one to the other, as MORPH KEYS does. Press again for another pair. UNDO takes it back">NEW ENDS</button>
-        <button class="mi" role="menuitem" id="morph-run" title="A kick, a snare, a perc and a closed hat on four keys spread evenly from the lowest to the highest, every key between two of them morphed from one to the next. Press again for new ones. UNDO takes it back">KICK &gt; HAT</button>
-        <button class="mi" role="menuitem" id="morph-ksh" title="A kick on the lowest key, a snare in the middle and a hihat on the highest, each a bucket sound as it is, then every key between gets a random spot along kick to snare to hat. Press again for new sounds and spots. UNDO takes it back">RANDOM KICK &gt; SNARE &gt; HAT</button>
+        <button class="mi" role="menuitem" id="morph-ksh" title="A kick on the lowest key, a snare in the middle and a hihat on the highest, each a bucket sound as it is, then every key between gets a random spot along kick to snare to hat. Press again for new sounds and spots. UNDO takes it back">KICK &gt; SNARE &gt; HAT</button>
         <h3>NEW SOUNDS ARE</h3>
         <div class="srcrow" role="group">
         <button class="mi" role="menuitemradio" id="src-kit" data-src="kit" aria-pressed="true" title="A sound from the bucket as it is">AS THEY ARE</button>
@@ -106,7 +97,6 @@
         <button class="mi" role="menuitem" id="lock-none" title="Open every knob's padlock, on all engines">UNLOCK ALL</button>
       </div>
     </div>
-    <button class="btn" id="blend-btn" aria-pressed="false" title="SOUNDMAKER (B): blend two sounds from the bucket into a new one, and save it to the bucket">SOUNDMAKER<kbd>B</kbd></button>
 
     <div class="menu" id="smenu">
       <button class="btn" id="settings-btn" aria-haspopup="true" aria-expanded="false" title="OPTIONS: SETUP (tempo, held keys, AUTO LEVEL, the keyboard, the hardware knobs) and LOOK (colours, knobs, lens)">OPTIONS ▾</button>
@@ -119,7 +109,12 @@
         <h3>PLAYING</h3>
         <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
         <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">HELD KEY BACK</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
+        <h3>LEVELS</h3>
         <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
+        <div class="randrow">
+          <button class="btn" id="kit-level" title="Even out the whole key set as it is now: every key of all engines is measured and trimmed to its engine's level, its sound untouched (locked keys stay)">EVEN ALL</button>
+          <button class="btn" id="level" title="Even out this engine as it is now: every key is measured and trimmed to the engine's level, its sound untouched (locked keys stay)">EVEN <span id="level-name">ENGINE 1</span></button>
+        </div>
         <h3>KEYBOARD</h3>
         <div class="lowkey" role="group" aria-label="How many engines share the keys"><span class="dim">ENGINES</span><button class="btn sm" id="eng-down" title="One engine fewer: the keys split into fewer, wider zones">−</button><b class="lcdbox" id="engines">3</b><button class="btn sm" id="eng-up" title="One engine more (up to 6): each plays one note at a time on its own zone">+</button></div>
         <div class="lowkey" role="group" aria-label="Lowest key of the layout"><span class="dim">LOW KEY</span><button class="btn sm" id="low-down" title="Move the whole layout down an octave">−</button><b class="lcdbox" id="low-key"></b><button class="btn sm" id="low-up" title="Move the whole layout up an octave">+</button></div>
@@ -127,6 +122,10 @@
         <div class="randrow">
           <button class="btn" id="learn" title="Map a knob: press, click a control on screen, turn the knob">LEARN</button>
           <button class="btn" id="cc-reset" title="Knobs back to the Bass Station 2 map">BASS STATION 2</button>
+        </div>
+        <h3>TOOLS</h3>
+        <div class="randrow">
+          <button class="btn" id="blend-btn" aria-pressed="false" title="SOUNDMAKER (B): blend two sounds from the bucket into a new one, and save it to the bucket">SOUNDMAKER<kbd>B</kbd></button>
         </div>
         </div>
         <div class="optpane" id="look-panel" role="tabpanel" hidden>
@@ -191,8 +190,8 @@
       </nav>
     </div>
     <div class="khsec khview">
-      <div class="morphtime" id="morphtime" title="MORPH TIME: how long a key you play takes to glide from the sound the engine was making to its own (the knobs slide, the menus flip halfway). OFF: at once. Double-click: off">
-        <h3>MORPH</h3>
+      <div class="morphtime" id="morphtime" title="GLIDE: how long a key you play takes to glide from the sound the engine was making to its own (the knobs slide, the menus flip halfway). OFF: at once. Double-click: off">
+        <h3>GLIDE</h3>
       </div>
     </div>
     <div class="khsec khact"><h3>THIS KEY <span class="dim">DICE: <span class="dice-src"></span></span></h3>
@@ -235,8 +234,7 @@
     <div class="pv-send" id="pv-echo"><span>ECHO</span><div class="track" role="slider" aria-label="This key's echo send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
     <div class="pv-send" id="pv-reverb"><span>REVERB</span><div class="track" role="slider" aria-label="This key's reverb send" aria-valuemin="0" aria-valuemax="127"><i></i></div><output>0</output></div>
     <div class="pv-row">
-      <button class="btn two" id="pv-init" aria-pressed="false">INIT PATCH</button>
-      <button class="btn two" id="pv-random">RANDOM ALL</button>
+      <button class="btn four" id="pv-init" aria-pressed="false">NEW PATCH</button>
       <button class="btn" id="pv-undo" disabled>UNDO</button>
     </div>
     <div class="pv-msg" id="pv-msg">Press a pad to play its key. NEW SOUND gives that key another sound.</div>
@@ -330,6 +328,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwq8w4vi"></script>
+<script type="module" src="app/main.js?v=mwqeg5cn"></script>
 </body>
 </html>

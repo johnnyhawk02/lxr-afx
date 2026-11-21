@@ -85,8 +85,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   learned button) swaps just the key you last played for another bucket sound, leaving the rest of the set alone.
 - **LOCK KEY** (or L) freezes the key you last played: its whole sound and pitch are kept, and nothing (RANDOM,
   the other randomisers, reset, clear) changes it until you unlock it. Locked keys show a padlock on the key strip, a key you edited by hand a dot.
-- **INIT PATCH** (top of the RANDOM menu): a new patch in one press. Every key of all three zones gets a fresh bucket
-  sound, levelled and panned as RANDOM ALL deals them; **30% of the keys get a reverb send and 20% an
+- **NEW PATCH** (top of the RANDOM menu, under WHOLE PATCH): a new patch in one press. Every key of all three zones gets a fresh bucket
+  sound, levelled and panned; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
   edits are replaced, so with locked keys it asks first (press again within four seconds). **BPM goes back to 120 and
   the echo, the reverb, the distortion, the compressor and the output level to their starting settings**; RETURN, the
@@ -110,14 +110,15 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   Middle-earth), **fantasy**, **alien** (made-up alien-sounding words and a few from old science fiction) and
   **myth** (Greek, Norse, Egyptian and other old gods and heroes). Every word is a mix: its start and its end always
   come from two different lists. To add a theme, add a list to `WORDS` there.
-- **RANDOM menu**: **RANDOM**, **ALTER** and **LEVEL** for the engine on screen, **RANDOM ALL**, **ALTER ALL** and
-  **LEVEL ALL** for all three, each with a line under it saying what it does. RANDOM gives every key a new bucket sound;
+- **RANDOM menu**: **NEW PATCH** and **ALTER ALL** for the whole patch, **RANDOM** and **ALTER** for the engine on
+  screen, then MORPH ACROSS THE KEYS (**MORPH KEYS**, **NEW ENDS**, **KICK > SNARE > HAT**), NEW SOUNDS ARE, the ALTER
+  amount and WILD, and UNLOCK ALL. Levelling is in OPTIONS > SETUP > LEVELS, SOUNDMAKER in OPTIONS > SETUP > TOOLS (B). RANDOM gives every key a new bucket sound;
   ALTER nudges every key around what it plays now by the **ALTER** amount under HOW MUCH (10% as it comes; ALTER KEY
   uses it too). ALTER moves the knobs of the sound and leaves alone what a kit sound is built on (waveforms, FM mode,
   filter type, the LFO, velocity, sample rate), LEVEL and the sends; **WILD** lets it take a control outside the
   ranges drums usually sit in, and change those switches too. Locked keys stay. (RANDOM was called SCATTER.)
 - **KNOB PADLOCKS**: a knob with a closed padlock **keeps its setting on every key of its engine, whatever random
-  thing you press**: the dice, RANDOM, ALTER, ALTER KEY, their ALL versions and INIT PATCH. The message line names
+  thing you press**: the dice, RANDOM, ALTER, ALTER KEY, ALTER ALL and NEW PATCH. The message line names
   what was kept ("locked DECAY, CUTOFF kept"). Nothing is locked as it comes; **UNLOCK ALL** in the RANDOM menu opens
   every padlock, and the menu counts the closed ones. Only your own hand, UNDO and loading a preset change a locked
   knob. (Before, 17 knobs came locked, so NEW SOUND kept the old waveform and switches under a new sound's name, and
@@ -131,8 +132,8 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   each engine's kit sounds, so a typical sound plays as it always did, loud ones come down and quiet ones come up
   (never past full scale, at most 12 dB up or 16 dB down). The trim is a gain of its own: the **LEVEL** knob and the
   zone levels stay yours, and LEVEL's padlock has no say in it. The **AUTO** button at the head of the LEVEL cell
-  shows the key's trim ("AUTO -3.5dB"); press it to measure the key as it plays now and level it again. **LEVEL** and **LEVEL ALL** in the
-  RANDOM menu even out the keys you have now without changing their sounds. **AUTO LEVEL** in the RANDOM menu (on as
+  shows the key's trim ("AUTO -3.5dB"); press it to measure the key as it plays now and level it again. **EVEN ALL** and **EVEN** (one engine) in
+  OPTIONS > SETUP > LEVELS even out the keys you have now without changing their sounds. **AUTO LEVEL** beside them (on as
   it comes) switches the automatic part off: a newly dealt sound then plays as loud as its kit made it. Locked keys
   are left alone; UNDO takes any of it back.
 - **Computer keys**: **[** and **]** (or the left and right arrows) step to the key before or after and play it, **Space**
@@ -141,7 +142,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
 - **UNDO** (or Z, or Cmd+Z / Ctrl+Z) takes back the last change to the sounds: a knob turned (a whole drag is one step),
   a randomiser, NEW SOUND, ALTER KEY, PASTE, CLEAR. It keeps the last 40 steps, so pressing it again
   goes further back; the status line says what it undid. The effects and the master aren't part of it; locked keys stay.
-- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, RANDOM, RANDOM ALL, ALTER,
+- **Pan when randomising**: every randomiser that places a sound (NEW SOUND, RANDOM, NEW PATCH, ALTER,
   ALTER ALL, ALTER KEY, even WILD) keeps the **drum centred**, the **snare within 20% left or right** and puts the
   **metal anywhere**, left to right. Set by hand, any pan goes anywhere; the padlock on the pan knob keeps it out of the
   randomisers.
@@ -149,7 +150,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   five to a row, lowest at the top left, shaded by engine (drum, snare, metal). A pad plays its key for as long as it
   is held, several fingers at once, and the pad pressed last is the one the buttons
   below act on: **NEW SOUND** (the dice) and **ALTER** for that key, **LOCK**, and two bars, **ECHO** and **REVERB**,
-  for that key's sends (touch or slide along a bar). Under them **INIT PATCH**, **RANDOM ALL** and **UNDO**, and the
+  for that key's sends (touch or slide along a bar). Under them **NEW PATCH** and **UNDO**, and the
   message line that says what happened. A padlock on a pad means it is
   locked. **MENU** (top right; the same button closes it) opens a menu over the pads: **RANDOM** and **ALTER** act on the
   engine of the pad pressed last, and **ALTER ALL** on all 25 keys. A press does its thing and closes the menu; UNDO
