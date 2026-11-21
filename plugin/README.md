@@ -4,21 +4,21 @@ The web app as a plugin. It looks the same because it *is* the same page, the re
 
 ## Install
 
-1. Get the latest build. Either:
-   - download it from the [plugin-latest release](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest), or
-   - take the `Dipogon-mac` artifact of the latest *plugin* run on the repo's Actions tab.
-2. Unzip it.
-3. Put `Dipogon.vst3` in `~/Library/Audio/Plug-Ins/VST3/`. For Logic, put `Dipogon.component` in `~/Library/Audio/Plug-Ins/Components/`.
-4. The build isn't signed with an Apple developer account, so macOS blocks it until you clear the download flag. Do that once per new build:
-   ```
-   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3
-   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/Dipogon.component
-   ```
-5. Rescan plugins in the DAW. It is an instrument called **Dipogon**.
+Dipogon is free and runs on any Mac with Apple silicon or Intel: a VST3 (Ableton Live, Bitwig, Reaper, Cubase...), an AU (Logic, GarageBand) and a standalone app. Open **Terminal** (Applications > Utilities), paste this line and press Return:
 
-`Dipogon.app` is the same thing as a standalone app, with no DAW needed.
+```
+curl -fsSL https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest/install.sh | bash
+```
 
-To hand it to other people without step 4, it would need a paid Apple Developer account ($99 a year) to sign and notarise it. The workflow can do that later, using the account's certificate as repo secrets.
+Then restart your DAW, or rescan plugins. It is an instrument called **Dipogon**; the app is in Applications. Run the same line again to update. To remove it, add `-s -- --uninstall` after `bash`.
+
+**Why a command and not a download?** Dipogon is a free project with no paid Apple Developer account, so it isn't signed or notarised by Apple, and macOS blocks a plugin downloaded in a browser ("damaged" or "unknown developer"). Fetched with `curl`, it isn't blocked. The script is short and changes nothing else: read it first if you like ([install.sh](install.sh)). It puts `Dipogon.vst3` in `~/Library/Audio/Plug-Ins/VST3`, `Dipogon.component` in `~/Library/Audio/Plug-Ins/Components` and `Dipogon.app` in `/Applications`.
+
+If you'd rather download the zips from the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest), put them in those folders and clear the download flag macOS sets, or it won't open them:
+
+```
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3 ~/Library/Audio/Plug-Ins/Components/Dipogon.component /Applications/Dipogon.app
+```
 
 ## How it works
 

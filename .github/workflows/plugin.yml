@@ -51,5 +51,9 @@ jobs:
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           gh release delete plugin-latest --yes --cleanup-tag || true
-          gh release create plugin-latest out/*.zip --prerelease --target "$GITHUB_SHA" --title "Dipogon plugin (latest build)" \
-            --notes "Built from ${GITHUB_SHA::7}. Unzip, put Dipogon.vst3 in ~/Library/Audio/Plug-Ins/VST3 (Dipogon.component in ~/Library/Audio/Plug-Ins/Components), then run: xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3  (see plugin/README.md)"
+          cp install.sh out/install.sh
+          printf '%s\n' "Built from ${GITHUB_SHA::7}." "" \
+            "**Install on a Mac:** open Terminal, paste this line and press Return, then rescan plugins in your DAW:" "" \
+            '```' 'curl -fsSL https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest/install.sh | bash' '```' "" \
+            "Dipogon is free, with no paid Apple Developer account, so it isn't signed or notarised by Apple and macOS blocks the zips if you download them in a browser. The line above fetches them with curl, which macOS doesn't block. To use the zips instead, see [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#install)." > notes.md
+          gh release create plugin-latest out/*.zip out/install.sh --latest --target "$GITHUB_SHA" --title "Dipogon for Mac: VST3, AU and app" --notes-file notes.md
