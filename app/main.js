@@ -1,19 +1,19 @@
-// LXR-AFX: the page. Up to six mono engines share the keys on MIDI channel 1, every key playing a sound of its own; the
+// Dipogon: the page. Up to six mono engines share the keys on MIDI channel 1, every key playing a sound of its own; the
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq8go9v';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq8go9v';
-import { presetName, jumble } from './names.js?v=mwq8go9v';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq8go9v';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq8go9v';
-import { breed, isDud } from '../sound/breed.js?v=mwq8go9v';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq8go9v';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq8go9v';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq8go9v';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq8go9v';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq8go9v';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq8go9v';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq8w4vi';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq8w4vi';
+import { presetName, jumble } from './names.js?v=mwq8w4vi';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq8w4vi';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq8w4vi';
+import { breed, isDud } from '../sound/breed.js?v=mwq8w4vi';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq8w4vi';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq8w4vi';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq8w4vi';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq8w4vi';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq8w4vi';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq8w4vi';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -24,6 +24,7 @@ const hex = (s) => (s >>> 0).toString(16).toUpperCase().padStart(8, '0');
 // ---------------------------------------------------------------------------------------------------------------
 // state, kept in this browser
 // ---------------------------------------------------------------------------------------------------------------
+// (every localStorage key keeps its lxr-afx- name from before the app was called Dipogon, so saved settings and presets carry on)
 const STORE = 'lxr-afx-v3'; // v3: AFX mode, three zones on the Bass Station 2's 25 keys
 // an engine voice's pan (not PAN1 + voice: the firmware's pans 4-6 sit two further on)
 const panPar = (v) => PAR['PAN' + (v + 1)], PAN_PARS = new Set([0, 1, 2, 3, 4, 5].map(panPar));
@@ -106,7 +107,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq8go9v', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq8w4vi', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -1672,7 +1673,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq8go9v').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq8w4vi').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2484,8 +2485,8 @@ function deletePreset(id) {
 function exportPresets() {
   if (!presets.length) { detail('nothing saved yet: SAVE keeps this patch, then EXPORT writes the list to a file'); return; }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'lxr-afx', kind: 'presets', version: 1, presets }, null, 1)], { type: 'application/json' }));
-  a.download = `lxr-afx-presets-${new Date().toISOString().slice(0, 10)}.json`;
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'dipogon', kind: 'presets', version: 1, presets }, null, 1)], { type: 'application/json' }));
+  a.download = `dipogon-presets-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   detail(`exported <em>${presets.length}</em> preset${presets.length === 1 ? '' : 's'} to ${a.download}`);
 }
@@ -2494,7 +2495,7 @@ function exportPresets() {
 function importPresets(text) {
   let list;
   try { const j = JSON.parse(text); list = Array.isArray(j) ? j : j && j.presets; } catch (e) { list = null; }
-  if (!Array.isArray(list)) { detail('that file has no LXR-AFX presets in it'); return 0; }
+  if (!Array.isArray(list)) { detail('that file has no Dipogon presets in it'); return 0; }
   let added = 0, had = 0;
   for (const raw of list) {
     const p = tidyPreset(raw);
@@ -2506,7 +2507,7 @@ function importPresets(text) {
     presets.push(p); added++;
   }
   drawPreset();
-  storeOr(added ? `imported <em>${added}</em> preset${added === 1 ? '' : 's'}${had ? ` (${had} already here)` : ''}` : had ? `nothing new: all ${had} are already here` : 'that file has no LXR-AFX presets in it');
+  storeOr(added ? `imported <em>${added}</em> preset${added === 1 ? '' : 's'}${had ? ` (${had} already here)` : ''}` : had ? `nothing new: all ${had} are already here` : 'that file has no Dipogon presets in it');
   return added;
 }
 function drawPreset() {
@@ -2735,7 +2736,7 @@ $('bl-list').addEventListener('click', (e) => {
 // send it in a chat), as a .txt (Android's Chrome shares only a few kinds of file, and JSON isn't one of them; the
 // add-to-bucket tool reads it all the same); if the phone can't share it, a download. COPY LIST puts the same text on
 // the clipboard, to paste into a message. Each says what happened, a failure too
-const blText = () => JSON.stringify({ app: 'lxr-afx', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1);
+const blText = () => JSON.stringify({ app: 'dipogon', kind: 'sounds', version: 1, sounds: savedSounds }, null, 1);
 const blCount = () => `<em>${savedSounds.length}</em> sound${savedSounds.length === 1 ? '' : 's'}`;
 function blDownload(text, name) {
   const a = document.createElement('a');
@@ -2748,13 +2749,13 @@ $('bl-export').addEventListener('click', async () => {
   if (!savedSounds.length) { detail('nothing saved yet: SAVE a sound first'); return; }
   const text = blText(), day = new Date().toISOString().slice(0, 10);
   if (phoneOn && navigator.share && typeof File === 'function') {
-    const file = new File([text], `lxr-afx-new-sounds-${day}.txt`, { type: 'text/plain' });
+    const file = new File([text], `dipogon-new-sounds-${day}.txt`, { type: 'text/plain' });
     if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'LXR-AFX new sounds' }); detail(`shared ${blCount()} as ${file.name}: hand it over to add them to the bucket`); return; }
+      try { await navigator.share({ files: [file], title: 'Dipogon new sounds' }); detail(`shared ${blCount()} as ${file.name}: hand it over to add them to the bucket`); return; }
       catch (e) { if (e && e.name === 'AbortError') { detail('not shared (cancelled)'); return; } } // (any other failure: a download instead)
     }
   }
-  blDownload(text, `lxr-afx-new-sounds-${day}.json`);
+  blDownload(text, `dipogon-new-sounds-${day}.json`);
 });
 // CLEAR LIST: the SAVED list emptied once it's handed over (press twice), so the next export holds only new sounds.
 // The sounds already in the repo's bucket stay in the bucket; the others leave this browser's bucket with the list

@@ -1,8 +1,8 @@
 // Adds the sounds saved in the SOUND BLENDER to the sound bucket: give it the file EXPORT LIST wrote
-// (lxr-afx-new-sounds-<date>.json). Each sound is checked (sound/bucket.js tidy) and written to bucket/<NAME>.json;
+// (dipogon-new-sounds-<date>.json). Each sound is checked (sound/bucket.js tidy) and written to bucket/<NAME>.json;
 // a sound already in the bucket (the same name and values, or the same values under another name) is skipped, and a
 // name in use by another sound gets -2, -3... Then sound/bucket-sounds.js is rebuilt.
-//   node tools/add-to-bucket.mjs ~/Downloads/lxr-afx-new-sounds-2026-11-18.json
+//   node tools/add-to-bucket.mjs ~/Downloads/dipogon-new-sounds-2026-11-18.json
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tidy, fileOf } from '../sound/bucket.js';

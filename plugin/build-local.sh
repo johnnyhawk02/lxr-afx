@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds LXR-AFX (VST3, AU, standalone app) on this Mac and installs it. Needs only the Command Line Tools,
+# Builds Dipogon (VST3, AU, standalone app) on this Mac and installs it. Needs only the Command Line Tools,
 # cmake and node (no Xcode). Run from anywhere:  plugin/build-local.sh
 # Pulls main first unless you pass --no-pull. Builds for this Mac's chip only (faster than CI's universal build).
 set -e
@@ -23,8 +23,10 @@ install_bundle() { # $1 built bundle, $2 destination folder
   xattr -dr com.apple.quarantine "$dest" 2>/dev/null || true
   echo "installed $dest"
 }
-install_bundle "$A/VST3/LXR-AFX.vst3" "$P/VST3"
-install_bundle "$A/AU/LXR-AFX.component" "$P/Components"
-install_bundle "$A/Standalone/LXR-AFX.app" /Applications
+install_bundle "$A/VST3/Dipogon.vst3" "$P/VST3"
+install_bundle "$A/AU/Dipogon.component" "$P/Components"
+install_bundle "$A/Standalone/Dipogon.app" /Applications
+# the same plugin under its old name, LXR-AFX: gone, so a DAW never lists it twice
+rm -rf "$P/VST3/LXR-AFX.vst3" "$P/Components/LXR-AFX.component" /Applications/LXR-AFX.app
 killall -9 AudioComponentRegistrar 2>/dev/null || true # so hosts see the new AU
 echo "done: rescan plugins in Ableton (or restart it) to load the new build"

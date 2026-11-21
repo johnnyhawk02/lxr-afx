@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LXR-AFX</title>
+<title>Dipogon</title>
 <meta name="description" content="A MIDI drum instrument for a 25-key keyboard: three engines (drum, snare, metal), every key its own sound. Engine: the LXR-02 firmware's drum voices, via Elixir.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwq8go9v">
-<link rel="stylesheet" href="css/grey.css?v=mwq8go9v">
+<link rel="stylesheet" href="css/lcd.css?v=mwq8w4vi">
+<link rel="stylesheet" href="css/grey.css?v=mwq8w4vi">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -42,7 +42,7 @@
 <div class="stage" id="stage">
 <main class="screen" id="screen">
   <header class="top">
-    <h1 class="logo">LXR<span>-</span>AFX</h1>
+    <h1 class="logo">DIPOGON</h1>
     <span class="midilamp" id="midi-status" role="img" aria-label="MIDI: off" title="MIDI: off"><i></i>MIDI</span>
     <div class="menu" id="pmenu">
       <button class="btn pbtn" id="preset-btn" aria-haspopup="true" aria-expanded="false"><span class="dim">PRESET</span><b id="preset-name"></b><i id="preset-mark"></i><span>▾</span></button>
@@ -219,7 +219,7 @@
 
   <!-- the phone view (a phone held upright, or ?phone): a pad for each of the 25 keys, and the few controls a hand needs -->
   <div class="pv" id="pv">
-    <div class="pv-top"><h1 class="logo">LXR<span>-</span>AFX</h1><b id="pv-name"></b><button class="btn" id="pv-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="pv-menu">MENU</button></div>
+    <div class="pv-top"><h1 class="logo">DIPOGON</h1><b id="pv-name"></b><button class="btn" id="pv-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="pv-menu">MENU</button></div>
     <div class="pv-menu" id="pv-menu" hidden>
       <button class="btn" id="pv-rand-eng">RANDOM: DRUM KEYS</button><span class="cap" id="pv-rand-eng-cap"></span>
       <button class="btn" id="pv-alter-eng">ALTER: DRUM KEYS</button><span class="cap" id="pv-alter-eng-cap"></span>
@@ -243,7 +243,7 @@
   </div>
   <div class="start" id="start" aria-hidden="true">
     <div class="splash">
-      <h1 class="splash-logo">LXR<span>-</span>AFX</h1>
+      <h1 class="splash-logo">DIPOGON</h1>
       <p class="splash-tag">DRUM SYNTH FOR 25 KEYS</p>
       <div class="splash-keys"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
@@ -330,6 +330,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwq8go9v"></script>
+<script type="module" src="app/main.js?v=mwq8w4vi"></script>
 </body>
 </html>

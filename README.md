@@ -1,9 +1,11 @@
-# LXR-AFX
+# Dipogon
+
+(Its working name was LXR-AFX.)
 
 An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key its own sound.
 **Play it: https://johnnyhawk02.github.io/lxr-afx/** (Chrome or Edge, for Web MIDI)
 
-![LXR-AFX at 1440 × 900](docs/screenshot.png)
+![Dipogon at 1440 × 900](docs/screenshot.png)
 
 - **Three zones on MIDI channel 1**, laid out for the 25 keys of a Bass Station 2 at its default octave (lowest key MIDI
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
@@ -182,7 +184,8 @@ python3 -m http.server 8123 & node test/shots.mjs   # the page in a browser: lap
 
 ## Licence
 
-GPL-3.0-only (see [LICENSE](LICENSE)), like Elixir and the firmware its engine is ported from
+GPL-3.0-only (see [LICENSE](LICENSE)), like Elixir and the firmware its engine is ported from: the drum voices are
+from the LXR drum machine firmware by Sonic Potions (Julian Schmidt), as carried on in the LXR-02
 ([erica-synths/lxr-desktop-app](https://github.com/erica-synths/lxr-desktop-app)). Unofficial: not made, approved or
 endorsed by Erica Synths. "LXR" and "LXR-02" are trademarks of Erica Synths. The sound bucket's first sounds were taken from
 LXR-02 kits, including the Hrtl LXR-02 DLC kits, by Hrtl, distributed free by Erica Synths.

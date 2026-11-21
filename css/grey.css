@@ -1,4 +1,4 @@
-/* LXR-AFX, the GREY look (SETTINGS > LOOK; html.look-grey, the default): a plain grey metal panel, black chicken-head
+/* Dipogon, the GREY look (SETTINGS > LOOK; html.look-grey, the default): a plain grey metal panel, black chicken-head
    knobs over a printed scale, a plain condensed type. Only colours, type and the knobs' drawing change: every box keeps
    the LCD look's size and place, so the grid is the same in both. The LCD look (css/lcd.css) hides the knobs' parts */
 .knob .sc, .knob .skirt, .knob .skirt-top, .knob .chh, .knob .chl { display: none; }

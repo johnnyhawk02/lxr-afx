@@ -1,4 +1,4 @@
-# LXR-AFX as a plugin (VST3, AU, Standalone) for macOS. Before configuring, from plugin/:
+# Dipogon as a plugin (VST3, AU, Standalone) for macOS. Before configuring, from plugin/:
 #   npm install && node tools/gen-data.mjs && node tools/bundle.mjs
 # (gen-data writes src/gen/LxrData.h from the web app's JS; bundle gathers the page into build/web.) Then:
 #   cmake -B build/cmake -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" && cmake --build build/cmake --config Release
@@ -33,9 +33,10 @@ endif()
 juce_add_binary_data(LxrWeb HEADER_NAME BinaryData.h NAMESPACE BinaryData SOURCES ${WEB_ZIP} js/shim.js)
 
 juce_add_plugin(LXR_AFX
-  PRODUCT_NAME "LXR-AFX"
-  COMPANY_NAME "LXR-AFX"
-  BUNDLE_ID io.github.johnnyhawk02.lxrafx
+  PRODUCT_NAME "Dipogon"
+  COMPANY_NAME "Dipogon"
+  BUNDLE_ID io.github.johnnyhawk02.dipogon
+  # (the two codes are the ones from when it was called LXR-AFX: they make the plugin the same one to a DAW, so old projects open in it)
   PLUGIN_MANUFACTURER_CODE Lxaf
   PLUGIN_CODE Lxr1
   FORMATS VST3 AU Standalone

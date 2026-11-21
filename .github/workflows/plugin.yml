@@ -1,4 +1,4 @@
-# The plugin (plugin/): builds LXR-AFX as a universal (Apple silicon + Intel) VST3, AU and standalone app on macOS,
+# The plugin (plugin/): builds Dipogon as a universal (Apple silicon + Intel) VST3, AU and standalone app on macOS,
 # checks the C++ engine against the web app's JS sample for sample, and (on main) puts the build up as the
 # "plugin-latest" release. The web app itself is untouched by this.
 name: plugin
@@ -40,16 +40,16 @@ jobs:
         run: |
           A=build/cmake/LXR_AFX_artefacts/Release
           mkdir -p out
-          for b in "$A/VST3/LXR-AFX.vst3" "$A/AU/LXR-AFX.component" "$A/Standalone/LXR-AFX.app"; do codesign --force --deep -s - "$b"; lipo -info "$(find "$b/Contents/MacOS" -type f | head -1)"; done
-          ditto -c -k --keepParent "$A/VST3/LXR-AFX.vst3" out/LXR-AFX-vst3.zip
-          ditto -c -k --keepParent "$A/AU/LXR-AFX.component" out/LXR-AFX-au.zip
-          ditto -c -k --keepParent "$A/Standalone/LXR-AFX.app" out/LXR-AFX-app.zip
+          for b in "$A/VST3/Dipogon.vst3" "$A/AU/Dipogon.component" "$A/Standalone/Dipogon.app"; do codesign --force --deep -s - "$b"; lipo -info "$(find "$b/Contents/MacOS" -type f | head -1)"; done
+          ditto -c -k --keepParent "$A/VST3/Dipogon.vst3" out/Dipogon-vst3.zip
+          ditto -c -k --keepParent "$A/AU/Dipogon.component" out/Dipogon-au.zip
+          ditto -c -k --keepParent "$A/Standalone/Dipogon.app" out/Dipogon-app.zip
       - uses: actions/upload-artifact@v4
-        with: { name: LXR-AFX-mac, path: plugin/out/*.zip }
+        with: { name: Dipogon-mac, path: plugin/out/*.zip }
       - name: Release (main only)
         if: github.ref == 'refs/heads/main'
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           gh release delete plugin-latest --yes --cleanup-tag || true
-          gh release create plugin-latest out/*.zip --prerelease --target "$GITHUB_SHA" --title "LXR-AFX plugin (latest build)" \
-            --notes "Built from ${GITHUB_SHA::7}. Unzip, put LXR-AFX.vst3 in ~/Library/Audio/Plug-Ins/VST3 (LXR-AFX.component in ~/Library/Audio/Plug-Ins/Components), then run: xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/LXR-AFX.vst3  (see plugin/README.md)"
+          gh release create plugin-latest out/*.zip --prerelease --target "$GITHUB_SHA" --title "Dipogon plugin (latest build)" \
+            --notes "Built from ${GITHUB_SHA::7}. Unzip, put Dipogon.vst3 in ~/Library/Audio/Plug-Ins/VST3 (Dipogon.component in ~/Library/Audio/Plug-Ins/Components), then run: xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3  (see plugin/README.md)"

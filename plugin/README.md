@@ -1,4 +1,4 @@
-# LXR-AFX plugin (macOS: VST3, AU, standalone app)
+# Dipogon plugin (macOS: VST3, AU, standalone app)
 
 The web app as a plugin. It looks the same because it *is* the same page, the repo's own `index.html`, `app/` and `css/`, shown in the plugin's window. It sounds the same because the engine is a C++ port of `sound/` and `engine/`, and it is checked against the JS sample for sample.
 
@@ -6,17 +6,17 @@ The web app as a plugin. It looks the same because it *is* the same page, the re
 
 1. Get the latest build. Either:
    - download it from the [plugin-latest release](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest), or
-   - take the `LXR-AFX-mac` artifact of the latest *plugin* run on the repo's Actions tab.
+   - take the `Dipogon-mac` artifact of the latest *plugin* run on the repo's Actions tab.
 2. Unzip it.
-3. Put `LXR-AFX.vst3` in `~/Library/Audio/Plug-Ins/VST3/`. For Logic, put `LXR-AFX.component` in `~/Library/Audio/Plug-Ins/Components/`.
+3. Put `Dipogon.vst3` in `~/Library/Audio/Plug-Ins/VST3/`. For Logic, put `Dipogon.component` in `~/Library/Audio/Plug-Ins/Components/`.
 4. The build isn't signed with an Apple developer account, so macOS blocks it until you clear the download flag. Do that once per new build:
    ```
-   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/LXR-AFX.vst3
-   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/LXR-AFX.component
+   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3
+   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/Dipogon.component
    ```
-5. Rescan plugins in the DAW. It is an instrument called **LXR-AFX**.
+5. Rescan plugins in the DAW. It is an instrument called **Dipogon**.
 
-`LXR-AFX.app` is the same thing as a standalone app, with no DAW needed.
+`Dipogon.app` is the same thing as a standalone app, with no DAW needed.
 
 To hand it to other people without step 4, it would need a paid Apple Developer account ($99 a year) to sign and notarise it. The workflow can do that later, using the account's certificate as repo secrets.
 
@@ -32,7 +32,7 @@ The plugin plays MIDI channel 1, with the keys and zones laid out as in the web 
 
 **Saving:**
 - Each plugin's sound (the page's `lxr-afx-v3` state: the sounds, keys, locks, FX) is saved in the DAW project.
-- The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/LXR-AFX/shared.json`.
+- The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/Dipogon/shared.json`.
 
 **Limits:**
 - A newly added copy plays nothing until its window has been opened once. Most DAWs open it on insert.
