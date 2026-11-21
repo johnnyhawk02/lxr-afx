@@ -1015,13 +1015,12 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
   font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .khact :is(#rand-key, #alter-key, #lock-key, #copy-key, #paste-key, #clear-key) { grid-column: auto; grid-row: auto; } /* (over the old per-id cells) */
 
-/* ---- FX + MASTER over the FX SENDS (Johnny, 2026-11-21: move it "directly above the fx sends"): its own section in
-   the key panel's last cell, the column the ECHO and REVERB sends stand in below, its button level with the white
-   keys. MORPH keeps one cell beside the keyboard and THIS KEY moves a cell left at the same width ---- */
-.khview { grid-column: 11 / 12; }
-.khact { grid-column: 12 / 17; }
-.khfx { grid-column: 17 / 18; justify-content: flex-end; }
-.khfx .fxtab { position: static; width: 100%; height: 66px; min-height: 0; padding: 0 2px; display: flex; flex-direction: column;
+/* ---- FX + MASTER at the head of the key's own column (Johnny, 2026-11-21: "in this section", above the sends, "make the
+   level into a dial"): the last column of the synth grid is the button in row 1, ECHO in row 2 under the FX SENDS
+   heading, REVERB in row 3, and LEVEL in row 4 as a plain dial with AUTO LEVEL's chip as its heading ---- */
+.faders .sect.fxcell { justify-content: center; padding: 6px 6px; }
+.faders .sect.fxcell .fxtab { position: static; width: 100%; flex: 1; max-height: 86px; min-height: 0; padding: 0 2px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px; font-size: 17px; line-height: 1.05; text-align: center; white-space: normal; }
-.khfx .fxtab kbd { margin-left: 0; }
-.morphtime h3 { flex-wrap: wrap; letter-spacing: .08em; }
+.faders .sect.fxcell .fxtab kbd { margin-left: 0; }
+.faders .sect.lvl h3 { display: flex; align-items: center; padding: 0 6px; overflow: visible; }
+.faders .sect.lvl .auto { position: static; min-height: 20px; font-size: 14px; padding: 0 5px; line-height: 1; letter-spacing: 0; white-space: nowrap; }

@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq3sep0';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq3sep0';
-import { presetName, jumble } from './names.js?v=mwq3sep0';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq3sep0';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq3sep0';
-import { breed, isDud } from '../sound/breed.js?v=mwq3sep0';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq3sep0';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq3sep0';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq3sep0';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq3sep0';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq3sep0';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq3sep0';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq42j4n';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq42j4n';
+import { presetName, jumble } from './names.js?v=mwq42j4n';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq42j4n';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq42j4n';
+import { breed, isDud } from '../sound/breed.js?v=mwq42j4n';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq42j4n';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq42j4n';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq42j4n';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq42j4n';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq42j4n';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq42j4n';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq3sep0', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq42j4n', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -613,9 +613,9 @@ const GRID_COLS = 16;
 // a part that's silent now (its level at zero): its section is greyed, its knobs still turn
 function buildFaders() {
   // every section of the sound at once, in page order (tone, shape, filter, mod, mix)
-  const box = $('faders'); box.innerHTML = ''; faderDraws = [];
+  const box = $('faders'), fxTab = $('fx-tab'); box.innerHTML = ''; faderDraws = [];
   const voice = SOUNDS[S.sel].engineVoice;
-  const lvl = PAR.VOL1 + voice; // the level gets a big knob of its own, bottom right
+  const lvl = PAR.VOL1 + voice; // the level gets a cell of its own, bottom right
   const entries = PAGES.flatMap((pg) => VOICE_SCHEMAS[voice].filter((e) => e.page === pg && e.par !== lvl && !e.hidden));
   // one grid for the whole panel: four rows, and columns of equal cells, one knob to a cell (a menu takes two), so
   // every knob lines up with the knobs above and below it. Each row's sections follow on from cell 1; a row that
@@ -638,23 +638,25 @@ function buildFaders() {
     }
     if (col <= GRID_COLS) { const n = GRID_COLS + 1 - col; sect(n, ' fill'); }
   });
-  // the key's FX SENDS, one above the other in the last column (Johnny, 2026-11-19: "make the fx sends one above another
-  // to remove one slot and give the knobs more space"): ECHO in row 1 under the heading, REVERB in row 2 under a blank
-  // one, so each lines up with its row's knobs
+  // the key's own column, the grid's last (Johnny, 2026-11-21): the FX + MASTER button in row 1, then its FX SENDS one
+  // above the other (ECHO in row 2 under the heading, REVERB in row 3 under a blank one), then its LEVEL as a plain dial
+  // in row 4, each lining up with its row's knobs
+  const fx = cell(document.createElement('div'), 1, 2, GRID_COLS + 1, GRID_COLS + 2); fx.className = 'sect fxcell sep'; fx.append(fxTab); box.append(fx);
   const sends = entries.filter((e) => e.section === 'fx sends');
   sends.forEach((e, i) => {
-    const el = cell(document.createElement('div'), i + 1, i + 2, GRID_COLS + 1, GRID_COLS + 2); el.className = 'sect sends sep' + (i ? ' rt' : ''); el.style.setProperty('--n', 1);
+    const el = cell(document.createElement('div'), i + 2, i + 3, GRID_COLS + 1, GRID_COLS + 2); el.className = 'sect sends rt sep'; el.style.setProperty('--n', 1);
     el.innerHTML = `<h3>${i ? '&nbsp;' : 'fx sends'}</h3><div class="row"></div>`;
     el.querySelector('.row').append(vfader(e)); box.append(el);
   });
   modStrip(box, cell, voice);
   drawSource(); // (the dice sits in the key's row of buttons, above)
-  const big = cell(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl), true), 3, 5, GRID_COLS + 1, GRID_COLS + 2); big.classList.add('big', 'rt', 'sep');
-  box.append(big);
-  // AUTO LEVEL's correction of the key, at the head of the LEVEL cell: lit when the key has one. A press measures the
+  const lv = cell(document.createElement('div'), 4, 5, GRID_COLS + 1, GRID_COLS + 2); lv.className = 'sect lvl rt sep'; lv.style.setProperty('--n', 1);
+  lv.innerHTML = '<h3></h3><div class="row"></div>';
+  lv.querySelector('.row').append(vfader(VOICE_SCHEMAS[voice].find((e) => e.par === lvl))); box.append(lv);
+  // AUTO LEVEL's correction of the key, as the LEVEL cell's heading: lit when the key has one. A press measures the
   // key as it plays now and levels it again (it never switches it off)
   const auto = document.createElement('button'); auto.type = 'button'; auto.className = 'btn sm hdb auto'; auto.id = 'auto-level';
-  auto.addEventListener('click', autoPress); big.append(auto);
+  auto.addEventListener('click', autoPress); lv.querySelector('h3').append(auto);
   faderDraws.push(() => drawAuto(auto));
   // the FX + MASTER pop-up's knobs (each key's sends are its FX SENDS knobs, with the rest of its knobs)
   buildFx();
@@ -1670,7 +1672,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq3sep0').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq42j4n').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
