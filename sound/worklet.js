@@ -12,7 +12,7 @@
 // It posts { type: 'peaks', peaks, ..., waves } about 30 times a second for the level lights (waves: where each voice's
 // tone is on its WAVE dial now, modulation and all, for the wave display; mods: each voice's modulated knobs, how far
 // they are moved now; stepAt: the STEP SEQ step each voice's last hit played)
-import { LxrInstrument } from './instrument.js?v=mwq3bab1';
+import { LxrInstrument } from './instrument.js?v=mwq3bngq';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {

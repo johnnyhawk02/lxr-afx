@@ -1013,3 +1013,4 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 .khact .keyrand .btn, .khact .keyacts > .btn, .khact .keyacts .keylock {
   grid-column: auto; grid-row: auto; width: 100%; min-width: 0; min-height: 0; height: 30px; margin: 0; padding: 0 2px;
   font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.khact :is(#rand-key, #alter-key, #lock-key, #copy-key, #paste-key, #clear-key) { grid-column: auto; grid-row: auto; } /* (over the old per-id cells) */
