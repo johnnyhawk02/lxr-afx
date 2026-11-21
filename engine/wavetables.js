@@ -13,15 +13,12 @@
 // whose frames stop at a few harmonics shares one copy for every octave that holds them all, so it costs little.
 //
 // The built-in tables are made from maths (Fourier series, or one cycle of a shape drawn finely and measured with an
-// FFT), never shipped as samples; each has a stable id and its maker never changes (a change is a new id). User
-// tables come from WAV files (app/wav.js) as frames of FRAME samples. Pure JS: it runs in the AudioWorklet, a Worker
-// and node. A table is plain data ({ id, name, frames, size, data }), so it can be posted between threads.
+// FFT), never shipped as samples; each has a stable id and its maker never changes (a change is a new id). Pure JS: it
+// runs in the AudioWorklet, a Worker and node. A table is plain data ({ id, name, frames, size, data }), so it can be posted between threads.
 
 export const TOP_H = 4096, LEVELS = 13; // copies hold 4096, 2048, ... 1 harmonics
 const G = 5; // (guard samples per frame)
 const XF = 0.15; // (a sixth of an octave, two semitones)
-export const FRAME = 2048; // (a WAV frame's length, build step 3)
-export const copyHarmonics = (l) => TOP_H >> l;
 export const copySize = (l) => Math.max(64, 8 * (TOP_H >> l));
 
 // ---- an in-place radix-2 FFT (complex, re and im arrays); sign +1 is the inverse (without the 1/N) ----
@@ -74,8 +71,6 @@ export function buildTable(id, name, spectra) {
   for (let l = 0; l < share; l++) data[l] = data[share];
   return { id, name, frames: F, data, size };
 }
-/** the number of bytes a table holds (shared copies counted once) */
-export const tableBytes = (t) => [...new Set(t.data)].reduce((s, d) => s + d.byteLength, 0);
 
 /** a spectrum ({ a, b } up to TOP_H) from one cycle of a shape, drawn at M points (DC dropped) */
 export function measure(wave, M = 1 << 16) {
@@ -84,13 +79,6 @@ export function measure(wave, M = 1 << 16) {
   fft(re, im, -1);
   const a = new Float64Array(TOP_H + 1), b = new Float64Array(TOP_H + 1);
   for (let k = 1; k <= TOP_H; k++) { a[k] = 2 * re[k] / M; b[k] = -2 * im[k] / M; }
-  return { a, b };
-}
-/** a spectrum from one frame of samples (a power of two long: a WAV frame of FRAME), harmonics up to half its length */
-export function measureFrame(x) {
-  const M = x.length, re = Float64Array.from(x), im = new Float64Array(M); fft(re, im, -1);
-  const H = Math.min(TOP_H, M / 2 - 1), a = new Float64Array(H + 1), b = new Float64Array(H + 1);
-  for (let k = 1; k <= H; k++) { a[k] = 2 * re[k] / M; b[k] = -2 * im[k] / M; }
   return { a, b };
 }
 
@@ -155,9 +143,6 @@ export const DEFAULT_TABLE = 'builtin:basic';
 export function builtin(id) { const b = BUILTINS.find((x) => x[0] === id); return b ? buildTable(b[0], b[1], b[2]()) : null; }
 /** BASIC, built (kept for the tests) */
 export const basic = () => builtin('builtin:basic');
-
-/** a user table from frames of samples (each a power of two long; app/wav.js gives FRAME) */
-export const fromFrames = (id, name, frames) => buildTable(id, name, frames.map(measureFrame));
 
 // the tables this thread holds, by id. BASIC is always there (the fallback for a table not here yet, or missing)
 const HELD = new Map();
