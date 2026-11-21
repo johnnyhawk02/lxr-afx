@@ -121,8 +121,8 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const v2 = await val(), l2 = await lit(), i2 = await info();
     if (v1 === v0 || l1 !== l0 + 1 || !/ · 1 edit$/.test(i1) || d1 !== d0 + 1 || v2 !== v0 || l2 !== l0 || / edit/.test(i2)) {
       errors++; console.log('hand edit:', v0, v1, v2, l0, l1, l2, i1, '|', i2, d0, d1); }
-    const locks = await p.$$eval('#faders .lock', (b) => [b.length, b.filter((x) => x.querySelector('svg')).length]);
-    if (locks[0] < 20 || locks[0] !== locks[1]) { errors++; console.log('lock icons:', locks); }
+    const locks = await p.$$eval('#faders .lock', (b) => b.length); // (the main dials' padlocks are gone: Johnny, 2026-11-20)
+    if (locks) { errors++; console.log('dial padlocks:', locks); }
   }
   // ] and [ step to the next and the previous key (across the zones), playing it
   if (w === 1440 && h === 900) {
