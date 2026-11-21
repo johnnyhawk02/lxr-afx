@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq8w4vi';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq8w4vi';
-import { presetName, jumble } from './names.js?v=mwq8w4vi';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq8w4vi';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq8w4vi';
-import { breed, isDud } from '../sound/breed.js?v=mwq8w4vi';
-import { BASE_NOTE } from '../sound/morph.js?v=mwq8w4vi';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwq8w4vi';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq8w4vi';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq8w4vi';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq8w4vi';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq8w4vi';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwqeg5cn';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwqeg5cn';
+import { presetName, jumble } from './names.js?v=mwqeg5cn';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwqeg5cn';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwqeg5cn';
+import { breed, isDud } from '../sound/breed.js?v=mwqeg5cn';
+import { BASE_NOTE } from '../sound/morph.js?v=mwqeg5cn';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwqeg5cn';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwqeg5cn';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwqeg5cn';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwqeg5cn';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwqeg5cn';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -107,7 +107,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq8w4vi', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwqeg5cn', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -514,7 +514,7 @@ const drawWild = () => $('wild').setAttribute('aria-pressed', !!S.rand.wild);
 drawWild();
 $('wild').addEventListener('click', () => { S.rand.wild = !S.rand.wild; save(); drawWild(); });
 // an action in it closes it (a pick of NEW SOUNDS ARE, WILD or the amount leaves it open)
-$('menu-panel').addEventListener('click', (e) => { if (e.target.closest('[role="menuitem"]')) setTimeout(() => openMenu(false)); });
+$('menu-panel').addEventListener('click', (e) => { if (e.target.closest('[role="menuitem"]')) setTimeout(() => { if (!initArmed) openMenu(false); }); }); // (NEW PATCH asking again stays open)
 $('auto-on').checked = S.rand.autoLevel;
 $('auto-on').addEventListener('change', () => { S.rand.autoLevel = $('auto-on').checked; save();
   detail(S.rand.autoLevel ? 'AUTO LEVEL <em>on</em>: NEW SOUND, RANDOM and ALTER bring each key to its engine\'s level' : 'AUTO LEVEL <em>off</em>: a dealt sound plays as loud as its kit made it'); });
@@ -572,7 +572,7 @@ document.addEventListener('keydown', (e) => {
 }, true);
 function drawSide() {
   const s = SOUNDS[S.sel];
-  $('rand-name').textContent = s.name;
+  $('rand-name').textContent = s.name; $('level-name').textContent = s.name;
   randDraws.forEach((d) => d());
   drawLocks(); drawStrip();
 }
@@ -1673,7 +1673,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq8w4vi').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwqeg5cn').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2085,7 +2085,7 @@ function drawSource() {
 }
 function setSource(src) {
   S.rand.source = src; save(); drawSource();
-  detail(`NEW SOUNDS ARE <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and RANDOM PATCH)`);
+  detail(`NEW SOUNDS ARE <em>${SOURCES[src].name}</em>: ${SOURCES[src].cap.toLowerCase()} (the dice, RANDOM and NEW PATCH)`);
 }
 for (const b of document.querySelectorAll('.srcrow .mi')) b.addEventListener('click', () => setSource(b.dataset.src));
 function keepSends(ed, now, v) { for (const k of [0, 1]) { const q = sendPar(v, k); if (now.get(q) !== (ed[q] ?? S.values[q])) ed[q] = now.get(q); } }
@@ -2133,7 +2133,6 @@ diceBtn.addEventListener('click', () => { if (!learn) randKey(); });
 diceBtn.dataset.learn = JSON.stringify({ t: 'randkey' });
 const levelled = () => (S.rand.autoLevel ? ' · levelled' : '');
 $('scatter').addEventListener('click', () => randChange(() => scatter(S.sel), `${SOUNDS[S.sel].name}: ${madeText()} on every key (from ${pool(S.sel).length})${levelled()}${keptNote([S.sel])}`));
-$('kit-scatter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => scatter(i)), `all engines: ${madeText()} on every key${levelled()}${keptNote(onSounds())}`));
 const wildly = () => (S.rand.wild ? ' wild' : '');
 $('alter').addEventListener('click', () => randChange(() => alterSound(S.sel), `${SOUNDS[S.sel].name}: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote([S.sel])}`));
 $('kit-alter').addEventListener('click', () => randChange(() => onSounds().forEach((i) => alterSound(i)), `all engines: every key altered <em>${S.rand.alter}%${wildly()}</em>${levelled()}${keptNote(onSounds())}`));
@@ -2170,18 +2169,18 @@ const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filt
 function drawInit() {
   const nl = lockedKeys();
   $('init-patch').setAttribute('aria-pressed', !!initArmed);
-  $('init-info').innerHTML = initArmed ? `REPLACES ${nl} LOCKED KEY${nl === 1 ? '' : 'S'}<br>PRESS AGAIN TO GO` : `FRESH BUCKET SOUNDS ON EVERY KEY<br>${INIT_REVERB}% REVERB · ${INIT_ECHO}% ECHO<br>BPM, FX + MASTER RESET`;
+  $('init-patch').textContent = initArmed ? `NEW PATCH: AGAIN (${nl} LOCKED)` : 'NEW PATCH';
 }
 function disarmInit() { clearTimeout(initArmed); initArmed = 0; drawInit(); }
 $('init-patch').addEventListener('click', () => {
   const nl = lockedKeys();
   if (nl && !initArmed) { // locked keys are the ones you kept on purpose: asked once
     initArmed = setTimeout(disarmInit, 4000); drawInit();
-    detail(`RANDOM PATCH replaces every key, the <em>${nl} locked</em> too: press it again to go ahead`); return;
+    detail(`NEW PATCH replaces every key, the <em>${nl} locked</em> too: press it again to go ahead`); return;
   }
   disarmInit();
   let n;
-  randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; }, 'RANDOM PATCH', true).then(() => {
+  randChange(() => { n = initPatch(); resetFx(); S.preset = { id: null, name: newName() }; }, 'NEW PATCH', true).then(() => {
     drawStrip(); sendTrim(); drawPreset();
     detail(`new patch <em>${S.preset.name}</em>: reverb on ${n.reverb}, echo on ${n.echo} · BPM, FX, master reset${keptNote(onSounds())}`);
   });
@@ -2196,7 +2195,6 @@ drawInit();
 // filtered. Locked keys stay, and so do knobs with a closed padlock; each key keeps its sends, its pan stays in its
 // engine's range, and AUTO LEVEL levels it as RANDOM does. UNDO takes it back ----
 const MORPH_TOPS = ['snare', 'clap', 'rim', 'mid perc', 'cowbell', 'closed hat', 'open hat', 'cymbal'];
-const MORPH_RUN = ['kick', 'snare', 'mid perc', 'closed hat'];
 // a bucket sound of a kind, as it is (no recipe): a kick is a drum sound from the lowest-pitched third of the drums,
 // a snare a snare, a hat a hihat (RANDOM KEYS and KICK > SNARE > HAT, Johnny 2026-11-20)
 const BUCKET_KINDS = { kick: /^drum/, snare: /^snare$/, hat: /^hihat$/ };
@@ -2256,8 +2254,6 @@ const morphPress = (what, types, scatter) => () => {
 };
 $('morph-keys').addEventListener('click', morphPress('MORPH KEYS'));
 $('morph-ends').addEventListener('click', morphPress('NEW ENDS + MORPH KEYS', () => ['kick', MORPH_TOPS[Math.floor(rnd() * MORPH_TOPS.length)]]));
-$('morph-run').addEventListener('click', morphPress('KICK > HAT', () => MORPH_RUN));
-$('morph-rand').addEventListener('click', morphPress('RANDOM MORPH KEYS', null, true));
 $('morph-ksh').addEventListener('click', morphPress('KICK > SNARE > HAT', () => [{ bucket: 'kick' }, { bucket: 'snare' }, { bucket: 'hat' }], true));
 function undo() {
   const u = undoStack.pop();
@@ -2533,7 +2529,7 @@ function drawPreset() {
 }
 function openPresets(open) {
   $('preset-panel').hidden = !open; $('preset-btn').setAttribute('aria-expanded', open);
-  if (open) { openMenu(false); openSettings(false); drawPreset(); } else { if (delArmed) { clearTimeout(delT); delArmed = null; } if (initArmed) disarmInit(); } // (RANDOM PATCH lives here now)
+  if (open) { openMenu(false); openSettings(false); drawPreset(); } else { if (delArmed) { clearTimeout(delT); delArmed = null; } if (initArmed) disarmInit(); }
 }
 $('preset-btn').addEventListener('click', () => openPresets($('preset-panel').hidden));
 $('preset-input').addEventListener('change', () => renamePreset($('preset-input').value));
@@ -2886,7 +2882,7 @@ function drawMorph() {
   if (!morphKnob) {
     morphKnob = gknob('', { max: 100, dflt: 0, show: (v) => morphText(morphMs(v)), get: () => Math.round(100 * Math.sqrt((S.fx.tempo.morph || 0) / 2000)),
       set: (v) => { S.fx.tempo.morph = morphMs(v); sendFx(); } });
-    morphKnob.classList.add('mtknob'); morphKnob.querySelector('.knob').setAttribute('aria-label', 'Morph time, off to 2 seconds');
+    morphKnob.classList.add('mtknob'); morphKnob.querySelector('.knob').setAttribute('aria-label', 'Glide time, off to 2 seconds');
     $('morphtime').append(morphKnob);
   }
   morphKnob._draw(); // (its own draw: the editor's rebuild clears faderDraws)
@@ -2989,7 +2985,7 @@ const sendBars = [['pv-echo', 0, 'ECHO'], ['pv-reverb', 1, 'REVERB']].map(([id, 
   const draw = () => { const v = valueNow(par()) || 0; fill.style.width = `${v / 127 * 100}%`; out.textContent = v; track.setAttribute('aria-valuenow', v); };
   return draw;
 });
-for (const [id, to] of [['pv-alter', 'alter-key'], ['pv-lock', 'lock-key'], ['pv-init', 'init-patch'], ['pv-random', 'kit-scatter'], ['pv-undo', 'undo']]) $(id).addEventListener('click', () => $(to).click());
+for (const [id, to] of [['pv-alter', 'alter-key'], ['pv-lock', 'lock-key'], ['pv-init', 'init-patch'], ['pv-undo', 'undo']]) $(id).addEventListener('click', () => $(to).click());
 $('pv-dice').addEventListener('click', () => diceBtn.click());
 // the phone's menu (MENU, top right; the same button closes it): the presses of the
 // RANDOM menu that the pads' screen has no button for. A press does its thing and closes the menu, so the pads show it
@@ -3003,7 +2999,7 @@ for (const [id, fn] of [['pv-rand-eng', () => $('scatter').click()], ['pv-alter-
 // what the big screen says and shows, said and shown here too: the message line, UNDO there to press, INIT PATCH asking
 const mirror = (el, opts, fn) => { new MutationObserver(fn).observe(el, opts); fn(); };
 mirror($('undo'), { attributes: true, attributeFilter: ['disabled'] }, () => { $('pv-undo').disabled = $('undo').disabled; });
-mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] }, () => { const a = $('init-patch').getAttribute('aria-pressed') === 'true'; $('pv-init').setAttribute('aria-pressed', a); $('pv-init').textContent = a ? 'PRESS AGAIN' : 'RANDOM PATCH'; });
+mirror($('init-patch'), { attributes: true, attributeFilter: ['aria-pressed'] }, () => { const a = $('init-patch').getAttribute('aria-pressed') === 'true'; $('pv-init').setAttribute('aria-pressed', a); $('pv-init').textContent = a ? 'PRESS AGAIN' : 'NEW PATCH'; });
 new MutationObserver(() => { $('pv-msg').innerHTML = $('detail').innerHTML; }).observe($('detail'), { childList: true, characterData: true, subtree: true });
 drawPhone = () => {
   if (!phoneOn) return;

@@ -487,6 +487,7 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pv-key span { overflow: hidden; text-overflow: ellipsis; font-size: calc(18px * var(--fz, 1)); }
 .pv-row > .btn { min-width: 0; min-height: 50px; padding: 4px 2px; font-size: calc(19px * var(--fz, 1)); touch-action: manipulation; }
 .pv-row > .two { grid-column: span 2; }
+.pv-row > .four { grid-column: span 4; }
 .pv-row > .btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .pvdice { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pvdice .die { display: block; flex: none; width: 30px; height: 30px; border: 2px solid currentColor; border-radius: 5px; }
@@ -704,14 +705,14 @@ html.phone #bl-clear { grid-column: 1 / -1; }
 html:not(.phone) .top { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); gap: 0; padding: 0 8px; align-items: center; }
 html:not(.phone) .top > * { margin: 0 8px; min-width: 0; grid-row: 1; }
 html:not(.phone) .top > .logo { grid-column: 1 / 4; margin-left: 4px; font-size: 40px; }
-html:not(.phone) .top > #pmenu { grid-column: 4 / 13; }
+html:not(.phone) .top > #pmenu { grid-column: 4 / 15; }
 /* MIDI: a lamp at the right of the logo's cells, lit while an input is connected (its tooltip says which) */
 html:not(.phone) .top > .midilamp { grid-column: 1 / 4; grid-row: 1; justify-self: end; }
 .midilamp { display: flex; align-items: center; gap: 6px; font-size: calc(15px * var(--fz, 1)); letter-spacing: .12em; color: var(--muted); cursor: default; }
 .midilamp i { width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; opacity: .5; }
 .midilamp.live { color: var(--ink); }
 .midilamp.live i { background: var(--ink); opacity: 1; }
-html:not(.phone) .top > .topacts { grid-column: 13 / 18; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+html:not(.phone) .top > .topacts { grid-column: 15 / 18; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .pbtn { width: 100%; max-width: none; justify-content: flex-start; }
 .pbtn > span:last-child { margin-left: auto; }
 .pbtn b { max-width: none; flex: 0 1 auto; min-width: 0; }
@@ -899,8 +900,7 @@ html:not(.phone) .top { padding: 0 24px; }
 .menupanel .opttabs .btn[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .optpane[hidden] { display: none; }
 .optpane > h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
-/* the top bar: RANDOM, SOUNDMAKER over two cells, OPTIONS, UNDO */
-#blend-btn { grid-column: span 2; }
+/* the top bar: RANDOM, OPTIONS, UNDO (SOUNDMAKER is in OPTIONS > SETUP > TOOLS, Johnny 2026-11-21) */
 #blend-btn kbd { display: inline-block; }
 
 /* ---- the RANDOM menu as a plain text list (Johnny, 2026-11-20): one line per item, a grey heading per group, a tick
