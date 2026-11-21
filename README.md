@@ -2,7 +2,7 @@
 
 A free drum synth for a 25-key MIDI keyboard. Three drum engines (drum, snare, metal) share the keys, and every key
 has a sound of its own, so one keyboard is a whole kit. Its drum voices are the LXR-02 drum machine's, ported from the
-firmware. It runs in the browser, and on a Mac as a VST3, AU or app.
+firmware. It runs in the browser, on a Mac as a VST3, AU or app, and on Windows and Linux as a VST3 or app.
 
 **Play it: https://dipogon.johnnyhawk.org/** (Chrome or Edge on a computer, for MIDI; on a phone it shows 25 pads)
 
@@ -33,6 +33,19 @@ Why a command and not a download? Dipogon is free and has no paid Apple Develope
 notarised by Apple, and macOS blocks a plugin downloaded in a browser. Fetched with `curl` it isn't blocked. The
 script is short, so read it first if you like ([plugin/install.sh](plugin/install.sh)). More in
 [plugin/README.md](plugin/README.md).
+
+## Windows and Linux
+
+A VST3 and a standalone app, for 64-bit Windows 10/11 and x86_64 Linux, from the
+[plugin-latest release](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest). They are new and haven't been
+tried in a DAW yet, so tell us how they do.
+
+- **Windows:** unzip `Dipogon-windows-vst3.zip` and put the `Dipogon.vst3` folder in `C:\Program Files\Common Files\VST3`,
+  then rescan plugins. It isn't signed, so Windows SmartScreen may warn about it (More info > Run anyway).
+- **Linux:** unzip `Dipogon-linux-vst3.zip` into `~/.vst3`, then rescan plugins. It needs WebKitGTK
+  (`sudo apt install libwebkit2gtk-4.1-0` on Debian and Ubuntu).
+
+More in [plugin/README.md](plugin/README.md#windows).
 
 ## Everything it does
 

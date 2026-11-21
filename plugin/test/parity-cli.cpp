@@ -5,12 +5,19 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 #include "../src/engine/Dsp.h"
 #include "../src/engine/Wavetables.h"
 
 int main() {
   std::ios::sync_with_stdio(false);
+#ifdef _WIN32
+  _setmode(_fileno(stdout), _O_BINARY);  // (or every 0x0a byte of the audio gets a 0x0d put before it)
+#endif
   lxr::buildAllTables();
   lxr::Dsp dsp;
   std::vector<float> L(1 << 16), R(1 << 16), out;

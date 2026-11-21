@@ -1,4 +1,4 @@
-# Dipogon plugin (macOS: VST3, AU, standalone app)
+# Dipogon plugin (macOS: VST3, AU, standalone app; Windows and Linux: VST3, standalone app)
 
 The web app as a plugin. It looks the same because it *is* the same page, the repo's own `index.html`, `app/` and `css/`, shown in the plugin's window. It sounds the same because the engine is a C++ port of `sound/` and `engine/`, and it is checked against the JS sample for sample.
 
@@ -20,6 +20,36 @@ If you'd rather download the zips from the [release page](https://github.com/joh
 xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3 ~/Library/Audio/Plug-Ins/Components/Dipogon.component /Applications/Dipogon.app
 ```
 
+## Windows
+
+64-bit Windows 10 or 11. From the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest):
+
+- **VST3:** unzip `Dipogon-windows-vst3.zip` and move the `Dipogon.vst3` folder into `C:\Program Files\Common Files\VST3`
+  (Windows asks for an administrator's OK), then rescan plugins in your DAW.
+- **App:** unzip `Dipogon-windows-app.zip` anywhere and run `Dipogon.exe`.
+
+Dipogon isn't signed (a code-signing certificate costs money every year), so Windows may warn that it's from an unknown
+publisher. SmartScreen shows "Windows protected your PC": click **More info**, then **Run anyway**. Edge's WebView2 draws
+the window; it comes with Windows 11 and up-to-date Windows 10. The shared settings live in
+`%APPDATA%\Dipogon\shared.json`.
+
+**Untested so far:** the Windows build is made and checked by CI (it compiles, and its engine matches the JS sample for
+sample), but nobody has opened it in a Windows DAW yet.
+
+## Linux
+
+x86_64, any distribution about as new as Ubuntu 22.04 or newer. From the
+[release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest):
+
+- **VST3:** `mkdir -p ~/.vst3 && unzip Dipogon-linux-vst3.zip -d ~/.vst3`, then rescan plugins (Bitwig, Reaper, Ardour...).
+- **App:** unzip `Dipogon-linux-app.zip` and run `./Dipogon`.
+
+The window is WebKitGTK, which most desktops already have; if not, `sudo apt install libwebkit2gtk-4.1-0` (Debian,
+Ubuntu) or `sudo dnf install webkit2gtk4.1` (Fedora). The shared settings live in `~/.config/Dipogon/shared.json`.
+
+**Partly tested:** CI builds it and checks its engine against the JS sample for sample, and the standalone app has been
+seen to open and draw the panel under a virtual X display, but nobody has played it in a Linux DAW yet.
+
 ## How it works
 
 The plugin plays MIDI channel 1, with the keys and zones laid out as in the web app.
@@ -34,7 +64,7 @@ The plugin plays MIDI channel 1, with the keys and zones laid out as in the web 
 
 **Saving:**
 - Each plugin's sound (the page's `lxr-afx-v3` state: the sounds, keys, locks, FX) is saved in the DAW project.
-- The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/Dipogon/shared.json`.
+- The look, knob style, presets and saved sounds are shared by every copy of the plugin. They live in `~/Library/Application Support/Dipogon/shared.json` (Windows: `%APPDATA%\Dipogon\shared.json`; Linux: `~/.config/Dipogon/shared.json`).
 
 **Limits:**
 - A newly added copy plays nothing until its window has been opened once. Most DAWs open it on insert.
@@ -84,5 +114,9 @@ The pieces:
 | `src/plugin/` | The JUCE plugin: the processor and the webview editor. |
 | `js/shim.js` | Runs before the page in the plugin. It stands in for the browser's AudioContext, Web MIDI and localStorage. |
 | `js/dsp-entry.js` | The same plugin interface written in JS on the web app's own engine. It is the reference the C++ is tested against. |
+
+Windows and Linux build the same way with CMake's default generator (no `-G Xcode`, no architectures). Windows needs
+Visual Studio 2022 and the WebView2 SDK (see the `windows` job in `.github/workflows/plugin.yml`); Linux needs the
+packages in the `linux` job.
 
 It is GPL-3.0, like the LXR firmware it comes from. JUCE is used under its AGPLv3 licence, which is compatible.

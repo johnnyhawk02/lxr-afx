@@ -50,6 +50,14 @@ std::optional<juce::WebBrowserComponent::Resource> resource(const juce::String& 
   juce::MemoryBlock mb; in->readIntoMemoryBlock(mb);
   std::vector<std::byte> data(mb.getSize());
   std::memcpy(data.data(), mb.getData(), mb.getSize());
+#if !JUCE_MAC
+  // webkit2gtk takes no Content-Type from JUCE and reads the page as Windows-1252, whatever its <meta charset> says
+  // (so ▾ shows as â–¾): a UTF-8 byte order mark at the front of each text file wins over that, in every browser
+  const juce::String mime = mimeOf(path);
+  const bool text = mime.startsWith("text/") || mime == "application/json" || mime == "image/svg+xml";
+  if (text && !(data.size() >= 3 && data[0] == std::byte{0xef} && data[1] == std::byte{0xbb} && data[2] == std::byte{0xbf}))
+    data.insert(data.begin(), {std::byte{0xef}, std::byte{0xbb}, std::byte{0xbf}});
+#endif
   return cache.emplace(path, juce::WebBrowserComponent::Resource{std::move(data), mimeOf(path)}).first->second;
 }
 
@@ -132,6 +140,13 @@ void LxrEditor::open() {
   // is no longer this plugin's sound, so what it says is dropped)
   auto* pr = &proc;
   auto opts = juce::WebBrowserComponent::Options{}
+#if JUCE_WINDOWS
+                  // (Edge's WebView2, not the old IE one; its cache in the user's temp folder, as a DAW's own folder
+                  // under Program Files can't be written to)
+                  .withBackend(juce::WebBrowserComponent::Options::Backend::webview2)
+                  .withWinWebView2Options(juce::WebBrowserComponent::Options::WinWebView2{}
+                                              .withUserDataFolder(juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("Dipogon")))
+#endif
                   .withNativeIntegrationEnabled()
                   .withKeepPageLoadedWhenBrowserIsHidden()
                   .withResourceProvider([](const juce::String& url) { return resource(url); })

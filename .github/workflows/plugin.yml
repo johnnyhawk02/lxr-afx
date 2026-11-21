@@ -1,6 +1,7 @@
 # The plugin (plugin/): builds Dipogon as a universal (Apple silicon + Intel) VST3, AU and standalone app on macOS,
-# checks the C++ engine against the web app's JS sample for sample, and (on main) puts the build up as the
-# "plugin-latest" release. The web app itself is untouched by this.
+# and as a VST3 and standalone app on Windows (x64) and Linux (x86_64), checks the C++ engine against the web app's
+# JS sample for sample on each, and (on main) puts the builds up as the "plugin-latest" release. The web app itself
+# is untouched by this.
 name: plugin
 on:
   push:
@@ -46,14 +47,89 @@ jobs:
           ditto -c -k --keepParent "$A/Standalone/Dipogon.app" out/Dipogon-app.zip
       - uses: actions/upload-artifact@v4
         with: { name: Dipogon-mac, path: plugin/out/*.zip }
-      - name: Release (main only)
-        if: github.ref == 'refs/heads/main'
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults: { run: { working-directory: plugin, shell: bash } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Data and page from the web app
+        run: npm install --no-audit --no-fund && node tools/gen-data.mjs && node tools/bundle.mjs
+      - name: WebView2 SDK (linked in statically, so the plugin needs no loader DLL)
+        run: |
+          W="$(cygpath -m "$RUNNER_TEMP")/webview2"
+          mkdir -p "$W/Microsoft.Web.WebView2.1.0.1901.177"
+          curl -fsSL https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/1.0.1901.177 -o "$W/wv2.zip"
+          unzip -q "$W/wv2.zip" -d "$W/Microsoft.Web.WebView2.1.0.1901.177"
+          echo "WEBVIEW2=$W" >> "$GITHUB_ENV"
+      - name: Configure
+        run: cmake -B build/cmake -A x64 -DJUCE_WEBVIEW2_PACKAGE_LOCATION="$WEBVIEW2"
+      - name: Build
+        run: cmake --build build/cmake --config Release --target LXR_AFX_VST3 LXR_AFX_Standalone lxr_parity -- -m -v:minimal
+      - name: Same sound as the web app
+        run: node test/parity.mjs build/cmake/Release/lxr_parity.exe --quick
+      - name: Package
+        run: |
+          A=build/cmake/LXR_AFX_artefacts/Release
+          mkdir -p out
+          (cd "$A/VST3" && 7z a -tzip -bso0 "$OLDPWD/out/Dipogon-windows-vst3.zip" Dipogon.vst3)
+          (cd "$A/Standalone" && 7z a -tzip -bso0 "$OLDPWD/out/Dipogon-windows-app.zip" Dipogon.exe)
+      - uses: actions/upload-artifact@v4
+        with: { name: Dipogon-windows, path: plugin/out/*.zip }
+
+  linux:
+    runs-on: ubuntu-22.04  # (the older glibc, so the build runs on more distributions)
+    timeout-minutes: 60
+    defaults: { run: { working-directory: plugin } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip ninja-build libasound2-dev libfreetype6-dev libfontconfig1-dev libx11-dev libxrandr-dev \
+            libxinerama-dev libxcursor-dev libxcomposite-dev libxext-dev libgl1-mesa-dev libgtk-3-dev libwebkit2gtk-4.1-dev libjack-jackd2-dev
+      - name: Data and page from the web app
+        run: npm install --no-audit --no-fund && node tools/gen-data.mjs && node tools/bundle.mjs
+      - name: Configure
+        run: cmake -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/cmake --target LXR_AFX_VST3 LXR_AFX_Standalone lxr_parity
+      - name: Same sound as the web app
+        run: node test/parity.mjs build/cmake/lxr_parity --quick
+      - name: Package
+        run: |
+          A=build/cmake/LXR_AFX_artefacts/Release
+          mkdir -p out
+          (cd "$A/VST3" && zip -q -r -X "$OLDPWD/out/Dipogon-linux-vst3.zip" Dipogon.vst3)
+          (cd "$A/Standalone" && zip -q -X "$OLDPWD/out/Dipogon-linux-app.zip" Dipogon)
+      - uses: actions/upload-artifact@v4
+        with: { name: Dipogon-linux, path: plugin/out/*.zip }
+
+  # the release: the Mac build, and Windows and Linux when they built (a failed one never holds the Mac one back)
+  release:
+    needs: [mac, windows, linux]
+    if: always() && github.ref == 'refs/heads/main' && needs.mac.result == 'success'
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: plugin } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: Dipogon-*, path: plugin/out, merge-multiple: true }
+      - name: Release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
+          ls -l out
           gh release delete plugin-latest --yes --cleanup-tag || true
           cp install.sh out/install.sh
           printf '%s\n' "Built from ${GITHUB_SHA::7}." "" \
             "**Install on a Mac:** open Terminal, paste this line and press Return, then rescan plugins in your DAW:" "" \
             '```' 'curl -fsSL https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest/install.sh | bash' '```' "" \
-            "Dipogon is free, with no paid Apple Developer account, so it isn't signed or notarised by Apple and macOS blocks the zips if you download them in a browser. The line above fetches them with curl, which macOS doesn't block. To use the zips instead, see [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#install)." > notes.md
-          gh release create plugin-latest out/*.zip out/install.sh --latest --target "$GITHUB_SHA" --title "Dipogon for Mac: VST3, AU and app" --notes-file notes.md
+            "Dipogon is free, with no paid Apple Developer account, so it isn't signed or notarised by Apple and macOS blocks the zips if you download them in a browser. The line above fetches them with curl, which macOS doesn't block. To use the zips instead, see [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#install)." "" \
+            "**Windows (64-bit) and Linux (x86_64):** a VST3 and a standalone app, untested in a DAW so far. Unzip \`Dipogon-windows-vst3.zip\` into \`C:\\Program Files\\Common Files\\VST3\`, or \`Dipogon-linux-vst3.zip\` into \`~/.vst3\`, then rescan plugins. See [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#windows) for details." > notes.md
+          cat notes.md
+          gh release create plugin-latest out/*.zip out/install.sh --latest --target "$GITHUB_SHA" --title "Dipogon: Mac (VST3, AU, app), Windows and Linux (VST3, app)" --notes-file notes.md
