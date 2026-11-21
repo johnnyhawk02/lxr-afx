@@ -3,7 +3,7 @@
 (Its working name was LXR-AFX.)
 
 An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key its own sound.
-**Play it: https://johnnyhawk02.github.io/lxr-afx/** (Chrome or Edge, for Web MIDI)
+**Play it: https://dipogon.johnnyhawk.org/** (Chrome or Edge, for Web MIDI)
 
 ![Dipogon at 1440 × 900](docs/screenshot.png)
 
