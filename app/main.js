@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwpq8bez';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwpq8bez';
-import { presetName, jumble } from './names.js?v=mwpq8bez';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwpq8bez';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwpq8bez';
-import { breed, isDud } from '../sound/breed.js?v=mwpq8bez';
-import { BASE_NOTE } from '../sound/morph.js?v=mwpq8bez';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwpq8bez';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwpq8bez';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwpq8bez';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwpq8bez';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwpq8bez';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwq1gd1p';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwq1gd1p';
+import { presetName, jumble } from './names.js?v=mwq1gd1p';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwq1gd1p';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwq1gd1p';
+import { breed, isDud } from '../sound/breed.js?v=mwq1gd1p';
+import { BASE_NOTE } from '../sound/morph.js?v=mwq1gd1p';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwq1gd1p';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwq1gd1p';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwq1gd1p';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwq1gd1p';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwq1gd1p';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -106,7 +106,7 @@ function postTables(m) {
 async function startAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwpq8bez', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwq1gd1p', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -302,6 +302,7 @@ function ccTargetName(t) {
   if (t.t === 'global') return 'morph ' + t.k + ' (all)';
   if (t.t === 'sound') return 'morph ' + t.k;
   if (t.t === 'randkey') return 'new sound on the key';
+  if (t.t === 'macro') return macroName(t.k);
   return SOUNDS[t.s].name.toLowerCase() + ' level';
 }
 const ccHeld = {};
@@ -314,12 +315,18 @@ function onCC(cc, val) {
     for (const k in S.ccMap) if (JSON.stringify(S.ccMap[k]) === JSON.stringify(learn.target)) delete S.ccMap[k]; // one knob per control
     S.ccMap[cc] = learn.target; save();
     showLastText(`CC${cc} → ${ccTargetName(learn.target).toUpperCase()}`);
-    setLearn(null); return;
+    setLearn(null); drawMacroCC(); return;
   }
   const t = ccMap()[cc];
   if (!t) { showLastText(`CC${cc} ${val} · not mapped (LEARN maps it)`); return; }
   let text;
   if (t.t === 'global' || t.t === 'sound') { showLastText(`CC${cc} · was the morph (gone): BASS STATION 2 or LEARN maps it`); return; }
+  if (t.t === 'macro') { // a MACRO knob, 0..127 straight onto it (in the plugin the plugin moves its parameter itself)
+    const k = t.k; if (!(k >= 0 && k < NUM_MACROS) || macroHeld[k]) return;
+    M().v[k] = val; if (!window.lxrHost) send({ type: 'macro', i: k, v: val });
+    if (macroDraws[k]) macroDraws[k]();
+    save(); showLastText(`CC${cc} · ${macroName(k).toUpperCase()} ${Math.round(val / 1.27)}%`); return;
+  }
   if (t.t === 'randkey') { // a button: acts once as it goes past half way up
     const up = val >= 64, was = ccHeld[cc]; ccHeld[cc] = up;
     if (up && !was) randKey(); return;
@@ -342,14 +349,14 @@ function onCC(cc, val) {
 }
 // LEARN: press it, touch a control on screen, turn a knob
 function setLearn(l) {
-  learn = l;
+  learn = l; drawMacroCC();
   $('learn').setAttribute('aria-pressed', !!l);
   document.body.classList.toggle('learning', !!l);
   if (l && !l.target) detail('LEARN: click a control on screen, then turn a knob (Esc cancels)');
   else if (l) detail(`LEARN: now turn a knob for <em>${ccTargetName(l.target)}</em>`);
 }
 $('learn').addEventListener('click', () => setLearn(learn ? null : { armed: true }));
-$('cc-reset').addEventListener('click', () => { S.ccMap = null; save(); setLearn(null); detail('knobs: back to the Bass Station 2 map'); });
+$('cc-reset').addEventListener('click', () => { S.ccMap = null; save(); setLearn(null); drawMacroCC(); detail('knobs: back to the Bass Station 2 map'); });
 document.addEventListener('pointerdown', (e) => {
   if (!learn) return;
   const el = e.target.closest('[data-learn]');
@@ -856,12 +863,15 @@ function buildMacros(voice) {
   for (let k = 0; k < NUM_MACROS; k++) {
     const el = document.createElement('div'); el.className = 'sect mac' + (k ? ' sep' : ''); el.style.setProperty('--n', 2);
     el.style.gridArea = `1 / ${1 + 2 * k} / 2 / ${3 + 2 * k}`;
-    el.innerHTML = `<h3><button type="button" class="mname"></button></h3><div class="row"></div>`;
+    el.innerHTML = `<h3><button type="button" class="mname"></button><span class="mcc"></span></h3><div class="row"></div>`;
     const name = el.querySelector('.mname'), row = el.querySelector('.row');
     name.addEventListener('click', () => openMacro(k));
     const knob = gknob('', { max: 127, dflt: 0, show: (v) => Math.round(v / 1.27) + '%', get: () => M().v[k],
       set: (v) => { M().v[k] = v; send({ type: 'macro', i: k, v }); save(); } });
     knob.classList.add('mknob');
+    knob.dataset.learn = JSON.stringify({ t: 'macro', k }); // (SETTINGS > LEARN: click it, turn a controller)
+    knob.title = 'Right-click: MIDI LEARN (then turn a knob on your controller)';
+    knob.addEventListener('contextmenu', (e) => { e.preventDefault(); macroLearn(k); });
     // the DAW's touch: a drag is one gesture, so its automation records it as one move
     const tr = knob.querySelector('.knob');
     tr.addEventListener('pointerdown', (e) => { if (e.button) return; macroHeld[k] = true; send({ type: 'macro', i: k, g: 1 }); });
@@ -877,6 +887,7 @@ function buildMacros(voice) {
       list.innerHTML = t.length ? t.slice(0, 4).map(([u, d]) => `<span><b>${dialLabel(macroVoice, u)}</b><i>${d > 0 ? '+' : ''}${d}</i></span>`).join('') + (t.length > 4 ? `<span class="dim">+${t.length - 4} more</span>` : '')
         : '<span class="dim">no targets</span>';
       el.classList.toggle('off', !t.length);
+      drawMacroCC();
     };
     faderDraws.push(draw); macroDraws[k] = knob._draw;
   }
@@ -895,6 +906,28 @@ function buildMacros(voice) {
 function macroLive(v) {
   v.forEach((x, k) => { if (k < NUM_MACROS && !macroHeld[k] && Math.abs(x - M().v[k]) > 1e-3) { M().v[k] = x; if (macroDraws[k]) macroDraws[k](); } });
 }
+// MIDI on the macros: a CC from the controller (channel 1) moves one, set by MIDI LEARN (right-click a macro knob,
+// its pop-up, or SETTINGS > LEARN) and kept with the knob map (S.ccMap: this browser's, or the plugin's DAW project),
+// not in presets, so the controller stays put while the sounds change
+const macroCC = (k) => { const m = ccMap(); for (const c in m) if (m[c].t === 'macro' && m[c].k === k) return +c; return -1; };
+const macroLearning = (k) => !!(learn && learn.target && learn.target.t === 'macro' && learn.target.k === k);
+function macroLearn(k) { setLearn(macroLearning(k) ? null : { target: { t: 'macro', k } }); }
+function macroUnlearn(k) {
+  S.ccMap = { ...ccMap() };
+  for (const c in S.ccMap) if (S.ccMap[c].t === 'macro' && S.ccMap[c].k === k) delete S.ccMap[c];
+  save(); drawMacroCC();
+}
+function drawMacroCC() {
+  document.querySelectorAll('#macros .mcc').forEach((el, k) => {
+    const c = macroCC(k); el.textContent = macroLearning(k) ? 'learn…' : c >= 0 ? 'cc' + c : '';
+    el.classList.toggle('on', macroLearning(k));
+  });
+  const k = macroEdit; if (k < 0 || !$('mac-learn')) return;
+  const c = macroCC(k), b = $('mac-learn');
+  b.textContent = macroLearning(k) ? 'TURN A KNOB…' : c >= 0 ? 'MIDI CC ' + c : 'MIDI LEARN';
+  b.setAttribute('aria-pressed', macroLearning(k));
+  $('mac-unlearn').hidden = c < 0;
+}
 // a macro's targets: every knob that can be modulated, each with a depth either way (0: not a target), in a pop-up
 function openMacro(k) {
   macroEdit = k; $('macpop').hidden = k < 0;
@@ -909,6 +942,7 @@ function drawMacroPop() {
   const k = macroEdit; if (k < 0) return;
   const voice = SOUNDS[S.sel].engineVoice;
   $('mac-num').textContent = 'MACRO ' + (k + 1);
+  drawMacroCC();
   const nm = $('mac-name'); if (document.activeElement !== nm) nm.value = (M().n && M().n[k]) || '';
   nm.placeholder = macroName(k).toUpperCase();
   const box = $('mac-list'); box.innerHTML = '';
@@ -933,13 +967,15 @@ function drawMacroPop() {
 $('mac-close').addEventListener('click', () => openMacro(-1));
 $('macpop').addEventListener('pointerdown', (e) => { if (e.target === $('macpop')) openMacro(-1); });
 $('mac-clear').addEventListener('click', () => { if (macroEdit < 0) return; M().t[macroEdit] = []; sendFx(); drawFaders(); drawMacroPop(); });
+$('mac-learn').addEventListener('click', () => { if (macroEdit >= 0) macroLearn(macroEdit); });
+$('mac-unlearn').addEventListener('click', () => { if (macroEdit >= 0) macroUnlearn(macroEdit); });
 $('mac-name').addEventListener('input', (e) => {
   if (macroEdit < 0) return; if (!M().n) M().n = FX_DEFAULTS.macros.n.slice();
   M().n[macroEdit] = e.target.value.trim().toLowerCase().slice(0, 12); save(); drawFaders();
 });
 document.addEventListener('keydown', (e) => {
   if ($('macpop').hidden) return;
-  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); openMacro(-1); }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (learn) setLearn(null); else openMacro(-1); }
 }, true);
 
 // ---- the FX page: the three send effects every key feeds (each key's sends are its FX SENDS knobs) ----
@@ -1635,7 +1671,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwpq8bez').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwq1gd1p').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The

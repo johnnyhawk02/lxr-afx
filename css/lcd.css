@@ -629,6 +629,8 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .ldrow { display: grid; grid-template-columns: 1fr 160px; gap: 8px; align-items: center; }
 .ldrow .pname { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
   border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
+.macbox .ldrow { grid-template-columns: 1fr repeat(3, auto); }
+.macbox .ldrow [hidden] { display: none; }
 .ldrow .dim { font-size: 15px; letter-spacing: 1px; text-align: right; }
 .ldtypes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
 .ldtypes .btn { padding: 4px 2px; min-width: 0; font-size: 15px; }
@@ -973,6 +975,9 @@ html:not(.phone) .left { grid-template-rows: 146px auto minmax(0, 1fr); }
 .macros .sect h3 { padding: 0 8px; }
 .macros .mname { padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .macros .mname:hover { text-decoration: underline; }
+.macros .mcc { margin-left: .6em; opacity: .55; font-size: .85em; white-space: nowrap; }
+.macros .mcc.on { opacity: 1; animation: mccblink 1s steps(2) infinite; }
+@keyframes mccblink { 50% { opacity: .2; } }
 html:not(.phone) .macros .vf.mknob .knob { width: 72px; height: 72px; margin-top: 2px; }
 html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a big knob, as LEVEL's: inside the row, never over its name) */
 .macros .vf.mknob .lab { display: none; }

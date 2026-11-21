@@ -57,6 +57,10 @@ class LxrProcessor : public juce::AudioProcessor {
   void push(lxr::json m);
   void macroFromPage(const lxr::json& m);
   void macrosFromStore(const std::string& store);
+  void ccFromStore(const std::string& store);
+  // the page's MIDI LEARN for the macros (its ccMap): CC number -> macro (-1: none), so a controller moves a macro
+  // with the editor shut too
+  std::atomic<int> ccMacro[128];
   float macroNow[NUM_MACROS];
   lxr::Dsp dsp;
   std::atomic<double> sr{48000};
