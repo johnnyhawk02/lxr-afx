@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwqekoky">
-<link rel="stylesheet" href="css/grey.css?v=mwqekoky">
+<link rel="stylesheet" href="css/lcd.css?v=mwqen8uk">
+<link rel="stylesheet" href="css/grey.css?v=mwqen8uk">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -108,7 +108,6 @@
         <div class="optpane" id="setup-pane" role="tabpanel">
         <h3>PLAYING</h3>
         <div class="lowkey" role="group" aria-label="Tempo, for the sequencers and the synced echo"><span class="dim">BPM</span><button class="btn sm" id="bpm-down" title="Slower (Shift: by 10)">−</button><b class="lcdbox bpm" id="bpm" title="The tempo: − and + change it (Shift: by 10), double-click for 120">120</b><button class="btn sm" id="bpm-up" title="Faster (Shift: by 10)">+</button></div>
-        <div class="lowkey" role="group" aria-label="Return timing"><span class="dim">HELD KEY BACK</span><button class="btn sm ret" id="ret" title="Each zone plays one key at a time, the newest. Let go of it while an earlier key of the zone is still held and that key comes back: at once, or on the next step of the BPM grid. Click to change (Shift: back)">1/16</button></div>
         <h3>LEVELS</h3>
         <label class="chk lvl" title="NEW SOUND, RANDOM and ALTER measure each sound they deal and trim its key, so every key of an engine plays about as loud. The LEVEL knobs stay yours; the AUTO button above LEVEL shows a key's trim"><input type="checkbox" id="auto-on"><i></i>AUTO LEVEL <span class="dim">DEALT SOUNDS PLAY EQUALLY LOUD</span></label>
         <div class="randrow">
@@ -328,6 +327,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwqekoky"></script>
+<script type="module" src="app/main.js?v=mwqen8uk"></script>
 </body>
 </html>

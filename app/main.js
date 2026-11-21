@@ -2,18 +2,18 @@
 // knobs edit the key played last. The sound engine is in sound/ (no UI here).
 import { MOD_DIALS, SOUNDS, VOICE_SCHEMAS, INIT_VALUES, PAGES, PAR, PAN_RANGE, NUM_PARAMS, ALL_PARAMS,
   voiceOwned, showValue, seqOnPar, seqPatPar, soundOfNote, mapVoice, setZoneStart, kindSchema, kindPar, setEngines, zoneSizes, engineOn, MAX_ENGINES, DEFAULT_ENGINES, DEFAULT_ZONE_START, trimPar, trimDb, TRIM_ZERO, sendPar,
-  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwqekoky';
-import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwqekoky';
-import { presetName, jumble } from './names.js?v=mwqekoky';
-import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwqekoky';
-import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwqekoky';
-import { breed, isDud } from '../sound/breed.js?v=mwqekoky';
-import { BASE_NOTE } from '../sound/morph.js?v=mwqekoky';
-import { BUCKET } from '../sound/bucket-sounds.js?v=mwqekoky';
-import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwqekoky';
-import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwqekoky';
-import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwqekoky';
-import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwqekoky';
+  POS_RULE, valuesToPositions, editsToPositions, MOD_RULE, upgradeMod, pairsToDepths, stepTimesFromHit, modOf, MOD_SOURCES, MOD_AMT_ZERO, MOD_AMT_MAX, NUM_SRC, stepPar, NUM_STEPS, stepTimePar, stepSlewPar, stepLenPar, STEP_LEN_DEF, routeOf, ukeyPar, dec2, TABLE_BASE, tablePar } from '../sound/schema.js?v=mwqen8uk';
+import { TABLE_NAMES, tableId, tableFor, waveShape, WAVE_TOP, BASIC, classicOnBasic } from '../sound/tables.js?v=mwqen8uk';
+import { presetName, jumble } from './names.js?v=mwqen8uk';
+import { autoTrim, measure, LEVEL_TARGET_DB } from '../sound/level.js?v=mwqen8uk';
+import { MAKERS, recipe, blend } from '../sound/makers.js?v=mwqen8uk';
+import { breed, isDud } from '../sound/breed.js?v=mwqen8uk';
+import { BASE_NOTE } from '../sound/morph.js?v=mwqen8uk';
+import { BUCKET } from '../sound/bucket-sounds.js?v=mwqen8uk';
+import { toVoice, fromVoice, labelOf, tidy as tidySound } from '../sound/bucket.js?v=mwqen8uk';
+import { FX_DEFAULTS, echoMs, ECHO_DIVS, NUM_MACROS } from '../sound/instrument.js?v=mwqen8uk';
+import { filterResponse, FILTER_STEP, FILTER_DETENT_NAMES } from '../engine/lxr.js?v=mwqen8uk';
+import { DIRT_DEFAULTS, dirtHz, volDb, pregainDb, bassDb } from '../sound/dirt.js?v=mwqen8uk';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -123,7 +123,7 @@ async function tryAudio() {
 async function openAudio() {
   if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
   ctx = new AudioContext({ latencyHint: 'interactive' });
-  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwqekoky', import.meta.url));
+  await ctx.audioWorklet.addModule(new URL('../sound/worklet.js?v=mwqen8uk', import.meta.url));
   node = new AudioWorkletNode(ctx, 'lxr-afx', { numberOfInputs: 0, outputChannelCount: [2] });
   node.port.onmessage = (e) => { if (e.data.type === 'peaks') { showPeaks(e.data.peaks); showGr(e.data.gr || 0); if (e.data.out) showOut(e.data.out); if (e.data.waves) showWaves(e.data.waves); if (e.data.mods) modLive(e.data.mods, e.data.stepAt); if (e.data.macros) macroLive(e.data.macros); } };
   node.connect(ctx.destination);
@@ -255,10 +255,8 @@ function midiIn(e) {
   noteOn(ch, note, vel);
 }
 // each zone is mono, last-note priority: the keys held down in it, oldest first. A new key takes over; letting go of
-// the newest key while an earlier one is still held takes the zone back to that one (its sound and its sequence),
-// which plays again on the next step of the BPM grid (RETURN: now, or the next 1/32, 1/16, 1/8 or 1/4). Letting go
-// of a key that isn't the newest changes nothing; letting go of the last one releases the zone. The zones don't affect
-// each other
+// a key never plays another one again (Johnny, 2026-11-20: no retrigger of the key still held), and letting go of the
+// last one held releases the zone. The zones don't affect each other
 const held = SOUNDS.map(() => []);
 function keyDown(sound, note, vel) {
   const st = held[sound], i = st.findIndex((k) => k.note === note);
@@ -271,10 +269,7 @@ function noteOff(note) {
   const st = held[sound], i = st.findIndex((k) => k.note === note);
   if (i < 0) return;
   st.splice(i, 1);
-  if (i < st.length) return; // not the newest key: the zone stays on the newest
-  if (!st.length) { send({ type: 'release', sound }); return; }
-  const prev = st[st.length - 1];
-  play(sound, prev.note, prev.vel, { hold: true, back: true });
+  if (!st.length) send({ type: 'release', sound }); // (a key still held isn't played again)
 }
 // MIDI all notes off / all sound off: every zone let go
 function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0; send({ type: 'release', sound }); } }); }
@@ -1647,7 +1642,7 @@ document.addEventListener('wheel', (e) => { if (e.target.closest && e.target.clo
 // ---- the RANDOM menu ----
 function openMenu(open) { $('menu-panel').hidden = !open; $('menu-btn').setAttribute('aria-expanded', open); if (initArmed) disarmInit(); else drawInit(); if (open) { openPresets(false); openSettings(false); } }
 $('menu-btn').addEventListener('click', () => openMenu($('menu-panel').hidden));
-// ---- SETTINGS: the things set once and left (LOW KEY, RETURN, the hardware knobs' LEARN and BS2 MAP), out of the way ----
+// ---- SETTINGS: the things set once and left (LOW KEY, the hardware knobs' LEARN and BS2 MAP), out of the way ----
 // SCREEN COLOURS: the screen is drawn in two colours, a panel and an ink (css/lcd.css derives every other shade from
 // them). A few looks to pick, or your own two; kept in this browser (not in presets). A dark panel loses the LCD's
 // backlight glow and shades towards black
@@ -1689,7 +1684,7 @@ function applyLook(look, keep) {
   drawWave(null); // (the wave display takes the look's colours)
   // the GREY look's subtle depth: three.js, loaded the first time the look is GREY (app/panel3d.js turns itself off for
   // the LCD look and the phone). Without WebGL the flat drawing simply stays
-  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwqekoky').catch((e) => console.warn('3D panel off:', e.message));
+  if (look === 'grey' && !panel3d) panel3d = import('./panel3d.js?v=mwqen8uk').catch((e) => console.warn('3D panel off:', e.message));
   if (keep) { try { localStorage.setItem(LOOK_STORE, look); } catch (e) { /* not kept */ } }
 }
 // PANEL COLOUR: the GREY look's panel in any colour (Johnny, 2026-11-19: "also need a background color picker"). The
@@ -2178,7 +2173,7 @@ function initPatch() {
   return { keys: keys.length, reverb: sent(1), echo: sent(0) };
 }
 // a new patch starts from the effects as they come: BPM, the echo, the reverb, the distortion, the compressor and the
-// output level back to their starting settings (RETURN is how the keys play, not part of the sound: it stays)
+// output level back to their starting settings
 function resetFx() { const d = structuredClone(FX_DEFAULTS); applyFx({ ...d, tempo: { bpm: d.tempo.bpm }, macros: undefined }); } // (the MACRO knobs stay)
 let initArmed = 0;
 const lockedKeys = () => S.keyEdits.reduce((a, ks) => a + Object.values(ks).filter((e) => e._lock).length, 0);
@@ -2447,7 +2442,7 @@ const newName = () => presetName(Math.random, new Set([...presets.map((p) => p.n
 function applyFx(fx) {
   for (const k in S.fx) if (fx[k]) Object.assign(S.fx[k], structuredClone(fx[k])); // (a copy: turning a MACRO mustn't change the preset kept)
   if (fx.tempo && fx.tempo.morph === undefined) S.fx.tempo.morph = 0; // (a patch from before MORPH TIME: off)
-  drawBpm(); drawMorph(); drawRet(); sendFx(); drawFaders();
+  drawBpm(); drawMorph(); sendFx(); drawFaders();
   if (fx.macros) S.fx.macros.v.forEach((v, i) => send({ type: 'macro', i, v })); // (in the plugin the DAW's parameters hold them)
 }
 function applyPatch(d) {
@@ -2909,12 +2904,6 @@ $('bpm-up').addEventListener('click', (e) => setBpm(S.fx.tempo.bpm + (e.shiftKey
 $('bpm').addEventListener('dblclick', () => setBpm(120));
 drawBpm();
 try { localStorage.removeItem('lxr-afx-seq'); } catch (e) {} // (the piano-roll SEQUENCER's pattern: the sequencer is gone)
-// RETURN: when a zone goes back to an earlier held key, it plays it again now or on the next step of the grid
-const RETURNS = ['NOW', '1/32', '1/16', '1/8', '1/4'];
-const drawRet = () => { $('ret').textContent = RETURNS[S.fx.tempo.ret] ?? '1/16'; };
-$('ret').addEventListener('click', (e) => { S.fx.tempo.ret = (S.fx.tempo.ret + (e.shiftKey ? RETURNS.length - 1 : 1)) % RETURNS.length; drawRet(); sendFx();
-  detail(`HELD KEY BACK <em>${RETURNS[S.fx.tempo.ret]}</em>: let go of the newest key in a zone and the earlier held key comes back ${S.fx.tempo.ret ? 'on the next ' + RETURNS[S.fx.tempo.ret] : 'at once'}`); });
-drawRet();
 function moveZones(by) {
   const to = S.zoneStart + by;
   if (to < 0 || to + 24 > 127) return;

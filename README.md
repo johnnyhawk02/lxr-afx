@@ -85,9 +85,8 @@ script is short, so read it first if you like ([plugin/install.sh](plugin/instal
   lows, or the other way round). The **SIDECHAIN** listens to the mix or one engine (SOURCE), through a filter (LP, BP,
   HP at FREQ) into an envelope (SENS, DECAY, shown on the ENV meter) that turns PREGAIN, CUTOFF or TONE up or down.
 - **Mono, last-note priority, per zone**: each zone (drum, snare, metal) plays one key at a time, the newest. Hold a
-  key, press another in the same zone and it takes over (with its own sound); let go of it while the
-  first is still held and the first comes back on the next step of the BPM grid (**RETURN** in SETTINGS, with **BPM**: NOW,
-  1/32, **1/16** by default, 1/8, 1/4). The three zones don't affect each other. MIDI all-notes-off lets go of every
+  key, press another in the same zone and it takes over (with its own sound); letting go of it never plays the first
+  again, even while that one is still held. The three zones don't affect each other. MIDI all-notes-off lets go of every
   zone.
 - **No sequencer**: the per-key step sequencer and the RHYTHMS slider were taken out; a
   key plays once per press. The engine's AMP REPEAT knob still retriggers a sound.
@@ -118,7 +117,7 @@ script is short, so read it first if you like ([plugin/install.sh](plugin/instal
   sound, levelled and panned; **30% of the keys get a reverb send and 20% an
   echo send** (8 and 5 of the 25, which ones is random, a key can have both), the rest none. Locked keys and hand
   edits are replaced, so with locked keys it asks first (press again within four seconds). **BPM goes back to 120 and
-  the echo, the reverb, the distortion, the compressor and the output level to their starting settings**; RETURN, the
+  the echo, the reverb, the distortion, the compressor and the output level to their starting settings**; the
   zone levels and the knob padlocks stay, and a knob with a closed padlock keeps its setting on every key (a locked
   send keeps its keys' sends). The new patch gets a new name and is not saved yet. UNDO brings the old patch back:
   locks, effects, tempo, name and all.

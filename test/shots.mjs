@@ -15,9 +15,9 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   p.nudge = async (k, up, dy = 14) => { if (typeof k === 'string') k = await p.$(k); const b = await k.boundingBox(), x = b.x + b.width / 2, y = b.y + b.height / 2;
     await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 4; i++) await p.mouse.move(x, y + (up ? -1 : 1) * dy * i / 4); await p.mouse.up(); };
   p.mclick = async (id) => { if (!(await p.isVisible(id))) await p.click('#menu-btn'); await p.click(id); await p.keyboard.press('Escape'); };
-  // LOW KEY, RETURN, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
+  // LOW KEY, LEARN and BS2 MAP live in SETTINGS: a click on one opens it first
   // ALTER KEY, LOCK KEY, CLEAR, COPY and PASTE live in THIS KEY's KEY menu, the MAKE buttons in its MAKE menu: the same
-  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|ret|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
+  { const click = p.click.bind(p); p.click = async (sel, o) => { if (/^#(eng-up|eng-down|low-up|low-down|learn|cc-reset|bpm-up|bpm-down|bpm)$/.test(sel) && !(await p.isVisible(sel))) {
     await click('#settings-btn'); const r = await click(sel, o); if (sel !== '#learn' && await p.isVisible('#settings-panel')) await click('#settings-btn'); return r; }
     const menu = null;
     if (menu && !(await p.isVisible(sel))) { await click(menu[0]); const r = await click(sel, o); if (await p.isVisible(menu[1])) await click(menu[0]); return r; }
@@ -36,7 +36,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   const edits = after.keyEdits[0]['55'];
   if (!edits || JSON.stringify(after.values) !== JSON.stringify(before ? before.values : after.values)) { errors++; console.log('key edit did not land on G2', edits); }
   // the randomisers pull variants from the kits without errors
-  for (const id of ['#alter', '#kit-alter', '#undo', '#kit-scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.mclick(id); await p.waitForTimeout(80); }
+  for (const id of ['#alter', '#kit-alter', '#undo', '#scatter', '#alter', '#undo', '#scatter', '#alter']) { await p.mclick(id); await p.waitForTimeout(80); }
   await p.evaluate(() => window.afx.noteOn(1, 55, 110));
   await p.waitForTimeout(400);
   { const st = await p.evaluate(() => JSON.parse(localStorage.getItem('lxr-afx-v3')));
@@ -225,15 +225,14 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
         if (clip) { errors++; console.log(`${w}x${h} ENGINES 6: ${clip} engine buttons cut off`); } }
     }
     await p.click('#sounds .snd >> nth=0'); }
-  // legato, last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 goes back
-  // to D2 (the key shown), letting go of the snare changes nothing in the drum zone; RETURN steps through its settings
+  // last-note priority per zone: hold D2, press E2 (same zone), a snare in between; letting go of E2 doesn't play D2
+  // again (no retrigger: the key shown stays the snare's, A2, the last one played), and the snare changes nothing in the drum zone
   { const key = () => p.textContent('#kh-note');
     await p.evaluate(() => { afx.cc(123, 0); afx.noteOn(1, 50, 100); afx.noteOn(1, 52, 100); });
     const a = await key();
     await p.evaluate(() => { afx.noteOn(1, 57, 100); afx.noteOff(57); afx.noteOff(52); }); const b = await key();
     await p.evaluate(() => afx.noteOff(50));
-    await p.click('#ret'); const r1 = await p.textContent('#ret'); await p.click('#ret', { modifiers: ['Shift'] }); const r0 = await p.textContent('#ret');
-    if (a !== 'E2' || b !== 'D2' || r1 !== '1/8' || r0 !== '1/16') { errors++; console.log('legato:', a, b, r1, r0); } }
+    if (a !== 'E2' || b !== 'A2') { errors++; console.log('no retrigger:', a, b); } }
   // no sequencer (Johnny, 2026-11-17): no SEQ section, no RHYTHMS slider, and no key runs a rhythm, whatever NEW SOUND deals
   if (w === 1440 && h === 900) {
     const count = () => p.evaluate(() => { let n = 0; afx.sounds.forEach((s, i) => { for (let k = s.zone.lo; k <= s.zone.hi; k++) if (afx.active(i, k)) n++; }); return n; });
@@ -268,7 +267,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const menu = (id) => p.evaluate((id) => document.getElementById(id).click(), id);
     await tap(0, 2); await p.waitForTimeout(150); await p.click('#lock-key'); await p.waitForTimeout(100);
     const t0 = await trims();
-    await menu('kit-scatter'); await p.waitForTimeout(500); const t1 = await trims();
+    await menu('scatter'); await p.waitForTimeout(500); const t1 = await trims();
     await menu('kit-alter'); await p.waitForTimeout(500); const t2 = await trims();
     const nz = (t) => t.flat().filter((x) => x !== 0).length, moved = (a, b) => a.flat().filter((x, i) => x !== b.flat()[i]).length;
     if (nz(t1) < 18 || nz(t2) < 18 || moved(t0, t1) < 15 || t1[0][2] !== t0[0][2] || t2[0][2] !== t0[0][2] || t2.flat().some((x) => x < -16 || x > 12 || (x * 4) % 1))
@@ -299,23 +298,23 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
   // INIT PATCH: a new patch. With a locked key it asks first (the first press changes nothing); then every key has a
   // fresh kit sound and no lock, 8 of the 25 keys a reverb send and 5 an echo send (30% and 20%), the rest none, the
   // pans and rhythms as SCATTER ALL deals them, levelled; BPM, the effects and the master are back at their starting
-  // settings (RETURN stays); UNDO brings the old patch back, its lock, its effects and its tempo too
+  // settings; UNDO brings the old patch back, its lock, its effects and its tempo too
   { const state = () => p.evaluate(([e, r]) => afx.sounds.map((s, i) => { const o = []; for (let k = s.zone.lo; k <= s.zone.hi; k++) { const m = new Map(afx.patch(i, k)), ed = afx.keyEdits()[i][k] || {};
       o.push({ echo: m.get(e[s.engineVoice]), rev: m.get(r[s.engineVoice]), kit: ed._kit || '', lock: !!ed._lock, pan: afx.pan(i, k), on: afx.active(i, k), trim: afx.trim(i, k) }); } return o; }),
       [[0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 0)), [0, 1, 2, 3, 4, 5].map((v) => sendPar(v, 1))]);
     const press = () => p.evaluate(() => document.getElementById('init-patch').click()), J = JSON.stringify;
     await p.evaluate(() => { afx.cc(123, 0); const n = afx.sounds[2].zone.lo + 4; afx.noteOn(1, n, 100); afx.noteOff(n); }); await p.waitForTimeout(150);
     await p.click('#lock-key'); await p.waitForTimeout(100);
-    const fxNow = () => p.evaluate(() => [JSON.stringify(afx.fx()), document.getElementById('bpm').textContent, document.getElementById('ret').textContent]);
-    const fx0 = await fxNow(); // (set off the defaults: three presses of BPM +, one of RETURN, and a control of each effect)
+    const fxNow = () => p.evaluate(() => [JSON.stringify(afx.fx()), document.getElementById('bpm').textContent]);
+    const fx0 = await fxNow(); // (set off the defaults: three presses of BPM +, and a control of each effect)
     await p.evaluate(() => { const f = afx.fx(); f.echo.feedback = 99; f.reverb.size = 10; f.dirt.on = 1; f.master.thresh = 30; f.master.level = 50; });
-    for (let i = 0; i < 3; i++) await p.click('#bpm-up'); await p.click('#ret'); const fx1 = await fxNow();
+    for (let i = 0; i < 3; i++) await p.click('#bpm-up'); const fx1 = await fxNow();
     const before = await state(); await press(); await p.waitForTimeout(150);
     const asked = await state(), armed = await p.getAttribute('#init-patch', 'aria-pressed'), info = await p.textContent('#init-info');
     await press(); await p.waitForTimeout(600); const st = await state(), all = st.flat(), fx2 = await fxNow();
     { const want = await p.evaluate(() => { const d = structuredClone(afx.fxDefaults); d.tempo.ret = afx.fx().tempo.ret; return JSON.stringify(d); }), got = JSON.parse(fx2[0]), w = JSON.parse(want);
       const same = Object.keys(w).every((k) => Object.keys(w[k]).every((f) => got[k][f] === w[k][f]));
-      if (fx1[1] !== '123' || fx1[2] === fx0[2] || !same || fx2[1] !== '120' || fx2[2] !== fx1[2]) { errors++; console.log('init patch, effects:', fx1[1], fx1[2], fx2[1], fx2[2], same, fx2[0]); } }
+      if (fx1[1] !== '123' || !same || fx2[1] !== '120') { errors++; console.log('init patch, effects:', fx1[1], fx2[1], same, fx2[0]); } }
     const rev = all.filter((k) => k.rev > 0), ech = all.filter((k) => k.echo > 0), ons = st.map((z) => z.filter((k) => k.on).length);
     if (J(asked) !== J(before) || armed !== 'true' || !/1 LOCKED KEY/.test(info)) { errors++; console.log('init patch, asking:', armed, info, J(asked) === J(before)); }
     if (all.length !== 25 || all.some((k) => !k.kit || k.lock) || rev.length !== 8 || ech.length !== 5 || rev.some((k) => k.rev < 45 || k.rev > 95) || ech.some((k) => k.echo < 40 || k.echo > 85)
@@ -327,7 +326,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     if (J(back) !== J(before)) { errors++; console.log('init patch, undo:', J(back.flat().map((k) => [k.kit, k.lock])), J(before.flat().map((k) => [k.kit, k.lock]))); }
     const fx3 = await fxNow(); if (J(fx3) !== J(fx1)) { errors++; console.log('init patch, undo, effects:', J(fx3), J(fx1)); }
     await p.evaluate((was) => { const f = afx.fx(), w = JSON.parse(was); for (const k in w) Object.assign(f[k], w[k], k === 'tempo' ? { bpm: f.tempo.bpm, ret: f.tempo.ret } : {}); }, fx0[0]); // (and back as they were, for the checks below)
-    for (let i = 0; i < 3; i++) await p.click('#bpm-down'); await p.click('#ret', { modifiers: ['Shift'] });
+    for (let i = 0; i < 3; i++) await p.click('#bpm-down');
     const fx4 = await fxNow(); if (J(fx4) !== J(fx0)) { errors++; console.log('init patch, effects put back:', J(fx4), J(fx0)); }
     await p.click('#lock-key'); await p.waitForTimeout(100); }
   // KNOB PADLOCKS: none is closed as it comes. A locked knob keeps its setting on every key through the dice, ALTER
@@ -351,7 +350,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const shut = await p.evaluate(() => [afx.locks(), document.getElementById('lock-count').textContent, document.getElementById('detail').textContent]);
     if (J(shut[0]) !== J([D]) || shut[1] !== '1 LOCKED' || !/DECAY locked/.test(shut[2])) bad('locking', shut);
     let was = await zone(); const decays = J(was.map((k) => k[D])), moved = (a, b, pars) => a.reduce((n, k, i) => n + pars.filter((q) => k[q] !== b[i][q]).length, 0), others = sc.map((e) => e.par).filter((q) => q !== D && q < 247);
-    for (const [id, what, alter] of [['rand-key', 'the dice'], ['alter-key', 'ALTER KEY', 1], ['alter', 'ALTER', 1], ['scatter', 'RANDOM'], ['kit-alter', 'ALTER ALL', 1], ['kit-scatter', 'RANDOM ALL'], ['init-patch', 'INIT PATCH']]) {
+    for (const [id, what, alter] of [['rand-key', 'the dice'], ['alter-key', 'ALTER KEY', 1], ['alter', 'ALTER', 1], ['scatter', 'RANDOM'], ['kit-alter', 'ALTER ALL', 1], ['init-patch', 'INIT PATCH']]) {
       const [now, msg] = await press(id, id === 'init-patch' ? 650 : 450);
       if (J(now.map((k) => k[D])) !== decays || !/locked DECAY kept/.test(msg) || !moved(was, now, others)) bad(what, now.map((k) => k[D]), decays, msg, moved(was, now, others));
       if (alter && moved(was, now, still)) bad(what + ' moved a switch', moved(was, now, still));
@@ -361,7 +360,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     await p.evaluate(() => document.getElementById('wild').click()); const [wild] = await press('kit-alter'); await p.evaluate(() => document.getElementById('wild').click());
     if (!moved(was, wild, still) || J(wild.map((k) => k[D])) !== decays) bad('WILD', moved(was, wild, still));
     // the sends: INIT PATCH dealt them (8 reverb, 5 echo), RANDOM ALL and ALTER ALL leave them; with the drum's reverb send locked INIT PATCH keeps the drum keys' reverb
-    const s0 = await sends(); await press('kit-scatter'); await press('kit-alter'); const s1 = await sends();
+    const s0 = await sends(); await press('scatter'); await press('kit-alter'); const s1 = await sends();
     if (J(s1) !== J(s0) || s0.filter((k) => k[1] > 0).length !== 8 || s0.filter((k) => k[0] > 0).length !== 5) bad('sends through RANDOM ALL and ALTER ALL', s0, s1);
     const ra = await padlock('reverb', -6, 8); await p.mouse.click(ra[0], ra[1]); await p.waitForTimeout(150);
     const two = await p.evaluate(() => [afx.locks().length, document.getElementById('lock-count').textContent]);
