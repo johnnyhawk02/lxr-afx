@@ -15,7 +15,7 @@ import {
   INIT_KIT, PARAMETER_ORDER, PAR, CC, CC2,
 } from './lxr-tables.js';
 import { EXTRA_CLICKS } from './lxr-clicks.js';
-import { read as readTable } from './wavetables.js?v=mwppx8td';
+import { read as readTable } from './wavetables.js?v=mwpq8bez';
 
 export { PAR, CC, CC2 };
 
@@ -112,7 +112,6 @@ const TRI_BASE = 0, REC_BASE = TRI_TABLE.length, SAW_BASE = TRI_TABLE.length * 2
 // the start of that row, which continues the waveform; verify.mjs sets it to what follows the
 // table in the reference binary.
 WAVE_MEM[WAVE_MEM.length - 1] = SAW_TABLE[10 * 1024];
-export function setSawPastEndSample(v) { WAVE_MEM[WAVE_MEM.length - 1] = v; }
 
 function makeOsc() {
   return {
@@ -933,21 +932,12 @@ const FILTER_PARS = [1, 2, 3, 4, 5, 6].map((i) => PAR['FILTER_TYPE_' + i]);
 const MODE_PARS = [1, 2, 3].map((i) => PAR['MIX_MOD_' + i]);
 export const POS_KIND = new Map([...WAVE_PARS.map((p) => [p, 'wave']), ...FILTER_PARS.map((p) => [p, 'filter']), ...MODE_PARS.map((p) => [p, 'mode'])]);
 const TO_POS = { wave: wavePos, filter: filterPos, mode: modePos };
-const TO_RAW = { wave: waveRaw, filter: filterRaw, mode: modeRaw };
 /** a kit's firmware values (menu indexes) with its morphable switches as knob positions (a copy) */
 export function kitToPositions(kit) {
   const out = Uint8Array.from(kit);
   for (const [p, k] of POS_KIND) if (p < out.length) out[p] = TO_POS[k](kit[p]);
   return out;
 }
-/** and back, for the firmware (a position between two detents stays as it is: the firmware has no such value) */
-export function kitToFirmware(kit) {
-  const out = Uint8Array.from(kit);
-  for (const [p, k] of POS_KIND) if (p < out.length) { const r = TO_RAW[k](kit[p]); if (r !== null) out[p] = r; }
-  return out;
-}
-/** one value of a parameter as a knob position (a firmware value of a morphable switch; any other as it is) */
-export const toPosition = (par, value) => { const k = POS_KIND.get(par); return k ? TO_POS[k](value) : value; };
 
 // ---------------------------------------------------------------------------------------
 // Voices: one merged voice (not in the firmware) that holds every part of DrumVoice.c, Snare.c,

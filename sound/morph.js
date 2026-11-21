@@ -10,7 +10,7 @@
 //     amount  { pitch, timbre }: the combined depths, 0..1 each (global depth x sound depth x global x sound slider)
 //     voice   the engine voice (for its fine tune parameter)
 //   returns the note the engine is triggered with and the [parameter, value] pairs to send before the trigger
-import { pitchPars } from './schema.js?v=mwppx8td';
+import { pitchPars } from './schema.js?v=mwpq8bez';
 
 export const BASE_NOTE = 60; // the note the engine plays a sound at its own pitch (C3 in Novation / Ableton naming)
 export const MAX_PITCH = 12; // semitones either way at the far ends of the keyboard, at full depth
@@ -26,7 +26,7 @@ export function hash3(a, b, c) {
 // a value in -1..1 from the seed, the key (its place in its zone, so moving the zones keeps each key's variant) and what
 // it's for (a parameter number, or one of the salts below)
 export const unit = (seed, note, salt) => hash3(seed, note, salt) / 2147483648 - 1;
-const SALT_PITCH = 1000, SALT_FINE = 1001;
+const SALT_PITCH = 1000;
 
 // how far a key is from its zone's base, 0..1 (each end of the zone is 1), and which side (-1 below, 1 above, 0 on it)
 export function keyDistance(note, zone) {
@@ -69,8 +69,5 @@ export function combinedAmount(global, sound) {
   const d = global.depth * sound.depth;
   return { pitch: d * global.pitch * sound.pitch, timbre: d * global.timbre * sound.timbre };
 }
-
-// a new seed (the only place the morph uses chance; the seed itself is what's kept)
-export const newSeed = () => (Math.random() * 0x100000000) >>> 0;
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
