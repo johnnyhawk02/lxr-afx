@@ -114,10 +114,7 @@ void Dsp::keyUp(int note) {
   int i = -1; for (size_t j = 0; j < st.size(); j++) if (st[j].note == note) { i = (int)j; break; }
   if (i < 0) return;
   st.erase(st.begin() + i);
-  if (i < (int)st.size()) return;
-  if (st.empty()) { inst->release(k.sound); return; }
-  const HeldKey prev = st.back(); const Key& p = keys[prev.note];
-  if (p.on) inst->back(k.sound, p.play, prev.vel, &p.params, true);
+  if (st.empty()) inst->release(k.sound);  // (as app/main.js noteOff: a key still held isn't played again)
 }
 void Dsp::allOff() { for (int s = 0; s < 6; s++) if (!held[s].empty()) { held[s].clear(); inst->release(s); } }
 

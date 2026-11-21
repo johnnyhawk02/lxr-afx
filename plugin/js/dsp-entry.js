@@ -70,10 +70,7 @@ function keyUp(note) {
   const sound = k[0], st = held[sound], i = st.findIndex((x) => x.note === note);
   if (i < 0) return;
   st.splice(i, 1);
-  if (i < st.length) return;
-  if (!st.length) { inst.release(sound); return; }
-  const prev = st[st.length - 1], p = keys.get(prev.note);
-  if (p) inst.back(sound, p[1], prev.vel, p[2], true);
+  if (!st.length) inst.release(sound); // (as app/main.js noteOff: a key still held isn't played again)
 }
 function allOff() { held.forEach((st, sound) => { if (st.length) { st.length = 0; inst.release(sound); } }); }
 

@@ -140,6 +140,10 @@ html:not(.phone) .topacts .btn { font-size: calc(19px * min(var(--fz), 1.15)); l
 body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px; cursor: crosshair; }
 .status { display: flex; justify-content: space-between; gap: 16px; font-size: calc(19px * var(--fz, 1)); white-space: nowrap; overflow: hidden; }
 .status #detail { overflow: hidden; text-overflow: ellipsis; }
+.status #detail { margin-right: auto; }
+.status .ver { color: inherit; text-decoration: none; flex: none; }
+.status .ver:hover { text-decoration: underline; }
+.plugin .status .ver { pointer-events: none; }
 .status em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 4px; text-shadow: none; }
 
 /* the splash: on the whole panel at load, then it fades by itself (app/main.js). It never takes a press: clicks go
