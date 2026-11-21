@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwq42j4n">
-<link rel="stylesheet" href="css/grey.css?v=mwq42j4n">
+<link rel="stylesheet" href="css/lcd.css?v=mwq4bra2">
+<link rel="stylesheet" href="css/grey.css?v=mwq4bra2">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
@@ -27,6 +27,8 @@
   // the knob size (SETTINGS > KNOB SIZE): grows only the knob inside its printed scale, never the cell
   try { var kq = localStorage.getItem('lxr-afx-knob-kd'), kv = kq === null || kq === '' ? 7 : +kq; if (kv >= 0 && kv <= 10) document.documentElement.style.setProperty('--kd', (0.87 + 0.058 * kv).toFixed(3));
     var ks = localStorage.getItem('lxr-afx-knob-style') || 'ribbed'; if (/^(round|ribbed|rubber)$/.test(ks)) document.documentElement.classList.add('knob-' + ks); } catch (e) { /* the defaults */ }
+  // the font size (SETTINGS > FONT SIZE): scales the type only, never the cells; app/main.js applyFontSize() does the same
+  try { var fq = localStorage.getItem('lxr-afx-font-size'), fv = fq === null || fq === '' ? NaN : +fq; if (fv >= 90 && fv <= 130) document.documentElement.style.setProperty('--font-zoom', (fv / 100).toFixed(2)); } catch (e) { /* the default */ }
   // the screen's colours (SETTINGS > SCREEN COLOURS), before the first paint; app/main.js applyColours() does the same
   try { var c = JSON.parse(localStorage.getItem('lxr-afx-colours')); if (c && c.panel && c.ink) {
     var rgb = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }, p = rgb(c.panel), s = document.documentElement.style;
@@ -151,6 +153,8 @@
         </div>
         <h3>KNOB SIZE</h3>
         <div class="lowkey knobsize"><span class="dim">SIZE <em id="knob-size-val">XL+7</em></span><span class="dim end">XL</span><input type="range" id="knob-size" min="0" max="10" step="1" value="7" aria-label="The size of the knobs, from extra large to the biggest" title="The size of the knobs inside their scales: extra large (left) to the biggest (right)"><span class="dim">MAX</span></div>
+        <h3>FONT SIZE</h3>
+        <div class="lowkey knobsize"><span class="dim">SIZE <em id="font-size-val">110%</em></span><span class="dim end">90</span><input type="range" id="font-size" min="90" max="130" step="5" value="110" aria-label="The size of the text" title="The size of the labels, values and menus: smaller (left) to bigger (right)"><span class="dim">130</span></div>
         <div id="knob-style-row">
         <h3>KNOB STYLE</h3>
         <div class="randrow looks" id="knob-styles" role="group" aria-label="The style of the knobs">
@@ -327,6 +331,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwq42j4n"></script>
+<script type="module" src="app/main.js?v=mwq4bra2"></script>
 </body>
 </html>

@@ -29,7 +29,7 @@ html.plugin .screen { border: 0; border-radius: 0; }
   position: relative; height: 100%; margin: 0 auto;
   display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; padding: 12px 16px 14px;
   border: 6px solid #0b0c0a; border-radius: 12px; user-select: none; -webkit-user-select: none;
-  text-shadow: var(--shadow); font-size: 20px; line-height: 1.1;
+  text-shadow: var(--shadow); font-size: calc(20px * var(--fz, 1)); line-height: 1.1;
   background-color: var(--panel);
   background-image: linear-gradient(170deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .05)),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .03) 0 1px, transparent 1px 3px),
@@ -41,18 +41,18 @@ html.plugin .screen { border: 0; border-radius: 0; }
   box-shadow: inset 0 6px 16px rgba(0, 0, 0, .36), inset -8px 8px 18px rgba(0, 0, 0, .2), inset 0 0 0 1px rgba(255, 255, 255, .1);
 }
 .dim { color: var(--muted); }
-h2 { margin: 0 0 8px; font-size: 22px; font-weight: 400; letter-spacing: .14em; display: flex; gap: 10px; align-items: baseline; }
-h2 .dim { font-size: 18px; letter-spacing: .08em; }
+h2 { margin: 0 0 8px; font-size: calc(22px * var(--fz, 1)); font-weight: 400; letter-spacing: .14em; display: flex; gap: 10px; align-items: baseline; }
+h2 .dim { font-size: calc(18px * var(--fz, 1)); letter-spacing: .08em; }
 
 /* ---- buttons: an outlined box, inverted when pressed or chosen ---- */
 .btn { background: transparent; border: 2px solid var(--ink); border-radius: 3px; padding: 3px 12px; min-height: 34px;
-  text-transform: uppercase; letter-spacing: .06em; font-size: 19px; cursor: pointer; text-shadow: var(--shadow);
+  text-transform: uppercase; letter-spacing: .06em; font-size: calc(19px * var(--fz, 1)); cursor: pointer; text-shadow: var(--shadow);
   box-shadow: 2px 2.2px 0 rgb(var(--ink-rgb) / .14); white-space: nowrap; }
 .btn:hover { background: var(--tint); }
 .btn:active, .btn[aria-pressed="true"], .btn[aria-selected="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .btn:disabled { opacity: .3; cursor: default; background: transparent; color: var(--ink); }
-.btn.sm { min-height: 26px; font-size: 16px; padding: 1px 8px; }
-.btn.big { font-size: 28px; padding: 10px 28px; background: var(--ink); color: var(--panel); text-shadow: none; }
+.btn.sm { min-height: 26px; font-size: calc(16px * var(--fz, 1)); padding: 1px 8px; }
+.btn.big { font-size: calc(28px * var(--fz, 1)); padding: 10px 28px; background: var(--ink); color: var(--panel); text-shadow: none; }
 .btn:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 
 /* ---- the top line ---- */
@@ -60,7 +60,7 @@ h2 .dim { font-size: 18px; letter-spacing: .08em; }
 .logo { margin: 0; font-size: 40px; font-weight: 400; letter-spacing: .12em; line-height: 1; padding: 0 6px 0 2px; white-space: nowrap; }
 .logo span { color: var(--muted); }
 .lcdbox { border: 2px solid var(--ink); border-radius: 3px; padding: 4px 10px; min-height: 34px; display: flex; align-items: center; gap: 8px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: calc(18px * var(--fz, 1)); }
 .lowkey { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .lowkey > .dim { letter-spacing: .08em; }
 .lowkey b { font-weight: 400; min-width: 5.6em; justify-content: center; }
@@ -79,15 +79,23 @@ html:not(.phone) .vf:has(> .tog) > .tog svg { transform: translateY(calc(var(--g
 /* LEVEL is already big: it stays at XL */
 html:not(.phone) .faders .vf.big .knob svg { transform: scale(1.3); }
 html:not(.phone) .faders .vf.big > .lab { transform: none; }
+/* FONT SIZE (SETTINGS > LOOK): --fz scales every label, value and menu (each font-size is calc(Npx * var(--fz, 1))). Only
+   the type grows: the cells, the knobs and the grid stay where they are. The phone keeps its own sizes */
+html:not(.phone) { --fz: var(--font-zoom, 1.1); }
+html:not(.phone) .top { height: 40px; } /* (the top line keeps its height at any font size, so the grid under it never moves) */
+html:not(.phone) .top .btn { line-height: 1; }
+/* bigger type, tighter letters, so the section names and the top buttons still fit their cells */
+html:not(.phone) .faders .sect h3 { letter-spacing: max(.04em, calc(.14em - (var(--fz) - 1) * .35em)); }
+html:not(.phone) .topacts .btn { font-size: calc(19px * min(var(--fz), 1.15)); letter-spacing: max(0em, calc(.06em - (var(--fz) - 1) * .3em)); }
 .lowkey.knobsize input { width: 100%; min-width: 0; margin: 0; accent-color: rgb(var(--ink-rgb)); }
 .lowkey.knobsize em { font-style: normal; color: var(--ink); margin-left: .4em; }
 .lowkey.knobsize .end { text-align: right; }
-.lowkey .btn.sm { min-width: 28px; min-height: 30px; font-size: 20px; }
+.lowkey .btn.sm { min-width: 28px; min-height: 30px; font-size: calc(20px * var(--fz, 1)); }
 
 /* ---- the seven sounds ---- */
 .sounds { display: grid; grid-template-columns: auto repeat(3, 1fr) minmax(0, .75fr); gap: 8px; align-items: center; }
-.snd { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px; font-size: 21px; padding: 2px 8px; }
-.snd .ch { font-size: 16px; opacity: .7; }
+.snd { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px; font-size: calc(21px * var(--fz, 1)); padding: 2px 8px; }
+.snd .ch { font-size: calc(16px * var(--fz, 1)); opacity: .7; }
 .snd i { position: absolute; left: 7px; top: 50%; width: 9px; height: 9px; margin-top: -5px; border: 2px solid currentColor; border-radius: 1px; }
 .snd i.on { background: currentColor; }
 
@@ -97,7 +105,7 @@ html:not(.phone) .faders .vf.big > .lab { transform: none; }
 
 /* horizontal segmented bars (morph depths, amount, level) */
 .bars { display: grid; gap: 4px; }
-.hb { display: grid; grid-template-columns: 74px 1fr 64px; align-items: center; gap: 10px; font-size: 19px; }
+.hb { display: grid; grid-template-columns: 74px 1fr 64px; align-items: center; gap: 10px; font-size: calc(19px * var(--fz, 1)); }
 .hb .lab { letter-spacing: .06em; cursor: default; }
 .hb output { text-align: right; font-variant-numeric: tabular-nums; }
 .htrack { --f: 0; position: relative; height: 22px; cursor: ew-resize; touch-action: none;
@@ -106,13 +114,13 @@ html:not(.phone) .faders .vf.big > .lab { transform: none; }
   background: repeating-linear-gradient(to right, var(--ink) 0 var(--seg), transparent var(--seg) calc(var(--seg) + var(--gap)));
   filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 
-.seed { font-weight: 400; font-size: 26px; letter-spacing: .14em; border: 2px solid var(--ink); padding: 0 8px; border-radius: 3px; min-width: 6.4em; text-align: center; }
+.seed { font-weight: 400; font-size: calc(26px * var(--fz, 1)); letter-spacing: .14em; border: 2px solid var(--ink); padding: 0 8px; border-radius: 3px; min-width: 6.4em; text-align: center; }
 
 .randrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .randrow .btn { flex: 1 1 auto; padding: 3px 6px; }
 .randrow.small { margin-top: 6px; gap: 6px; }
 .randrow.small .dim { flex: 1; white-space: nowrap; }
-.chk { position: relative; display: flex; align-items: center; gap: 6px; font-size: 19px; cursor: pointer; padding-right: 4px; }
+.chk { position: relative; display: flex; align-items: center; gap: 6px; font-size: calc(19px * var(--fz, 1)); cursor: pointer; padding-right: 4px; }
 .chk input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .chk i { width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 2px; box-shadow: inset 0 0 0 3px var(--panel); }
 .chk input:checked + i { background: var(--ink); }
@@ -123,14 +131,14 @@ html:not(.phone) .faders .vf.big > .lab { transform: none; }
 .faders { display: flex; gap: 0; min-height: 0; border: 2px solid var(--ink); border-radius: 3px; padding: 10px 6px 8px; }
 .sect { display: flex; flex-direction: column; min-width: 0; flex: var(--n) 1 0; padding: 0 6px; }
 .sect + .sect { border-left: var(--rule); }
-.sect h3 { margin: 0 0 6px; font-size: 18px; font-weight: 400; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+.sect h3 { margin: 0 0 6px; font-size: calc(18px * var(--fz, 1)); font-weight: 400; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
 .sect .row { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 4px; flex: 1; min-height: 0; }
 .vf { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; min-height: 0; }
-.vf output { font-size: 19px; height: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-variant-numeric: tabular-nums; }
-.vf .lab { font-size: 18px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
+.vf output { font-size: calc(19px * var(--fz, 1)); height: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-variant-numeric: tabular-nums; }
+.vf .lab { font-size: calc(18px * var(--fz, 1)); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
 .vf.keyed .lab { background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 3px; }
 body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px; cursor: crosshair; }
-.status { display: flex; justify-content: space-between; gap: 16px; font-size: 19px; white-space: nowrap; overflow: hidden; }
+.status { display: flex; justify-content: space-between; gap: 16px; font-size: calc(19px * var(--fz, 1)); white-space: nowrap; overflow: hidden; }
 .status #detail { overflow: hidden; text-overflow: ellipsis; }
 .status em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 4px; text-shadow: none; }
 
@@ -139,33 +147,33 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   background: var(--panel); background-image: inherit; border-radius: 6px; z-index: 10; text-align: center; pointer-events: none;
   transition: opacity .6s ease; }
-.start p { max-width: 30em; font-size: 22px; margin: 0; }
+.start p { max-width: 30em; font-size: calc(22px * var(--fz, 1)); margin: 0; }
 .start.gone { opacity: 0; }
 .splash { display: flex; flex-direction: column; align-items: center; }
 .splash-logo { margin: 0; font-weight: 400; font-size: 168px; line-height: .9; letter-spacing: .14em; padding-left: .14em; }
 .splash-logo span { color: var(--muted); }
-.splash-tag { font-size: 30px !important; letter-spacing: .32em; padding-left: .32em; margin-top: 6px !important; }
+.splash-tag { font-size: calc(30px * var(--fz, 1)) !important; letter-spacing: .32em; padding-left: .32em; margin-top: 6px !important; }
 /* the 25 keys, lighting up one after another */
 .splash-keys { display: grid; grid-template-columns: repeat(25, 22px); gap: 4px; margin: 38px 0 44px; }
 .splash-keys i { height: 34px; border: 2px solid var(--ink); border-radius: 2px; background: var(--ghost); animation: splashkey 2.5s steps(1) infinite; }
 .splash-keys i:nth-child(2) { animation-delay: 0.1s; } .splash-keys i:nth-child(3) { animation-delay: 0.2s; } .splash-keys i:nth-child(4) { animation-delay: 0.3s; } .splash-keys i:nth-child(5) { animation-delay: 0.4s; } .splash-keys i:nth-child(6) { animation-delay: 0.5s; } .splash-keys i:nth-child(7) { animation-delay: 0.6s; } .splash-keys i:nth-child(8) { animation-delay: 0.7s; } .splash-keys i:nth-child(9) { animation-delay: 0.8s; } .splash-keys i:nth-child(10) { animation-delay: 0.9s; } .splash-keys i:nth-child(11) { animation-delay: 1.0s; } .splash-keys i:nth-child(12) { animation-delay: 1.1s; } .splash-keys i:nth-child(13) { animation-delay: 1.2s; } .splash-keys i:nth-child(14) { animation-delay: 1.3s; } .splash-keys i:nth-child(15) { animation-delay: 1.4s; } .splash-keys i:nth-child(16) { animation-delay: 1.5s; } .splash-keys i:nth-child(17) { animation-delay: 1.6s; } .splash-keys i:nth-child(18) { animation-delay: 1.7s; } .splash-keys i:nth-child(19) { animation-delay: 1.8s; } .splash-keys i:nth-child(20) { animation-delay: 1.9s; } .splash-keys i:nth-child(21) { animation-delay: 2.0s; } .splash-keys i:nth-child(22) { animation-delay: 2.1s; } .splash-keys i:nth-child(23) { animation-delay: 2.2s; } .splash-keys i:nth-child(24) { animation-delay: 2.3s; } .splash-keys i:nth-child(25) { animation-delay: 2.4s; }
 @keyframes splashkey { 0%, 8% { background: var(--ink); } 9%, 100% { background: var(--ghost); } }
-.splash-foot { position: absolute; bottom: 18px; left: 0; right: 0; max-width: none !important; font-size: 17px !important; letter-spacing: .1em; color: var(--muted); }
+.splash-foot { position: absolute; bottom: 18px; left: 0; right: 0; max-width: none !important; font-size: calc(17px * var(--fz, 1)) !important; letter-spacing: .1em; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .splash-keys i { animation: none; } .start { transition: none; } }
 .start[hidden] { display: none; }
 /* ---- load error: shown only if the page's code didn't start (index.html) ---- */
 .load-err { position: absolute; left: 0; right: 0; top: 40%; margin: 0 auto; max-width: 30em; padding: 16px; z-index: 10; text-align: center;
-  font-size: 22px; background: var(--panel); border: 2px solid var(--ink); border-radius: 6px; }
+  font-size: calc(22px * var(--fz, 1)); background: var(--panel); border: 2px solid var(--ink); border-radius: 6px; }
 .load-err[hidden] { display: none; }
 
 @container (max-width: 1340px) {
-  .screen { font-size: 18px; padding: 10px 12px 12px; }
+  .screen { font-size: calc(18px * var(--fz, 1)); padding: 10px 12px 12px; }
   .logo { font-size: 34px; }
-  .btn { font-size: 17px; padding: 3px 9px; }
+  .btn { font-size: calc(17px * var(--fz, 1)); padding: 3px 9px; }
   .top { gap: 10px; }
   .logo { font-size: 30px; letter-spacing: .08em; }
-  .hb { grid-template-columns: 64px 1fr 56px; font-size: 18px; }
-  .snd { font-size: 20px; min-height: 42px; }
+  .hb { grid-template-columns: 64px 1fr 56px; font-size: calc(18px * var(--fz, 1)); }
+  .snd { font-size: calc(20px * var(--fz, 1)); min-height: 42px; }
 }
 @container (max-height: 820px) {
   .screen { gap: 8px; }
@@ -180,8 +188,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .sect .row { display: grid; grid-template-columns: repeat(var(--n), var(--kw)); gap: 0; flex: none; }
 .sect h3 { margin-bottom: 2px; }
 .vf { gap: 1px; }
-.vf output { font-size: 17px; }
-.vf .lab { font-size: 16px; }
+.vf output { font-size: calc(17px * var(--fz, 1)); }
+.vf .lab { font-size: calc(16px * var(--fz, 1)); }
 .knob { width: var(--ks); height: var(--ks); cursor: ns-resize; touch-action: none; }
 .knob svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scale(var(--ring, 1)); transform-origin: 50% 50%; filter: drop-shadow(2px 2.2px 0 rgb(var(--ink-rgb) / .17)); }
 .knob .tk { stroke: var(--ghost); stroke-width: 3.6; }
@@ -190,7 +198,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .knob .notch { stroke: var(--ink); stroke-width: 4; display: none; }
 .knob.morphed .notch { display: inline; }
 .knob .lr { fill: var(--ink); font: 700 18px/1 var(--font); text-anchor: middle; }
-@container (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: 15px; } .vf output { font-size: 16px; } }
+@container (max-width: 1340px) { .faders { --kw: 66px; --ks: 44px; } .vf .lab { font-size: calc(15px * var(--fz, 1)); } .vf output { font-size: calc(16px * var(--fz, 1)); } }
 @container (max-height: 820px) { .faders { row-gap: 6px; } }
 
 /* ---- the RANDOM menu: everything that randomises a whole engine or all three ---- */
@@ -198,7 +206,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 430px; padding: 12px 14px 14px;
   background: var(--panel); border: 2px solid var(--ink); border-radius: 3px; box-shadow: 6px 7px 0 rgba(11, 12, 10, .35); }
 .menupanel[hidden] { display: none; }
-.menupanel h3 { margin: 10px 0 6px; font-size: 18px; font-weight: 400; letter-spacing: .14em; border-top: var(--rule); padding-top: 8px; }
+.menupanel h3 { margin: 10px 0 6px; font-size: calc(18px * var(--fz, 1)); font-weight: 400; letter-spacing: .14em; border-top: var(--rule); padding-top: 8px; }
 .menupanel h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
 .menupanel .randrow { margin-top: 6px; }
 
@@ -206,7 +214,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .keyhead { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 18px; padding: 6px 12px;
   border: 2px solid var(--ink); border-radius: 3px; min-width: 0; }
 .keyacts { display: flex; gap: 6px; align-items: center; }
-.keylock { display: flex; align-items: center; gap: 8px; min-width: 8.2em; min-height: 42px; font-size: 21px; }
+.keylock { display: flex; align-items: center; gap: 8px; min-width: 8.2em; min-height: 42px; font-size: calc(21px * var(--fz, 1)); }
 .keylock svg { width: 16px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 .keylock[aria-pressed="false"] .shackle { transform: translate(5px, -2px); }
 .keylock[aria-pressed="true"] svg rect { fill: currentColor; }
@@ -233,7 +241,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders, .lockveil { grid-area: 1 / 1; }
 .lockveil { display: none; z-index: 2; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none;
   background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb) / .1) 0 3px, transparent 3px 11px); }
-.lockveil b { font-weight: 400; font-size: 34px; letter-spacing: .2em; background: var(--ink); color: var(--panel); padding: 2px 16px; text-shadow: none; }
+.lockveil b { font-weight: 400; font-size: calc(34px * var(--fz, 1)); letter-spacing: .2em; background: var(--ink); color: var(--panel); padding: 2px 16px; text-shadow: none; }
 .lockveil span { background: var(--panel); padding: 0 8px; }
 .keylocked .lockveil { display: flex; }
 .keylocked .faders { opacity: .45; pointer-events: none; }
@@ -252,9 +260,9 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 
 /* the engine row: each engine button placed under its key group (alignEngines in app/main.js) */
 .sounds { position: relative; display: block; height: 38px; }
-.sounds .snd { position: absolute; top: 0; height: 38px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: 20px; }
-.sounds .snd .ch { font-size: 15px; }
-@container (max-width: 1340px) { .sounds .snd { font-size: 18px; } .sounds .snd .ch { font-size: 13px; } }
+.sounds .snd { position: absolute; top: 0; height: 38px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: calc(20px * var(--fz, 1)); }
+.sounds .snd .ch { font-size: calc(15px * var(--fz, 1)); }
+@container (max-width: 1340px) { .sounds .snd { font-size: calc(18px * var(--fz, 1)); } .sounds .snd .ch { font-size: calc(13px * var(--fz, 1)); } }
 
 /* ---- body: the synth on the left, the FX on the right ---- */
 .body { grid-template-columns: 1fr auto; }
@@ -263,9 +271,9 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .sect { padding: 6px 0 0; }
 .fxside .sect + .sect { border-left: 0; border-top: var(--rule); margin-top: 6px; }
 .fxside .sect .row { display: grid; grid-template-columns: repeat(var(--n), var(--kw)); }
-.fxside .vf output { font-size: 16px; } .fxside .vf .lab { font-size: 15px; }
+.fxside .vf output { font-size: calc(16px * var(--fz, 1)); } .fxside .vf .lab { font-size: calc(15px * var(--fz, 1)); }
 .fxside .knob { width: var(--ks); height: var(--ks); }
-@container (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: 14px; } }
+@container (max-width: 1340px) { .fxside { --kw: 56px; --ks: 38px; padding-left: 10px; } .fxside .vf .lab { font-size: calc(14px * var(--fz, 1)); } }
 
 .fxside .sect { padding-top: 4px; }
 .fxside .sect + .sect { margin-top: 4px; }
@@ -282,8 +290,8 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders { --kw: 68px; --ks: 44px; }
 .fxside { --kw: 56px; --ks: 38px; }
 .keyhead .keyacts { gap: 5px; }
-.keyhead .keyacts .btn { font-size: 17px; min-height: 30px; }
-.keyhead .keylock { min-width: 7em; min-height: 36px; font-size: 19px; }
+.keyhead .keyacts .btn { font-size: calc(17px * var(--fz, 1)); min-height: 30px; }
+.keyhead .keylock { min-width: 7em; min-height: 36px; font-size: calc(19px * var(--fz, 1)); }
 @container (max-width: 1340px) { .faders { --kw: 62px; --ks: 40px; } .fxside { --kw: 52px; --ks: 36px; } }
 
 .lowkey b.bpm { min-width: 3.2em; }
@@ -291,11 +299,11 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 /* ---- tidy-up: bigger knobs that fill the panel, clearer section headings, the key's big LEVEL bottom right ---- */
 .faders { --kw: 78px; --ks: 54px; position: relative; row-gap: 18px; padding: 10px 8px; align-content: flex-start; }
 .faders .sect h3 { color: var(--ink); margin-bottom: 6px; padding-bottom: 2px; border-bottom: 1px solid rgb(var(--ink-rgb) / .25); }
-.vf .lab { font-size: 15px; }
+.vf .lab { font-size: calc(15px * var(--fz, 1)); }
 .faders .vf.big { position: absolute; right: 18px; bottom: 14px; width: 132px; gap: 4px; }
 .faders .vf.big .knob { width: 104px; height: 104px; }
-.faders .vf.big output { font-size: 30px; height: auto; }
-.faders .vf.big .lab { font-size: 24px; letter-spacing: .16em; background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 10px; }
+.faders .vf.big output { font-size: calc(30px * var(--fz, 1)); height: auto; }
+.faders .vf.big .lab { font-size: calc(24px * var(--fz, 1)); letter-spacing: .16em; background: var(--ink); color: var(--panel); text-shadow: none; padding: 0 10px; }
 .fxside h2 { margin-top: 6px; }
 .fxside .mout .row { display: flex; align-items: center; gap: 14px; }
 @container (max-width: 1340px) { .faders { --kw: 66px; --ks: 46px; row-gap: 12px; } .faders .vf.big { width: 110px; } .faders .vf.big .knob { width: 84px; height: 84px; } }
@@ -303,11 +311,11 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
    as a sentence,, and a section switched off is greyed (its knobs still turn) */
 .fxgrid .sect.dirt .row + .row { margin-top: 2px; }
 .fxgrid .sect.dirt h3 { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
-.fxgrid .sect.dirt h3 .dim { font-size: 15px; letter-spacing: 1px; }
-.fxgrid .hdb { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; }
+.fxgrid .sect.dirt h3 .dim { font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; }
+.fxgrid .hdb { min-height: 20px; font-size: calc(15px * var(--fz, 1)); padding: 0 6px; line-height: 1; letter-spacing: 1px; }
 .fxgrid .hdb:first-of-type { margin-left: 2px; }
 .vsw .swb { width: calc(var(--kw) - 8px); height: var(--ks); display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--ink); border-radius: 3px; background: transparent; color: var(--ink); font: inherit; font-size: 15px;
+  border: 2px solid var(--ink); border-radius: 3px; background: transparent; color: var(--ink); font: inherit; font-size: calc(15px * var(--fz, 1));
   letter-spacing: 0; padding: 0; cursor: pointer; }
 .vsw .swb:hover { background: var(--tint); }
 .vsw .swb[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
@@ -324,7 +332,7 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .faders .sect.sep::before, .faders .vf.big.sep::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; border-left: var(--rule); }
 .faders .sect h3 { padding: 0 8px; margin: 0 0 2px; border-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .faders .sect .row { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0; align-items: start; }
-.faders .sect .vf .lab { font-size: 13px; letter-spacing: 0; padding: 0 3px; max-width: calc(100% - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.faders .sect .vf .lab { font-size: calc(13px * var(--fz, 1)); letter-spacing: 0; padding: 0 3px; max-width: calc(100% - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .faders .vf.big { position: relative; right: auto; bottom: auto; justify-content: flex-end; padding-bottom: 6px; width: auto; }
 .faders .sect.fill::before { display: none; }
 .faders .vf.big .knob { width: 96px; height: 96px; }
@@ -336,32 +344,32 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .fxside .sect .row, .fxside .mout .row { display: grid; grid-template-columns: repeat(6, var(--kw)); gap: 0; align-items: start; }
 /* OUTPUT: LEVEL in cell 1, the meters on cells 2 to 6, each row a name, a bar and a reading on the same three columns */
 .fxgrid .mout .meters { grid-column: 2 / 5; align-self: center; padding-left: 8px; display: flex; flex-direction: column; gap: 4px; }
-.meters .mrow { display: grid; grid-template-columns: 1em 1fr 3.2em; align-items: center; gap: 0 6px; margin: 0; font-size: 15px; }
-.meters .ch { color: var(--muted); font-size: 15px; }
-.meters output { font-size: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+.meters .mrow { display: grid; grid-template-columns: 1em 1fr 3.2em; align-items: center; gap: 0 6px; margin: 0; font-size: calc(15px * var(--fz, 1)); }
+.meters .ch { color: var(--muted); font-size: calc(15px * var(--fz, 1)); }
+.meters output { font-size: calc(16px * var(--fz, 1)); text-align: right; font-variant-numeric: tabular-nums; }
 .meters .segs { display: flex; gap: 2px; height: 14px; }
 .meters .segs i { flex: 1; background: var(--ghost); }
 .meters .segs i.on, .meters .segs i.pk { background: var(--ink); }
-.meters .scale { position: relative; height: 15px; font-size: 13px; color: var(--muted); }
+.meters .scale { position: relative; height: 15px; font-size: calc(13px * var(--fz, 1)); color: var(--muted); }
 .meters .scale span { position: absolute; top: 0; transform: translateX(-50%); }
 .meters .scale span:first-child { transform: none; } .meters .scale span:last-child { transform: translateX(-100%); }
 .fxgrid .vu { grid-column: 5 / 7; align-self: center; position: relative; margin-left: 10px; border: 2px solid var(--ink); padding: 2px 4px 0; }
 .vu svg { display: block; width: 100%; height: auto; overflow: hidden; }
 .vu svg .arc, .vu svg line { stroke: var(--ink); stroke-width: 1.5; fill: none; }
 .vu svg .hot { stroke: var(--ink); stroke-width: 4; fill: none; }
-.vu svg text { fill: var(--ink); font-family: var(--font); font-size: 11px; text-anchor: middle; dominant-baseline: middle; }
-.vu svg .vul { fill: var(--muted); font-size: 9px; letter-spacing: 1px; }
+.vu svg text { fill: var(--ink); font-family: var(--font); font-size: calc(11px * var(--fz, 1)); text-anchor: middle; dominant-baseline: middle; }
+.vu svg .vul { fill: var(--muted); font-size: calc(9px * var(--fz, 1)); letter-spacing: 1px; }
 .vu svg .needle { stroke-width: 2; stroke-linecap: round; }
-.vu output { position: absolute; right: 5px; bottom: 1px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.vu output { position: absolute; right: 5px; bottom: 1px; font-size: calc(13px * var(--fz, 1)); font-variant-numeric: tabular-nums; }
 .fxgrid .outm h3 { display: flex; align-items: center; gap: 6px; }
 .fxside .sect h3 { padding-left: 0; }
 /* ---- calmer knobs: a label is plain until you change the control by hand on this key, then it's lit ---- */
 .vf { position: relative; }
 .faders { --ks: 58px; }
 .faders .vf.big .knob { width: 108px; height: 108px; }
-.faders .sect .vf .lab { font-size: 15px; }
-.faders .sect .vf output { font-size: 18px; }
-@container (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: 14px; } }
+.faders .sect .vf .lab { font-size: calc(15px * var(--fz, 1)); }
+.faders .sect .vf output { font-size: calc(18px * var(--fz, 1)); }
+@container (max-width: 1340px) { .faders { --ks: 50px; } .faders .vf.big .knob { width: 92px; height: 92px; } .faders .sect .vf .lab { font-size: calc(14px * var(--fz, 1)); } }
 @container (max-height: 820px) { .faders { --ks: 54px; } .faders .vf.big .knob { width: 96px; height: 96px; } }
 @container (max-height: 820px) and (max-width: 1340px) { .faders { --ks: 48px; } .faders .vf.big .knob { width: 88px; height: 88px; } }
 
@@ -369,29 +377,29 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .menupanel { width: 470px; }
 .menupanel .randrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
 .menupanel .randrow .btn { padding: 5px 6px; min-width: 0; }
-.menupanel .randrow .note { grid-column: span 2; align-self: center; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+.menupanel .randrow .note { grid-column: span 2; align-self: center; font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.15; }
 /* what each button does, under it, in its column */
-.menupanel .randrow .cap { font-size: 14px; letter-spacing: 1px; line-height: 1.15; text-align: center; margin-top: -3px; }
+.menupanel .randrow .cap { font-size: calc(14px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.15; text-align: center; margin-top: -3px; }
 .menupanel .randrow .cap.wide { grid-column: 1 / -1; }
 .menupanel .bars + .bars { margin-top: 6px; }
-.menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: 18px; }
+.menupanel .chk.wild, .menupanel .chk.lvl { margin-top: 8px; font-size: calc(18px * var(--fz, 1)); }
 .menupanel .chk.lvl { margin-top: 6px; }
-.menupanel .chk.wild .dim, .menupanel .chk.lvl .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menupanel .chk.wild .dim, .menupanel .chk.lvl .dim { font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- the keys that work a button, shown on it ---- */
-.btn kbd { font: inherit; font-size: 13px; line-height: 1; margin-left: 6px; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
+.btn kbd { font: inherit; font-size: calc(13px * var(--fz, 1)); line-height: 1; margin-left: 6px; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
 .btn:disabled kbd { opacity: .4; }
 .status #detail .dim { margin-left: 10px; }
 
 /* AUTO LEVEL's correction on the key: a chip at the head of the LEVEL cell, on the line of the row's headings */
-.faders .vf.big .auto { position: absolute; top: 0; left: 8px; min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
+.faders .vf.big .auto { position: absolute; top: 0; left: 8px; min-height: 20px; font-size: calc(15px * var(--fz, 1)); padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
 
 /* NEW SOUND: a dice at the top right of the synth block, the head of the key's own two columns (its FX sends and its
    LEVEL are below it, on the same axis). Flat: a square with seven pips, the lit ones its face (the unlit ones show
    faintly, like the unlit ticks of a knob's ring). Pressed, it turns once as its face changes */
 .faders .sect.dice h3 { display: flex; align-items: center; gap: 6px; }
 .faders .sect.dice h3 span { overflow: hidden; text-overflow: ellipsis; }
-.faders .sect.dice h3 kbd { font: inherit; font-size: 13px; line-height: 1; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
+.faders .sect.dice h3 kbd { font: inherit; font-size: calc(13px * var(--fz, 1)); line-height: 1; padding: 1px 3px 0; border: 1px solid currentColor; border-radius: 2px; opacity: .55; letter-spacing: 0; }
 .dicebtn { margin: auto; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; width: calc(var(--ks) + 14px); height: calc(var(--ks) + 14px); flex: none; }
 .dicebtn .die { display: block; width: 100%; height: 100%; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 6px; }
 .dicebtn svg { display: block; width: 100%; height: 100%; }
@@ -412,16 +420,16 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .pbtn i { font-style: normal; width: .6em; margin-left: -4px; }
 .pbtn:active .dim, .pbtn[aria-expanded="true"] .dim { color: inherit; }
 .menupanel.pleft { left: 0; right: auto; }
-.menupanel .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+.menupanel .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: calc(20px * var(--fz, 1)); letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
   border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
 .menupanel .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .menupanel .plist { max-height: min(232px, 30vh); overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
-.menupanel .plist p { margin: 0; padding: 10px; font-size: 15px; letter-spacing: 1px; line-height: 1.3; }
+.menupanel .plist p { margin: 0; padding: 10px; font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.3; }
 .menupanel .prow { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border-top: 1px solid rgb(var(--ink-rgb) / .25); }
 .menupanel .prow:first-child { border-top: 0; }
-.menupanel .prow button { font: inherit; font-size: 18px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; cursor: pointer; min-height: 28px; text-align: left; padding: 2px 10px; }
+.menupanel .prow button { font: inherit; font-size: calc(18px * var(--fz, 1)); letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; cursor: pointer; min-height: 28px; text-align: left; padding: 2px 10px; }
 .menupanel .prow .pload { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.menupanel .prow .pdel { font-size: 15px; padding: 2px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); text-align: center; min-width: 36px; }
+.menupanel .prow .pdel { font-size: calc(15px * var(--fz, 1)); padding: 2px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); text-align: center; min-width: 36px; }
 .menupanel .prow button:hover { background: var(--tint); }
 .menupanel .prow[aria-current="true"] .pload, .menupanel .prow .pdel[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .menupanel .prow button:focus-visible { outline: 2px dashed var(--ink); outline-offset: -3px; }
@@ -438,12 +446,12 @@ body.learning [data-learn] { outline: 2px dashed var(--ink); outline-offset: 2px
 .pv { display: none; }
 html.phone, html.phone body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 html.phone body { padding: 4px; touch-action: none; }
-html.phone .screen { display: block; height: calc(100vh - 8px); height: calc(100dvh - 8px); max-width: 520px; padding: 8px; border-width: 4px; border-radius: 10px; font-size: 18px; }
+html.phone .screen { display: block; height: calc(100vh - 8px); height: calc(100dvh - 8px); max-width: 520px; padding: 8px; border-width: 4px; border-radius: 10px; font-size: calc(18px * var(--fz, 1)); }
 html.phone .screen > :not(.blender):not(.load-err):not(.start) { display: none; }
 html.phone .dk { display: none; }
 html.phone .start { gap: 14px; padding: 0 18px; }
 html.phone .splash-logo { font-size: 64px; }
-html.phone .splash-tag { font-size: 18px !important; letter-spacing: .2em; padding-left: .2em; }
+html.phone .splash-tag { font-size: calc(18px * var(--fz, 1)) !important; letter-spacing: .2em; padding-left: .2em; }
 html.phone .splash-keys { grid-template-columns: repeat(5, 28px); gap: 5px; margin: 22px 0 10px; }
 html.phone .splash-keys i { height: 18px; }
 html.phone .pv { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) repeat(6, auto); gap: 6px; height: 100%; }
@@ -451,23 +459,23 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pv-pads, .pv-row, .pv-send { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .pv-top { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: center; }
 .pv-top .logo { grid-column: span 2; font-size: 30px; letter-spacing: .08em; padding: 0; white-space: nowrap; }
-.pv-top b { grid-column: span 2; font-weight: 400; max-height: 2.1em; overflow: hidden; font-size: 17px; line-height: 1.05; letter-spacing: 1px; } /* (a name of two words takes two lines) */
-.pv-top .btn { min-width: 0; min-height: 40px; padding: 2px; font-size: 16px; touch-action: manipulation; }
+.pv-top b { grid-column: span 2; font-weight: 400; max-height: 2.1em; overflow: hidden; font-size: calc(17px * var(--fz, 1)); line-height: 1.05; letter-spacing: 1px; } /* (a name of two words takes two lines) */
+.pv-top .btn { min-width: 0; min-height: 40px; padding: 2px; font-size: calc(16px * var(--fz, 1)); touch-action: manipulation; }
 .pv-top .btn[aria-expanded="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 /* the menu: over the pads and the buttons, from under the top row down to the message line, which stays in sight */
 .pv-menu { position: absolute; inset: -2px -5px -5px -2px; padding: 2px 5px 5px 2px; grid-row: 2 / 8; grid-column: 1 / -1; z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px 6px;
   align-content: start; overflow: hidden; background: var(--panel); }
 .pv-menu[hidden] { display: none; }
-.pv-menu > .btn { grid-column: 1 / -1; min-width: 0; min-height: 50px; padding: 4px 2px; font-size: 19px; touch-action: manipulation; }
-.pv-menu > .cap { grid-column: 1 / -1; margin-bottom: 8px; font-size: 13px; line-height: 1.1; letter-spacing: 1px; opacity: .62; }
+.pv-menu > .btn { grid-column: 1 / -1; min-width: 0; min-height: 50px; padding: 4px 2px; font-size: calc(19px * var(--fz, 1)); touch-action: manipulation; }
+.pv-menu > .cap { grid-column: 1 / -1; margin-bottom: 8px; font-size: calc(13px * var(--fz, 1)); line-height: 1.1; letter-spacing: 1px; opacity: .62; }
 .pv-pads { grid-auto-rows: minmax(0, 1fr); min-height: 0; }
 .pad { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 0; padding: 0;
   border: 2px solid var(--ink); border-radius: 4px; background: transparent; color: var(--ink); font: inherit; text-shadow: var(--shadow); cursor: pointer;
   touch-action: none; user-select: none; -webkit-user-select: none; }
 .pad.e0 { background: rgb(var(--ink-rgb) / .2); } /* the three engines, by shade: drum, snare, metal */
 .pad.e1 { background: rgb(var(--ink-rgb) / .09); }
-.pad b { font-weight: 400; font-size: 24px; line-height: 1; }
-.pad span { font-size: 13px; letter-spacing: 1px; line-height: 1; opacity: .62; }
+.pad b { font-weight: 400; font-size: calc(24px * var(--fz, 1)); line-height: 1; }
+.pad span { font-size: calc(13px * var(--fz, 1)); letter-spacing: 1px; line-height: 1; opacity: .62; }
 .pad svg { display: none; position: absolute; top: 5px; right: 5px; width: 11px; height: 13px; fill: currentColor; stroke: currentColor; stroke-width: 2.4; }
 .pad svg path { fill: none; }
 .pad.locked svg { display: block; }
@@ -475,9 +483,9 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pad.down { background: var(--ink); color: var(--panel); text-shadow: none; }
 .pad:focus-visible { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .pv-key { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; margin-top: 2px; }
-.pv-key b { font-weight: 400; font-size: 26px; line-height: 1; }
-.pv-key span { overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
-.pv-row > .btn { min-width: 0; min-height: 50px; padding: 4px 2px; font-size: 19px; touch-action: manipulation; }
+.pv-key b { font-weight: 400; font-size: calc(26px * var(--fz, 1)); line-height: 1; }
+.pv-key span { overflow: hidden; text-overflow: ellipsis; font-size: calc(18px * var(--fz, 1)); }
+.pv-row > .btn { min-width: 0; min-height: 50px; padding: 4px 2px; font-size: calc(19px * var(--fz, 1)); touch-action: manipulation; }
 .pv-row > .two { grid-column: span 2; }
 .pv-row > .btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
 .pvdice { display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -487,21 +495,21 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .pvdice .pip.on { opacity: 1; }
 .pvdice.roll .die { animation: dice-roll .32s cubic-bezier(.25, .6, .3, 1); }
 @media (prefers-reduced-motion: reduce) { .pvdice.roll .die { animation: none; } }
-.pv-send > span { align-self: center; font-size: 17px; letter-spacing: 1px; }
+.pv-send > span { align-self: center; font-size: calc(17px * var(--fz, 1)); letter-spacing: 1px; }
 .pv-send .track { grid-column: 2 / 5; position: relative; height: 40px; border: 2px solid var(--ink); border-radius: 3px; cursor: pointer; touch-action: none; }
 .pv-send .track i { position: absolute; left: 3px; top: 3px; bottom: 3px; max-width: calc(100% - 6px); background: var(--ink); }
-.pv-send output { align-self: center; text-align: right; font-size: 22px; }
-.pv-msg { height: 2.4em; overflow: hidden; font-size: 15px; line-height: 1.2; letter-spacing: .5px; }
+.pv-send output { align-self: center; text-align: right; font-size: calc(22px * var(--fz, 1)); }
+.pv-msg { height: 2.4em; overflow: hidden; font-size: calc(15px * var(--fz, 1)); line-height: 1.2; letter-spacing: .5px; }
 .pv-msg em { font-style: normal; background: var(--ink); color: var(--panel); padding: 0 3px; text-shadow: none; }
 .pv-msg .dim { display: none; }
 
 /* ---- SETTINGS (top bar): LOW KEY and RETURN on one four-column grid (label, −, value, +), the hardware knobs below ---- */
 .menupanel.settings .lowkey { display: grid; grid-template-columns: 1fr 34px 1.3fr 34px; gap: 8px; align-items: center; margin-top: 6px; }
-.menupanel.settings .lowkey > .dim { font-size: 18px; letter-spacing: .1em; }
+.menupanel.settings .lowkey > .dim { font-size: calc(18px * var(--fz, 1)); letter-spacing: .1em; }
 .menupanel.settings .lowkey b { min-width: 0; justify-content: center; }
 .menupanel.settings .lowkey .btn.sm { min-height: 34px; min-width: 0; padding: 0; }
-.menupanel.settings .lowkey #ret { grid-column: 2 / 5; font-size: 19px; }
-.menupanel.settings .note { margin: 4px 0 6px; font-size: 14px; letter-spacing: 1px; line-height: 1.15; }
+.menupanel.settings .lowkey #ret { grid-column: 2 / 5; font-size: calc(19px * var(--fz, 1)); }
+.menupanel.settings .note { margin: 4px 0 6px; font-size: calc(14px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.15; }
 .menupanel.settings .randrow .note { grid-column: 1 / -1; margin: 0; }
 
 /* ---- the merged voice: one engine's knobs fill the width; FX + MASTER is a tab of its own (Johnny, 2026-11-17) ---- */
@@ -510,9 +518,9 @@ html.phone .pv { position: relative; display: grid; grid-template-columns: repea
 .left > .fxside { grid-row: 3; border-left: 0; padding: 8px 12px; border: var(--rule); min-height: 0; overflow: hidden; }
 .left > .fxside[hidden] { display: none; }
 .left > .editor[hidden] { display: none; }
-.sounds .fxtab { position: absolute; top: 0; right: 0; height: 38px; min-height: 0; padding: 2px 10px; gap: 6px; font-size: 20px; }
+.sounds .fxtab { position: absolute; top: 0; right: 0; height: 38px; min-height: 0; padding: 2px 10px; gap: 6px; font-size: calc(20px * var(--fz, 1)); }
 .fxtab[aria-pressed="true"] { background: var(--ink); color: var(--panel); text-shadow: none; }
-@container (max-width: 1340px) { .sounds .fxtab { font-size: 18px; } }
+@container (max-width: 1340px) { .sounds .fxtab { font-size: calc(18px * var(--fz, 1)); } }
 .sounds .fxtab kbd { margin-left: 6px; }
 /* FX + MASTER on the synth panel's own grid (Johnny, 2026-11-20: "fx + master should have the same grid as the main
    page"): the tab is a .faders grid in the same place, 17 equal cells by 4 equal rows, one knob to a cell, so every
@@ -530,7 +538,7 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .pad.e4 { background: rgb(var(--ink-rgb) / .09); }
 .sounds .snd[hidden] { display: none; }
 /* a narrow engine button (5 or 6 engines): the name only, the LED above it */
-.sounds .snd.narrow { padding: 12px 2px 0; font-size: 17px; letter-spacing: 0; white-space: nowrap; }
+.sounds .snd.narrow { padding: 12px 2px 0; font-size: calc(17px * var(--fz, 1)); letter-spacing: 0; white-space: nowrap; }
 .sounds .snd.narrow .ch { display: none; }
 .sounds .snd.narrow i { left: 50%; top: 4px; margin: 0 0 0 -4px; width: 7px; height: 7px; border-width: 1.5px; }
 /* SCREEN COLOURS: each look a button in its own two colours, on the menu's three-column grid; then PANEL and TEXT */
@@ -566,8 +574,8 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 /* the bottom row (modStrip): MODULATE, the selected dial's depth from each source as a bar up and down from its middle,
    then STEP SEQ's eight steps, STEP TIME and SLEW; one cell each, like the knobs above */
 .vd { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; min-height: 0; }
-.vd output { font-size: 17px; height: 1.1em; font-variant-numeric: tabular-nums; }
-.vd .lab { font-size: 15px; text-transform: uppercase; letter-spacing: 0; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 4px); color: var(--muted); cursor: default; }
+.vd output { font-size: calc(17px * var(--fz, 1)); height: 1.1em; font-variant-numeric: tabular-nums; }
+.vd .lab { font-size: calc(15px * var(--fz, 1)); text-transform: uppercase; letter-spacing: 0; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 4px); color: var(--muted); cursor: default; }
 .vd.on .lab, .vd.stepd .lab { color: var(--ink); }
 .dtrack { position: relative; width: 30px; height: var(--ks); cursor: ns-resize; touch-action: none;
   background: repeating-linear-gradient(to top, var(--ghost) 0 4px, transparent 4px 6px); }
@@ -576,8 +584,8 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .dtrack b { position: absolute; top: 50%; left: -4px; right: -4px; height: 2px; margin-top: -1px; background: var(--ink); }
 .seqsect .stepbox { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); grid-template-rows: auto 1fr; gap: 2px 8px; padding: 0 18px 0 16px; /* (room between the steps and round them: Johnny, "make space in and around the step seq") */ cursor: crosshair; touch-action: none; }
 .stepd { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
-.stepd output { font-size: 15px; height: 1.1em; text-align: center; font-variant-numeric: tabular-nums; }
-.stepd .lab { font-size: 13px; text-align: center; color: var(--ink); }
+.stepd output { font-size: calc(15px * var(--fz, 1)); height: 1.1em; text-align: center; font-variant-numeric: tabular-nums; }
+.stepd .lab { font-size: calc(13px * var(--fz, 1)); text-align: center; color: var(--ink); }
 .stepd .step { --f: 0; position: relative; height: var(--ks); border: 2px solid var(--ink); box-sizing: border-box; pointer-events: none; }
 .stepd .step i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--f) * 100%); background: var(--ink); }
 .stepd.now .step { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -585,7 +593,7 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .seqsect .lenrow { grid-column: 1 / -1; grid-row: 1; display: grid; grid-template-columns: subgrid; height: 16px; cursor: ew-resize; }
 .seqsect .lenbr { position: relative; border: 2px solid var(--ink); border-bottom: 0; height: 8px; margin-top: 6px; pointer-events: none; }
 .seqsect .lenbr b { position: absolute; right: -8px; top: -9px; min-width: 18px; height: 16px; padding: 0 2px; box-sizing: border-box; background: var(--ink); color: var(--panel);
-  font-size: 15px; line-height: 16px; text-align: center; }
+  font-size: calc(15px * var(--fz, 1)); line-height: 16px; text-align: center; }
 .stepd.off .step, .stepd.off output, .stepd.off .lab { opacity: 0.3; }
 .tblmenu.shapemenu { width: 300px; top: auto; bottom: calc(100% + 4px); z-index: 40; } /* (opens upward: the bottom row is the last) */
 .faders .vf.modsel .lab { text-decoration: underline; text-underline-offset: 3px; }
@@ -596,51 +604,51 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 .blender[hidden] { display: none; }
 .blbox { width: 640px; max-height: calc(100% - 24px); overflow-y: auto; padding: 14px 16px 16px; background: var(--panel); border: 2px solid var(--ink);
   border-radius: 3px; box-shadow: 6px 7px 0 rgba(11, 12, 10, .35); }
-.blbox h3 { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 8px; font-size: 18px; font-weight: 400; letter-spacing: .14em; border-top: var(--rule); padding-top: 10px; }
-.blbox h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; font-size: 22px; }
-.blbox h3 .dim { font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blbox h3 { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 8px; font-size: calc(18px * var(--fz, 1)); font-weight: 400; letter-spacing: .14em; border-top: var(--rule); padding-top: 10px; }
+.blbox h3:first-child { margin-top: 0; border-top: 0; padding-top: 0; font-size: calc(22px * var(--fz, 1)); }
+.blbox h3 .dim { font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .blbox h3 .btn { margin-left: auto; }
 .blpick { display: grid; grid-template-columns: 34px 1fr 40px 40px 72px 72px; gap: 8px; align-items: center; margin-top: 8px; }
-.blpick .bl-tag { font-weight: 400; font-size: 26px; text-align: center; }
-.blpick select { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 2px solid var(--ink); border-radius: 3px; min-height: 34px; padding: 0 6px; }
+.blpick .bl-tag { font-weight: 400; font-size: calc(26px * var(--fz, 1)); text-align: center; }
+.blpick select { min-width: 0; font: inherit; font-size: calc(20px * var(--fz, 1)); letter-spacing: 1px; color: var(--ink); background: transparent; border: 2px solid var(--ink); border-radius: 3px; min-height: 34px; padding: 0 6px; }
 .blpick select option, .blpick select optgroup { color: var(--ink); background: var(--panel); }
 .blpick .btn { padding: 1px 4px; min-width: 0; }
 .blbox .bars { margin-top: 14px; }
 .blbox .hb { grid-template-columns: 74px 1fr 64px; }
-.blnames { display: grid; grid-template-columns: 74px 1fr 1fr 64px; gap: 10px; font-size: 16px; letter-spacing: 1px; margin-top: 4px; }
+.blnames { display: grid; grid-template-columns: 74px 1fr 1fr 64px; gap: 10px; font-size: calc(16px * var(--fz, 1)); letter-spacing: 1px; margin-top: 4px; }
 .blnames span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .blnames span:first-child { grid-column: 2; }
 .blnames span:last-child { text-align: right; }
 .blrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; align-items: center; }
 .blrow .btn { padding: 4px 6px; min-width: 0; }
-.blrow .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+.blrow .pname { grid-column: span 2; min-width: 0; font: inherit; font-size: calc(20px * var(--fz, 1)); letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
   border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
 .blrow .pname:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.blrow .note { grid-column: 1 / -1; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+.blrow .note { grid-column: 1 / -1; font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.15; }
 .bllist { max-height: min(196px, 24vh); min-height: 34px; overflow-y: auto; border: 2px solid var(--ink); border-radius: 3px; }
 .blitem { display: grid; grid-template-columns: 1fr 40px 40px 64px; border-top: 1px solid rgb(var(--ink-rgb) / .25); }
 .blitem:first-child { border-top: 0; }
-.blitem button { font: inherit; font-size: 18px; letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; border-left: 1px solid rgb(var(--ink-rgb) / .25);
+.blitem button { font: inherit; font-size: calc(18px * var(--fz, 1)); letter-spacing: 1px; color: var(--ink); background: transparent; border: 0; border-left: 1px solid rgb(var(--ink-rgb) / .25);
   cursor: pointer; min-height: 28px; padding: 2px 10px; text-align: center; }
 .blitem .blload { border-left: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blitem button:hover { background: var(--tint); }
 .blrow.six { grid-template-columns: repeat(3, 1fr); }
 /* ---- LOAD: the bucket's sounds in a list, on the same grid ---- */
 .ldrow { display: grid; grid-template-columns: 1fr 160px; gap: 8px; align-items: center; }
-.ldrow .pname { min-width: 0; font: inherit; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
+.ldrow .pname { min-width: 0; font: inherit; font-size: calc(20px * var(--fz, 1)); letter-spacing: 1px; text-transform: uppercase; color: var(--ink); background: transparent;
   border: 2px solid var(--ink); border-radius: 3px; padding: 3px 8px; min-height: 34px; }
 .macbox .ldrow { grid-template-columns: 1fr repeat(3, auto); }
 .macbox .ldrow [hidden] { display: none; }
-.ldrow .dim { font-size: 15px; letter-spacing: 1px; text-align: right; }
+.ldrow .dim { font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; text-align: right; }
 .ldtypes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
-.ldtypes .btn { padding: 4px 2px; min-width: 0; font-size: 15px; }
+.ldtypes .btn { padding: 4px 2px; min-width: 0; font-size: calc(15px * var(--fz, 1)); }
 .ldlist { max-height: min(460px, 52vh); margin-top: 10px; }
 .ldlist:focus { outline: 2px dashed var(--ink); outline-offset: 2px; }
 .ldlist .blitem { grid-template-columns: 1fr 110px 130px; }
-.ldlist .blitem span { font-size: 16px; letter-spacing: 1px; padding: 4px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); white-space: nowrap; overflow: hidden; }
+.ldlist .blitem span { font-size: calc(16px * var(--fz, 1)); letter-spacing: 1px; padding: 4px 10px; border-left: 1px solid rgb(var(--ink-rgb) / .25); white-space: nowrap; overflow: hidden; }
 .ldlist .blitem.on, .ldlist .blitem.on button { background: var(--ink); color: var(--panel); }
-.ldnote { font-size: 15px; letter-spacing: 1px; margin-top: 8px; }
-.blmods { margin-top: 6px; font-size: 15px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ldnote { font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; margin-top: 8px; }
+.blmods { margin-top: 6px; font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- the PHONE is the blender alone (Johnny, 2026-11-18: "use the phone to solely generate and put sounds in the
    bucket"): the popup fills the screen, on a 4-column grid, and scrolls if it must ---- */
@@ -648,7 +656,7 @@ html:not(.phone) .fxgrid .vf.vsw:not(:has(> .tog)) > .lab { transform: translate
 html.phone .blender, html.phone .blender[hidden] { position: static; display: block; height: 100%; background: none; }
 html.phone .blbox { width: 100%; max-height: 100%; height: 100%; border: 0; box-shadow: none; padding: 2px; touch-action: pan-y; }
 html.phone #bl-close, html.phone #bl-key { display: none; }
-html.phone .blbox h3:first-child { flex-wrap: wrap; font-size: 20px; row-gap: 2px; }
+html.phone .blbox h3:first-child { flex-wrap: wrap; font-size: calc(20px * var(--fz, 1)); row-gap: 2px; }
 html.phone .blbox h3:first-child .dim { flex-basis: 100%; }
 html.phone .blpick { grid-template-columns: 30px repeat(4, minmax(0, 1fr)); row-gap: 6px; }
 html.phone .blpick .bl-tag { grid-row: span 2; }
@@ -656,26 +664,26 @@ html.phone .blpick select { grid-column: 2 / -1; }
 html.phone .blpick .btn { min-height: 40px; }
 html.phone .blbox .hb { grid-template-columns: 58px 1fr 48px; }
 html.phone .blbox .htrack { height: 34px; }
-html.phone .blnames { grid-template-columns: 58px 1fr 1fr 48px; font-size: 15px; }
+html.phone .blnames { grid-template-columns: 58px 1fr 1fr 48px; font-size: calc(15px * var(--fz, 1)); }
 html.phone .blrow, html.phone .blrow.six { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 html.phone .blrow .btn { min-height: 44px; }
 html.phone #bl-play { grid-column: 1 / -1; }
 html.phone .blrow .pname { grid-column: 1 / -1; min-height: 44px; }
 html.phone .blrow .note { grid-column: 1 / -1; }
-html.phone .blmsg { display: block; margin-top: 6px; min-height: 2.3em; font-size: 15px; letter-spacing: 1px; line-height: 1.15; }
+html.phone .blmsg { display: block; margin-top: 6px; min-height: 2.3em; font-size: calc(15px * var(--fz, 1)); letter-spacing: 1px; line-height: 1.15; }
 html.phone .bllist { max-height: none; }
 html.phone #bl-pair { grid-column: 1 / -1; }
 html.phone #bl-clear { grid-column: 1 / -1; }
 /* the tone's TABLE (CLASSIC or a wavetable) in the OSC heading; lit when a wavetable plays */
 .faders .sect h3.withbtn { display: flex; align-items: center; gap: 6px; overflow: visible; }
-.faders .sect h3 .tbl { min-height: 20px; font-size: 15px; padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
+.faders .sect h3 .tbl { min-height: 20px; font-size: calc(15px * var(--fz, 1)); padding: 0 6px; line-height: 1; letter-spacing: 1px; white-space: nowrap; }
 .faders .sect h3 .tbl.on { background: var(--ink); color: var(--panel); }
 /* the OSC heading's dropdown: the list of oscillators under its button, two to a row */
 .faders .sect h3 .tdd { position: relative; display: inline-flex; }
 .tblmenu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 20; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 260px;
   padding: 8px; background: var(--panel); border: 2px solid var(--ink); border-radius: 3px; box-shadow: 6px 7px 0 rgba(11, 12, 10, .35); }
 .tblmenu[hidden] { display: none; }
-.tblmenu .btn { min-height: 24px; font-size: 15px; padding: 0 6px; letter-spacing: 1px; }
+.tblmenu .btn { min-height: 24px; font-size: calc(15px * var(--fz, 1)); padding: 0 6px; letter-spacing: 1px; }
 .tblmenu .btn.on { background: var(--ink); color: var(--panel); }
 #look-panel > div > h3:first-child { margin-top: 10px; border-top: var(--rule); padding-top: 8px; } /* (LOOK's sections that show on one look only) */
 .tblmenu .tblall { grid-column: 1 / -1; margin-top: 4px; } /* (ALL KEYS TO WAVETABLE: the list's last line) */
@@ -699,7 +707,7 @@ html:not(.phone) .top > .logo { grid-column: 1 / 4; margin-left: 4px; font-size:
 html:not(.phone) .top > #pmenu { grid-column: 4 / 13; }
 /* MIDI: a lamp at the right of the logo's cells, lit while an input is connected (its tooltip says which) */
 html:not(.phone) .top > .midilamp { grid-column: 1 / 4; grid-row: 1; justify-self: end; }
-.midilamp { display: flex; align-items: center; gap: 6px; font-size: 15px; letter-spacing: .12em; color: var(--muted); cursor: default; }
+.midilamp { display: flex; align-items: center; gap: 6px; font-size: calc(15px * var(--fz, 1)); letter-spacing: .12em; color: var(--muted); cursor: default; }
 .midilamp i { width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; opacity: .5; }
 .midilamp.live { color: var(--ink); }
 .midilamp.live i { background: var(--ink); opacity: 1; }
@@ -716,21 +724,21 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keyhead { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); grid-template-areas: none; gap: 0; padding: 4px 6px 8px; align-items: stretch; }
 .khsec { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 0 8px; min-width: 0; }
 .khsec + .khsec::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 0; border-left: var(--rule); }
-.khsec h3 { margin: 0; font-size: 18px; font-weight: 400; letter-spacing: .14em; color: var(--ink); white-space: nowrap; }
-.khsec h3 .dim { font-size: 15px; letter-spacing: .1em; margin-left: 6px; }
+.khsec h3 { margin: 0; font-size: calc(18px * var(--fz, 1)); font-weight: 400; letter-spacing: .14em; color: var(--ink); white-space: nowrap; }
+.khsec h3 .dim { font-size: calc(15px * var(--fz, 1)); letter-spacing: .1em; margin-left: 6px; }
 .khkey { grid-column: 1 / 4; }
 .khact { grid-column: 13 / 18; }
 /* ENGINES: each engine's button over its keys, FX + MASTER at the section's end, on the buttons' line */
 .keyhead .sounds { position: static; display: flex; align-items: flex-start; gap: 12px; height: auto; }
 .keyhead .keystrip { display: flex; gap: 12px; justify-content: flex-start; flex: none; }
 .kgroup { gap: 6px; }
-.kgroup .snd { position: relative; left: auto; top: auto; width: 100%; height: 36px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: 19px; }
-.kgroup .snd .ch { font-size: 14px; }
-.kgroup .snd.narrow { padding: 12px 2px 0; font-size: 16px; }
+.kgroup .snd { position: relative; left: auto; top: auto; width: 100%; height: 36px; min-height: 0; padding: 2px 6px; gap: 6px; font-size: calc(19px * var(--fz, 1)); }
+.kgroup .snd .ch { font-size: calc(14px * var(--fz, 1)); }
+.kgroup .snd.narrow { padding: 12px 2px 0; font-size: calc(16px * var(--fz, 1)); }
 .keyhead .sounds .fxtab { position: static; margin-left: auto; height: 36px; flex: none; }
 /* THIS KEY: its buttons on one line, MAKE's eleven types and ANY under them, two rows of six */
 .khact .keyacts { justify-self: auto; display: flex; gap: 6px; }
-.khact .keyacts .btn.sm { flex: 1 1 0; min-height: 36px; font-size: 17px; }
+.khact .keyacts .btn.sm { flex: 1 1 0; min-height: 36px; font-size: calc(17px * var(--fz, 1)); }
 .khact .keyacts .keylock { min-width: 0; flex: 0 0 auto; }
 
 /* ---- THIS KEY in menus (Johnny, 2026-11-19: "try and put these items into menus"): the dice, then KEY and MAKE, on
@@ -744,7 +752,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .khact #copy-key { grid-column: 2 / 3; grid-row: 2; }
 .khact #paste-key { grid-column: 3 / 4; grid-row: 2; }
 .khact #clear-key { grid-column: 4 / 6; grid-row: 2; }
-.khact .keyacts > .btn { width: 100%; min-width: 0; min-height: 0; height: auto; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; }
+.khact .keyacts > .btn { width: 100%; min-width: 0; min-height: 0; height: auto; padding: 0 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: calc(17px * var(--fz, 1)); }
 .khact .keyacts .iconbtn svg { width: 22px; height: 18px; }
 .khact .keyacts .iconbtn + .keylock { margin-left: 0; }
 .khact .keyacts .keylock svg { width: 13px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
@@ -754,7 +762,7 @@ html:not(.phone) .left > .fxside { grid-row: 2; }
 .keyhead .menupanel { color: var(--ink); text-shadow: var(--shadow); text-align: left; }
 .keyhead .menupanel .randrow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .keyhead .menupanel .btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; }
-.keyhead .menupanel .keylock { min-width: 0; font-size: 19px; }
+.keyhead .menupanel .keylock { min-width: 0; font-size: calc(19px * var(--fz, 1)); }
 .keyhead .menupanel .iconbtn svg { width: 24px; height: 20px; fill: var(--panel); stroke: currentColor; stroke-width: 2; }
 .keyhead .menupanel .randrow > .btn { width: 100%; }
 
@@ -800,11 +808,11 @@ html.phone .faders .vf.big .knob.fslide { height: 150px; margin: 8px 0; }
 .keyhead .keystrip { position: relative; display: block; flex: none; height: 96px; --kselc: var(--ink); }
 .keyhead .kgroup { position: absolute; top: 0; height: 30px; display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0; min-width: 0; }
 .keyhead .kgroup::before { content: ''; position: absolute; left: 0; right: 0; top: 13px; bottom: -2px; border: 2px solid var(--ink); border-bottom: 0; border-radius: 2px 2px 0 0; }
-html .keyhead .kgroup .snd { position: relative; z-index: 1; width: auto; max-width: calc(100% - 16px); height: 26px; min-height: 0; padding: 0 10px 0 22px; gap: 6px; font-size: 17px;
+html .keyhead .kgroup .snd { position: relative; z-index: 1; width: auto; max-width: calc(100% - 16px); height: 26px; min-height: 0; padding: 0 10px 0 22px; gap: 6px; font-size: calc(17px * var(--fz, 1));
   background: rgb(var(--panel-rgb)); box-shadow: none; overflow: hidden; }
 html .keyhead .kgroup .snd i { left: 7px; }
-html .keyhead .kgroup .snd .ch { font-size: 13px; }
-html .keyhead .kgroup .snd.narrow { padding: 0 6px; font-size: 15px; }
+html .keyhead .kgroup .snd .ch { font-size: calc(13px * var(--fz, 1)); }
+html .keyhead .kgroup .snd.narrow { padding: 0 6px; font-size: calc(15px * var(--fz, 1)); }
 html .keyhead .kgroup .snd.narrow .ch, html .keyhead .kgroup .snd.narrow i { display: none; }
 html .keyhead .kgroup .snd[aria-selected="true"] { background: var(--ink); color: rgb(var(--panel-rgb)); text-shadow: none; }
 .keyhead .kgroup:has(.snd[aria-selected="true"])::before { border-width: 3px; border-bottom: 0; }
@@ -838,15 +846,15 @@ html .keyhead .kgroup .snd[aria-selected="true"] { background: var(--ink); color
    (FX + MASTER) in cells 11-12; THIS KEY stays under the menus, cells 13-18 ---- */
 .khkey { grid-column: 1 / 11; }
 .khview { grid-column: 11 / 13; }
-.khview .fxtab { position: static; width: 100%; height: 36px; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 19px; }
+.khview .fxtab { position: static; width: 100%; height: 36px; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: calc(19px * var(--fz, 1)); }
 .keyhead .sounds { display: block; }
 .keyline { display: flex; align-items: baseline; gap: 14px; min-width: 0; height: 34px; }
-.keyline #kh-note { font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: .06em; flex: none; }
+.keyline #kh-note { font-weight: 400; font-size: calc(34px * var(--fz, 1)); line-height: 1; letter-spacing: .06em; flex: none; }
 .keyline #kh-num, .keyline #kh-engine { display: none; }
-.keyline #kh-info { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--muted); }
+.keyline #kh-info { font-size: calc(19px * var(--fz, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--muted); }
 /* FOLLOW KEY (Johnny, 2026-11-20): a small [x] box at the right of the key's name, like POST DISTORTION and FILTER IN.
    It's in the KEY section, so a locked key leaves it working. No black pill on a click, no focus ring */
-.keyline .tick { margin-left: auto; flex: none; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; letter-spacing: .04em; white-space: pre; cursor: pointer; }
+.keyline .tick { margin-left: auto; flex: none; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: calc(16px * var(--fz, 1)); letter-spacing: .04em; white-space: pre; cursor: pointer; }
 .keyline .tick[aria-pressed="false"] { color: var(--muted); }
 .keyline .tick:focus, .keyline .tick:focus-visible { outline: none; }
 .keyhead .keystrip { height: 100px; }
@@ -863,7 +871,7 @@ html:not(.phone) .top { padding: 0 24px; }
 /* SHOW and THIS KEY: their buttons as tall as the white keys and level with them, the section heading at the top, so
    neither section is left half empty */
 .khview, .khact { justify-content: space-between; }
-.khview .fxtab { height: 66px; font-size: 20px; }
+.khview .fxtab { height: 66px; font-size: calc(20px * var(--fz, 1)); }
 .khact .keyacts { align-items: stretch; }
 .khact .keyacts .dicebtn { width: 66px; height: 66px; justify-self: start; }
 .khact .keyacts .dicebtn .die { border-radius: 8px; }
@@ -898,19 +906,19 @@ html:not(.phone) .top { padding: 0 24px; }
 /* ---- the RANDOM menu as a plain text list (Johnny, 2026-11-20): one line per item, a grey heading per group, a tick
    on the chosen NEW SOUNDS ARE and on WILD; the line under the pointer goes inverse ---- */
 #menu-panel.textmenu { width: 340px; padding: 6px 0; max-height: calc(100vh - 120px); overflow-y: auto; }
-.textmenu h3 { margin: 6px 0 2px; padding: 6px 14px 0; font-size: 15px; letter-spacing: .14em; color: var(--muted); border-top: var(--rule); }
+.textmenu h3 { margin: 6px 0 2px; padding: 6px 14px 0; font-size: calc(15px * var(--fz, 1)); letter-spacing: .14em; color: var(--muted); border-top: var(--rule); }
 .textmenu h3:first-child { margin-top: 0; padding-top: 2px; border-top: 0; }
-.textmenu .mi { display: block; position: relative; width: 100%; min-height: 28px; padding: 2px 14px 2px 34px; font: inherit; font-size: 20px;
+.textmenu .mi { display: block; position: relative; width: 100%; min-height: 28px; padding: 2px 14px 2px 34px; font: inherit; font-size: calc(20px * var(--fz, 1));
   letter-spacing: 1px; line-height: 24px; text-transform: uppercase; text-align: left; color: var(--ink); background: transparent; border: 0;
   border-radius: 0; cursor: pointer; white-space: nowrap; }
 .textmenu .mi:hover, .textmenu .mi:focus-visible { background: var(--ink); color: var(--panel); outline: 0; text-shadow: none; }
 .textmenu .mi[aria-pressed="true"]::before { content: "✓"; position: absolute; left: 13px; }
 .textmenu .mi:disabled { opacity: .4; cursor: default; background: transparent; color: var(--ink); }
-.textmenu .mrow { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 14px 2px 34px; font-size: 20px; letter-spacing: 1px; }
+.textmenu .mrow { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 14px 2px 34px; font-size: calc(20px * var(--fz, 1)); letter-spacing: 1px; }
 .textmenu .mrow > span { flex: 1; }
 .textmenu .mrow .mi.step { width: 30px; padding: 2px 0; text-align: center; }
 .textmenu .mrow output { min-width: 54px; text-align: center; }
-html.look-grey .textmenu .mi { font-size: 18px; }
+html.look-grey .textmenu .mi { font-size: calc(18px * var(--fz, 1)); }
 
 /* FX + MASTER as a pop-up (Johnny, 2026-11-20): placeFx lays its grid exactly over the synth knobs' grid (same 17 cells
    by 4 rows, same knob size) with its title bar just above. The synth knobs stay drawn round it, lightly dimmed by a
@@ -926,26 +934,26 @@ html.look-grey .textmenu .mi { font-size: 18px; }
    cell after LEVEL, lit from the bottom, the held peak over each and its name under it */
 #fxside .vu { grid-column: 7 / 9; align-self: center; margin: 0 10px; }
 #fxside .mout .meters { grid-column: 2 / 3; align-self: start; display: flex; flex-direction: row; justify-content: center; gap: 8px; padding: 0 0 4px; }
-#fxside .meters .mrow { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; }
+#fxside .meters .mrow { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: calc(13px * var(--fz, 1)); }
 #fxside .meters .segs { flex-direction: column-reverse; width: 14px; height: calc(var(--ks) * var(--kd, 1.16) - 4px); gap: 2px; }
-#fxside .meters output { font-size: 13px; min-width: 3.2em; text-align: center; }
-#fxside .meters .ch { font-size: 13px; }
+#fxside .meters output { font-size: calc(13px * var(--fz, 1)); min-width: 3.2em; text-align: center; }
+#fxside .meters .ch { font-size: calc(13px * var(--fz, 1)); }
 
 /* THIS KEY's type row (2026-11-20): a random bucket sound of each type, six buttons across the section over its buttons */
 .khact .keyrand { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
-.khact .keyrand .btn { min-width: 0; min-height: 0; height: 30px; padding: 0 2px; font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.khact .keyrand .btn { min-width: 0; min-height: 0; height: 30px; padding: 0 2px; font-size: calc(15px * var(--fz, 1)); white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 html.phone .khact .keyrand { display: none; }
 #fxside .sect > h3 { display: flex; align-items: center; gap: 6px; height: 24px; flex: none; }
 #fxside .outm .clip { margin-left: auto; margin-right: 6px; }
 /* REVERB's tiny [x] POST DISTORTION box, at the right of its header */
-#fxside .tick { margin-left: auto; margin-right: 8px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 13px; letter-spacing: 1px; white-space: pre; cursor: pointer; }
+#fxside .tick { margin-left: auto; margin-right: 8px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: calc(13px * var(--fz, 1)); letter-spacing: 1px; white-space: pre; cursor: pointer; }
 #fxside .tick[aria-pressed="false"] { color: var(--muted); }
 
 /* MORPH TIME (top right of the keyboard, over FX + MASTER): a slider, off to 2 s. Not about a key, so a locked key
    leaves it live */
 .morphtime { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .morphtime h3 { display: flex; justify-content: space-between; }
-.morphtime h3 .dim { margin-left: 0; font-size: 17px; color: var(--ink); }
+.morphtime h3 .dim { margin-left: 0; font-size: calc(17px * var(--fz, 1)); color: var(--ink); }
 /* drawn in the panel's own ink, no browser white: a thin ink track (filled to the thumb) and a solid ink block */
 .morphtime input { -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; margin: 0; height: 16px; background: transparent; cursor: pointer; --f: 0%; }
 .morphtime input:focus { outline: none; }
@@ -960,7 +968,7 @@ html.phone .khact .keyrand { display: none; }
    POST DISTORTION box */
 .faders .sect.fin .ticks { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 10px; padding: 0 6px; min-width: 0; }
 .faders .vtick { position: relative; display: flex; align-items: center; gap: 4px; max-width: 100%; }
-.faders .vtick .tick { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 16px; letter-spacing: .04em; white-space: pre; cursor: pointer; text-align: left; }
+.faders .vtick .tick { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: calc(16px * var(--fz, 1)); letter-spacing: .04em; white-space: pre; cursor: pointer; text-align: left; }
 .faders .vtick .tick[aria-checked="false"] { color: var(--muted); }
 .faders .vtick .tick:focus, .faders .vtick .tick:focus-visible { outline: none; } /* (no black pill or focus ring: a click just flips [ ] / [x]; Johnny) */
 .faders .sect.fin h3 { letter-spacing: .06em; padding: 0 4px 0 8px; text-overflow: clip; }
@@ -981,7 +989,7 @@ html:not(.phone) .left { grid-template-rows: 146px auto minmax(0, 1fr); }
 html:not(.phone) .macros .vf.mknob .knob { width: 72px; height: 72px; margin-top: 2px; }
 html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a big knob, as LEVEL's: inside the row, never over its name) */
 .macros .vf.mknob .lab { display: none; }
-.macros .mtargets { align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 0 8px 0 2px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.macros .mtargets { align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; padding: 0 8px 0 2px; border: 0; background: none; color: var(--ink); font: inherit; font-size: calc(14px * var(--fz, 1)); text-align: left; cursor: pointer; }
 .macros .mtargets span { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; overflow: hidden; text-transform: uppercase; letter-spacing: .02em; }
 .macros .mtargets b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
 .macros .mtargets i { font-style: normal; font-variant-numeric: tabular-nums; }
@@ -991,7 +999,7 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 /* the targets pop-up: every knob that can be modulated, a depth either way from the middle (double-click: off) */
 .macbox { width: 980px; }
 .maclist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; margin-top: 10px; }
-.mdep { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 10px; font-size: 17px; }
+.mdep { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 10px; font-size: calc(17px * var(--fz, 1)); }
 .mdep .lab { text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mdep.on .lab { color: var(--ink); }
 .mdep output { text-align: right; font-variant-numeric: tabular-nums; }
@@ -1001,7 +1009,7 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 /* a locked key leaves the MACRO row live and clear: the macros aren't the key's (Johnny, 2026-11-20) */
 .keylocked .faders.macros { opacity: 1; pointer-events: auto; }
 /* the macros' SLEW: a small number box under MACROS, dragged up or down */
-.macros .mslew { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px; font-size: 15px; text-transform: uppercase; }
+.macros .mslew { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px; font-size: calc(15px * var(--fz, 1)); text-transform: uppercase; }
 .macros .mslew .lcdbox { min-width: 4.2em; justify-content: center; cursor: ns-resize; touch-action: none; user-select: none; }
 
 /* ---- THIS KEY tidied (Johnny, 2026-11-21: "make the buttons the same size, make the dice a simple button and
@@ -1012,7 +1020,7 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 .khact .keyrand, .khact .keyacts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: none; gap: 6px; align-items: stretch; }
 .khact .keyrand .btn, .khact .keyacts > .btn, .khact .keyacts .keylock {
   grid-column: auto; grid-row: auto; width: 100%; min-width: 0; min-height: 0; height: 30px; margin: 0; padding: 0 2px;
-  font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  font-size: calc(15px * var(--fz, 1)); white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .khact :is(#rand-key, #alter-key, #lock-key, #copy-key, #paste-key, #clear-key) { grid-column: auto; grid-row: auto; } /* (over the old per-id cells) */
 
 /* ---- FX + MASTER at the head of the key's own column (Johnny, 2026-11-21: "in this section", above the sends, "make the
@@ -1020,7 +1028,7 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
    heading, REVERB in row 3, and LEVEL in row 4 as a plain dial with AUTO LEVEL's chip as its heading ---- */
 .faders .sect.fxcell { justify-content: center; padding: 6px 6px; }
 .faders .sect.fxcell .fxtab { position: static; width: 100%; flex: 1; max-height: 86px; min-height: 0; padding: 0 2px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 2px; font-size: 17px; line-height: 1.05; text-align: center; white-space: normal; }
+  align-items: center; justify-content: center; gap: 2px; font-size: calc(17px * var(--fz, 1)); line-height: 1.05; text-align: center; white-space: normal; }
 .faders .sect.fxcell .fxtab kbd { margin-left: 0; }
 .faders .sect.lvl h3 { display: flex; align-items: center; padding: 0 6px; overflow: visible; }
-.faders .sect.lvl .auto { position: static; min-height: 20px; font-size: 14px; padding: 0 5px; line-height: 1; letter-spacing: 0; white-space: nowrap; }
+.faders .sect.lvl .auto { position: static; min-height: 20px; font-size: calc(14px * var(--fz, 1)); padding: 0 5px; line-height: 1; letter-spacing: 0; white-space: nowrap; }
