@@ -14,7 +14,7 @@ Then restart your DAW, or rescan plugins. It is an instrument called **Dipogon**
 
 **Why a command and not a download?** Dipogon is a free project with no paid Apple Developer account, so it isn't signed or notarised by Apple, and macOS blocks a plugin downloaded in a browser ("damaged" or "unknown developer"). Fetched with `curl`, it isn't blocked. The script is short and changes nothing else: read it first if you like ([install.sh](install.sh)). It puts `Dipogon.vst3` in `~/Library/Audio/Plug-Ins/VST3`, `Dipogon.component` in `~/Library/Audio/Plug-Ins/Components` and `Dipogon.app` in `/Applications`.
 
-If you'd rather download the zips from the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest), put them in those folders and clear the download flag macOS sets, or it won't open them:
+If you'd rather download the zips from the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/latest), put them in those folders and clear the download flag macOS sets, or it won't open them:
 
 ```
 xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3 ~/Library/Audio/Plug-Ins/Components/Dipogon.component /Applications/Dipogon.app
@@ -22,7 +22,7 @@ xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Dipogon.vst3 ~/Libr
 
 ## Windows
 
-64-bit Windows 10 or 11. From the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest):
+64-bit Windows 10 or 11. From the [release page](https://github.com/johnnyhawk02/lxr-afx/releases/latest):
 
 - **VST3:** unzip `Dipogon-windows-vst3.zip` and move the `Dipogon.vst3` folder into `C:\Program Files\Common Files\VST3`
   (Windows asks for an administrator's OK), then rescan plugins in your DAW.
@@ -39,7 +39,7 @@ sample), but nobody has opened it in a Windows DAW yet.
 ## Linux
 
 x86_64, any distribution about as new as Ubuntu 22.04 or newer. From the
-[release page](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest):
+[release page](https://github.com/johnnyhawk02/lxr-afx/releases/latest):
 
 - **VST3:** `mkdir -p ~/.vst3 && unzip Dipogon-linux-vst3.zip -d ~/.vst3`, then rescan plugins (Bitwig, Reaper, Ardour...).
 - **App:** unzip `Dipogon-linux-app.zip` and run `./Dipogon`.
@@ -120,3 +120,13 @@ Visual Studio 2022 and the WebView2 SDK (see the `windows` job in `.github/workf
 packages in the `linux` job.
 
 It is GPL-3.0, like the LXR firmware it comes from. JUCE is used under its AGPLv3 licence, which is compatible.
+
+## Download counts
+
+Every CI build is published as its own numbered release (`build-N`, marked latest) and kept, so GitHub's download counts add up across builds. The `plugin-latest` release only holds `install.sh`, so the curl line never changes. To see the totals per platform, file and build:
+
+```
+tools/downloads.sh
+```
+
+`install.sh` counts Mac curl installs (each also fetches the three Mac zips). The counts include CI and test downloads.

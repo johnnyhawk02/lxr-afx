@@ -121,15 +121,34 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { pattern: Dipogon-*, path: plugin/out, merge-multiple: true }
       - name: Release
-        env: { GH_TOKEN: '${{ github.token }}' }
+        env: { GH_TOKEN: '${{ github.token }}', BUILD: '${{ github.run_number }}' }
         run: |
           ls -l out
-          gh release delete plugin-latest --yes --cleanup-tag || true
           cp install.sh out/install.sh
-          printf '%s\n' "Built from ${GITHUB_SHA::7}." "" \
+          printf '%s\n' "Build $BUILD, from ${GITHUB_SHA::7}." "" \
             "**Install on a Mac:** open Terminal, paste this line and press Return, then rescan plugins in your DAW:" "" \
             '```' 'curl -fsSL https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest/install.sh | bash' '```' "" \
             "Dipogon is free, with no paid Apple Developer account, so it isn't signed or notarised by Apple and macOS blocks the zips if you download them in a browser. The line above fetches them with curl, which macOS doesn't block. To use the zips instead, see [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#install)." "" \
             "**Windows (64-bit) and Linux (x86_64):** a VST3 and a standalone app, untested in a DAW so far. Unzip \`Dipogon-windows-vst3.zip\` into \`C:\\Program Files\\Common Files\\VST3\`, or \`Dipogon-linux-vst3.zip\` into \`~/.vst3\`, then rescan plugins. See [plugin/README.md](https://github.com/johnnyhawk02/lxr-afx/blob/main/plugin/README.md#windows) for details." > notes.md
           cat notes.md
-          gh release create plugin-latest out/*.zip out/install.sh --latest --target "$GITHUB_SHA" --title "Dipogon: Mac (VST3, AU, app), Windows and Linux (VST3, app)" --notes-file notes.md
+          # Every build is its own numbered release, kept, so download counts add up (tools/downloads.sh sums them).
+          # It is marked latest, so .../releases/latest/download/<file> always serves the newest build.
+          # (a re-run of the same workflow run keeps its number: replace that release's files instead)
+          gh release view "build-$BUILD" >/dev/null 2>&1 && gh release upload "build-$BUILD" out/*.zip --clobber ||
+          gh release create "build-$BUILD" out/*.zip --latest --target "$GITHUB_SHA" --title "Dipogon build $BUILD: Mac (VST3, AU, app), Windows and Linux (VST3, app)" --notes-file notes.md
+          # plugin-latest stays as a fixed home for install.sh, because the curl line in the README, the site and
+          # posts points there. It holds only install.sh (which fetches the zips from releases/latest) and is never
+          # deleted; install.sh is only replaced when it changes, so its own count keeps adding up too.
+          if gh release view plugin-latest >/dev/null 2>&1; then
+            for a in $(gh release view plugin-latest --json assets --jq '.assets[].name'); do
+              [ "$a" = install.sh ] || gh release delete-asset plugin-latest "$a" --yes
+            done
+            gh release edit plugin-latest --prerelease --latest=false --title "Dipogon installer (install.sh)" \
+              --notes "The Mac install line fetches install.sh from here; it installs the newest build. The builds themselves are the numbered releases: https://github.com/${GITHUB_REPOSITORY}/releases/latest"
+            # (compared by checksum, not downloaded, so CI adds nothing to its count)
+            OLD=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/plugin-latest" --jq '.assets[] | select(.name=="install.sh") | .digest // ""')
+            [ "$OLD" = "sha256:$(sha256sum out/install.sh | cut -d' ' -f1)" ] || gh release upload plugin-latest out/install.sh --clobber
+          else
+            gh release create plugin-latest out/install.sh --prerelease --latest=false --target "$GITHUB_SHA" --title "Dipogon installer (install.sh)" \
+              --notes "The Mac install line fetches install.sh from here; it installs the newest build. The builds themselves are the numbered releases: https://github.com/${GITHUB_REPOSITORY}/releases/latest"
+          fi

@@ -37,7 +37,7 @@ script is short, so read it first if you like ([plugin/install.sh](plugin/instal
 ## Windows and Linux
 
 A VST3 and a standalone app, for 64-bit Windows 10/11 and x86_64 Linux, from the
-[plugin-latest release](https://github.com/johnnyhawk02/lxr-afx/releases/tag/plugin-latest). They are new and haven't been
+[latest release](https://github.com/johnnyhawk02/lxr-afx/releases/latest). They are new and haven't been
 tried in a DAW yet, so tell us how they do.
 
 - **Windows:** unzip `Dipogon-windows-vst3.zip` and put the `Dipogon.vst3` folder in `C:\Program Files\Common Files\VST3`,

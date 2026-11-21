@@ -6,7 +6,7 @@
 # Dipogon has no paid Apple Developer account, so it is signed ad hoc, not notarised. A file a browser downloads is
 # quarantined and macOS won't open it; a file fetched with curl is not, so this installs it with no warning.
 set -euo pipefail
-BASE="${DIPOGON_BASE:-https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest}"
+BASE="${DIPOGON_BASE:-https://github.com/johnnyhawk02/lxr-afx/releases/latest/download}"
 VST3="$HOME/Library/Audio/Plug-Ins/VST3"
 AU="$HOME/Library/Audio/Plug-Ins/Components"
 if [ "$(uname -s)" != Darwin ]; then
