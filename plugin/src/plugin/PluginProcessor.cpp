@@ -18,7 +18,10 @@ LxrProcessor::LxrProcessor()
   for (auto& c : ccMacro) c = -1;
   inbox.reserve(256); work.reserve(256);
 }
-LxrProcessor::~LxrProcessor() { if (tableThread.joinable()) tableThread.join(); }
+LxrProcessor::~LxrProcessor() {
+  page.reset();  // (the kept page first: its listeners talk to this)
+  if (tableThread.joinable()) tableThread.join();
+}
 
 bool LxrProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
   const auto o = l.getMainOutputChannelSet();

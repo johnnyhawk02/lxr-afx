@@ -107,5 +107,17 @@
 
   // the plugin asks for the whole table (a new engine after the DAW's sample rate changed, or a restored project)
   on('keys?', () => { sendKeys(true); });
+
+  // ---- the panel's colour, so the plugin's window shows it (never black) while its next page loads ----
+  let panel = '';
+  function sendPanel() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--panel-rgb').trim();
+    if (/^\d+[ ,]+\d+[ ,]+\d+/.test(v) && v !== panel) { panel = v; emit('panel', v); }
+  }
+  addEventListener('DOMContentLoaded', () => {
+    sendPanel();
+    new MutationObserver(sendPanel).observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+  });
+  addEventListener('load', sendPanel);
   emit('hello', '{}');
 })();

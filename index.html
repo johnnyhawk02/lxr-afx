@@ -8,12 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/lcd.css?v=mwq1gd1p">
-<link rel="stylesheet" href="css/grey.css?v=mwq1gd1p">
+<link rel="stylesheet" href="css/lcd.css?v=mwq233o1">
+<link rel="stylesheet" href="css/grey.css?v=mwq233o1">
 <script>
 // a phone held upright gets the phone view from the first paint, before the wide screen can make the browser zoom out
 // (app/main.js keeps it in step after that). ?phone asks for it anywhere, ?desktop for the big screen on a phone
 (function () {
+  // in the plugin (plugin/js/shim.js set window.lxrHost) the panel fills the window from the first paint, never the dark surround
+  if (window.lxrHost) document.documentElement.classList.add('plugin');
   var q = location.search, small = Math.min(screen.width, screen.height) <= 700 || innerWidth <= 700;
   if (!/[?&]desktop\b/.test(q) && (/[?&]phone\b/.test(q) || (small && innerHeight > innerWidth))) document.documentElement.classList.add('phone');
   // the look (SETTINGS > LOOK): LCD (the default, in MINT), unless GREY was chosen
@@ -325,6 +327,6 @@
   }, 5000);
 })();
 </script>
-<script type="module" src="app/main.js?v=mwq1gd1p"></script>
+<script type="module" src="app/main.js?v=mwq233o1"></script>
 </body>
 </html>
