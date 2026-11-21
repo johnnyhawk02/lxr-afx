@@ -1227,7 +1227,7 @@ void LxrEngine::ccHandler(bool isCC2, int num, double data2, bool isFloat, doubl
     case CC2_PWM_4: sn.pwm = flt; break;
     case CC2_PWM_5: cy.pwm = flt; break;
     case CC2_PWM_6: hh.pwm = flt; break;
-    default: break;  // (the FX bus of the engine itself is never heard in LXR-AFX: its settings change nothing)
+    default: break;  // (the FX bus of the engine itself is never heard in Dipogon: its settings change nothing)
   }
 }
 

@@ -415,7 +415,7 @@ for (const [w, h] of [[1440, 900], [1280, 800], [1440, 760], [1280, 700], [1440,
     const im2 = await imp(text), f1 = await P(), im3 = (await imp('{"hello": 1}')) + (await imp('not json'));
     const evil = { presets: [{ ...file.presets[0], id: 'zzzzzz1', name: '<img src=x onerror=alert(1)>bad', data: { ...file.presets[0].data, keys: [{ 0: { _kit: '<i>x</i>', 5: 999, _lock: 1 }, 99: { 5: 1 } }, {}, {}] } }] };
     const im4 = await imp(JSON.stringify(evil)), got = await p.evaluate(() => { const x = afx.presets.list().find((q) => q.id === 'zzzzzz1'); return x && [x.name, x.data.keys[0][0], Object.keys(x.data.keys[0])]; });
-    if (file.app !== 'lxr-afx' || file.presets.length !== 2 || im1 !== 0 || f0.n !== 1 || im2 !== 1 || f1.n !== 2 || f1.stored !== 2 || im3 !== 0 || im4 !== 1 || !got || /[<>=()]/.test(got[0]) || got[0].length > 18
+    if (file.app !== 'dipogon' || file.presets.length !== 2 || im1 !== 0 || f0.n !== 1 || im2 !== 1 || f1.n !== 2 || f1.stored !== 2 || im3 !== 0 || im4 !== 1 || !got || /[<>=()]/.test(got[0]) || got[0].length > 18
       || /[<>]/.test(got[1]._kit) || got[1][5] !== 255 || got[1]._lock !== true || got[2].join() !== '0') bad('export, import', file.presets.length, im1, f0, im2, f1, im3, im4, got);
     await p.keyboard.press('Escape'); const shut = await p.evaluate(() => document.getElementById('preset-panel').hidden);
     const bar = await p.evaluate(() => { const r = (id) => document.getElementById(id).getBoundingClientRect(), b = r('preset-btn'), m = r('midi-status'), lg = (() => { const g = document.createRange(); g.selectNodeContents(document.querySelector('.top .logo')); return g.getBoundingClientRect(); })();

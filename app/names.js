@@ -1,4 +1,4 @@
-// LXR-AFX: preset names. New words jumbled out of pieces of real ones: the start of one word, sometimes the middle of
+// Dipogon: preset names. New words jumbled out of pieces of real ones: the start of one word, sometimes the middle of
 // a second, and the end of another, joined where a vowel meets a consonant so the result can be said out loud
 // ("QUANDALF", "NEBULOKI", "ZORVATRON GIMLAR"). The start and the end always come from two different lists, so
 // every name is a mix of themes. No UI here.

@@ -1,6 +1,6 @@
 // The page's settings that aren't one plugin's sound (the LOOK, the knob style, presets, saved sounds...: its
 // localStorage lxr-afx-* keys other than lxr-afx-v3), shared by every copy of the plugin, kept in
-// ~/Library/Application Support/LXR-AFX/shared.json
+// ~/Library/Application Support/Dipogon/shared.json (copied over from the LXR-AFX folder of its old name, the first time)
 #pragma once
 #include <juce_core/juce_core.h>
 
@@ -10,12 +10,20 @@
 
 namespace lxr::shared {
 
-inline juce::File file() {
+inline juce::File folder(const char* name) {
   return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
 #if JUCE_MAC
       .getChildFile("Application Support")
 #endif
-      .getChildFile("LXR-AFX").getChildFile("shared.json");
+      .getChildFile(name);
+}
+inline juce::File file() {
+  const auto f = folder("Dipogon").getChildFile("shared.json");
+  if (!f.existsAsFile()) {
+    const auto old = folder("LXR-AFX").getChildFile("shared.json");
+    if (old.existsAsFile()) { f.getParentDirectory().createDirectory(); old.copyFileTo(f); }
+  }
+  return f;
 }
 inline std::mutex& mx() { static std::mutex m; return m; }
 inline json read() {

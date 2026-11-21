@@ -1,4 +1,4 @@
-// LXR-AFX inside the plugin: the prototype's own instrument (sound/instrument.js, the same file the AudioWorklet runs),
+// Dipogon inside the plugin: the prototype's own instrument (sound/instrument.js, the same file the AudioWorklet runs),
 // driven by the plugin instead of sound/worklet.js. Bundled into one script (plugin/tools/bundle.mjs) and run in
 // JavaScriptCore on the plugin's audio thread. The native side calls the functions on globalThis.lxr:
 //   init(sampleRate, left, right)  a new instrument; left/right: Float32Arrays over the plugin's output buffers

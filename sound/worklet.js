@@ -12,7 +12,7 @@
 // It posts { type: 'peaks', peaks, ..., waves } about 30 times a second for the level lights (waves: where each voice's
 // tone is on its WAVE dial now, modulation and all, for the wave display; mods: each voice's modulated knobs, how far
 // they are moved now; stepAt: the STEP SEQ step each voice's last hit played)
-import { LxrInstrument } from './instrument.js?v=mwq8go9v';
+import { LxrInstrument } from './instrument.js?v=mwq8w4vi';
 
 registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   constructor() {
@@ -35,7 +35,7 @@ registerProcessor('lxr-afx', class extends AudioWorkletProcessor {
   process(_, outputs) {
     const o = outputs[0];
     // (an error in one block must not stop the processor: the browser would then go silent until the page reloads)
-    try { this.inst.render(o[0], o[1] || o[0]); } catch (e) { o[0].fill(0); if (o[1]) o[1].fill(0); if (!this.told) { this.told = true; console.error('LXR-AFX engine error', e); } }
+    try { this.inst.render(o[0], o[1] || o[0]); } catch (e) { o[0].fill(0); if (o[1]) o[1].fill(0); if (!this.told) { this.told = true; console.error('Dipogon engine error', e); } }
     if ((this.n += o[0].length) >= sampleRate / 30) { this.n = 0; this.port.postMessage({ type: 'peaks', peaks: this.inst.readPeaks(), gr: this.inst.readGr(), out: this.inst.readOut(), steps: this.inst.readSteps(), waves: this.inst.e.voices.map((v) => v.osc.wraw), mods: this.inst.e.readMods(), stepAt: [...this.inst.e.stepPlayed] }); }
     return true;
   }
