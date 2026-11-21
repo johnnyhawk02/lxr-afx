@@ -1003,3 +1003,13 @@ html:not(.phone) .macros .vf.mknob .knob svg { transform: scale(1.14); } /* (a b
 /* the macros' SLEW: a small number box under MACROS, dragged up or down */
 .macros .mslew { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 14px; font-size: 15px; text-transform: uppercase; }
 .macros .mslew .lcdbox { min-width: 4.2em; justify-content: center; cursor: ns-resize; touch-action: none; user-select: none; }
+
+/* ---- THIS KEY tidied (Johnny, 2026-11-21: "make the buttons the same size, make the dice a simple button and
+   organise"): twelve plain buttons, all one size, on one six-column grid: the six types on the first row, then DICE,
+   ALTER, LOCK, COPY, PASTE and CLEAR under them, both rows at the foot of the section level with the white keys ---- */
+.khact { justify-content: flex-start; }
+.khact .keyrand { margin-top: auto; }
+.khact .keyrand, .khact .keyacts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: none; gap: 6px; align-items: stretch; }
+.khact .keyrand .btn, .khact .keyacts > .btn, .khact .keyacts .keylock {
+  grid-column: auto; grid-row: auto; width: 100%; min-width: 0; min-height: 0; height: 30px; margin: 0; padding: 0 2px;
+  font-size: 15px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; }
