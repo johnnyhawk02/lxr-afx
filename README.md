@@ -1,11 +1,40 @@
 # Dipogon
 
-(Its working name was LXR-AFX.)
+A free drum synth for a 25-key MIDI keyboard. Three drum engines (drum, snare, metal) share the keys, and every key
+has a sound of its own, so one keyboard is a whole kit. Its drum voices are the LXR-02 drum machine's, ported from the
+firmware. It runs in the browser, and on a Mac as a VST3, AU or app.
 
-An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, every key its own sound.
-**Play it: https://dipogon.johnnyhawk.org/** (Chrome or Edge, for Web MIDI)
+**Play it: https://dipogon.johnnyhawk.org/** (Chrome or Edge on a computer, for MIDI; on a phone it shows 25 pads)
 
-![Dipogon at 1440 × 900](docs/screenshot.png)
+![Dipogon](docs/screenshot.png)
+
+## Get started
+
+1. Open the page and plug in a MIDI keyboard (allow MIDI when the browser asks). It plays on MIDI channel 1, from the
+   C an octave below middle C (MIDI note 48) up: drum on the lowest 8 keys, snare on the next 8, metal on the top 9.
+   No keyboard? Click the keys on the screen, or press **[** and **]** to step through them and **Space** to play one again.
+2. Play a key, then turn a knob: the change stays on that key. Every key keeps its own sound.
+3. Don't like a key? Press the dice (**K**) for another sound. **RANDOM > NEW PATCH** deals a whole new kit.
+4. **LOCK** (**L**) keeps a key you like safe from the random buttons. **Z** undoes.
+5. Keep a kit with **SAVE**, under the patch's name at the top. Presets stay in this browser; **EXPORT** saves them to a file.
+
+## The Mac plugin
+
+VST3 (Ableton Live, Bitwig, Reaper, Cubase...), AU (Logic, GarageBand) and a standalone app, for Apple silicon and
+Intel Macs. Open **Terminal**, paste this line and press Return:
+
+```
+curl -fsSL https://github.com/johnnyhawk02/lxr-afx/releases/download/plugin-latest/install.sh | bash
+```
+
+Then restart your DAW or rescan plugins: it's an instrument called **Dipogon**. Run the line again to update.
+
+Why a command and not a download? Dipogon is free and has no paid Apple Developer account, so it isn't signed or
+notarised by Apple, and macOS blocks a plugin downloaded in a browser. Fetched with `curl` it isn't blocked. The
+script is short, so read it first if you like ([plugin/install.sh](plugin/install.sh)). More in
+[plugin/README.md](plugin/README.md).
+
+## Everything it does
 
 - **Three zones on MIDI channel 1**, laid out for the 25 keys of a Bass Station 2 at its default octave (lowest key MIDI
   48), one zone for each of the engine's three voice types, all three able to sound at once: **drum** on the lowest 8
@@ -60,7 +89,7 @@ An AFX-mode drum instrument in the browser: three sounds on one MIDI channel, ev
   first is still held and the first comes back on the next step of the BPM grid (**RETURN** in SETTINGS, with **BPM**: NOW,
   1/32, **1/16** by default, 1/8, 1/4). The three zones don't affect each other. MIDI all-notes-off lets go of every
   zone.
-- **No sequencer**: the per-key step sequencer and the RHYTHMS slider were taken out (Johnny didn't find them useful); a
+- **No sequencer**: the per-key step sequencer and the RHYTHMS slider were taken out; a
   key plays once per press. The engine's AMP REPEAT knob still retriggers a sound.
 - **Left column**: the key, its engine, and the synth knobs in four rows (osc, fm / amp, pitch, click / filter,
   velocity, mix / lfo), with the key's ECHO / REVERB sends and its big **LEVEL** knob in a column at the right. Everything sits on one grid: equal cells, one knob to a cell, so every knob lines up with the ones above and
